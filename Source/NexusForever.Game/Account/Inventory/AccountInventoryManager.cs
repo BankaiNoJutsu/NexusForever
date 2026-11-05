@@ -45,6 +45,7 @@ namespace NexusForever.Game.Account.Inventory
         private readonly IItemManager itemManager;
         private readonly IGameTableManager gameTableManager;
         private readonly DailyLoginRewardManager dailyLoginRewardManager;
+        private readonly AuthDatabase inventoryDatabase;
         private ulong nextInventoryId = 1ul;
         private ulong nextPendingItemId = 1ul;
 
@@ -68,9 +69,11 @@ namespace NexusForever.Game.Account.Inventory
             ICharacterManager characterManager = null,
             IPrerequisiteManager prerequisiteManager = null,
             IItemManager itemManager = null,
-            IGameTableManager gameTableManager = null)
+            IGameTableManager gameTableManager = null,
+            AuthDatabase inventoryDatabase = null)
         {
             this.account = account;
+            this.inventoryDatabase = inventoryDatabase;
             this.log    = log ?? NullLogger<AccountInventoryManager>.Instance;
             this.characterManager = characterManager;
             this.prerequisiteManager = prerequisiteManager;
@@ -595,14 +598,15 @@ namespace NexusForever.Game.Account.Inventory
             });
         }
 
-        private void SendPendingGroupAdded(string groupName)
+        private void SendPendingGroupAdded(string groupName, IGameSession targetSession = null, Func<bool> owns = null)
         {
             if (!TryGetPendingGroup(groupName, out List<PendingAccountItem> pendingItems))
                 return;
 
             foreach (PendingAccountItem pendingItem in pendingItems)
             {
-                account.Session.EnqueueMessageEncrypted(new ServerAccountPendingItemAdd
+                if (owns?.Invoke() == false) return;
+                (targetSession ?? account.Session).EnqueueMessageEncrypted(new ServerAccountPendingItemAdd
                 {
                     PendingGroup = pendingItem.Build()
                 });
@@ -690,14 +694,26 @@ namespace NexusForever.Game.Account.Inventory
             return GetEnumerator();
         }
 
-        private ulong GetNextInventoryId()
+        private ulong GetNextInventoryId() => GetNextInventoryIds(1);
+
+        private ulong GetNextInventoryIds(uint count)
         {
+            if (inventoryDatabase != null)
+            {
+                ulong reserved = 0;
+                uint accountId = account.Id;
+                inventoryDatabase.SaveBlocking(context => context.EnlistSaveWork(
+                    unit => reserved = unit.ReserveInventoryIds(accountId, count), _ => { }, accountId: accountId));
+                return reserved;
+            }
             lock (inventoryGate)
             {
                 if (nextInventoryId == 0ul)
                     throw new InvalidOperationException("No account inventory ids are available.");
 
-                return nextInventoryId++;
+                ulong first = nextInventoryId;
+                nextInventoryId = checked(nextInventoryId + count);
+                return first;
             }
         }
 

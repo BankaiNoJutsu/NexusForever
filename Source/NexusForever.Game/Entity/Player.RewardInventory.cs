@@ -4,9 +4,9 @@ namespace NexusForever.Game.Entity
     {
         private IDisposable inventorySaveLease;
         private int directSaveOperations;
-        internal bool IsNormalSaveInProgress => saveInProgress || System.Threading.Volatile.Read(ref directSaveOperations) != 0;
+        internal bool IsNormalSaveInProgress => saveInProgress || craftingAccountDeliveryPending || System.Threading.Volatile.Read(ref directSaveOperations) != 0;
 
-        private bool RewardInventorySaveBlocked => ChallengeManager?.HasPendingRewardOperation == true
+        private bool RewardInventorySaveBlocked => craftingAccountDeliveryPending || ChallengeManager?.HasPendingRewardOperation == true
             || CurrencyManager is CurrencyManager { HasPendingContractCurrency: true } or CurrencyManager { RequiresContractCurrencyReload: true }
             || QuestManager?.HasPendingRewardOperation == true || QuestManager?.RequiresAuthoritativeReload == true
             || ChallengeManager?.RequiresAuthoritativeReload == true
@@ -20,6 +20,7 @@ namespace NexusForever.Game.Entity
         private bool TryAcquireInventorySave(out IDisposable lease)
         {
             lease = null;
+            if (craftingAccountDeliveryPending) return false;
             if (housingNameActor != null && !HousingNameSaveAllowed) return false;
             if (QuestManager is QuestManager { IsContractCompletionMutationInProgress: true }
                     or QuestManager { IsOrdinaryCompletionMutationInProgress: true }
@@ -45,6 +46,7 @@ namespace NexusForever.Game.Entity
 
         private void CheckInventorySaveAllowed(bool frozen = false, NormalRewardSave housingSnapshot = null)
         {
+            if (craftingAccountDeliveryPending) throw new InvalidOperationException("Crafting still owns its account delivery handoff.");
             bool housingAuth = housingNameActor?.OwnsAuthSnapshot(housingSnapshot) == true;
             if (housingNameActor != null && !HousingNameSaveAllowed && !housingAuth)
                 throw new InvalidOperationException("Player save overlaps a retained paid housing name.");

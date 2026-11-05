@@ -21108,6 +21108,68 @@ capture or dynamic breakpoint on the runtime apply dispatch.
 
 ### F-008 - Crafting / Tradeskill - PARTIAL (12/12 handlers functional)
 
+#### Paired crafting account settlement
+
+5 November 2026. All four recipe requests retain generated account currencies
+and account items instead of granting them during preparation. An Auth reservation
+binds the original admitted epoch, selected awards and reserved inventory IDs.
+The ordinary Character transaction commits material/output changes with its
+paid outbox. Only then does a worker deliver the entire account bundle in one
+Auth transaction, using the existing wallet, Cosmic earning/Loyalty and item
+creation receipts. The original session's captured success packets wait for
+delivery and source acknowledgement; cache adoption retains later accepted
+wallet operations and independently allocated items.
+
+Realm admission resolves unfinished reservations before initializing its account
+view. The Character row lock decides between a paid source and a durable
+cancellation fence. A newer admission can therefore cancel an unpaid reservation
+without allowing the old save to spend materials later. Paid sources survive
+Character deletion, and replay cannot recreate consumed items or restore an old
+wallet balance. Completed Auth receipts keep admission discovery bounded to
+unfinished work. Workers receive copied identities and private contexts; original
+session, epoch, manager and database-route guards suppress stale publication.
+
+Production account-item allocation now uses a durable per-account high-water
+mark, including creation receipts left by consumed items. Ordinary account loot
+reserves its whole item range before adopting anything, so allocator failure
+leaves the entry retryable. A reproduced null-target constructor defect is fixed:
+fresh unbound items retain the API's false target default. Existing explicit
+targets and saved bindings remain intact. Credit arithmetic is checked against
+the staged ordinary Auth graph and its SQL postimage before Character payment;
+wallet/Loyalty limits cannot turn an already impossible award into a paid source,
+and a preceding accepted debit can still make room for the credit.
+
+Auth and Character have matching MySQL/SQLite migrations and model snapshots.
+SQLite upgrade tests retain existing progress, consumed-item identities and
+entitlements15:1/17:1, with no44 or baseline Character grants. The original
+rollback probe (7 currency14 and1 account item1101 surviving a Character rollback)
+is now fixed. Regression coverage exercises the public recipe handlers, the real
+Realm handler, commit rejection/lost acknowledgements, both admission-fence
+orders, owner/route replacement, later rewards, consumed delivery and Cosmic
+Loyalty. Projected recipe/item tables remain fixtures; this is source/SQLite
+evidence, not actual-table or retail qualification.
+
+The owning WorldServer build and138 affected cases pass;72 additional account
+claim/Fortune controls pass. A subsequent context/intent review fix passes83
+focused crafting, migration and quest loopback checks. The final owning build
+takes24 seconds, the test build22 seconds, and all29 account cases pass in39
+seconds after the capacity and SQL-quoting review fixes. Unchanged controls were
+reused; no passing unrelated suite was repeated. The
+[portable evidence summary](Decomp/Analysis/coverage/crafting-account-settlement-20261105.json)
+links the scoped results and final bindings. Local evidence is under
+`artifacts/continuation-20261105/crafting-accounts/`. This retains the initial
+Loyalty timestamp failure, fixture corrections, target-default negative, review
+and source/binary identities. No full solution build or full suite was run.
+Upstream #606-609 heads were refreshed and remain unchanged from their prior
+reconciliation; #609 and #608 remain the newest created PRs.
+
+Full recipe qualification remains open. Inactive-owner/interrupted cases can
+remain pending until Realm admission; an autonomous paid-outbox drain is still
+needed. Configured MySQL, physical connection/process failure, backup/route/catalog
+migration, actual-table material/modifier economics, crafting socket and native/
+retail gates remain open. Shared virtual-event effects still lack durable replay
+after an uncertain save or process loss. Native client/CUA launch remain stopped.
+
 #### Committed virtual crafting event publication
 
 5 November 2026. Virtual loot produced by a recipe keeps its Character quest
@@ -21133,12 +21195,11 @@ cases pass in14 seconds. No full solution build or full suite was run.
 Local logs and source/binary identities are retained under
 `artifacts/continuation-20261105/crafting-virtual/`.
 
-The account rollback probe remains a failed, independent settlement gate:
+At this checkpoint the account rollback probe was still failing independently:
 Character output and material changes roll back, but Auth retains7 currency14
 and1 account item1101. Its successful control passes. The reproduction is
-retained for the next paired-delivery implementation, not counted as a qualified
-account-settlement result. Durable Auth/Character handoff and recovery remain
-actionable. Lost-acknowledgement/restart replay of the shared event effect,
+retained as the baseline for the paired milestone above, which supersedes this
+source/SQLite failure. Lost-acknowledgement/restart replay of the shared event effect,
 configured-provider, actual-table, crafting socket and native/retail evidence
 also remain open. Native client/CUA launch remain stopped.
 
@@ -21170,9 +21231,9 @@ selection are projected fixtures; other companion managers use adapters. Evidenc
 is under `artifacts/continuation-20261105/crafting-settlement/`.
 The initial test enum-type compile error is corrected and retained in its log.
 
-This closes the Character response boundary in source. It does not close paired
-Auth/Character settlement for generated account awards: Auth still precedes the
-Character write. Durable award handoff/restart recovery remains required.
+This closes the Character response boundary in source. At this checkpoint,
+generated account awards still preceded Character payment; the paired milestone
+above supersedes that source path with durable delivery and admission recovery.
 Shared virtual-item publication now has the source boundary recorded above;
 its uncertain-outcome/restart replay remains open. Configured-provider,
 actual-table, crafting socket and native qualification remain open. The separate

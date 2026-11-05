@@ -1,0 +1,329 @@
+{
+  "version": 1,
+  "feature": "Crafting account settlement",
+  "verified_utc": "2026-11-05T09:16:24.8873060Z",
+  "base_head": "b662d9e721fc7ca640ee5128fcdd702c37488613",
+  "behavior": [
+    "Auth reservation binds the admitted epoch, selected awards and reserved inventory range",
+    "Character payment and paid outbox commit atomically",
+    "Wallet, Cosmic/Loyalty and account-item delivery commit together in Auth with durable receipts",
+    "Admission either completes the paid source or fences a late old save before payment",
+    "Consumed items and later wallet/item intent survive replay",
+    "Authoritative staged and SQL credit-capacity checks precede Character payment"
+  ],
+  "qualification": {
+    "source_sqlite": "passed",
+    "native_client_and_computer_use": "remain stopped",
+    "retail": "not qualified",
+    "physical_network_or_process_failure": "not qualified",
+    "entitlement_defaults": "15:1 and 17:1 unchanged; no introduced 44 or seven baseline Character grants",
+    "full_solution_or_full_suite": "not run, user-directed scoped checks only",
+    "configured_mysql": "not run for this new path",
+    "mysql_model_and_migration_metadata": "passed"
+  },
+  "runs": [
+    {
+      "scope": "affected controls",
+      "passed": 138,
+      "failed": 0,
+      "skipped": 0,
+      "artifact": "artifacts/continuation-20261105/crafting-accounts/final-scoped.trx",
+      "sha256": "55BA2F326B16AF067505CC1042B94C7F613CBD9E2ED90236732D0FAF1BD49C48"
+    },
+    {
+      "scope": "account claim and Fortune controls",
+      "passed": 72,
+      "failed": 0,
+      "skipped": 0,
+      "artifact": "artifacts/continuation-20261105/crafting-accounts/claim-fortune-controls.trx",
+      "sha256": "C91F9F22336E793C3468B25A9D75FB507F300130FEDA5D31651334BAAF50153A"
+    },
+    {
+      "scope": "pinned source and quest loopbacks",
+      "passed": 83,
+      "failed": 0,
+      "skipped": 0,
+      "artifact": "artifacts/continuation-20261105/crafting-accounts/pinned-scoped.trx",
+      "sha256": "9C979D4671803C5C47476CD983EE8DFF92A3DE3D9A7A36E6D3BFFFAF75D6B895"
+    },
+    {
+      "scope": "final account capacity and SQL candidate",
+      "passed": 29,
+      "failed": 0,
+      "skipped": 0,
+      "artifact": "artifacts/continuation-20261105/crafting-accounts/capacity-accounts.trx",
+      "sha256": "AFF389B32F46EEFB388B7968F33B2609C24FCE8D5A34A669DEF864C860F799C2"
+    }
+  ],
+  "evidence_reuse": "138 and 72 controls preceded the context pin and capacity fixes. The 83-case gate followed context pinning; the final 29-case gate covers account settlement after capacity and SQL-quoting fixes. Unchanged controls were reused, not claimed rerun against another DLL.",
+  "failures_retained": [
+    "artifacts/continuation-20261105/crafting-virtual/account-probe.trx",
+    "artifacts/continuation-20261105/crafting-accounts/candidate-accounts.trx",
+    "artifacts/continuation-20261105/crafting-accounts/fenced-crafting.trx",
+    "artifacts/continuation-20261105/crafting-accounts/target-default-before.trx"
+  ],
+  "remaining": [
+    "Autonomous paid-outbox delivery without a live completion or Realm re-admission",
+    "Configured MySQL and physical connection/process failure",
+    "Backup, database-route and Loyalty catalog migration",
+    "Durable shared virtual-event replay",
+    "Actual recipe tables, material/modifier economics, crafting socket and native/retail qualification"
+  ],
+  "upstream_heads_unchanged": [
+    {
+      "head": "4ffa050ba994a82e0fb52f0b5b733c94b139367e",
+      "pr": 606,
+      "state": "open"
+    },
+    {
+      "head": "7f044aad0a20419a788b8140d263ac83fcd93217",
+      "pr": 607,
+      "state": "open"
+    },
+    {
+      "head": "7db12d9a7c694bc5e66d9e0f4cdbc1b82155e69b",
+      "pr": 608,
+      "state": "open"
+    },
+    {
+      "head": "f9b6f7356798a41beea0768ff1f6b5a758ffeca3",
+      "pr": 609,
+      "state": "closed, not merged"
+    }
+  ],
+  "source_inputs": [
+    {
+      "path": "CURRENT_STATUS.md",
+      "sha256_lf_utf8": "8B552707D49BD50AC24CF337D992F7A6C4D4CA95D2A08FCAFDE59E1C7A451951",
+      "sha256_working_bytes": "062AE0EA4809789E53ECC9F9648B67958BB4E9F6FE66F2EC616FA07ED129DB0A"
+    },
+    {
+      "path": "Decomp/Analysis/ASSESSMENT_REMAINING_WORK.md",
+      "sha256_lf_utf8": "B9A195CE9DE77CCB154C75DCDEBDA05C36ABE88713733D37D2AB6E76D7BAFA8C",
+      "sha256_working_bytes": "2308679AFAB51F3841051CB714229083909B9B69FC27D6774C596F8B321BEBA4"
+    },
+    {
+      "path": "Source/NexusForever.Database.Auth/AuthContext.Crafting.cs",
+      "sha256_lf_utf8": "5CE161C1E5547327AFF9BD2522A91542BE34E2290EBF3A4F6AA73AE6352CE4A6",
+      "sha256_working_bytes": "5CE161C1E5547327AFF9BD2522A91542BE34E2290EBF3A4F6AA73AE6352CE4A6"
+    },
+    {
+      "path": "Source/NexusForever.Database.Auth/AuthContext.cs",
+      "sha256_lf_utf8": "E29BF0BB67444552AB09310DE402E8700CDEA2723F2902DA578A2AE364EC3DDD",
+      "sha256_working_bytes": "17B15C073B1A343DF1DA09C650D11E40CE764337D032029349299BA79261AEAD"
+    },
+    {
+      "path": "Source/NexusForever.Database.Auth/AuthDatabase.cs",
+      "sha256_lf_utf8": "0B0F46D060DE2D34D9749F8A0BE1CFFB1340FF4E7E27C242CA4FCE1BA60FCC9F",
+      "sha256_working_bytes": "69428BDE631C16BD08E8B7AC574E5E7944F86BAD0E0B915A16A57D0C080A8BFC"
+    },
+    {
+      "path": "Source/NexusForever.Database.Auth/Migrations/20261105080121_CraftingAccountAwards.cs",
+      "sha256_lf_utf8": "01225C8620B51205FBD86B6EC8BE8CD4B9272A5B6955B21EF49E435EC02CC273",
+      "sha256_working_bytes": "FDE015D2B37A664D0156E567453C08FE1E46CBD1D1B8101B57DF9D32EE305575"
+    },
+    {
+      "path": "Source/NexusForever.Database.Auth/Migrations/20261105080121_CraftingAccountAwards.Designer.cs",
+      "sha256_lf_utf8": "46DA639E12E027B782050EF50D7527BB90167A4E7ECA280C45DDCE9604BE1894",
+      "sha256_working_bytes": "AFEB927FDA95D6078FBFBC29CFDC819BCFE719FF4AF4FEE12D49E0BE8BD2C6AE"
+    },
+    {
+      "path": "Source/NexusForever.Database.Auth/Migrations/AuthContextModelSnapshot.cs",
+      "sha256_lf_utf8": "7C61560FF219825C8822B7229FC7B9EE06987C4E3E9E7399DC2B82C1F0714D59",
+      "sha256_working_bytes": "2DA3B6F6AE7EE06E0D3D1D9C8A4C27A7E5FDBD38326A42C02F6DF18F505D2691"
+    },
+    {
+      "path": "Source/NexusForever.Database.Auth/Model/AccountCraftingReceiptModel.cs",
+      "sha256_lf_utf8": "640C851E33A556C9B6F28CAE9B1DEB259595CDB95C2144379F5AB050EC0D7818",
+      "sha256_working_bytes": "640C851E33A556C9B6F28CAE9B1DEB259595CDB95C2144379F5AB050EC0D7818"
+    },
+    {
+      "path": "Source/NexusForever.Database.Auth/Model/AccountModel.cs",
+      "sha256_lf_utf8": "8E8E603779C1728AF3072F33D31F9EDC2E11CF82FABFE59CED3636DAC33C7015",
+      "sha256_working_bytes": "B9734DEEC902534ACB6117CA8412503E4334DFCDE2ED5C1671CC0CBA02B8808D"
+    },
+    {
+      "path": "Source/NexusForever.Database.Character/CharacterContext.Crafting.cs",
+      "sha256_lf_utf8": "D132EBEA40ABFBE19AE4481B6D094D0B73BA0F6D6FAF61729B49E7B124800D6E",
+      "sha256_working_bytes": "D132EBEA40ABFBE19AE4481B6D094D0B73BA0F6D6FAF61729B49E7B124800D6E"
+    },
+    {
+      "path": "Source/NexusForever.Database.Character/CharacterContext.cs",
+      "sha256_lf_utf8": "192F3887EF60B89A077505F19403984CA7A869F2A7C09EBC6667C99AEE1B8E1A",
+      "sha256_working_bytes": "36A1086CF0763ECE5F6411AFF285E03507E2B487F0350E622ED06BDAC1E2D7C6"
+    },
+    {
+      "path": "Source/NexusForever.Database.Character/CharacterDatabase.cs",
+      "sha256_lf_utf8": "8C8E4CA131591A69214678E517715D66B1CE6313EA6FBA760988DA4B6DA47EF5",
+      "sha256_working_bytes": "6BC7A0925DC70644CB49463B8692B09963FDA35EA27319B8DADF9087CD3C4677"
+    },
+    {
+      "path": "Source/NexusForever.Database.Character/Migrations/20261105080127_CraftingAccountAwards.cs",
+      "sha256_lf_utf8": "578CD35081CA699A9DEC8F51DBC4D481D11D35EEA456243E897987D9B39EAE10",
+      "sha256_working_bytes": "CCBCA7A34A65A82A58C7BEA7966AEEFCD9ED99961F0E8F777414E73E9DAB26E3"
+    },
+    {
+      "path": "Source/NexusForever.Database.Character/Migrations/20261105080127_CraftingAccountAwards.Designer.cs",
+      "sha256_lf_utf8": "979F9C58358894AD2222746EB92B6D30DA2F6A4B577D3BD5B4C3D01394B536DF",
+      "sha256_working_bytes": "FA8B03456BAED57724549AD9DD9F7AC696B0DDBEDFAF3016BC03B9972AD71AEB"
+    },
+    {
+      "path": "Source/NexusForever.Database.Character/Migrations/CharacterContextModelSnapshot.cs",
+      "sha256_lf_utf8": "101776751C153B53B471A153DC14774489C57C75933E08D7722C4AA170673582",
+      "sha256_working_bytes": "BE5F247263D709BF3AE881787890194779C7960011425F7366EBB69AFE5A6560"
+    },
+    {
+      "path": "Source/NexusForever.Database.Character/Model/CharacterCraftingAccountOutboxModel.cs",
+      "sha256_lf_utf8": "3E7C70B6A328D66585B8E38CBBFD64AC60E4D479C5C26F09A86BF93CC28610F8",
+      "sha256_working_bytes": "3E7C70B6A328D66585B8E38CBBFD64AC60E4D479C5C26F09A86BF93CC28610F8"
+    },
+    {
+      "path": "Source/NexusForever.Database.Sqlite.Migrations/Auth/20261105080133_CraftingAccountAwards.cs",
+      "sha256_lf_utf8": "DE29ABA0BCF2436D28C40D46332104A87A771335CDB74DB10A8BBA6D2635DDB4",
+      "sha256_working_bytes": "A8D197AD6FAFF456DCB5084FAA4CBA97694E764CC2EBBC66F480B91BCBAE910D"
+    },
+    {
+      "path": "Source/NexusForever.Database.Sqlite.Migrations/Auth/20261105080133_CraftingAccountAwards.Designer.cs",
+      "sha256_lf_utf8": "A0F1169C4DAD50BEE8E71FAEE1D5C021C17EEA33EB78DE9170A48F84A68A3C1D",
+      "sha256_working_bytes": "D1BC94D7D0EBA08E3FA9B0F867EF1E82D158AF12685E6DE0C4CB256068EC627C"
+    },
+    {
+      "path": "Source/NexusForever.Database.Sqlite.Migrations/Auth/AuthContextModelSnapshot.cs",
+      "sha256_lf_utf8": "720C6F1A2278A8A4DA6C13122D54350C85A0C906644547D5D824AD7CD1B07AE0",
+      "sha256_working_bytes": "4A60CDE1CAE431EB96DC4152CDE9C252B4D7056D5F1F38F472A1774100096FFD"
+    },
+    {
+      "path": "Source/NexusForever.Database.Sqlite.Migrations/Character/20261105080139_CraftingAccountAwards.cs",
+      "sha256_lf_utf8": "5268176636092B38B02E68000E119E5CFC8667BC99DFD97937E6F1724E32D0C7",
+      "sha256_working_bytes": "EE7F17AFEC352BB7081C3C73237544BBA2CA568DE3D27E8576A0E2222FA710DE"
+    },
+    {
+      "path": "Source/NexusForever.Database.Sqlite.Migrations/Character/20261105080139_CraftingAccountAwards.Designer.cs",
+      "sha256_lf_utf8": "98BDA841243D906D8095B76144ABA4F54378F4B0BEBED07D95EEEA925D5A286B",
+      "sha256_working_bytes": "5267A42A8EA03B5F32AD0DC7CCE17BAB0A48E66CB5CEDCB3716BB2FCBC3DA417"
+    },
+    {
+      "path": "Source/NexusForever.Database.Sqlite.Migrations/Character/CharacterContextModelSnapshot.cs",
+      "sha256_lf_utf8": "FB7A89272C6ED92BE1D75E5464ED6CBA92B8A34D9A54D016C66BF91DE1F7354D",
+      "sha256_working_bytes": "99C7DC3B3AFA6E9FF4C5C0C2E819D5FF32454EAA64A26FF108E532FDE4783D24"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Crafting/CraftingSettlementTests.cs",
+      "sha256_lf_utf8": "3338C7241C3C86E492D5EAE9D933E17CA7B66A3C1C06A1B0EECE32FFFA49EF83",
+      "sha256_working_bytes": "3338C7241C3C86E492D5EAE9D933E17CA7B66A3C1C06A1B0EECE32FFFA49EF83"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Database/CraftingAccountMigrationTests.cs",
+      "sha256_lf_utf8": "C6176706ECC32862F3E865E6874B618251CC33248D145CBDC3310E298779611E",
+      "sha256_working_bytes": "C6176706ECC32862F3E865E6874B618251CC33248D145CBDC3310E298779611E"
+    },
+    {
+      "path": "Source/NexusForever.Game/Account/Account.cs",
+      "sha256_lf_utf8": "D0EA4C8058426FD7006D5ECD2891482BBF478F85E5D1F88A2E7DC8ED9685CD03",
+      "sha256_working_bytes": "2605BA7F6D25B74BBF0FAA090628BD5729266A5CAAF1860A5509ABF91C621AE0"
+    },
+    {
+      "path": "Source/NexusForever.Game/Account/Currency/AccountCurrencyManager.Loyalty.cs",
+      "sha256_lf_utf8": "EB093831898651874A71B2F7995BE98C79952CA869F6A82D69D5408B11D6739D",
+      "sha256_working_bytes": "36A8153A24BF05042A16989E152A4F1374CD18592A8F195A87D4A0E0F32F0C24"
+    },
+    {
+      "path": "Source/NexusForever.Game/Account/Inventory/AccountInventoryItem.cs",
+      "sha256_lf_utf8": "6A133258820BA4BC2CAFD08CE3ECEAC7933B038444DDDD3D7B75282A0DC6002D",
+      "sha256_working_bytes": "980E54D788BA5B278AE5A029B2640085BED3CCBF0387E6CA06E2E7305EE1EA0E"
+    },
+    {
+      "path": "Source/NexusForever.Game/Account/Inventory/AccountInventoryManager.Crafting.cs",
+      "sha256_lf_utf8": "7643318A1268D14297E6AB97340E80D41E5D4535ED278C6C803197F804E3E3BA",
+      "sha256_working_bytes": "7643318A1268D14297E6AB97340E80D41E5D4535ED278C6C803197F804E3E3BA"
+    },
+    {
+      "path": "Source/NexusForever.Game/Account/Inventory/AccountInventoryManager.cs",
+      "sha256_lf_utf8": "9CEE57398A9F538CCB59B81F0017A8C16473BC2C2D0751A3667C282A3E7A7947",
+      "sha256_working_bytes": "8BB434470B6A2825177488E86AF87AFC86B5C5002051F882296D7FB13B9D54DC"
+    },
+    {
+      "path": "Source/NexusForever.Game/Account/Inventory/AccountInventoryManager.RewardDelivery.cs",
+      "sha256_lf_utf8": "594DEA4914564A43C3F92FFF2E5D9FAF5B3E7BABF293792E19DA46333A9DBACE",
+      "sha256_working_bytes": "D7B1A1889E1F60E93BB525104FA2029FA793D7759CD7A6108D460F1E7EC44285"
+    },
+    {
+      "path": "Source/NexusForever.Game/Account/Reward/AccountLoyaltyManager.cs",
+      "sha256_lf_utf8": "4EFFF48542FFD7C22E17DE7E351CA6F532A892A8DED8F8AF55BC8398D40E2E96",
+      "sha256_working_bytes": "2D8AD21FB54D72C17A6B9BFC5C56BA7B8194D3406E9978BD165136880CADC597"
+    },
+    {
+      "path": "Source/NexusForever.Game/Crafting/CraftingAccountDelivery.cs",
+      "sha256_lf_utf8": "9B56E8C8445E37D1178150A09380C66AEA5F354F3EC0A87375BD0D70F256C8C1",
+      "sha256_working_bytes": "9B56E8C8445E37D1178150A09380C66AEA5F354F3EC0A87375BD0D70F256C8C1"
+    },
+    {
+      "path": "Source/NexusForever.Game/Crafting/CraftingAccountIntent.cs",
+      "sha256_lf_utf8": "B920C520B50E6E432E8AD918F12C6E060CCD98DBC343032F830C5338FD758304",
+      "sha256_working_bytes": "B920C520B50E6E432E8AD918F12C6E060CCD98DBC343032F830C5338FD758304"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/Player.Crafting.cs",
+      "sha256_lf_utf8": "ECA6556981430BBE6A1C5F9CD9C61BB455A5BF9D34AC6D1F59E076C56AE3F833",
+      "sha256_working_bytes": "ECA6556981430BBE6A1C5F9CD9C61BB455A5BF9D34AC6D1F59E076C56AE3F833"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/Player.NormalRewardSave.cs",
+      "sha256_lf_utf8": "5C1AD91D33A4AD213AB34C1EDE06BE571BBBF72AF18F7C83E3AF97013F27BE17",
+      "sha256_working_bytes": "AF846BE549FDDE8CA8D2ECB0230730F629E195837FB6E21FC3723B6847D163B7"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/Player.RewardInventory.cs",
+      "sha256_lf_utf8": "A9C1825144FAACAAE8B2D8C14EDB896EBE2652886A8A1FE21CAEDF1E55B38218",
+      "sha256_working_bytes": "1B4AAFA811A471D039C9883D990464E1FDED78AA0FFF9122A9F2B5478FD72BAD"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/QuestManager.cs",
+      "sha256_lf_utf8": "222E0EC6AD00C72FC8096F7808B81AE8C53D460ABE028A15D7F01395852A9850",
+      "sha256_working_bytes": "2D07BF39DDE4CD66FFE792D398CFC0CFEDBE2D80D39CBBAF05E5DC8D56CAC95A"
+    },
+    {
+      "path": "Source/NexusForever.Game/Loot/LootInstanceItem.cs",
+      "sha256_lf_utf8": "EDD78D12A94D4BADAD6070439681D5CB4BA95771C68E60ED1C1606C2A9BC0902",
+      "sha256_working_bytes": "7BB6A6A0A071CF455931091E5F1AD88FF1C4E2250EA9C34C0AB71B4FF884D497"
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/Network/Message/Handler/Authentication/ClientHelloRealmHandler.cs",
+      "sha256_lf_utf8": "74DEF8C63FAC39AAC3F14AC4937B6B8A5FC521AC6FE61298E776114010034626",
+      "sha256_working_bytes": "D72FE1F4A23A420CF208A5246DA3606BFA04AF39DE35D4D2573C9EA110E533F4"
+    }
+  ],
+  "final_binaries": [
+    {
+      "path": "Source/NexusForever.Game/bin/Debug/net10.0/NexusForever.Game.dll",
+      "sha256": "FC92952BB983E5BA620A3E53659F2893E5C12678119C6F4514C5B0E53F1BAEBF"
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+      "sha256": "C6D9A93B2926D18C36D04067ADE3B5E0C51FD2462DDE40C64C38BE2D462D3CC5"
+    },
+    {
+      "path": "Source/NexusForever.Database.Auth/bin/Debug/net10.0/NexusForever.Database.Auth.dll",
+      "sha256": "E43D0426E347EBBB61EA1FFD48CE07236ED64A7CF0CE777659E68C5AE1874854"
+    },
+    {
+      "path": "Source/NexusForever.Database.Character/bin/Debug/net10.0/NexusForever.Database.Character.dll",
+      "sha256": "85E668E7AB836689A7C26A649B3E27EE604A08E3D246B3D1054C473BA9BC2938"
+    },
+    {
+      "path": "Source/NexusForever.Database.Sqlite.Migrations/bin/Debug/net10.0/NexusForever.Database.Sqlite.Migrations.dll",
+      "sha256": "0E84465B7E00249F541F7B2737A3C4FDC12BAD30621B94D1F22C5C4128FD4DE4"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+      "sha256": "DC813B41802642A0D907DED88BCC5C74D0AAFED36A97F369ABE87327F978196F"
+    }
+  ],
+  "final_test_copy_check": "Game, WorldServer, Auth, Character and SQLite.Migrations production/test DLL hashes match",
+  "final_validation_seconds": {
+    "test_build": 22.31,
+    "final_account_tests": 39,
+    "owning_build": 23.59
+  },
+  "review": "Original identities and fresh contexts pinned; every database owns its transaction; whole Auth bundle and Character fence/ack SQL witnesses checked; model snapshots and intended migration operations checked; no unrelated files, entitlement policy or native/client operations changed."
+}

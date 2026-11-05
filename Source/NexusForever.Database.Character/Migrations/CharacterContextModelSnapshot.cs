@@ -835,6 +835,47 @@ namespace NexusForever.Database.Character.Migrations
                     b.ToTable("character_costume", (string)null);
                 });
 
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterCraftingAccountOutboxModel", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(32)
+                        .HasColumnType("char(32)")
+                        .HasColumnName("id");
+
+                    b.Property<uint>("AccountId")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("accountId");
+
+                    b.Property<bool>("Cancelled")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("cancelled");
+
+                    b.Property<ulong>("CharacterId")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("characterId");
+
+                    b.Property<bool>("Delivered")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("delivered");
+
+                    b.Property<string>("PayloadJson")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("payloadJson");
+
+                    b.Property<ushort>("RealmId")
+                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnName("realmId");
+
+                    b.HasKey("Id")
+                        .HasName("PRIMARY");
+
+                    b.HasIndex("AccountId", "RealmId", "Delivered")
+                        .HasDatabaseName("IX_crafting_outbox_account");
+
+                    b.ToTable("character_crafting_account_outbox", (string)null);
+                });
+
             modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterCreateModel", b =>
                 {
                     b.Property<byte>("Race")

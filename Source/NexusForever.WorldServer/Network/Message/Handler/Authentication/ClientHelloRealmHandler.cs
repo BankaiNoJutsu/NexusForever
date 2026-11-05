@@ -6,6 +6,8 @@ using NexusForever.Database.Auth.Model;
 using NexusForever.Database.Character;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Account.Currency;
+using NexusForever.Game.Crafting;
+using NexusForever.GameTable;
 using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
@@ -20,13 +22,15 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Authentication
 
         private readonly IDatabaseManager databaseManager;
         private readonly IRealmContext realmContext;
+        private readonly IGameTableManager gameTableManager;
 
         public ClientHelloRealmHandler(
             IDatabaseManager databaseManager,
-            IRealmContext realmContext)
+            IRealmContext realmContext, IGameTableManager gameTableManager = null)
         {
             this.databaseManager = databaseManager;
             this.realmContext = realmContext;
+            this.gameTableManager = gameTableManager;
         }
 
         #endregion
@@ -63,7 +67,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Authentication
             var auth = databaseManager.GetDatabase<AuthDatabase>();
             var account = await auth.AdmitWorldSessionAsync(accountId, accountName, sessionKey);
             if (account != null)
+            {
                 await VendorAccountPurchase.RecoverAtAdmissionAsync(account, auth, databaseManager.GetDatabase<CharacterDatabase>(), realmContext.RealmId);
+                await CraftingAccountRecovery.RecoverAtAdmissionAsync(account, auth, databaseManager.GetDatabase<CharacterDatabase>(), realmContext.RealmId, gameTableManager);
+            }
             return account;
         }
     }

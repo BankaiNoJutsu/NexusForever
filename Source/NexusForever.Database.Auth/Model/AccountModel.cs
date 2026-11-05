@@ -10,6 +10,7 @@ namespace NexusForever.Database.Auth.Model
         [System.ComponentModel.DataAnnotations.Schema.NotMapped]
         public ulong WorldSessionEpoch { get; set; }
         public ulong NextPendingItemId { get; set; } = 1ul;
+        public ulong NextInventoryId { get; set; } = 1ul;
         public string Email { get; set; }
         public string S { get; set; }
         public string V { get; set; }

@@ -89,11 +89,13 @@ namespace NexusForever.Game.Entity
             internal void SaveKeybindings(NexusForever.Database.Character.CharacterContext context)
             { if (keybindingSnapshot == null) owner.KeybindingManager.Save(context); else keybindingSnapshot(context); }
             private bool ended;
+            private readonly Crafting.CraftingAccountIntent craftingAccounts = owner.craftingAccountIntent;
+            internal void CheckCraftingCreditCapacity(AuthContext context) => craftingAccounts?.EnlistCreditCapacity(context);
             private Inventory.AuctionDeliveryWitness delivery = deliveryWitness;
             private Inventory.CommodityDeliveryWitness commodity = commodityWitness;
             private Inventory.AuctionEscrowWitness escrow = escrowWitness;
             internal void StageDelivery(NexusForever.Database.Character.CharacterContext context)
-            { escrow?.Stage(context); delivery?.Stage(context); commodity?.Stage(context); }
+            { escrow?.Stage(context); delivery?.Stage(context); commodity?.Stage(context); craftingAccounts?.Stage(context); }
             internal bool RetryBidRollback(NexusForever.Database.Character.BidReconciliationRolledBackException proof)
             {
                 Validate();
@@ -203,6 +205,8 @@ namespace NexusForever.Game.Entity
                     }
                     catch { Quarantine(); return false; }
                 }
+                if (accepted && craftingAccounts != null && ReferenceEquals(owner.craftingAccountIntent, craftingAccounts))
+                    owner.craftingAccountIntent = null;
                 return accepted;
             }
             private void Quarantine()
@@ -216,6 +220,7 @@ namespace NexusForever.Game.Entity
         {
             if (snapshot == null) { Save(context); return; }
             snapshot.Validate(); CheckInventorySaveAllowed(frozen: true, housingSnapshot: snapshot); Account.Save(context);
+            snapshot.CheckCraftingCreditCapacity(context);
         }
         private bool ReleaseNormalRewardSave(bool success) => normalRewardSave?.Finish(success) ?? success;
     }

@@ -35,6 +35,34 @@ namespace NexusForever.Game.Account.Reward
 
         public void Save(AuthContext context) => Enlist(context, null, null, null);
 
+        internal (LoyaltyCatalog Catalog, uint[] Prerequisites) CaptureCraftingContext(IPlayer owner)
+        {
+            lock (gate)
+            {
+                if (!ReferenceEquals(owner.Account, account)) throw new InvalidOperationException("Crafting lost its Loyalty owner.");
+                var ids = catalog.Tracks.Select(track => track.Entry.PrerequisiteId)
+                    .Concat(catalog.Tracks.SelectMany(track => track.Slots).Select(slot => slot.Entry.PrerequisiteId));
+                return (catalog, ids.Where(id => id != 0 && prerequisites?.Meets(owner, id) == true).Distinct().Order().ToArray());
+            }
+        }
+
+        internal void AdoptCraftingCredit(LoyaltyState result, Func<bool> owns)
+        {
+            lock (gate)
+            {
+                if (!owns() || enlisted.Count != 0 || state?.Revision > result.Revision)
+                    throw new InvalidOperationException("Crafting lost its idle Loyalty publication owner.");
+                var wallet = (AccountCurrencyManager)account.CurrencyManager;
+                wallet.CompleteCosmicMutations([], result.Wallet, result.Revision, publish: false);
+                state = result;
+                if (account.InventoryManager is AccountInventoryManager inventory)
+                    inventory.AdoptCommittedPendingItems(result.PendingRows, owns);
+                if (!owns()) return;
+                wallet.PublishCraftingCosmic(owns);
+                if (initialPacketsSent && owns()) SendUpdates(owns);
+            }
+        }
+
         private void Enlist(AuthContext context, uint? choose, (uint Row, uint Choice)? claim, Action<bool> requestCompleted)
         {
             lock (gate)
@@ -159,7 +187,7 @@ namespace NexusForever.Game.Account.Reward
             }
         }
 
-        private void SendUpdates()
+        private void SendUpdates(Func<bool> owns = null)
         {
             IPlayer currentActor = actor;
             IGameSession currentSession = account.Session;
@@ -169,7 +197,7 @@ namespace NexusForever.Game.Account.Reward
                 return;
             foreach (LoyaltyTrackDefinition definition in catalog.Tracks)
             {
-                if (!ReferenceEquals(currentState, state) || !ReferenceEquals(currentActor, actor)
+                if (owns?.Invoke() == false || !ReferenceEquals(currentState, state) || !ReferenceEquals(currentActor, actor)
                     || !ReferenceEquals(currentSession, account.Session)
                     || currentSession is NetworkSession { IsDisconnecting: true }
                     || presentation?.IsCurrent == false)

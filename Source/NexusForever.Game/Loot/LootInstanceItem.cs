@@ -453,12 +453,19 @@ namespace NexusForever.Game.Loot
             switch (Type)
             {
                 case LootItemType.AccountCurrency:
-                    player.Account.CurrencyManager.CurrencyAddAmount((AccountCurrencyType)StaticId, Amount);
+                    if (player is not Entity.Player currencyOwner || !currencyOwner.RetainCraftingAccountAward(Type, StaticId, Amount))
+                        player.Account.CurrencyManager.CurrencyAddAmount((AccountCurrencyType)StaticId, Amount);
                     AccountCurrencyAchievementUpdater.Update(player, (AccountCurrencyType)StaticId, Amount);
                     break;
                 case LootItemType.AccountItem:
-                    for (uint i = 0; i < Amount; i++)
-                        player.Account.InventoryManager.AddItem(StaticId);
+                    if (player is not Entity.Player itemOwner || !itemOwner.RetainCraftingAccountAward(Type, StaticId, Amount))
+                    {
+                        if (player.Account.InventoryManager is Account.Inventory.AccountInventoryManager inventory)
+                            inventory.AddLootItems(StaticId, Amount);
+                        else
+                            for (uint i = 0; i < Amount; i++)
+                                player.Account.InventoryManager.AddItem(StaticId);
+                    }
                     break;
                 case LootItemType.Cash:
                     player.CurrencyManager.CurrencyAddAmount((CurrencyType)StaticId, Amount, isLoot: true);

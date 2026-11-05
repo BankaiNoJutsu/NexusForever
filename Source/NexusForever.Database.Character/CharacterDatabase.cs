@@ -24,7 +24,7 @@ namespace NexusForever.Database.Character
         }
 
         /// <summary>Create an exclusively caller-owned context for a complete transaction.</summary>
-        public CharacterContext CreateContext() => new(config
+        public virtual CharacterContext CreateContext() => new(config
             ?? throw new InvalidOperationException("CharacterDatabase has not been initialized."));
 
         public async Task Save(Action<CharacterContext> action)

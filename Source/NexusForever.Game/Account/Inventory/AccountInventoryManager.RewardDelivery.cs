@@ -26,8 +26,10 @@ namespace NexusForever.Game.Account.Inventory
             }
         }
 
-        internal void AdoptCommittedPendingItems(IReadOnlyList<AccountPendingItemModel> rows)
+        internal void AdoptCommittedPendingItems(IReadOnlyList<AccountPendingItemModel> rows, Func<bool> owns = null)
         {
+            var session = account.Session;
+            if (owns?.Invoke() == false) return;
             lock (pendingGate)
             {
                 var affected = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -72,8 +74,11 @@ namespace NexusForever.Game.Account.Inventory
                     affected.Add(item.Group);
                 }
                 foreach (string group in affected)
-                    account.Session.EnqueueMessageEncrypted(new ServerAccountPendingItemGroupDelete { Value = group, Flag = true });
-                foreach (string group in affected) SendPendingGroupAdded(group);
+                {
+                    if (owns?.Invoke() == false) return;
+                    session.EnqueueMessageEncrypted(new ServerAccountPendingItemGroupDelete { Value = group, Flag = true });
+                }
+                foreach (string group in affected) SendPendingGroupAdded(group, session, owns);
             }
         }
     }

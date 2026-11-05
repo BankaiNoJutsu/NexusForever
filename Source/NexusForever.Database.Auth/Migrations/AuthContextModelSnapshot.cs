@@ -187,6 +187,47 @@ namespace NexusForever.Database.Auth.Migrations
                     b.ToTable("account_costume_unlock", (string)null);
                 });
 
+            modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountCraftingReceiptModel", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(32)
+                        .HasColumnType("char(32)")
+                        .HasColumnName("id");
+
+                    b.Property<uint>("AccountId")
+                        .HasColumnType("int(10) unsigned")
+                        .HasColumnName("accountId");
+
+                    b.Property<bool>("Cancelled")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("cancelled");
+
+                    b.Property<bool>("Completed")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("completed");
+
+                    b.Property<bool>("Delivered")
+                        .HasColumnType("tinyint(1)")
+                        .HasColumnName("delivered");
+
+                    b.Property<string>("PayloadJson")
+                        .IsRequired()
+                        .HasColumnType("longtext")
+                        .HasColumnName("payloadJson");
+
+                    b.Property<ushort>("RealmId")
+                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnName("realmId");
+
+                    b.HasKey("Id")
+                        .HasName("PRIMARY");
+
+                    b.HasIndex("AccountId", "RealmId", "Completed")
+                        .HasDatabaseName("IX_crafting_receipt_account");
+
+                    b.ToTable("account_crafting_receipt", (string)null);
+                });
+
             modelBuilder.Entity("NexusForever.Database.Auth.Model.AccountCurrencyModel", b =>
                 {
                     b.Property<uint>("Id")
@@ -772,6 +813,12 @@ namespace NexusForever.Database.Auth.Migrations
                         .HasColumnType("varchar(32)")
                         .HasDefaultValue("")
                         .HasColumnName("gameToken");
+
+                    b.Property<ulong>("NextInventoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasDefaultValue(1ul)
+                        .HasColumnName("nextInventoryId");
 
                     b.Property<ulong>("NextPendingItemId")
                         .ValueGeneratedOnAdd()

@@ -1736,6 +1736,7 @@ namespace NexusForever.Database.Auth
                     });
             });
 
+            ConfigureCraftingReceipts(modelBuilder);
             NexusForever.Database.EntityFramework.DatabaseModelBuilderExtensions.UseProviderCompatibility(modelBuilder, Database.ProviderName);
         }
     }

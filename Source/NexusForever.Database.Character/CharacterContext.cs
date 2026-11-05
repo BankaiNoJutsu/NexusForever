@@ -3352,6 +3352,7 @@ namespace NexusForever.Database.Character
 
             ConfigureRewardTracks(modelBuilder);
             ConfigureContractRewards(modelBuilder);
+            ConfigureCraftingAccounts(modelBuilder);
             ConfigureMarketplaceBids(modelBuilder);
             ConfigureBankReconciliation(modelBuilder);
             ConfigureRealmFirst(modelBuilder);

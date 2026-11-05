@@ -130,7 +130,8 @@ namespace NexusForever.Game.Account
             GenericUnlockManager  = new GenericUnlockManager(this, model, gameTableManager);
             CurrencyManager       = new AccountCurrencyManager(this, model, gameTableManager);
             EntitlementManager    = new AccountEntitlementManager(this, model, assetManager, gameTableManager);
-            InventoryManager      = new AccountInventoryManager(this, model, pendingAccountItemGroupDelivery, accountInventoryLog, characterManager, prerequisiteManager, itemManager, gameTableManager);
+            InventoryManager      = new AccountInventoryManager(this, model, pendingAccountItemGroupDelivery, accountInventoryLog, characterManager, prerequisiteManager, itemManager, gameTableManager,
+                databaseManager?.GetDatabase<AuthDatabase>());
             CostumeManager        = new AccountCostumeManager(this, model, gameTableManager);
             RewardPropertyManager        = new RewardPropertyManager(this, assetManager, gameTableManager);
             RewardRotationGrantManager   = new AccountRewardRotationGrantManager(this, model);

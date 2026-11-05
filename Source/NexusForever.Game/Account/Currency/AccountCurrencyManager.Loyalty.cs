@@ -84,6 +84,17 @@ namespace NexusForever.Game.Account.Currency
             if (changed && publish) SendAccountCurrencyUpdate(currency);
         }
 
+        internal void PublishCraftingCosmic(Func<bool> owns)
+        {
+            lock (currencyGate)
+            {
+                var session = account.Session;
+                if (!owns() || !currencies.TryGetValue(AccountCurrencyType.CosmicReward, out var wallet)) return;
+                SendCurrencyGrant(wallet, 0, session);
+                if (owns()) session.EnqueueMessageEncrypted(new Network.World.Message.Model.ServerWalletUpdate((uint)AccountCurrencyType.CosmicReward));
+            }
+        }
+
         public IAccountCurrencyMutationScope BeginMutationScope() => BeginScope(null, null, null, false);
 
         public IAccountCurrencyMutationScope BeginSourceConsumption(string sourceKey, ulong inventoryId, bool mayBeUnpersisted = false)

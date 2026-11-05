@@ -27,14 +27,14 @@ namespace NexusForever.Database.Auth
         }
 
         /// <summary>Create an exclusively caller-owned context for a complete transaction.</summary>
-        public AuthContext CreateContext() => new(config
+        public virtual AuthContext CreateContext() => new(config
             ?? throw new InvalidOperationException("AuthDatabase has not been initialized."));
 
         public async Task Save(Action<AuthContext> action)
         {
             await NexusForeverDiagnostics.MeasureDatabaseAsync("auth", nameof(Save), async () =>
             {
-                await using var context = new AuthContext(config);
+                await using var context = CreateContext();
                 action.Invoke(context);
                 await context.SaveChangesAsync();
             });

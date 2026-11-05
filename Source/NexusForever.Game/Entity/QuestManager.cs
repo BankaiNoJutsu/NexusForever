@@ -993,7 +993,7 @@ namespace NexusForever.Game.Entity
         internal bool CanStartTutorialQuestCompletion(Player owner) => !QuestCompletionBusy(owner);
 
         internal void SaveOrdinaryQuestMutation(Player owner, GameSession session, Func<bool> mutate, Action afterCommit,
-            Func<bool> ownsMutation = null)
+            Func<bool> ownsMutation = null, Action<Action> beforePublication = null)
         {
             var account = owner.Account;
             var events = session.Events;
@@ -1033,7 +1033,11 @@ namespace NexusForever.Game.Entity
                 if (changed)
                 {
                     session.CanProcessIncomingPackets = false;
-                    owner.Save(Publish);
+                    owner.Save(() =>
+                    {
+                        if (beforePublication == null) Publish();
+                        else beforePublication(Publish);
+                    });
                 }
                 else Publish();
             }

@@ -109,7 +109,7 @@ namespace NexusForever.Game.Account.Inventory
             AccountItemId = accountItemId;
             ForceSoulbind = forceSoulbind;
             this.claimState = claimState;
-            this.hasTargetPlayerIdentity = hasTargetPlayerIdentity || targetPlayerIdentity?.Id != 0ul;
+            this.hasTargetPlayerIdentity = hasTargetPlayerIdentity || targetPlayerIdentity?.Id is > 0ul;
 
             if (targetPlayerIdentity != null)
             {

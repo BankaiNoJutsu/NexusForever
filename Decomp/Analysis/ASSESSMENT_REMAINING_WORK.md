@@ -564,19 +564,29 @@ save and captured packet stream. Inventory/satchel costs and direct or generated
 Character item/cash output persist before success. The57-case scoped gate and12
 final crafting cases pass. Eleven baseline early-publication failures and a
 post-commit wallet replacement failure are reproduced and fixed. The full recipe
-settlement requirement remains open: generated account awards still use Auth
-before Character and need durable paired delivery/recovery. The later
+settlement requirement remains open; later steps supersede the original
+Auth-before-Character award path. The
 [virtual crafting publication](../../CURRENT_STATUS.md#committed-virtual-crafting-event-publication)
 step retains shared map-event effects until Character confirmation and guards
 the original session/map/admission. Seven early-publication failures are fixed.
 The owning build and42 affected crafting/loot cases pass; no full suite was run.
-A separate real-manager SQLite probe confirms the account defect: Character
-rollback leaves7 currency14 and1 account item1101 in Auth; its successful control
-passes. That negative remains open and is not part of the qualified virtual
-publication outcome. Continue paired account settlement,
-uncertain-outcome/restart handling, material/modifier validation and configured-
-provider/actual-table/socket/native qualification. Do not treat direct-item and
-Character-cash fixtures as proof for all loot/reward kinds or retail economics.
+The later
+[paired account settlement](../../CURRENT_STATUS.md#paired-crafting-account-settlement)
+fixes the real-manager rollback probe: generated account awards now follow a
+committed Character source, with idempotent Auth delivery, reserved item IDs,
+Cosmic/Loyalty earning and an admission cancellation fence. Both migration
+snapshots and SQLite upgrades are covered;138 affected and72 account-claim/
+Fortune controls pass, followed by83 focused context-review checks and the final29
+account cases after capacity review. The
+[portable summary](coverage/crafting-account-settlement-20261105.json) binds the
+final candidate and retained checks. These are source/SQLite outcomes, not
+configured-provider or retail closure.
+Continue configured MySQL qualification and autonomous paid-outbox processing
+without re-admission, then physical process/connection failure and backup/route/
+catalog migration. Shared virtual-effect replay, material/modifier validation,
+actual-table, crafting socket and native/retail qualification remain open. Keep
+the original rollback negative as superseded evidence rather than an open Source
+defect. Do not infer retail economics or full recipe completion from the fixtures.
 
 [Committed tradeskill publication](TRADESKILL_PUBLICATION.md) retains learning,
 archiving/reactivation, XP/talent, schematic and successful reset notices until
