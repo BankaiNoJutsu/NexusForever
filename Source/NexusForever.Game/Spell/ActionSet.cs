@@ -236,7 +236,7 @@ namespace NexusForever.Game.Spell
             log.Trace($"Removed shortcut {shortcut.ShortcutType} {shortcut.ObjectId} at {location} from action set {Index}.");
         }
 
-        private byte CalculateTierCost(byte tier)
+        internal static byte CalculateTierCost(byte tier)
         {
             if (tier > MaxTier)
                 throw new ArgumentOutOfRangeException();

@@ -161,6 +161,7 @@ namespace NexusForever.Game.Entity
             }
 
             activeActionSet = model.ActiveSpec;
+            InitialiseActionSetPublication();
         }
 
         public void Initialise()
@@ -482,12 +483,7 @@ namespace NexusForever.Game.Entity
             var unlockedSpell = new CharacterSpell(player, spellBaseInfo, tier, item, prerequisiteManager, globalSpellManager, gameTableManager) { CharacterSaveOwner = TrySaveExperience };
             if (!player.IsLoading)
             {
-                player.Session.EnqueueMessageEncrypted(new ServerSpellUpdate
-                {
-                    Spell4BaseId = spell4BaseId,
-                    TierIndex    = tier,
-                    Activated    = tier > 0
-                });
+                SendActionSetSpellUpdate(spell4BaseId, tier, 0);
             }
 
             spells.Add(spellBaseInfo.Entry.Id, unlockedSpell);
@@ -660,13 +656,7 @@ namespace NexusForever.Game.Entity
 
             if (!player.IsLoading)
             {
-                player.Session.EnqueueMessageEncrypted(new ServerSpellUpdate
-                {
-                    Spell4BaseId = spell4BaseId,
-                    TierIndex    = tier,
-                    SpecIndex    = actionSetIndex ?? 0,
-                    Activated    = tier > 0
-                });
+                SendActionSetSpellUpdate(spell4BaseId, tier, actionSetIndex ?? 0);
             }
         }
 
@@ -945,6 +935,7 @@ namespace NexusForever.Game.Entity
 
         public void SendServerSpellList()
         {
+            if (DeferActionSetInitial(ActionSetInitial.Book)) return;
             var serverAbilityBook = new ServerAbilityBook();
             foreach ((uint spell4BaseId, ICharacterSpell spell) in spells)
             {
@@ -973,6 +964,7 @@ namespace NexusForever.Game.Entity
 
         public void SendServerAbilityPoints()
         {
+            if (DeferActionSetInitial(ActionSetInitial.Points)) return;
             player.Session.EnqueueMessageEncrypted(new ServerAbilityPoints
             {
                 AbilityPoints      = actionSets[ActiveActionSet].TierPoints,
@@ -982,6 +974,7 @@ namespace NexusForever.Game.Entity
 
         private void SendServerActionSets()
         {
+            if (DeferActionSetInitial(ActionSetInitial.Sets)) return;
             for (byte i = 0; i < ActionSet.MaxActionSets; i++)
             {
                 IActionSet actionSet = GetActionSet(i);
@@ -991,6 +984,7 @@ namespace NexusForever.Game.Entity
 
         private void SendActiveActionSet()
         {
+            if (DeferActionSetInitial(ActionSetInitial.Active)) return;
             IActionSet actionSet = GetActionSet(ActiveActionSet);
             player.Session.EnqueueMessageEncrypted(new ServerActionSetClearCache());
             player.Session.EnqueueMessageEncrypted(actionSet.BuildServerActionSet());
@@ -998,6 +992,7 @@ namespace NexusForever.Game.Entity
 
         private void SendServerAmpLists()
         {
+            if (DeferActionSetInitial(ActionSetInitial.Amps)) return;
             for (byte i = 0; i < ActionSet.MaxActionSets; i++)
             {
                 IActionSet actionSet = GetActionSet(i);

@@ -1,13 +1,22 @@
 # Continue on another machine
 
+Latest LAS implementation: [confirmed public replies](Decomp/Analysis/ACTION_SET_PUBLICATION.md)
+bind the supported reply batch to the frozen Character spellbook and original
+World/account/session/epoch. Save rollback/uncertainty, later edits, no-op and
+fresh packet cursor retry pass16 focused/all252 affected cases;
+clean scoped builds and both final reviews pass. Broader AMP/combat mutation
+timing and native/provider/socket/retail gates remain. Continue the remaining
+guild-bank financial owner/recovery probe or independent progression/gameplay
+queue. No full suite/client/CUA ran and defaults are preserved.
+
 Latest Community implementation: [Service Token creation](Decomp/Analysis/COMMUNITY_TOKEN_CREATION.md)
 binds admitted durable Auth debit to the sealed full Character/guild/residence/
 plot graph, with compensation before retry and admission recovery.17 new token/
 278 affected cases, clean owning/test-only builds and both final reviews pass.
 The two executed route/SQL-owner negatives are fixed. Existing credit/free/admin
 and vendor/CREDD controls pass. Provider/physical/autonomous/actual-table/runtime/
-native/retail remain open. Continue LAS's public save/actor probe and broader
-roadmap work; no full suite/client/CUA ran and defaults are preserved.
+native/retail remain open. The later LAS result above supersedes its public
+save/actor probe; continue broader roadmap work without repeating these slices.
 
 Latest Community implementation: [public credit creation finance](Decomp/Analysis/COMMUNITY_CREATION_FINANCE.md)
 settles the accepted fee, guild/ranks/leader affiliation and complete residence/

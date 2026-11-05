@@ -1,0 +1,348 @@
+{
+  "date": "2026-11-05",
+  "milestone": "Confirmed public LAS reply batches on the original Character/World owner",
+  "sourceBaselineCommit": "8ab6ce34897ed1fce62862a90ef7bf514aab27d9",
+  "publicationParent": "8ab6ce34897ed1fce62862a90ef7bf514aab27d9",
+  "sourceFiles": [
+    {
+      "path": "Source/NexusForever.Game/Entity/ExperiencePersistence.cs",
+      "sha256": "36e085fe373b700717ff89b253d9bfc3871f869bae5c2a406dd2a69dcf0776f7",
+      "gitBlob": "67c0ee9aa66e2c50e9f7bf47d32c3227ea890371"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/Player.ExperiencePersistence.cs",
+      "sha256": "92b5c08768143dfd088a151c691d24f555eab44820a49d7a31912ba06e3c158a",
+      "gitBlob": "62907e833f83941538533563f2bde3d0fdae3add"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/SpellManager.cs",
+      "sha256": "a2be69e2654332ba9de8f1cc11349199dba495975bdd769d0f12df0598aa19e8",
+      "gitBlob": "9378f137e0ff073aeae7fd300ba708a0199d138e"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/SpellManager.ActionSetPublication.cs",
+      "sha256": "68dd7b318450878ccdf1e4b8c25537931d15d2560ed7e29291694e9959316485",
+      "gitBlob": "3f0e10554c68ad0379afac73c421b5037b4a0ddf"
+    },
+    {
+      "path": "Source/NexusForever.Game/Spell/ActionSet.cs",
+      "sha256": "f52a6401e2f69dbd756b3815729b83994733475d8e0d67a2bc18fe127f89fb74",
+      "gitBlob": "7f999d8eac645cbc9407d90c693bc86655bbd485"
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/Network/Message/Handler/Spell/ClientRequestActionSetChangesHandler.cs",
+      "sha256": "8c05c1714fd80eb7271b91880aa5521c335e8f187a370c9e96d0fc969c527bf9",
+      "gitBlob": "0123f8877ac9ecbe55839b4d1e289d76956d7739"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Spell/ActionSetPublicationTests.cs",
+      "sha256": "177dc3848b1ed45f3d631722e6fd351d973b29fc846f110ac025600cf930d105",
+      "gitBlob": "333094766557ca22702b55a2f5f14bc8e003a033"
+    }
+  ],
+  "assemblies": {
+    "Source/NexusForever.Game/bin/Debug/net10.0/NexusForever.Game.dll": "92973012310975c06625520e7e790338927710adf5e5b333cd13f200d98d44c4",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.dll": "92973012310975c06625520e7e790338927710adf5e5b333cd13f200d98d44c4",
+    "Source/NexusForever.WorldServer/bin/Debug/net10.0/NexusForever.WorldServer.dll": "16e2f78913c3f1374309499929d52ab9687b164d893ef899eaf7c702f273ac0b",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.WorldServer.dll": "16e2f78913c3f1374309499929d52ab9687b164d893ef899eaf7c702f273ac0b",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll": "0dd5d5149b6ba59c361709c2f4820bd17a5abfc816678a800bc2ba0450288600"
+  },
+  "baseline": {
+    "path": "artifacts/continuation-20261105/action-set-publication/baseline.trx",
+    "sha256": "8a403395e6d5a5057afb317c2ce7e5030fe14fabf615d69816887300c3f53a1c",
+    "counters": {
+      "total": "3",
+      "executed": "3",
+      "passed": "0",
+      "failed": "3",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "groups": {
+      "ActionSetPublicationTests": {
+        "Failed": 3
+      }
+    },
+    "nonPassing": [
+      {
+        "test": "NexusForever.Game.Tests.Spell.ActionSetPublicationTests.ReentrantPlayerReplacementStopsLaterPacketsOfTheOriginalActionSet",
+        "outcome": "Failed",
+        "message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [ServerActionSet { Actions = [Action { Location = ItemLocation { \u00b7\u00b7\u00b7 }, ObjectId = 0, ShortcutType = None }, Action { Location = ItemLocation { \u00b7\u00b7\u00b7 }, ObjectId = 0, ShortcutType = None }, Action { Location = ItemLocation { \u00b7\u00b7\u00b7 }, ObjectId = 0, ShortcutType = None }, Action { Location = ItemLocation { \u00b7\u00b7\u00b7 }, ObjectId = 0, ShortcutType = "
+      },
+      {
+        "test": "NexusForever.Game.Tests.Spell.ActionSetPublicationTests.RejectedPublicActionSetSaveRetainsItsIntentAndPublishesOnlyAfterRetry",
+        "outcome": "Failed",
+        "message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [ServerActionSet { Actions = [Action { Location = ItemLocation { \u00b7\u00b7\u00b7 }, ObjectId = 0, ShortcutType = None }, Action { Location = ItemLocation { \u00b7\u00b7\u00b7 }, ObjectId = 0, ShortcutType = None }, Action { Location = ItemLocation { \u00b7\u00b7\u00b7 }, ObjectId = 0, ShortcutType = None }, Action { Location = ItemLocation { \u00b7\u00b7\u00b7 }, ObjectId = 0, ShortcutType = "
+      },
+      {
+        "test": "NexusForever.Game.Tests.Spell.ActionSetPublicationTests.PublicActionSetRequestDoesNotPublishItsUncommittedShortcuts",
+        "outcome": "Failed",
+        "message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [ServerActionSet { Actions = [Action { Location = ItemLocation { \u00b7\u00b7\u00b7 }, ObjectId = 0, ShortcutType = None }, Action { Location = ItemLocation { \u00b7\u00b7\u00b7 }, ObjectId = 0, ShortcutType = None }, Action { Location = ItemLocation { \u00b7\u00b7\u00b7 }, ObjectId = 0, ShortcutType = None }, Action { Location = ItemLocation { \u00b7\u00b7\u00b7 }, ObjectId = 0, ShortcutType = "
+      }
+    ]
+  },
+  "reviewNoOpAndFixtureFailures": {
+    "path": "artifacts/continuation-20261105/action-set-publication/expanded-before-noop-fix.trx",
+    "sha256": "be968e8f583e422e2e12c8c3c546322740806f9070cd78cf49f5ae551aa81ea3",
+    "counters": {
+      "total": "12",
+      "executed": "12",
+      "passed": "6",
+      "failed": "6",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "groups": {
+      "ActionSetPublicationTests": {
+        "Failed": 6,
+        "Passed": 6
+      }
+    },
+    "nonPassing": [
+      {
+        "test": "NexusForever.Game.Tests.Spell.ActionSetPublicationTests.InitialViewDuringUnsavedChangesUsesTheConfirmedBook",
+        "outcome": "Failed",
+        "message": "System.ArgumentException : Field '<EldanAugmentation>k__BackingField' defined on type 'NexusForever.GameTable.GameTableManager' is not a field on the target object which is of type 'generatedProxy_3'."
+      },
+      {
+        "test": "NexusForever.Game.Tests.Spell.ActionSetPublicationTests.AcceptedNoOpPublishesWithoutRequiringAnUnrelatedSqlEdit",
+        "outcome": "Failed",
+        "message": "Assert.Equal() Failure: Values differ\r\nExpected: 2\r\nActual:   1"
+      },
+      {
+        "test": "NexusForever.Game.Tests.Spell.ActionSetPublicationTests.RejectedMutablePacketRetriesFreshWithoutReplayingEarlierPacketsOrSql",
+        "outcome": "Failed",
+        "message": "System.ArgumentException : Field '<EldanAugmentation>k__BackingField' defined on type 'NexusForever.GameTable.GameTableManager' is not a field on the target object which is of type 'generatedProxy_3'."
+      },
+      {
+        "test": "NexusForever.Game.Tests.Spell.ActionSetPublicationTests.FrozenNormalSaveDoesNotPublishOrConsumeALaterRequest",
+        "outcome": "Failed",
+        "message": "System.ArgumentException : Field '<EldanAugmentation>k__BackingField' defined on type 'NexusForever.GameTable.GameTableManager' is not a field on the target object which is of type 'generatedProxy_3'."
+      },
+      {
+        "test": "NexusForever.Game.Tests.Spell.ActionSetPublicationTests.CoalescedRequestsPublishOnlyTheFinalCommittedTier",
+        "outcome": "Failed",
+        "message": "System.ArgumentException : Field '<EldanAugmentation>k__BackingField' defined on type 'NexusForever.GameTable.GameTableManager' is not a field on the target object which is of type 'generatedProxy_3'."
+      },
+      {
+        "test": "NexusForever.Game.Tests.Spell.ActionSetPublicationTests.TierAmpAndSelectedVirtualItemRepliesFollowTheirConfirmedRows",
+        "outcome": "Failed",
+        "message": "System.ArgumentException : Field '<EldanAugmentation>k__BackingField' defined on type 'NexusForever.GameTable.GameTableManager' is not a field on the target object which is of type 'generatedProxy_3'."
+      }
+    ]
+  },
+  "correctedExpanded": {
+    "path": "artifacts/continuation-20261105/action-set-publication/expanded-candidate.trx",
+    "sha256": "c03308cc1405a3128113e33f82e30bfe09f2b2e0534af29dc264ae8ca9e853ea",
+    "counters": {
+      "total": "12",
+      "executed": "12",
+      "passed": "12",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "groups": {
+      "ActionSetPublicationTests": {
+        "Passed": 12
+      }
+    },
+    "nonPassing": []
+  },
+  "focused": {
+    "path": "artifacts/continuation-20261105/action-set-publication/final-focused.trx",
+    "sha256": "882f072549d057182c0d60d526e8194f5b0e0dd5a8c6e91575e17854500204e4",
+    "counters": {
+      "total": "16",
+      "executed": "16",
+      "passed": "16",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "groups": {
+      "ActionSetPublicationTests": {
+        "Passed": 16
+      }
+    },
+    "nonPassing": []
+  },
+  "affected": {
+    "path": "artifacts/continuation-20261105/action-set-publication/final-affected.trx",
+    "sha256": "2d0fed0b46e4bbed72023ddd6fde8a42fe2c90abcfb1ad4fea1d43cd1b7e4bf9",
+    "counters": {
+      "total": "252",
+      "executed": "252",
+      "passed": "252",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "groups": {
+      "RewardNormalSaveSnapshotTests": {
+        "Passed": 55
+      },
+      "ActionSetAmpTests": {
+        "Passed": 7
+      },
+      "PlayerExperiencePersistenceTests": {
+        "Passed": 51
+      },
+      "AmpLifecycleTests": {
+        "Passed": 36
+      },
+      "ActionSetSaveRequestTests": {
+        "Passed": 21
+      },
+      "AmpTableAugmentationTests": {
+        "Passed": 26
+      },
+      "ActionSetPublicationTests": {
+        "Passed": 16
+      },
+      "CharacterAtomicSaveTests": {
+        "Passed": 20
+      },
+      "SpellManagerGrantSpellsTests": {
+        "Passed": 3
+      },
+      "ActionSetPacketShapeTests": {
+        "Passed": 7
+      },
+      "ActionSetUnresolvedPacketShapeTests": {
+        "Passed": 8
+      },
+      "ReputationManagerTests": {
+        "Passed": 2
+      }
+    },
+    "nonPassing": []
+  },
+  "affectedFilter": "FullyQualifiedName~ActionSetPublicationTests|FullyQualifiedName~ActionSetSaveRequestTests|FullyQualifiedName~ActionSetAmpTests|FullyQualifiedName~ActionSetPacketShapeTests|FullyQualifiedName~ActionSetUnresolvedPacketShapeTests|FullyQualifiedName~SpellManagerGrantSpellsTests|FullyQualifiedName~AmpLifecycleTests|FullyQualifiedName~AmpTableAugmentationTests|FullyQualifiedName~PlayerExperiencePersistenceTests|FullyQualifiedName~RewardNormalSaveSnapshotTests|FullyQualifiedName~CharacterAtomicSaveTests|FullyQualifiedName~ReputationManagerTests",
+  "artifacts": [
+    {
+      "path": "artifacts/continuation-20261105/action-set-publication/baseline-build.log",
+      "sha256": "ef95d902d3b59e4a0c807109ae882e764ade7481f269d2153b9d97eaf96fe50d"
+    },
+    {
+      "path": "artifacts/continuation-20261105/action-set-publication/baseline-tests.log",
+      "sha256": "0d3463f8939117525af8630db74813d2da7b09a7fe4f0997a804fde1f3088bb5"
+    },
+    {
+      "path": "artifacts/continuation-20261105/action-set-publication/owning-build.log",
+      "sha256": "9a0129043ff45e7bf1336c2132b38aa1d6b825f09b8511a8ac6ef01efb752cfb"
+    },
+    {
+      "path": "artifacts/continuation-20261105/action-set-publication/candidate-owning-build.log",
+      "sha256": "eee19ca9f0851d19b8de95828667d2355413e6469d2312a53847b1d6aa491303"
+    },
+    {
+      "path": "artifacts/continuation-20261105/action-set-publication/candidate-test-build.log",
+      "sha256": "dd9a7e47fcf8acb143726311f5dbc722c8214ea98e8f87a9686d6e37060239ae"
+    },
+    {
+      "path": "artifacts/continuation-20261105/action-set-publication/expanded-owning-build.log",
+      "sha256": "e2841f2739c8da7eec3a72aab3c112370908c7e53b569867ac9c100952e14af1"
+    },
+    {
+      "path": "artifacts/continuation-20261105/action-set-publication/final-test-build.log",
+      "sha256": "6cd5709ab21adcfd6a31f683c3c4bae8463acc3819641e2aa6e457b966368e6b"
+    },
+    {
+      "path": "artifacts/continuation-20261105/action-set-publication/final-focused-tests.log",
+      "sha256": "401b00a30fb5272f27c31bf85d8c85cce7976f83db09be1dcfbf05286f16d114"
+    },
+    {
+      "path": "artifacts/continuation-20261105/action-set-publication/final-affected-tests.log",
+      "sha256": "76310604d97d90733f10df55217e0e9f211e2f7fac62753f6b53b082fcab3d0c"
+    },
+    {
+      "path": "artifacts/continuation-20261105/action-set-publication/reviews.md",
+      "sha256": "713a337b23ba1ac1fc58fee9596109736535e897917af00e0359e87a80981098"
+    },
+    {
+      "path": "artifacts/continuation-20261105/action-set-publication/upstream-refresh.json",
+      "sha256": "da799e67862e0acae010020f5c7186281b073fabf708b91aae3026dae430e215"
+    }
+  ],
+  "reviews": {
+    "Standards": {
+      "initial": 0,
+      "finalMaterial": 0
+    },
+    "Spec": {
+      "initial": 1,
+      "finalMaterial": 0,
+      "fixed": "Accepted no-op ownership sequence was absent from persistence early return"
+    }
+  },
+  "upstreamRefresh": {
+    "latestAllStatePulls": 20,
+    "changedHeadsBasesStatesOrMergeStates": 0,
+    "pr608": "open",
+    "pr609": "closed-unmerged"
+  },
+  "qualification": "Real public handler, Player, SpellManager, original World EventQueue and disposable Character SQLite; acknowledged enqueue is not socket delivery",
+  "remaining": [
+    "Broader AMP spell/casting/property/combat mutation timing",
+    "Native UpdateSpellInProgress/failure writers and retail asynchronous ordering",
+    "Configured-provider/copied-upgrade and actual-table qualification",
+    "Physical process restart, socket/deployment/native/retail"
+  ],
+  "notes": [
+    "Baseline owning outputs were unchanged from the parent milestone; this slice did not retain a separate baseline DLL copy.",
+    "The intermediate expanded record contains one executed no-op defect and five table-fixture setup failures, not six production defects.",
+    "The first candidate owning build failed because extracted ApplyChanges was static; corrected to its original instance dependency before tests.",
+    "No schema change, synthetic in-progress gate, new entitlement grant, full solution/suite, native client or Computer Use execution."
+  ]
+}

@@ -1,5 +1,13 @@
 # NexusForever Feature Restoration - Current Status
 
+[Confirmed public LAS replies](Decomp/Analysis/ACTION_SET_PUBLICATION.md) now
+wait for the original frozen Character spellbook acknowledgement. Save rollback,
+lost acknowledgement, later edits, no-op requests, packet retry and replacement
+owners pass16 new focused/all252 affected cases, clean scoped
+builds and both final reviews. The supported reply slice is implemented;
+initialized AMP combat/property timing, native async ordering and current
+provider/socket/retail qualification remain open. F-021 stays partial.
+
 [Community Service Token creation](Decomp/Analysis/COMMUNITY_TOKEN_CREATION.md)
 now uses a durable Auth payment bound to the complete Character creation receipt,
 with compensation/retry, admission recovery and original-actor wallet/success
@@ -22349,6 +22357,9 @@ Focused context-token verification passed 32/32 from an isolated artifacts
 directory.
 
 ### F-021 - Action Set / LAS / AMP / Attributes - PARTIAL (blocked)
+The later [public committed-reply milestone](Decomp/Analysis/ACTION_SET_PUBLICATION.md)
+completes the Source save/retry/actor probe for the supported LAS reply batch.
+It does not qualify initialized AMP/combat mutation timing or the native async model.
 LAS size/spec/tier/AMP preflight checks exist. `UpdateSpellInProgress`,
 async spell update transaction, authoritative attribute allocation,
 action-bar lock state incomplete. Needs decomp.
