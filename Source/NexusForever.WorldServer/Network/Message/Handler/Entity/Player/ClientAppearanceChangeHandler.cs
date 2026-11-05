@@ -27,34 +27,43 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
 
         public void HandleMessage(IWorldSession session, ClientCharacterAppearanceChange appearanceChange)
         {
+            var player = session.Player;
+            var account = player.Account; var events = session.Events; var identity = player.Identity;
+            uint accountId = account.Id; var realm = identity?.RealmId;
+            var appearance = player.AppearanceManager;
+            var credits = player.CurrencyManager;
+            var tokens = account.CurrencyManager;
+            ulong character = player.CharacterId, epoch = account.WorldSessionEpoch;
+            var race = appearanceChange.Race; var sex = appearanceChange.Sex;
+            bool useTokens = appearanceChange.UseServiceTokens;
             List<(uint Label, uint Value)> customisations = appearanceChange.Labels
-                .Zip(appearanceChange.Values, ValueTuple.Create)
-                .ToList();
+                .Zip(appearanceChange.Values, ValueTuple.Create).ToList();
+            var bones = appearanceChange.Bones?.ToList();
+            bool Current() => ReferenceEquals(session.Player, player) && player.CharacterId == character
+                && ReferenceEquals(player.Session, session) && ReferenceEquals(account.Session, session) && ReferenceEquals(session.Events, events)
+                && account.Id == accountId && ReferenceEquals(player.Identity, identity) && player.Identity?.RealmId == realm
+                && ReferenceEquals(player.Account, account) && account.WorldSessionEpoch == epoch
+                && ReferenceEquals(player.AppearanceManager, appearance) && ReferenceEquals(player.CurrencyManager, credits)
+                && ReferenceEquals(account.CurrencyManager, tokens);
 
-            if (!AppearanceManager.IsValidInput(customisations, appearanceChange.Bones))
+            if (!AppearanceManager.IsValidInput(customisations, bones))
                 throw new InvalidPacketValueException();
-
-            if (!customisationManager.Validate(appearanceChange.Race, appearanceChange.Sex, session.Player.Faction1, customisations))
+            if (!customisationManager.Validate(race, sex, player.Faction1, customisations.ToList()))
                 throw new InvalidPacketValueException();
-
-            if (appearanceChange.UseServiceTokens)
+            if (!Current()) return;
+            uint cost = useTokens ? customisationManager.CalculateCostTokens(player, race, sex)
+                : customisationManager.CalculateCostCredits(player, race, sex, customisations.ToList(), bones.ToList());
+            if (!Current()) return;
+            bool affordable = useTokens ? tokens.CanAfford(AccountCurrencyType.ServiceToken, cost) : credits.CanAfford(CurrencyType.Credits, cost);
+            if (!Current() || !affordable) return;
+            if (player is NexusForever.Game.Entity.Player && appearance is AppearanceManager concrete)
             {
-                uint cost = customisationManager.CalculateCostTokens(session.Player, appearanceChange.Race, appearanceChange.Sex);
-                if (!session.Player.Account.CurrencyManager.CanAfford(AccountCurrencyType.ServiceToken, cost))
-                    return;
-
-                session.Player.Account.CurrencyManager.CurrencySubtractAmount(AccountCurrencyType.ServiceToken, cost);
+                concrete.RequestPaidChange(race, sex, customisations, bones, useTokens, cost);
+                return;
             }
-            else
-            {
-                uint cost = customisationManager.CalculateCostCredits(session.Player, appearanceChange.Race, appearanceChange.Sex, customisations, appearanceChange.Bones);
-                if (!session.Player.CurrencyManager.CanAfford(CurrencyType.Credits, cost))
-                    return;
-
-                session.Player.CurrencyManager.CurrencySubtractAmount(CurrencyType.Credits, cost);
-            }
-
-            session.Player.AppearanceManager.Update(appearanceChange.Race, appearanceChange.Sex, customisations, appearanceChange.Bones);
+            if (useTokens) tokens.CurrencySubtractAmount(AccountCurrencyType.ServiceToken, cost);
+            else credits.CurrencySubtractAmount(CurrencyType.Credits, cost);
+            if (Current()) appearance.Update(race, sex, customisations, bones);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
@@ -25,6 +25,7 @@ namespace NexusForever.Game.Entity
             get => boneValue;
             set
             {
+                mutationAllowed?.Invoke();
                 if (boneValue != value)
                 {
                     boneValue = value;
@@ -34,6 +35,8 @@ namespace NexusForever.Game.Entity
         }
         private float boneValue;
 
+        private readonly Action mutationAllowed;
+
         public bool PendingDelete => (saveMask & BoneSaveMask.Delete) != 0;
 
         private BoneSaveMask saveMask;
@@ -41,8 +44,11 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Create a new <see cref="IBone"/> from database model.
         /// </summary>
-        public Bone(CharacterBoneModel model)
+        public Bone(CharacterBoneModel model) : this(model, null) { }
+
+        internal Bone(CharacterBoneModel model, Action mutationAllowed)
         {
+            this.mutationAllowed = mutationAllowed;
             Owner     = model.Id;
             BoneIndex = model.BoneIndex;
             boneValue = model.Bone;
@@ -53,8 +59,11 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Create a new <see cref="IBone"/> from supplied data.
         /// </summary>
-        public Bone(ulong characterId, byte boneIndex, float value)
+        public Bone(ulong characterId, byte boneIndex, float value) : this(characterId, boneIndex, value, null) { }
+
+        internal Bone(ulong characterId, byte boneIndex, float value, Action mutationAllowed)
         {
+            this.mutationAllowed = mutationAllowed;
             Owner     = characterId;
             BoneIndex = boneIndex;
             boneValue = value;
@@ -96,6 +105,7 @@ namespace NexusForever.Game.Entity
 
         public void Delete()
         {
+            mutationAllowed?.Invoke();
             if ((saveMask & BoneSaveMask.Create) != 0)
                 saveMask = BoneSaveMask.None;
             else

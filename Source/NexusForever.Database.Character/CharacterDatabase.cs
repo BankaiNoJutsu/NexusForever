@@ -56,6 +56,9 @@ namespace NexusForever.Database.Character
         public virtual Task SaveResourceConversionReconciliation(ulong characterId, Action<CharacterContext> action, ResourceConversionSaveReconciliation receipt)
             => CharacterAtomicSave.ExecuteResourceConversionReconciliation(CreateContext, characterId, action, receipt);
 
+        public virtual Task SaveAppearanceChangeReconciliation(ulong characterId, Action<CharacterContext> action, AppearanceChangeSaveReconciliation receipt)
+            => CharacterAtomicSave.ExecuteAppearanceChangeReconciliation(CreateContext, characterId, action, receipt);
+
         public virtual Task SavePublicEventQuestReconciliation(ulong characterId, Action<CharacterContext> action, PublicEventQuestSaveReconciliation receipt)
             => CharacterAtomicSave.ExecutePublicEventQuestReconciliation(CreateContext, characterId, action, receipt);
 

@@ -203,6 +203,7 @@ namespace NexusForever.Game.Entity
             get => sex;
             set
             {
+                (AppearanceManager as AppearanceManager)?.AssertAppearanceMutationAllowed();
                 sex = value;
                 saveMask |= PlayerSaveMask.Sex;
 
@@ -217,6 +218,7 @@ namespace NexusForever.Game.Entity
             get => race;
             set
             {
+                (AppearanceManager as AppearanceManager)?.AssertAppearanceMutationAllowed();
                 race = value;
                 saveMask |= PlayerSaveMask.Race;
 
@@ -1172,6 +1174,11 @@ namespace NexusForever.Game.Entity
 
         private Task SaveCharacterUnit(NormalRewardSave snapshot, OrdinaryCharacterSaveReconciliation recoveryReceipt = null)
         {
+            if (snapshot?.HousingReceipt is AppearanceChangeSaveReconciliation appearanceChange)
+                return GetCharacterDatabase().SaveAppearanceChangeReconciliation(CharacterId, context =>
+                {
+                    SaveCharacter(context, snapshot); housingNameActor.StageNames(context);
+                }, appearanceChange);
             if (snapshot?.HousingReceipt is CommunityCreationSaveReconciliation communityCreation)
                 return GetCharacterDatabase().SaveCommunityCreationReconciliation(CharacterId, context =>
                 {

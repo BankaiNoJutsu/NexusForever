@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
@@ -25,6 +25,7 @@ namespace NexusForever.Game.Entity
             get => value;
             set
             {
+                mutationAllowed?.Invoke();
                 if (this.value != value)
                 {
                     this.value = value;
@@ -34,6 +35,8 @@ namespace NexusForever.Game.Entity
         }
         private uint value;
 
+        private readonly Action mutationAllowed;
+
         public bool PendingDelete => (saveMask & CustomisationSaveMask.Delete) != 0;
 
         private CustomisationSaveMask saveMask;
@@ -41,8 +44,11 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Create a new <see cref="ICustomisation"/> from database model.
         /// </summary>
-        public Customisation(CharacterCustomisationModel model)
+        public Customisation(CharacterCustomisationModel model) : this(model, null) { }
+
+        internal Customisation(CharacterCustomisationModel model, Action mutationAllowed)
         {
+            this.mutationAllowed = mutationAllowed;
             CharacterId = model.Id;
             Label       = model.Label;
             value       = model.Value;
@@ -53,8 +59,11 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Create a new <see cref="ICustomisation"/> from supplied data.
         /// </summary>
-        public Customisation(ulong characterId, uint label, uint value)
+        public Customisation(ulong characterId, uint label, uint value) : this(characterId, label, value, null) { }
+
+        internal Customisation(ulong characterId, uint label, uint value, Action mutationAllowed)
         {
+            this.mutationAllowed = mutationAllowed;
             CharacterId = characterId;
             Label       = label;
             this.value  = value;
@@ -96,6 +105,7 @@ namespace NexusForever.Game.Entity
 
         public void Delete()
         {
+            mutationAllowed?.Invoke();
             if ((saveMask & CustomisationSaveMask.Create) != 0)
                 saveMask = CustomisationSaveMask.None;
             else

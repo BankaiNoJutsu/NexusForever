@@ -1,5 +1,14 @@
 # Client Binary Decompile Continuation Guide
 
+[Confirmed appearance settlement](APPEARANCE_CHANGE_SETTLEMENT.md) now binds
+public Credits/Service Token fees to the complete Character graph and retains
+compensation, admission recovery and original confirmed notices. Four baseline
+and three review negatives are fixed;40 new/65 final appearance cases, clean
+scoped builds and both reviews pass. Earlier267 unchanged financial/save controls
+remain valid on their recorded candidate. Actual catalogs, configured providers/
+copied-upgrade, physical restart, deployed sockets and native/retail remain open.
+Continue independent work with client/CUA stopped.
+
 [Primal Matrix allocation rules](PRIMAL_MATRIX_NATIVE_CONTRACT_2026_11_05.md#allocation-rule-follow-through)
 now have exact-build hex/starter/state, class-column and reward-enum/float
 preview evidence.14 full bodies/nine data anchors match the PE. Affordability

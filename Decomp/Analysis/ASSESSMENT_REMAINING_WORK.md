@@ -1,5 +1,16 @@
 # Assessment follow-through goal
 
+[Confirmed appearance settlement](APPEARANCE_CHANGE_SETTLEMENT.md) completes the
+real parsed public Credits AND Service Token fee, full Character appearance
+replacement, rejection/compensation/admission recovery and original committed
+publication in Source/SQLite. Four baseline and three review negatives are
+fixed;40 new/65 final appearance cases pass.267 unchanged cross-feature controls
+retain the earlier329-case gate;332 is the union across identified candidates.
+Clean scoped builds and both final reviews pass. F-026 remains partial: actual
+catalogs/costs, fresh configured MySQL/copied-upgrade, physical interruption/
+restart, deployment/socket and native/retail stay open. Preserve concurrent
+work and continue the broader actionable gameplay/progression queue.
+
 [Malformed appearance admission](APPEARANCE_CHANGE_ADMISSION.md) completes the
 parsed public Credits/Service Token and direct-manager structural input gate.
 Fifteen baseline failures are fixed; eight public observations retain the

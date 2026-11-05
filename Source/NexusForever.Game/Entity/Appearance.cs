@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
@@ -26,6 +26,7 @@ namespace NexusForever.Game.Entity
             get => displayId;
             set
             {
+                mutationAllowed?.Invoke();
                 if (displayId != value)
                 {
                     displayId = value;
@@ -35,6 +36,8 @@ namespace NexusForever.Game.Entity
         }
         private ushort displayId;
 
+        private readonly Action mutationAllowed;
+
         public bool PendingDelete => (saveMask & AppearanceSaveMask.Delete) != 0;
 
         private AppearanceSaveMask saveMask;
@@ -42,8 +45,11 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Create a new <see cref="IAppearance"/> from database model.
         /// </summary>
-        public Appearance(CharacterAppearanceModel model)
+        public Appearance(CharacterAppearanceModel model) : this(model, null) { }
+
+        internal Appearance(CharacterAppearanceModel model, Action mutationAllowed)
         {
+            this.mutationAllowed = mutationAllowed;
             Owner     = model.Id;
             ItemSlot  = (ItemSlot)model.Slot;
             displayId = model.DisplayId;
@@ -54,8 +60,11 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// Create a new <see cref="IAppearance"/> from supplied data.
         /// </summary>
-        public Appearance(ulong characterId, ItemSlot itemSlot, ushort displayId)
+        public Appearance(ulong characterId, ItemSlot itemSlot, ushort displayId) : this(characterId, itemSlot, displayId, null) { }
+
+        internal Appearance(ulong characterId, ItemSlot itemSlot, ushort displayId, Action mutationAllowed)
         {
+            this.mutationAllowed = mutationAllowed;
             Owner          = characterId;
             ItemSlot       = itemSlot;
             this.displayId = displayId;
@@ -97,6 +106,7 @@ namespace NexusForever.Game.Entity
 
         public void Delete()
         {
+            mutationAllowed?.Invoke();
             if ((saveMask & AppearanceSaveMask.Create) != 0)
                 saveMask = AppearanceSaveMask.None;
             else

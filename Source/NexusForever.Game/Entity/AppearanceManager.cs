@@ -8,7 +8,7 @@ using NexusForever.Network.World.Message.Model;
 
 namespace NexusForever.Game.Entity
 {
-    public class AppearanceManager : IAppearanceManager
+    public partial class AppearanceManager : IAppearanceManager
     {
         private readonly Dictionary</*label*/uint, ICustomisation> characterCustomisations = new();
         private readonly Dictionary<ItemSlot, IAppearance> characterAppearances = new();
@@ -31,24 +31,37 @@ namespace NexusForever.Game.Entity
         {
             owner = player;
             this.customisationManager = customisationManager;
+            confirmedAppearance = AppearanceChangeState.FromModel(model);
 
             foreach (CharacterAppearanceModel characterAppearance in model.Appearance)
             {
-                IAppearance appearance = new Appearance(characterAppearance);
+                IAppearance appearance = new Appearance(characterAppearance, AssertAppearanceMutationAllowed);
                 characterAppearances.Add((ItemSlot)characterAppearance.Slot, appearance);
 
                 owner.AddVisual(appearance.ItemSlot, appearance.DisplayId);
             }
 
             foreach (CharacterCustomisationModel characterCustomisation in model.Customisation)
-                characterCustomisations.Add(characterCustomisation.Label, new Customisation(characterCustomisation));
+                characterCustomisations.Add(characterCustomisation.Label, new Customisation(characterCustomisation, AssertAppearanceMutationAllowed));
 
             foreach (CharacterBoneModel bone in model.Bone.OrderBy(bone => bone.BoneIndex))
-                characterBones.Add(bone.BoneIndex, new Bone(bone));
+                characterBones.Add(bone.BoneIndex, new Bone(bone, AssertAppearanceMutationAllowed));
         }
 
         public void Save(CharacterContext context)
         {
+            if (paidChange?.HasActor == true && !paidChange.CanSave)
+                throw new InvalidOperationException("Appearance belongs to its original paid save.");
+            if (paidChange?.HasActor == true)
+            {
+                paidChange.StageAppearance(context);
+                return;
+            }
+            var saved = new AppearanceChangeState((byte)owner.Race, (byte)owner.Sex,
+                characterAppearances.Values.Select(row => new AppearanceChangeState.Visual((byte)row.ItemSlot, row.DisplayId)).OrderBy(row => row.Slot).ToArray(),
+                characterCustomisations.Values.Select(row => new AppearanceChangeState.Choice(row.Label, row.Value)).OrderBy(row => row.Label).ToArray(),
+                characterBones.Values.Select(row => new AppearanceChangeState.Shape(row.BoneIndex, row.BoneValue)).OrderBy(row => row.Index).ToArray());
+            context.OnSaveCompleted(committed => { if (committed) confirmedAppearance = saved; });
             foreach (IAppearance characterAppearance in deletedCharacterAppearances)
                 characterAppearance.Save(context);
             foreach (IBone characterBone in deletedCharacterBones)
@@ -101,6 +114,7 @@ namespace NexusForever.Game.Entity
         /// </remarks>
         public void Update(Race race, Sex sex, IList<(uint Label, uint Value)> customisations, IList<float> bones)
         {
+            AssertAppearanceMutationAllowed();
             if (!IsValidInput(customisations, bones))
                 throw new ArgumentException("Appearance data requires unique labels and at most 256 finite bones.");
 
@@ -130,7 +144,7 @@ namespace NexusForever.Game.Entity
                 if (characterCustomisations.TryGetValue(label, out ICustomisation customisation))
                     customisation.Value = value;
                 else
-                    characterCustomisations.TryAdd(label, new Customisation(owner.CharacterId, label, value));
+                    characterCustomisations.TryAdd(label, new Customisation(owner.CharacterId, label, value, AssertAppearanceMutationAllowed));
             }
 
             foreach (uint label in characterCustomisations.Keys.Except(customisations.Select(t => t.Label).ToList()))
@@ -154,7 +168,7 @@ namespace NexusForever.Game.Entity
                 if (characterAppearances.TryGetValue(visual.Slot, out IAppearance appearance))
                     appearance.DisplayId = visual.DisplayId.Value;
                 else
-                    characterAppearances.TryAdd(visual.Slot, new Appearance(owner.CharacterId, visual.Slot, visual.DisplayId.Value));
+                    characterAppearances.TryAdd(visual.Slot, new Appearance(owner.CharacterId, visual.Slot, visual.DisplayId.Value, AssertAppearanceMutationAllowed));
 
                 owner.AddVisual(visual);
             }
@@ -180,7 +194,7 @@ namespace NexusForever.Game.Entity
                 if (characterBones.TryGetValue(boneIndex, out IBone bone))
                     bone.BoneValue = bones[i];
                 else
-                    characterBones.Add(boneIndex, new Bone(owner.CharacterId, boneIndex, bones[i]));
+                    characterBones.Add(boneIndex, new Bone(owner.CharacterId, boneIndex, bones[i], AssertAppearanceMutationAllowed));
             }
 
             foreach (byte boneIndex in characterBones.Keys.Where(i => i >= bones.Count).ToList())

@@ -1,0 +1,967 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-05T23:20:58.432983+00:00",
+  "baseCommit": "b45c56f8bb2c89bcbc5d74255b7932ddf33b268f",
+  "milestone": "Public appearance Credits and Service Token complete Character settlement and confirmed publication",
+  "classification": "Implemented with Source/SQLite verification; F-026 and overall Goal remain partial",
+  "sources": [
+    {
+      "path": "Source/NexusForever.Database.Character/AppearanceChangeSaveReconciliation.cs",
+      "sha256": "bb08798d19224a57b13d6233ca6eb6809d8903d748a58e45feed62816ce9ba12",
+      "gitBlob": "1b5e67a7c63e5ae9fc0b562c2a491e1b2b7b639a"
+    },
+    {
+      "path": "Source/NexusForever.Database.Character/CharacterAtomicSave.cs",
+      "sha256": "2c3c7b1df546f87cbea47c6bf32f8dc1d69d59af988c99eaa1886749cb3d7bed",
+      "gitBlob": "223b2b4504f6b2ee7a630740bf2585830103daee"
+    },
+    {
+      "path": "Source/NexusForever.Database.Character/CharacterDatabase.cs",
+      "sha256": "f2eef9efb972375addee74fc9cc25bb042d24765b5eb6aabada3cc8ec6cbe2aa",
+      "gitBlob": "dadd166f5a310f1a46dbe5c45d08f808b86419b1"
+    },
+    {
+      "path": "Source/NexusForever.Game/Account/Currency/VendorAccountPurchase.cs",
+      "sha256": "92babd85d2e15e6f9b9cf6c0f1a8af3961fd312c18eaf4673466c8a029d72370",
+      "gitBlob": "0bcfe3a1880790d3200709756756f327d04d95a6"
+    },
+    {
+      "path": "Source/NexusForever.Game/Account/Currency/VendorAccountPurchase.AppearanceChange.cs",
+      "sha256": "a4fccdd890c9d358b246db97c15feb4d5147383c375488c06760d5710d128d7c",
+      "gitBlob": "828efaafb0965b8a5934b07dee45cf4781fcfae5"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/AppearanceManager.cs",
+      "sha256": "d88d84a16a88c8d612f3e122380473f035d576387d2dc44d50d15b533071b603",
+      "gitBlob": "0da16b390e5deca47df9c4e12a4cab3dce8919b1"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/AppearanceManager.Settlement.cs",
+      "sha256": "2b491b28e2d42ae070dbbb8fcb8b4a2407313577b34ba257591f0165e11856c7",
+      "gitBlob": "160dfaf78554d5037032a91c157da7ac4847b8a3"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/AppearanceChangeState.cs",
+      "sha256": "a5c49fe4ee23222bc6c98c1660c4faae30d517fd11f6d047417a69b0c55012cf",
+      "gitBlob": "673fc060a9b9ab545d19ac0b0e744f0df1d10274"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/AppearanceChangeSettlement.cs",
+      "sha256": "4b0af4b5a48848bca3d3346cb0b27add749689c140cdb3fcfc8377a89b6cf025",
+      "gitBlob": "28a4c1dab88950431439a7265ff80901aed8eaf2"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/AppearanceTokenPayment.cs",
+      "sha256": "df7f87e9c96c18719b89044397e21e5ef13d66c3fd653b5cf776c3102d3fe2e9",
+      "gitBlob": "7b22d3df57a21e00770e95170b552b9ef9216120"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/Appearance.cs",
+      "sha256": "1ec9e3e1ba39c7267d4447edfadd43412cd1c81934b64d4a471171f723bc1e24",
+      "gitBlob": "f89ccc3c648eb7256f04892cc8dc633447394984"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/Customisation.cs",
+      "sha256": "3266f8b034b04e8877768c40a7228eaf7fbf472a153c4e1cf9f8fef7eca20b6a",
+      "gitBlob": "32f3c6e65b841685d8851925ae1be0ea78657999"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/Bone.cs",
+      "sha256": "4eb8ddcb922bf4dedff88980b7031b13a4f246af4d5ee94ba5a821a26e50cdaf",
+      "gitBlob": "fad70acb2b887e69a023eab7f5253cb145160153"
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/Network/Message/Handler/Entity/Player/ClientAppearanceChangeHandler.cs",
+      "sha256": "33f8ca258ed750a1dbcaa8dbd2ad8ed2046924f259e03fd1f332a846492a3982",
+      "gitBlob": "f881d88394adf41c12eb135192210dd2bdc8f74f"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Entity/AppearanceSettlementTests.cs",
+      "sha256": "df3beb1d52d2f4a290bfc6d771e59b3f9f6b54a7db703c7bac05578dbd5fa19b",
+      "gitBlob": "92298f78dad5dfdc6511504a7447cafb5e6aa83b"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/Player.cs",
+      "sha256": "6f92efd5b49a78f2620556d24d81998523804bb7e59a4d0c66d170a75e8b4022",
+      "gitBlob": "de72aace21ad7f3be67dc266a8148f33c3cf75a9"
+    }
+  ],
+  "assemblies": [
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Database.Character/bin/Debug/net10.0/NexusForever.Database.Character.dll",
+      "sha256": "e07deffeb14813d67ecf1bb0422707d3a108208fa0228ebf89e7f0c34b46e535"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Database.Character.dll",
+      "sha256": "e07deffeb14813d67ecf1bb0422707d3a108208fa0228ebf89e7f0c34b46e535"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Abstract/bin/Debug/net10.0/NexusForever.Game.Abstract.dll",
+      "sha256": "8dc0b74cb835b742ac8709ca9566df4aae52b0770e718a14210a04fb41c548a1"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Abstract.dll",
+      "sha256": "8dc0b74cb835b742ac8709ca9566df4aae52b0770e718a14210a04fb41c548a1"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game/bin/Debug/net10.0/NexusForever.Game.dll",
+      "sha256": "83c9f227a4b568a3539c61135432b151569d5b4b16c047fa31377e92669c0ecd"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.dll",
+      "sha256": "83c9f227a4b568a3539c61135432b151569d5b4b16c047fa31377e92669c0ecd"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.WorldServer/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+      "sha256": "2594bc2449ab760eeedc6dfe0ce0c5d57756b497da86d692a59c6eb6437f971c"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+      "sha256": "2594bc2449ab760eeedc6dfe0ce0c5d57756b497da86d692a59c6eb6437f971c"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+      "sha256": "3ec89db1aadafadb16b015fd23977256c2791a9f7be39ab71388dd6a292f9457"
+    }
+  ],
+  "sourceBoundary": {
+    "trackedCompared": 6271,
+    "expectedChanges": [
+      "Source/NexusForever.Database.Character/CharacterAtomicSave.cs",
+      "Source/NexusForever.Database.Character/CharacterDatabase.cs",
+      "Source/NexusForever.Game/Account/Currency/VendorAccountPurchase.cs",
+      "Source/NexusForever.Game/Entity/Appearance.cs",
+      "Source/NexusForever.Game/Entity/AppearanceManager.cs",
+      "Source/NexusForever.Game/Entity/Bone.cs",
+      "Source/NexusForever.Game/Entity/Customisation.cs",
+      "Source/NexusForever.Game/Entity/Player.cs",
+      "Source/NexusForever.WorldServer/Network/Message/Handler/Entity/Player/ClientAppearanceChangeHandler.cs"
+    ],
+    "newOwnedSource": [
+      "Source/NexusForever.Database.Character/AppearanceChangeSaveReconciliation.cs",
+      "Source/NexusForever.Game/Account/Currency/VendorAccountPurchase.AppearanceChange.cs",
+      "Source/NexusForever.Game/Entity/AppearanceManager.Settlement.cs",
+      "Source/NexusForever.Game/Entity/AppearanceChangeState.cs",
+      "Source/NexusForever.Game/Entity/AppearanceChangeSettlement.cs",
+      "Source/NexusForever.Game/Entity/AppearanceTokenPayment.cs",
+      "Source/NexusForever.Game.Tests/Entity/AppearanceSettlementTests.cs"
+    ],
+    "literalCleanFilterMatches": [
+      "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+      "Source/NexusForever.ClientConnector/packages.config",
+      "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+      "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+      "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+      "Source/NexusForever.Database/NexusForever.Database.csproj",
+      "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj"
+    ],
+    "explicitBomNewlineVariant": [
+      "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs"
+    ],
+    "otherSourceMatchesPublishedBase": true,
+    "concurrentRootWorkExcluded": true
+  },
+  "baseline": {
+    "path": "artifacts/continuation-20261105/appearance-settlement/baseline.trx",
+    "sha256": "22a77913cad7bf0a18a7b8e012fe186eba14ec760f9016ef402c824ebeb253cc",
+    "counters": {
+      "total": 4,
+      "executed": 4,
+      "passed": 0,
+      "failed": 4,
+      "error": 0,
+      "timeout": 0,
+      "aborted": 0,
+      "inconclusive": 0,
+      "passedButRunAborted": 0,
+      "notRunnable": 0,
+      "notExecuted": 0,
+      "disconnected": 0,
+      "warning": 0,
+      "completed": 0,
+      "inProgress": 0,
+      "pending": 0
+    },
+    "times": {
+      "creation": "2026-11-05T23:50:46.0065521+01:00",
+      "queuing": "2026-11-05T23:50:46.0065644+01:00",
+      "start": "2026-11-05T23:50:37.3593146+01:00",
+      "finish": "2026-11-05T23:50:48.9274831+01:00"
+    },
+    "groups": {
+      "AppearanceSettlementTests": {
+        "Failed": 4
+      }
+    },
+    "nonPassing": [
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PublicChangeKeepsItsAppearanceAndWalletPrivateUntilCharacterConfirmation(tokens: True)",
+        "outcome": "Failed",
+        "message": "Assert.Equal() Failure: Values differ\r\nExpected: Male\r\nActual:   Female"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PublicChangeSettlesTheFullAppearanceAndOnlyItsSelectedPayment(tokens: False)",
+        "outcome": "Failed",
+        "message": "Assert.Equal() Failure: Values differ\r\nExpected: 1\r\nActual:   0"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PublicChangeKeepsItsAppearanceAndWalletPrivateUntilCharacterConfirmation(tokens: False)",
+        "outcome": "Failed",
+        "message": "Assert.Equal() Failure: Values differ\r\nExpected: Male\r\nActual:   Female"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PublicChangeSettlesTheFullAppearanceAndOnlyItsSelectedPayment(tokens: True)",
+        "outcome": "Failed",
+        "message": "Assert.Equal() Failure: Values differ\r\nExpected: 1\r\nActual:   0"
+      }
+    ],
+    "testNames": [
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PublicChangeKeepsItsAppearanceAndWalletPrivateUntilCharacterConfirmation(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PublicChangeSettlesTheFullAppearanceAndOnlyItsSelectedPayment(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PublicChangeKeepsItsAppearanceAndWalletPrivateUntilCharacterConfirmation(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PublicChangeSettlesTheFullAppearanceAndOnlyItsSelectedPayment(tokens: True)"
+    ]
+  },
+  "baselineBinaries": [
+    {
+      "path": "artifacts/continuation-20261105/appearance-settlement/baseline-binaries/NexusForever.Game.dll",
+      "sha256": "993730177bafb9ada41f92bd8857d4053949a5567c1a7d8d5de5c421841c18e0"
+    },
+    {
+      "path": "artifacts/continuation-20261105/appearance-settlement/baseline-binaries/NexusForever.WorldServer.dll",
+      "sha256": "93b2b451a384122539715ae038d6e4841666395a123edfebae7b2e51f2950190"
+    }
+  ],
+  "baselineBinaryProvenance": "Game/World DLLs match the published appearance-change-admission-20261105 portable record; baseline four public tests compiled against those unchanged runtime binaries",
+  "expandedCandidate": {
+    "path": "artifacts/continuation-20261105/appearance-settlement/candidate-expanded.trx",
+    "sha256": "f0f8238d7d4d13408d1f415995abd5060ce5a4bfd6d2b9bf9e1d43ec72b29ec3",
+    "counters": {
+      "total": 29,
+      "executed": 29,
+      "passed": 29,
+      "failed": 0,
+      "error": 0,
+      "timeout": 0,
+      "aborted": 0,
+      "inconclusive": 0,
+      "passedButRunAborted": 0,
+      "notRunnable": 0,
+      "notExecuted": 0,
+      "disconnected": 0,
+      "warning": 0,
+      "completed": 0,
+      "inProgress": 0,
+      "pending": 0
+    },
+    "times": {
+      "creation": "2026-11-06T00:10:10.9771364+01:00",
+      "queuing": "2026-11-06T00:10:10.9771488+01:00",
+      "start": "2026-11-06T00:10:03.2701315+01:00",
+      "finish": "2026-11-06T00:10:40.4753703+01:00"
+    },
+    "groups": {
+      "AppearanceSettlementTests": {
+        "Passed": 29
+      }
+    },
+    "nonPassing": [],
+    "testNames": [
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.FreeAppearanceCommitsWithoutAnAccountPaymentAnchor(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PacketRetryKeepsTheConfirmedPaymentAndFreshBonePayload(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.FreeAppearanceCommitsWithoutAnAccountPaymentAnchor(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PublicChangeSettlesTheFullAppearanceAndOnlyItsSelectedPayment(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.RejectedCompleteGraphRestoresPaymentBeforeRetry(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.LostCommitAcknowledgementDoesNotReplayThePayment(authFailure: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.ReboundSessionCannotReceiveTheOriginalConfirmedAppearance(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PricingCannotRebindTheRequestToAnotherPlayer(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.NextRequestReplacesTheFullGraphAndPaysOnlyItsOwnFee(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PrimaryCommitKeepsLiveAppearancePrivateUntilFollowupConfirmation(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.ProjectionFailureCannotReserveAPaymentOrPartiallyChangeTheActor(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.ProjectionFailureCannotReserveAPaymentOrPartiallyChangeTheActor(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PublicChangeKeepsItsAppearanceAndWalletPrivateUntilCharacterConfirmation(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PublicChangeKeepsItsAppearanceAndWalletPrivateUntilCharacterConfirmation(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.AdmissionCompletesAnInterruptedRefundFromTheOriginalDurableAnchor",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.ReboundSessionCannotReceiveTheOriginalConfirmedAppearance(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.AcceptedChangeFencesDirectLeafAndHeaderMutation(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.RejectedCompleteGraphRestoresPaymentBeforeRetry(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.RejectedAuthDebitCannotCommitTheAppearanceAndCanRetry",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PacketRetryKeepsTheConfirmedPaymentAndFreshBonePayload(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PricingCannotRebindTheRequestToAnotherPlayer(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.NewAdmissionRecognizesThePaidAppearanceWithoutRefundOrRedelivery",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PrimaryCommitKeepsLiveAppearancePrivateUntilFollowupConfirmation(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.AcceptedChangeFencesDirectLeafAndHeaderMutation(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PublicChangeSettlesTheFullAppearanceAndOnlyItsSelectedPayment(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.NextRequestReplacesTheFullGraphAndPaysOnlyItsOwnFee(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.UnavailableFundsBeforeActorCaptureRejectTheQueuedChange(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.LostCommitAcknowledgementDoesNotReplayThePayment(authFailure: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.UnavailableFundsBeforeActorCaptureRejectTheQueuedChange(tokens: True)"
+    ]
+  },
+  "preReviewAffected": {
+    "path": "artifacts/continuation-20261105/appearance-settlement/final-affected.trx",
+    "sha256": "b25ba1d7bf69e023317f48ba82e9820855409315112a93126f49cdec4ced2412",
+    "counters": {
+      "total": 329,
+      "executed": 329,
+      "passed": 329,
+      "failed": 0,
+      "error": 0,
+      "timeout": 0,
+      "aborted": 0,
+      "inconclusive": 0,
+      "passedButRunAborted": 0,
+      "notRunnable": 0,
+      "notExecuted": 0,
+      "disconnected": 0,
+      "warning": 0,
+      "completed": 0,
+      "inProgress": 0,
+      "pending": 0
+    },
+    "times": {
+      "creation": "2026-11-06T00:12:52.5172244+01:00",
+      "queuing": "2026-11-06T00:12:52.5172394+01:00",
+      "start": "2026-11-06T00:12:49.2911685+01:00",
+      "finish": "2026-11-06T00:14:24.6447921+01:00"
+    },
+    "groups": {
+      "HousingRenameFeeRecoveryTests": {
+        "Passed": 31
+      },
+      "RewardNormalSaveSnapshotTests": {
+        "Passed": 55
+      },
+      "AccountCurrencyDurabilityTests": {
+        "Passed": 96
+      },
+      "GuildCreationFinanceTests": {
+        "Passed": 54
+      },
+      "HousingDecorPurchaseTests": {
+        "Passed": 11
+      },
+      "AppearanceSettlementTests": {
+        "Passed": 37
+      },
+      "CharacterAtomicSaveTests": {
+        "Passed": 20
+      },
+      "AppearanceChangeAdmissionTests": {
+        "Passed": 25
+      }
+    },
+    "nonPassing": [],
+    "testNames": [
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.PublicRenameChargesOnlyItsFormulaSelectedCurrencyAndCommitsBothNames(renown: False)",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.ADeletionSnapshotPreservesLaterRestorationAndRetiresOnlyTheCommittedDeletedOwner(restore: True)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.CreddDebitAndUsageShareDeliveryOrAdmissionCompensation(outcome: \"delivered\")",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.GuildRemainsPrivateThroughTheOrdinaryFollowupSoARenameCannotStrandItsOwner",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.ADeletionSnapshotPreservesLaterRestorationAndRetiresOnlyTheCommittedDeletedOwner(restore: False)",
+      "NexusForever.Game.Tests.Housing.HousingDecorPurchaseTests.PersonalHomeUsesTheSameCoupledPurchaseWithoutCommunityPermission",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.ChangedSqlPayerCannotReceiveOrPayForTheAcceptedAppearance(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.AcceptedChangeFencesDirectLeafAndHeaderMutation(tokens: False)",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.NormalSaveCommitsProgressWithoutReplacingLocationUntilDestinationBootstrapSucceeds(phase: \"detached\")",
+      "NexusForever.Game.Tests.Database.CharacterAtomicSaveTests.AnActiveOrdinarySaveCannotBeStolenEvenBeforeItHasOpenedATransaction",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.ForgedReceiptCallbacksCannotAuthorizeAForeignSqlParent(foreignRoot: False)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.VendorDebitRecoveryMakesDeliveryAndRefundMutuallyExclusive(outcome: \"delivered\")",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.ReboundSessionCannotReceiveTheOriginalConfirmedAppearance(tokens: False)",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.EarningAfterLocalAdoptionRetainsGuildForwardingUntilTheOrdinarySaveSettles",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.CompletedManagerRefreshNeverPublishesToAChangedActorOwner(change: \"account\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"duplicate-label\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.EveryExistingCurrencyUsesRetainedOrderedOperationsWithoutChangingOtherOwners(currency: 13)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PublicChangeSettlesTheFullAppearanceAndOnlyItsSelectedPayment(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.FiniteRequestsKeepTheExistingPaymentAndAppearanceFlow(tokens: True, count: 3)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.CreddDebitAndUsageShareDeliveryOrAdmissionCompensation(outcome: \"resumed\")",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.UnavailableFundsBeforeActorCaptureRejectTheQueuedChange(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.UnavailableFundsBeforeActorCaptureRejectTheQueuedChange(tokens: True)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.RealmAdmissionRecoversLocalVendorDebitsBeforePublishingWallets(validKey: True, cosmic: False)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.MissingOrChangedRequiredCreditProofQuarantinesTheWalletWithoutAcknowledgingPendingIntent(fault: \"currency\")",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.AProbeCannotRunUntilTheFrozenNormalSaveReleasesItsOlderTargets",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.DisposingAnUnflushedRegistrationRetainsItsOperationsForTheNextContext",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.RefreshCannotClampAnUnderflowOrOverflowCausedByAnExternalWalletChange(overflow: True)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.DisposingAReadWhileItsWorkerIsStillPendingKeepsAllIntentAndCannotAdoptALateResult",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.SnapshotDatabaseAndContextBindingRejectsForeignOrRepeatedEnrollment",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.ReceiptCannotChangeItsSqlLeaderAfterInitialAdmission",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.FailedQuestWriteRollsBackTheWholeFeeAndNameGraph",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.RealDirectSaveFreezesBeforeAuthAndTheCompletionQueueFollowsItsStoredBaseline(track: 26)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.CreddDebitAndUsageShareDeliveryOrAdmissionCompensation(outcome: \"usage-sql-rejected\")",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CompletingGuildAchievementFeedsCharacterProgressIntoTheRetainedOrdinarySave",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.PublicCreationDoesNotPublishSuccessBeforeItsFeeAndGuildCommit",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(outcome: \"epoch-replaced-after-commit\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.WalletRefreshRetainsItsDatabaseAcrossFactoriesAndPriorSaves(previouslySaved: True)",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.QuiescentRewardInvalidationStillAllowsAnOrdinaryLogoutSaveWithoutReopeningRewards",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.EveryExistingCurrencyUsesRetainedOrderedOperationsWithoutChangingOtherOwners(currency: 6)",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.ChangedFormulaAndLateEarningCannotChangeTheAcceptedCreationFee",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.EarningAfterTheReadyCallbackIsReconciledBeforePublication(otherWallet: False)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.RejectedVendorEnrollmentCannotChangeEitherWalletOrDeliverAnItem(earlyFlush: True)",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationCommitsFeeMembershipAffiliationAndEveryPlotTogether",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.EarningDuringAuthIsSavedAfterTheFeeBeforeItsPrivatePublication",
+      "NexusForever.Game.Tests.Database.CharacterAtomicSaveTests.EnrollmentCannotPerformItsOwnFlushOrCommitAndContinueAfterCatchingTheError(commit: True)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.AChangedReceiptForTheActorsOwnUnknownCommitCannotAcknowledgeItsCapturedOperation",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.EveryExistingCurrencyUsesRetainedOrderedOperationsWithoutChangingOtherOwners(currency: 14)",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.WalletPublicationRejectsReentrantInventoryAndSatchelMutations",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.FiniteRequestsKeepTheExistingPaymentAndAppearanceFlow(tokens: True, count: 0)",
+      "NexusForever.Game.Tests.Database.CharacterAtomicSaveTests.EnrollmentCannotPerformItsOwnFlushOrCommitAndContinueAfterCatchingTheError(commit: False)",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.EitherFailedSideKeepsTheWholeFeeAndNameGraphUncommitted(failCurrency: False)",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.FrozenSaveBeforeTaxiFareCannotPersistThePaidDestinationEarly(replaced: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PrimaryCommitKeepsLiveAppearancePrivateUntilFollowupConfirmation(tokens: True)",
+      "NexusForever.Game.Tests.Database.CharacterAtomicSaveTests.ConfiguredRetryStrategiesNeverReplayActorCallbacksAfterSyncOrAsyncFailures(asynchronous: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PublicChangeKeepsItsAppearanceAndWalletPrivateUntilCharacterConfirmation(tokens: True)",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.RealDirectSaveFreezesBeforeAuthAndTheCompletionQueueFollowsItsStoredBaseline(track: 19)",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.ScriptCreatedQuestIsExcludedFromTheOlderSaveAndCommittedOnlyWithItsCompletion",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(outcome: \"rebound-before-character\")",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.RealDirectSaveFreezesBeforeAuthAndTheCompletionQueueFollowsItsStoredBaseline(track: 28)",
+      "NexusForever.Game.Tests.Housing.HousingDecorPurchaseTests.RejectedHalfOfThePurchaseRollsBackTheWholeFeeAndDecorAndRetriesOnce(table: \"residence_decor\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.TheSameGlobalOperationCannotBeReboundToAnotherAccountOrCurrency(otherAccount: True)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.RefreshRejectsADisappearedWalletOrAccountRatherThanInterpretingDeletionAsZero(deleteAccount: True)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.VendorDebitRecoveryMakesDeliveryAndRefundMutuallyExclusive(outcome: \"cancel-ack-lost\")",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationCannotCommitAnUnpaidGraphWhenAuthRejectsItsDebit",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationPreservesAnExistingOrdinaryGuildAndItsAffiliation",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PublicChangeKeepsItsAppearanceAndWalletPrivateUntilCharacterConfirmation(tokens: False)",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationReceiptCannotAuthorizeForeignResidenceRows(plot: False)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.MutationsAfterCaptureRemainDirtyUntilTheNextSaveRatherThanBeingAcknowledgedByTheOlderUnit",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.EveryExistingCurrencyUsesRetainedOrderedOperationsWithoutChangingOtherOwners(currency: 18)",
+      "NexusForever.Game.Tests.Database.CharacterAtomicSaveTests.ConfiguredRetryStrategiesNeverReplayActorCallbacksAfterSyncOrAsyncFailures(asynchronous: True)",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RejectedDeferredGuildEffectDoesNotRepeatCommittedCharacterJoinProgress",
+      "NexusForever.Game.Tests.Housing.HousingDecorPurchaseTests.RejectedPurchaseKeepsCharacterAchievementAtomicAndDefersGuildProgressUntilCommit",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.RepeatedRefreshOfAnAbsentWalletRetainsItsUnsavedCreationAndDoesNotInventACredit",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.ZeroFeeRenamePreservesAnAbsentSelectedWallet",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.PublicationRetryResumesAtItsFailedStageWithoutAnotherFee(stage: \"map\")",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.RealDeferredSaveKeepsItsFrozenTargetsAcrossTheAuthCharacterEventGap",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.VendorDebitRecoveryMakesDeliveryAndRefundMutuallyExclusive(outcome: \"auth-ack-lost\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.MissingOrChangedRequiredCreditProofQuarantinesTheWalletWithoutAcknowledgingPendingIntent(fault: \"direction\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"nan\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"nan\")",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.RepeatedRequestCannotDebitASecondFeeWhileTheFirstRenameIsPending",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationPreservesDirectFreeRegistration",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationCannotPublishItsWalletOrSuccessToAReplacementPlayer",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.NewWalletCreationAndRollbackUseTheSameZeroAndCreditOperations",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.ReplacedSessionPlayerCannotReceiveCreationSuccessOrReopenAdmission",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.RealDirectSaveFreezesBeforeAuthAndTheCompletionQueueFollowsItsStoredBaseline(track: 36)",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.RealDirectSaveFreezesBeforeAuthAndTheCompletionQueueFollowsItsStoredBaseline(track: 16)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"negative-infinity\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.CosmicCurrencyRetainsTheExistingLoyaltyJournalInsteadOfEnlistingAnOrdinaryWalletSave",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.ForeignResidenceSqlCannotBeAdoptedAsThePaidGraph",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.RealDirectSaveFreezesBeforeAuthAndTheCompletionQueueFollowsItsStoredBaseline(track: 33)",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.FailedNormalCommitCannotLeakProvisionalCompletionThroughAnOrdinaryRetry(after: True)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.CreddDebitAndUsageShareDeliveryOrAdmissionCompensation(outcome: \"usage-at-cap\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.EveryExistingCurrencyUsesRetainedOrderedOperationsWithoutChangingOtherOwners(currency: 3)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.CompletedManagerRefreshNeverPublishesToAChangedActorOwner(change: \"manager\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.VendorDebitRecoveryMakesDeliveryAndRefundMutuallyExclusive(outcome: \"refund-ack-lost\")",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.RealDirectSaveFreezesBeforeAuthAndTheCompletionQueueFollowsItsStoredBaseline(track: 21)",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationKeepsItsAcceptedFeeWhileEarlierEarningPersists",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.LoadedObjectiveCollectionOrderCannotChangeSequentialProgression",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.FrozenSaveBeforeTaxiFareCannotPersistThePaidDestinationEarly(replaced: False)",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationParticipantFailureRetainsAndRetriesTheEntireAcceptedGraph(table: \"residence_plot\")",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.EitherFailedSideKeepsTheWholeFeeAndNameGraphUncommitted(failCurrency: True)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.EveryExistingCurrencyUsesRetainedOrderedOperationsWithoutChangingOtherOwners(currency: 8)",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationRejectsAnOrdinaryCreditReceiptAsAuthAuthority",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.SequentialObjectivesKeepTheirOriginalEventOrderAcrossTheAuthPhaseAndFifoCommits",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.EveryExistingCurrencyUsesRetainedOrderedOperationsWithoutChangingOtherOwners(currency: 9)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.SqlOrTrackedSuppressionCannotCommitAnOtherwiseAcknowledgedWalletOperation(fault: \"original-wallet\")",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationAdmissionRecognizesTheCompleteGraphWithoutRefundOrRedelivery",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"negative-infinity\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.RefreshCannotClampAnUnderflowOrOverflowCausedByAnExternalWalletChange(overflow: False)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.RetainedReceiptsSurviveAccountDeletionAndCannotCreditARecreatedOwnerAgain",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.MissingOrChangedRequiredCreditProofQuarantinesTheWalletWithoutAcknowledgingPendingIntent(fault: \"source\")",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.RejectedCompleteGraphRestoresPaymentBeforeRetry(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.AcceptedChangeFencesDirectLeafAndHeaderMutation(tokens: True)",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationWalletReplyRetryDoesNotReplayAnAcceptedGrantOrPayment",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.AdmissionCompletesAnInterruptedRefundFromTheOriginalDurableAnchor",
+      "NexusForever.Game.Tests.Database.CharacterAtomicSaveTests.EnrollmentRunsSynchronouslyOnTheCallersStackAndInsideTheOwnedSerializableTransaction",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PrimaryCommitKeepsLiveAppearancePrivateUntilFollowupConfirmation(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"too-many-bones\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.VendorPaymentRequiresDurableStorageOnBothSides(ephemeralAuth: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"duplicate-label\")",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.ReboundSessionCannotReceiveTheOriginalConfirmedAppearance(tokens: True)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.ManagerPublishesTheAdoptedWalletExactlyOnceAndKeepsLaterIntentForNormalSave(existing: False)",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.EarningAfterTheReadyCallbackIsReconciledBeforePublication(otherWallet: True)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.SqlOrTrackedSuppressionCannotCommitAnOtherwiseAcknowledgedWalletOperation(fault: \"wallet\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.RefreshRejectsADisappearedWalletOrAccountRatherThanInterpretingDeletionAsZero(deleteAccount: False)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.AFailedAcknowledgementFollowedByAnotherCreditStillCannotReplayTheOriginalOperation",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.CommitFailureRetainsTheSameOperationsAndFreshRetryNeverRegrantsAnUnknownCommit(after: False)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.CommitFailureRetainsTheSameOperationsAndFreshRetryNeverRegrantsAnUnknownCommit(after: True)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.AuthoritativeRefreshMergesPendingAndLaterSemanticIntentWithoutWritingOrPublishingOnTheWorker",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.ObjectiveOrdinalsAreExplicitEvenWhenZeroIsAddedAfterAnAlreadyTrackedOne(frozen: True)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.BothSaveEntryPointsAcknowledgeOnlyTheSettledOperation(synchronous: False)",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.ReplacedCommunityRootStillAdoptsItsOwnCommittedName",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.ReentrantPublicationPreservesNewIntentAndRefusesNestedRefreshOrSave",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.ManagerRequiresTheActualCreditReceiptBeforePublishingItsWallet(exists: False)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.RefreshObservesUnknownSaveReceiptsAndNeverReplaysAlreadyCommittedOperations(lostCommit: False)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.EveryExistingCurrencyUsesRetainedOrderedOperationsWithoutChangingOtherOwners(currency: 16)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.FreeAppearanceCommitsWithoutAnAccountPaymentAnchor(tokens: True)",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationReconcilesLostCommitRepliesWithoutAnotherNetPayment(authFailure: True)",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationCannotDebitAfterItsAdmittedEpochIsSuperseded",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.LostCommitAcknowledgementUsesItsReceiptWithoutChargingAgain",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"too-many-bones\")",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.QueuedRequestCannotAcquireReplacementOwnership(replacement: \"queue\")",
+      "NexusForever.Game.Tests.Database.CharacterAtomicSaveTests.MappedCharacterOwnershipAlsoCoversIndirectObjectiveAndItemKeys(mode: \"owner-delete\")",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.NextRequestReplacesTheFullGraphAndPaysOnlyItsOwnFee(tokens: True)",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(outcome: \"queue-replaced-after-commit\")",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RejectedParticipantRollsBackFeeGuildAndAffiliationThenRetriesTogether(table: \"character\")",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.ProjectionCannotRebindTheRequestToAnotherPlayer(tokens: True)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.ASpendAfterTheFinalGuardCannotOverflowReconciliationOrPreventOtherOwnersSettling",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.OnlyTheExactRegisteredNameReservationCanEnterPaidRename",
+      "NexusForever.Game.Tests.Database.CharacterAtomicSaveTests.ConcurrentFactoryReuseDoesNotDisposeOrStealTheFirstActiveUnit",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.PublicRenameChargesOnlyItsFormulaSelectedCurrencyAndCommitsBothNames(renown: True)",
+      "NexusForever.Game.Tests.Housing.HousingDecorPurchaseTests.LostPrimaryAcknowledgementCannotChargeOrCreateDecorTwice",
+      "NexusForever.Game.Tests.Database.CharacterAtomicSaveTests.MappedCharacterOwnershipAlsoCoversIndirectObjectiveAndItemKeys(mode: \"item\")",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.LostCommitAcknowledgementReconcilesTheCompleteCreateWithoutAnotherFee",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.OrdinaryRefreshCannotTakeOverTheExistingCosmicLoyaltyJournal",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationRetriesRejectedJoinWithoutReplayingAcceptedSuccessOrDebit",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.AThrowingWalletPacketCannotStrandAPaidButUnacceptedName",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.SameValueTouchesAfterCaptureStayDirtyUntilANewerSaveAcknowledgesThem",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.AnotherPendingContextCannotAcknowledgeOrPartiallySaveTheFirstOwnersOperations",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.ProjectionCannotRebindTheRequestToAnotherPlayer(tokens: False)",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationNewAdmissionCompletesAnUnfinishedRefundFromItsDurableAnchor",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.FailedNormalCommitCannotLeakProvisionalCompletionThroughAnOrdinaryRetry(after: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.RejectedAuthDebitCannotCommitTheAppearanceAndCanRetry",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.MissingOrChangedRequiredCreditProofQuarantinesTheWalletWithoutAcknowledgingPendingIntent(fault: \"amount\")",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.PendingNameAndDraftGraphCannotBeTakenByAnotherCreationOrSave",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.VendorDebitRecoveryMakesDeliveryAndRefundMutuallyExclusive(outcome: \"concurrent-recovery\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.RefreshObservesUnknownSaveReceiptsAndNeverReplaysAlreadyCommittedOperations(lostCommit: True)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.VendorDebitRecoveryMakesDeliveryAndRefundMutuallyExclusive(outcome: \"abandoned\")",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationCannotChargeTheStalePayerOfAnotherAccountsCharacter",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.LostCommitAcknowledgementDoesNotReplayThePayment(authFailure: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PacketRetryKeepsTheConfirmedPaymentAndFreshBonePayload(tokens: True)",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.RealDirectSaveFreezesBeforeAuthAndTheCompletionQueueFollowsItsStoredBaseline(track: 22)",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.DraftStructuralRemovalCannotBypassThePaidCreationFence(rank: True)",
+      "NexusForever.Game.Tests.Housing.HousingDecorPurchaseTests.AReplacementPlayerBeforePreparationCannotSpendTheOldActorsMoney",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RealJoinAchievementsReachOrdinarySettlementWithoutOpeningTheDraftFence(matching: True)",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.MapRenamePublicationCannotPrecedeTheCommittedFeeAndNames",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.LostCommitAcknowledgementDoesNotReplayThePayment(authFailure: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.ProjectionFailureCannotReserveAPaymentOrPartiallyChangeTheActor(tokens: False)",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RejectedJoinPacketRetriesWithoutRepeatingFeeOrEarlierSuccess",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationSettlesTheDurableAuthDebitWithoutChargingCharacterCredits",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.EveryExistingCurrencyUsesRetainedOrderedOperationsWithoutChangingOtherOwners(currency: 2)",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationReconcilesLostAcknowledgementWithoutAnotherFeeOrPlotGraph",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.PeriodicGuildSaveCannotCommitAnUnpaidCreation",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.SuccessfulRenameReplyCannotPrecedeTheCommittedFeeAndBothNames",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(outcome: \"rebound-after-commit\")",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.FinishingBeforeTheRealCharacterUnitEndsCannotReleaseItsPersistenceOwnership",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.CompletedManagerRefreshNeverPublishesToAChangedActorOwner(change: \"session\")",
+      "NexusForever.Game.Tests.Database.CharacterAtomicSaveTests.MappedCharacterOwnershipAlsoCoversIndirectObjectiveAndItemKeys(mode: \"objective\")",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.AuthFailureAfterCaptureCancelsTheQueueBeforeReleasingTheRealDirectSave",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.ReceiptCallbackCannotAuthorizeForeignGuildRows(member: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"nan\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.RealmAdmissionRecoversLocalVendorDebitsBeforePublishingWallets(validKey: False, cosmic: False)",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationRetriesAFailedWalletObservationWithoutAnotherDebit",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.ObjectiveOrdinalsAreExplicitEvenWhenZeroIsAddedAfterAnAlreadyTrackedOne(frozen: False)",
+      "NexusForever.Game.Tests.Housing.HousingDecorPurchaseTests.MutableRequestAndLaterTemplatePriceDoNotChangeTheAcceptedPurchase",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.SqlOrTrackedSuppressionCannotCommitAnOtherwiseAcknowledgedWalletOperation(fault: \"original-receipt\")",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.QueuedRequestCannotAcquireReplacementOwnership(replacement: \"epoch\")",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PublicChangeSettlesTheFullAppearanceAndOnlyItsSelectedPayment(tokens: False)",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.AuthFailureRetainsTheOriginalFeeAndNamesForRetry",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.ChangedSqlPayerCannotReceiveOrPayForTheAcceptedAppearance(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"duplicate-label\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.EveryExistingCurrencyUsesRetainedOrderedOperationsWithoutChangingOtherOwners(currency: 5)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.FiniteRequestsKeepTheExistingPaymentAndAppearanceFlow(tokens: False, count: 0)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PricingCannotRebindTheRequestToAnotherPlayer(tokens: True)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.CreddRedemptionHandlerPublishesOnlyAfterSettlement(outcome: \"rollback\")",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationRetainsAcceptedFeeAndPrivateGraphsThroughOrdinaryFollowup",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(outcome: \"retry\")",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.RealDirectSaveFreezesBeforeAuthAndTheCompletionQueueFollowsItsStoredBaseline(track: 24)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.EveryExistingCurrencyUsesRetainedOrderedOperationsWithoutChangingOtherOwners(currency: 11)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.FreeAppearanceCommitsWithoutAnAccountPaymentAnchor(tokens: False)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.SqlOrTrackedSuppressionCannotCommitAnOtherwiseAcknowledgedWalletOperation(fault: \"delete-wallet\")",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.NormalSaveCommitsProgressWithoutReplacingLocationUntilDestinationBootstrapSucceeds(phase: \"bootstrapping\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.AConcurrentCompensationCreditCannotBeOverwrittenByTheActorsCachedAbsoluteBalance",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.EveryExistingCurrencyUsesRetainedOrderedOperationsWithoutChangingOtherOwners(currency: 17)",
+      "NexusForever.Game.Tests.Housing.HousingDecorPurchaseTests.SqlPermissionLossBeforeEnrollmentCannotBeBypassedByTheCachedRank",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.RealDirectSaveFreezesBeforeAuthAndTheCompletionQueueFollowsItsStoredBaseline(track: 23)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"null-bones\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.WalletRefreshRetainsItsDatabaseAcrossFactoriesAndPriorSaves(previouslySaved: False)",
+      "NexusForever.Game.Tests.Database.CharacterAtomicSaveTests.NoGameplayCallbackRunsForAnInvalidCharacterOwner(mode: \"deleted\")",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(outcome: \"success\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.ManagerPublishesTheAdoptedWalletExactlyOnceAndKeepsLaterIntentForNormalSave(existing: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"positive-infinity\")",
+      "NexusForever.Game.Tests.Database.CharacterAtomicSaveTests.InvalidContextFactoriesCannotDisposeAnotherOwnersContext(mode: \"transaction\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.AnExternalSpendCannotWrapAnActorDebitOrEraseItsDirtyOperation",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.ReplacedSessionPlayerCannotReceiveTheCommittedRename",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.MissingOrChangedRequiredCreditProofQuarantinesTheWalletWithoutAcknowledgingPendingIntent(fault: \"missing\")",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationDefersSuccessUntilThePayerAndCompleteGraphCommit",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.RealDirectSaveFreezesBeforeAuthAndTheCompletionQueueFollowsItsStoredBaseline(track: 15)",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RejectedParticipantRollsBackFeeGuildAndAffiliationThenRetriesTogether(table: \"guild_rank\")",
+      "NexusForever.Game.Tests.Database.CharacterAtomicSaveTests.InvalidContextFactoriesCannotDisposeAnotherOwnersContext(mode: \"tracked\")",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.ForgedReceiptCallbacksCannotAuthorizeAForeignSqlParent(foreignRoot: True)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.VendorPaymentRequiresDurableStorageOnBothSides(ephemeralAuth: False)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.ARequiredContractCreditIsObservedWithoutRegrantEvenWhenItsBalanceWasLegitimatelySpent",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.FiniteRequestsKeepTheExistingPaymentAndAppearanceFlow(tokens: False, count: 3)",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.ForeignManagersAndDirectLeafSavesCannotEnterTheAuthPhaseReservation",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.PostStageSnapshotReplacementRejectsTheWholeExplicitUnitAndRetainsLaterIntent",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationPublicResidenceFactoryCannotPublishAnotherUnpaidRoot",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.NormalSaveCommitsProgressWithoutReplacingLocationUntilDestinationBootstrapSucceeds(phase: \"failed-bootstrap\")",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PacketRetryKeepsTheConfirmedPaymentAndFreshBonePayload(tokens: False)",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.RealCleanupFinalizesOnceAcrossNormalSaveFailureAndSynchronousSnapshotFailure(fault: \"none\")",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.RealDirectSaveFreezesBeforeAuthAndTheCompletionQueueFollowsItsStoredBaseline(track: 17)",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.RealCleanupFinalizesOnceAcrossNormalSaveFailureAndSynchronousSnapshotFailure(fault: \"snapshot\")",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.NextRequestReplacesTheFullGraphAndPaysOnlyItsOwnFee(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.QueuedRequestCannotAcquireReplacementOwnership(replacement: \"wallet\")",
+      "NexusForever.Game.Tests.Database.CharacterAtomicSaveTests.MappedCharacterOwnershipAlsoCoversIndirectObjectiveAndItemKeys(mode: \"character\")",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.NewAdmissionRecognizesThePaidAppearanceWithoutRefundOrRedelivery",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"negative-infinity\")",
+      "NexusForever.Game.Tests.Database.CharacterAtomicSaveTests.ServerGeneratedDefaultsMaySettleButUnrelatedTargetsCannotChangeWithThem",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.SqlOrTrackedSuppressionCannotCommitAnOtherwiseAcknowledgedWalletOperation(fault: \"delete-receipt\")",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.RealDirectSaveFreezesBeforeAuthAndTheCompletionQueueFollowsItsStoredBaseline(track: 20)",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.RealDirectSaveFreezesBeforeAuthAndTheCompletionQueueFollowsItsStoredBaseline(track: 27)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.UnaffordableValidRequestKeepsBothWalletsAndAppearance(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.FiniteRequestsKeepTheExistingPaymentAndAppearanceFlow(tokens: True, count: 256)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.CreddDebitAndUsageShareDeliveryOrAdmissionCompensation(outcome: \"abandoned\")",
+      "NexusForever.Game.Tests.Database.CharacterAtomicSaveTests.PartialStubsPreserveUntouchedSqlColumnsAndProviderDatePrecision",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.CompletedManagerRefreshNeverPublishesToAChangedActorOwner(change: \"epoch\")",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.ReentrantWorldUpdateCannotReplayTheUnacknowledgedPublication",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationRefundsARejectedCharacterGraphBeforeRetrying",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationPublishesNeitherSuccessNorAdmissionToAReplacementPlayer",
+      "NexusForever.Game.Tests.Housing.HousingDecorPurchaseTests.FailedDecorPublicationResumesWithoutAnotherFeeOrDecor",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationParticipantFailureRetainsAndRetriesTheEntireAcceptedGraph(table: \"character_currency\")",
+      "NexusForever.Game.Tests.Database.CharacterAtomicSaveTests.NoGameplayCallbackRunsForAnInvalidCharacterOwner(mode: \"zero\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.MissingOrChangedRequiredCreditProofQuarantinesTheWalletWithoutAcknowledgingPendingIntent(fault: \"arithmetic\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.RealmAdmissionRecoversLocalVendorDebitsBeforePublishingWallets(validKey: True, cosmic: True)",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(outcome: \"rebound-during-retry\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.EveryExistingCurrencyUsesRetainedOrderedOperationsWithoutChangingOtherOwners(currency: 1)",
+      "NexusForever.Game.Tests.Database.CharacterAtomicSaveTests.InvalidContextFactoriesCannotDisposeAnotherOwnersContext(mode: \"rejected\")",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationReceiptCannotAuthorizeForeignResidenceRows(plot: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.ProjectionFailureCannotReserveAPaymentOrPartiallyChangeTheActor(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"positive-infinity\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.EveryExistingCurrencyUsesRetainedOrderedOperationsWithoutChangingOtherOwners(currency: 7)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.EveryExistingCurrencyUsesRetainedOrderedOperationsWithoutChangingOtherOwners(currency: 15)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.FiniteRequestsKeepTheExistingPaymentAndAppearanceFlow(tokens: False, count: 256)",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.ReceiptCallbackCannotAuthorizeForeignGuildRows(member: False)",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.PublicationRetryResumesAtItsFailedStageWithoutAnotherFee(stage: \"result\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.MissingOrChangedRequiredCreditProofQuarantinesTheWalletWithoutAcknowledgingPendingIntent(fault: \"account\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.BothSaveEntryPointsAcknowledgeOnlyTheSettledOperation(synchronous: True)",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.EventAfterCharacterStagingCannotChangeTheFrozenFlushOrAcknowledgeLaterIntent",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.AReplacementAfterCaptureIsNotWrittenOrAcknowledgedByTheOlderNormalSave",
+      "NexusForever.Game.Tests.Database.CharacterAtomicSaveTests.NoGameplayCallbackRunsForAnInvalidCharacterOwner(mode: \"missing\")",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.DraftStructuralRemovalCannotBypassThePaidCreationFence(rank: False)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.CreddRedemptionHandlerPublishesOnlyAfterSettlement(outcome: \"commit\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.CreddRedemptionHandlerPublishesOnlyAfterSettlement(outcome: \"replacement\")",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.MidEnrollmentResidenceReadFailureRetainsTheAlreadyStagedGuild",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.PublicationRetryResumesAtItsFailedStageWithoutAnotherFee(stage: \"guild\")",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.AQuestAcceptedAfterTheImmediateCompletionDoesNotReceiveTheOlderEvent",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.RealCleanupFinalizesOnceAcrossNormalSaveFailureAndSynchronousSnapshotFailure(fault: \"auth\")",
+      "NexusForever.Game.Tests.Housing.HousingDecorPurchaseTests.RejectedCommittedGuildEffectResumesWithoutRepeatingThePaidPurchase",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationKeepsTheDraftAndResidencePrivateBeforeItsFeeCommits",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationPreservesAZeroAlternateFeeWithoutAnAuthDebit",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(outcome: \"rollback\")",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RejectedParticipantRollsBackFeeGuildAndAffiliationThenRetriesTogether(table: \"character_currency\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.SqlOrTrackedSuppressionCannotCommitAnOtherwiseAcknowledgedWalletOperation(fault: \"receipt\")",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PricingCannotRebindTheRequestToAnotherPlayer(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.SignedZeroSurvivesProviderNormalizationAndCompleteFollowup",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationParticipantFailureRetainsAndRetriesTheEntireAcceptedGraph(table: \"guild_rank\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.SqlOrTrackedSuppressionCannotCommitAnOtherwiseAcknowledgedWalletOperation(fault: \"tracked\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"null-customisations\")",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.ManagerRequiresTheActualCreditReceiptBeforePublishingItsWallet(exists: True)",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationFreezesThePrivateResidenceAgainstIndependentEditsAndSaves",
+      "NexusForever.Game.Tests.Database.CharacterAtomicSaveTests.MappedCharacterOwnershipAlsoCoversIndirectObjectiveAndItemKeys(mode: \"currency\")",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.AcceptedFeeRemainsProvisionalUntilTheOriginalCharacterTransactionCommits",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.RejectedCompleteGraphRestoresPaymentBeforeRetry(tokens: True)",
+      "NexusForever.Game.Tests.Housing.HousingDecorPurchaseTests.PublicDecorPurchaseWaitsForTheCommittedFeeAndDecorBeforeAdoptionAndBroadcast",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.RefreshCannotStealAnUnsettledSaveAndAForeignTrackedContextCannotSupplyAProof",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.UnaffordableValidRequestKeepsBothWalletsAndAppearance(tokens: False)",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.GuildRenameBroadcastCannotPrecedeTheCommittedFeeAndNames",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.NativeDisconnectBeforeOrDuringPublicationStopsLaterPackets(during: False)",
+      "NexusForever.Game.Tests.Housing.HousingDecorPurchaseTests.RejectedHalfOfThePurchaseRollsBackTheWholeFeeAndDecorAndRetriesOnce(table: \"character_currency\")",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.AcceptedFeeCompletesBeforeCommunityRetirementWithoutAStaleSuccess",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.RejectedVendorEnrollmentCannotChangeEitherWalletOrDeliverAnItem(earlyFlush: False)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.NativeDisconnectBeforeOrDuringPublicationStopsLaterPackets(during: True)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.TheSameGlobalOperationCannotBeReboundToAnotherAccountOrCurrency(otherAccount: False)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.EveryExistingCurrencyUsesRetainedOrderedOperationsWithoutChangingOtherOwners(currency: 12)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.SameContextCanRefreshItsSnapshotBeforeStagingWithoutDuplicatingAnOperation",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationReconcilesLostCommitRepliesWithoutAnotherNetPayment(authFailure: False)",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.ReentrantWorldUpdateDuringAuthCannotStartASecondCreationAttempt",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationRejectsARecoveryRouteDifferentFromItsCompleteSealedGraph",
+      "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests.NameCollisionRejectsBeforeAnyFeeOrSuccessfulReply",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.RealDirectSaveFreezesBeforeAuthAndTheCompletionQueueFollowsItsStoredBaseline(track: 25)",
+      "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests.VendorDebitRecoveryMakesDeliveryAndRefundMutuallyExclusive(outcome: \"resumed\")",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(outcome: \"rebound-after-lost-ack\")",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(outcome: \"rebound\")",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RealJoinAchievementsReachOrdinarySettlementWithoutOpeningTheDraftFence(matching: False)",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.RealDirectSaveFreezesBeforeAuthAndTheCompletionQueueFollowsItsStoredBaseline(track: 18)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"too-many-bones\")",
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.ResourceConversionPublishesBalancesOnlyAfterItsCharacterSaveIsConfirmed(outcome: \"lost-ack\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"positive-infinity\")"
+    ]
+  },
+  "preReviewSourceManifest": {
+    "path": "artifacts/continuation-20261105/appearance-settlement/review-manifest.json",
+    "sha256": "343df2c8dc2ed6c77923d658d85d047e1937cdbb53cb3c82385b12d59ee4cb22"
+  },
+  "reviewNegatives": {
+    "path": "artifacts/continuation-20261105/appearance-settlement/review-probes-negative.trx",
+    "sha256": "b6d8b3d30f4ce6276abc8ad1dbdf8de02c18aaa77fa5f5317d785484e25290f6",
+    "counters": {
+      "total": 3,
+      "executed": 3,
+      "passed": 0,
+      "failed": 3,
+      "error": 0,
+      "timeout": 0,
+      "aborted": 0,
+      "inconclusive": 0,
+      "passedButRunAborted": 0,
+      "notRunnable": 0,
+      "notExecuted": 0,
+      "disconnected": 0,
+      "warning": 0,
+      "completed": 0,
+      "inProgress": 0,
+      "pending": 0
+    },
+    "times": {
+      "creation": "2026-11-06T00:16:27.1213671+01:00",
+      "queuing": "2026-11-06T00:16:27.1213801+01:00",
+      "start": "2026-11-06T00:16:18.3342471+01:00",
+      "finish": "2026-11-06T00:16:29.1225519+01:00"
+    },
+    "groups": {
+      "AppearanceSettlementTests": {
+        "Failed": 3
+      }
+    },
+    "nonPassing": [
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PricingCannotMoveTheSamePlayerToAReplacementSession(tokens: True)",
+        "outcome": "Failed",
+        "message": "Assert.Equal() Failure: Values differ\r\nExpected: 0\r\nActual:   2"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PricingCannotMoveTheSamePlayerToAReplacementSession(tokens: False)",
+        "outcome": "Failed",
+        "message": "Assert.Equal() Failure: Values differ\r\nExpected: 0\r\nActual:   2"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.FailedBoneNoticeCannotCrossAVisiblePeersReplacedQueue",
+        "outcome": "Failed",
+        "message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [ServerEntityBoneUpdate { Bones = [0.75], UnitId = 77 }]"
+      }
+    ],
+    "testNames": [
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PricingCannotMoveTheSamePlayerToAReplacementSession(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PricingCannotMoveTheSamePlayerToAReplacementSession(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.FailedBoneNoticeCannotCrossAVisiblePeersReplacedQueue"
+    ]
+  },
+  "reviewNegativeBinaries": [
+    {
+      "path": "artifacts/continuation-20261105/appearance-settlement/review-negative-binaries/NexusForever.Game.dll",
+      "sha256": "602a772d78bc3a203cd92d99d7065bbbe27a11fff7f22944a607387ad3fedbf4"
+    },
+    {
+      "path": "artifacts/continuation-20261105/appearance-settlement/review-negative-binaries/NexusForever.WorldServer.dll",
+      "sha256": "0b7d563fc223a3214cf09b6b26501ad688e7d49ac56af5cbd3216c09be1fafc2"
+    },
+    {
+      "path": "artifacts/continuation-20261105/appearance-settlement/review-negative-binaries/NexusForever.Game.Tests.dll",
+      "sha256": "4974f082acb29cea3e5b4af4b912ff6afc591751b519f067a07210142513abfe"
+    }
+  ],
+  "finalFocused": {
+    "path": "artifacts/continuation-20261105/appearance-settlement/review-fixed-focused.trx",
+    "sha256": "21681a85d5a32f9340553275f225da64e127f4c65305a3ff6f18549136809722",
+    "counters": {
+      "total": 65,
+      "executed": 65,
+      "passed": 65,
+      "failed": 0,
+      "error": 0,
+      "timeout": 0,
+      "aborted": 0,
+      "inconclusive": 0,
+      "passedButRunAborted": 0,
+      "notRunnable": 0,
+      "notExecuted": 0,
+      "disconnected": 0,
+      "warning": 0,
+      "completed": 0,
+      "inProgress": 0,
+      "pending": 0
+    },
+    "times": {
+      "creation": "2026-11-06T00:17:57.0576121+01:00",
+      "queuing": "2026-11-06T00:17:57.0576319+01:00",
+      "start": "2026-11-06T00:17:53.7548025+01:00",
+      "finish": "2026-11-06T00:18:34.2894152+01:00"
+    },
+    "groups": {
+      "AppearanceChangeAdmissionTests": {
+        "Passed": 25
+      },
+      "AppearanceSettlementTests": {
+        "Passed": 40
+      }
+    },
+    "nonPassing": [],
+    "testNames": [
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"duplicate-label\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"null-bones\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.UnaffordableValidRequestKeepsBothWalletsAndAppearance(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.RejectedAuthDebitCannotCommitTheAppearanceAndCanRetry",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.LostCommitAcknowledgementDoesNotReplayThePayment(authFailure: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"duplicate-label\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"positive-infinity\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.FiniteRequestsKeepTheExistingPaymentAndAppearanceFlow(tokens: True, count: 0)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PricingCannotRebindTheRequestToAnotherPlayer(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.ProjectionCannotRebindTheRequestToAnotherPlayer(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.AdmissionCompletesAnInterruptedRefundFromTheOriginalDurableAnchor",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.RejectedCompleteGraphRestoresPaymentBeforeRetry(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"nan\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.FiniteRequestsKeepTheExistingPaymentAndAppearanceFlow(tokens: False, count: 3)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.UnaffordableValidRequestKeepsBothWalletsAndAppearance(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.ProjectionCannotRebindTheRequestToAnotherPlayer(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.FiniteRequestsKeepTheExistingPaymentAndAppearanceFlow(tokens: True, count: 3)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"null-customisations\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"nan\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"nan\")",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.AcceptedChangeFencesDirectLeafAndHeaderMutation(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PublicChangeSettlesTheFullAppearanceAndOnlyItsSelectedPayment(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PublicChangeSettlesTheFullAppearanceAndOnlyItsSelectedPayment(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PacketRetryKeepsTheConfirmedPaymentAndFreshBonePayload(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PrimaryCommitKeepsLiveAppearancePrivateUntilFollowupConfirmation(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.UnavailableFundsBeforeActorCaptureRejectTheQueuedChange(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"too-many-bones\")",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.ProjectionFailureCannotReserveAPaymentOrPartiallyChangeTheActor(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.LostCommitAcknowledgementDoesNotReplayThePayment(authFailure: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.QueuedRequestCannotAcquireReplacementOwnership(replacement: \"queue\")",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PublicChangeKeepsItsAppearanceAndWalletPrivateUntilCharacterConfirmation(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.FailedBoneNoticeCannotCrossAVisiblePeersReplacedQueue",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PrimaryCommitKeepsLiveAppearancePrivateUntilFollowupConfirmation(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.ChangedSqlPayerCannotReceiveOrPayForTheAcceptedAppearance(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.FiniteRequestsKeepTheExistingPaymentAndAppearanceFlow(tokens: False, count: 0)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"negative-infinity\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.FiniteRequestsKeepTheExistingPaymentAndAppearanceFlow(tokens: False, count: 256)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"positive-infinity\")",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.UnavailableFundsBeforeActorCaptureRejectTheQueuedChange(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"negative-infinity\")",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PacketRetryKeepsTheConfirmedPaymentAndFreshBonePayload(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"too-many-bones\")",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.FreeAppearanceCommitsWithoutAnAccountPaymentAnchor(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PricingCannotMoveTheSamePlayerToAReplacementSession(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.ReboundSessionCannotReceiveTheOriginalConfirmedAppearance(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.ProjectionFailureCannotReserveAPaymentOrPartiallyChangeTheActor(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.QueuedRequestCannotAcquireReplacementOwnership(replacement: \"wallet\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"positive-infinity\")",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.AcceptedChangeFencesDirectLeafAndHeaderMutation(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"negative-infinity\")",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.ChangedSqlPayerCannotReceiveOrPayForTheAcceptedAppearance(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.FiniteRequestsKeepTheExistingPaymentAndAppearanceFlow(tokens: True, count: 256)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.NextRequestReplacesTheFullGraphAndPaysOnlyItsOwnFee(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.NextRequestReplacesTheFullGraphAndPaysOnlyItsOwnFee(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PublicChangeKeepsItsAppearanceAndWalletPrivateUntilCharacterConfirmation(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PricingCannotMoveTheSamePlayerToAReplacementSession(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.QueuedRequestCannotAcquireReplacementOwnership(replacement: \"epoch\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"duplicate-label\")",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.SignedZeroSurvivesProviderNormalizationAndCompleteFollowup",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.ReboundSessionCannotReceiveTheOriginalConfirmedAppearance(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.RejectedCompleteGraphRestoresPaymentBeforeRetry(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"too-many-bones\")",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.NewAdmissionRecognizesThePaidAppearanceWithoutRefundOrRedelivery",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.FreeAppearanceCommitsWithoutAnAccountPaymentAnchor(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceSettlementTests.PricingCannotRebindTheRequestToAnotherPlayer(tokens: False)"
+    ]
+  },
+  "finalSourceManifest": {
+    "path": "artifacts/continuation-20261105/appearance-settlement/review-fixed-manifest.json",
+    "sha256": "b9bc6a91f893ae9b9a1ea8d9443f7c2da4ba802d90658216010a2921ca9934af"
+  },
+  "uniquePassingCases": 332,
+  "newPassingCases": 40,
+  "reusedUnchangedControls": 267,
+  "qualificationBoundary": "329 pre-review cases, then65 final appearance cases after narrow identity/session/queue fixes.267 unchanged cross-feature controls retain their preceding scoped candidate;332 is a union, not a single final-binary run.",
+  "builds": [
+    {
+      "path": "artifacts/continuation-20261105/appearance-settlement/final-owning-build.log",
+      "sha256": "f5d4373051868e16734e254f550e7afd0d1da02d595a745f9b9402f2371e2224"
+    },
+    {
+      "path": "artifacts/continuation-20261105/appearance-settlement/final-tests-build.log",
+      "sha256": "70b91585deffb407cec2cab7c69bc5f87633fd3ff8b28dc41e3cfc9e06a79033"
+    },
+    {
+      "path": "artifacts/continuation-20261105/appearance-settlement/review-fixed-owning-build.log",
+      "sha256": "a75a992590da7705637f52434641ec46f7f6323e58ef1d994c854fef1826becd"
+    },
+    {
+      "path": "artifacts/continuation-20261105/appearance-settlement/review-fixed-tests-build.log",
+      "sha256": "049ecf60e3a6f790883a557b4e429ed4ae2342c256782e17042684bb0ea1dfa6"
+    }
+  ],
+  "initialFailures": [
+    {
+      "path": "artifacts/continuation-20261105/appearance-settlement/baseline-test-build.log",
+      "sha256": "aa73e2a2aad0dfc8eddfac8f90be8c7c36020d25ac248199e271487d19047c93"
+    },
+    {
+      "path": "artifacts/continuation-20261105/appearance-settlement/candidate-owning-build.log",
+      "sha256": "a2a3263d5cf0aaeb10379fb3e19d1c8d2d1fec80d9c0176520df95ab366e40bc"
+    },
+    {
+      "path": "artifacts/continuation-20261105/appearance-settlement/candidate-owning-build-3.log",
+      "sha256": "b65ed19d511b6898a5ade25c1be0a3a7af3a046a37e7881c96ec7de9ff39f4d8"
+    },
+    {
+      "path": "artifacts/continuation-20261105/appearance-settlement/candidate-owning-build-4.log",
+      "sha256": "66e321827a738ae590b99aa272a0be9ea55206e06daafe9fc58bb852ebc69c05"
+    },
+    {
+      "path": "artifacts/continuation-20261105/appearance-settlement/candidate-tests-build-2.log",
+      "sha256": "fd5bdecd37f14dce75f6adb29aa5b1670b94c64a4958efc18a9108f10e9e135a"
+    }
+  ],
+  "initialFailureMeaning": "Fixture missing DatabaseProvider import, production missing EF extension import, a mistaken pre-sync candidate build, and fixture conditional target typing corrected before corresponding runtime validation; these are excluded from production-negative totals",
+  "review": {
+    "spec": {
+      "initial": {
+        "path": "artifacts/continuation-20261105/appearance-settlement/spec-review-1.md",
+        "sha256": "e34e85b1e88bb10da5616e84fe437e6c1dec4804e9f7283ed641297f13899d7b"
+      },
+      "initialFindings": 2,
+      "final": {
+        "path": "artifacts/continuation-20261105/appearance-settlement/spec-review-final.md",
+        "sha256": "f7e8676e7daa3b2fd701f350296758d67f8dc5bf6f6fd42d862358e2c10b30b7"
+      },
+      "remainingFindings": 0
+    },
+    "standards": {
+      "initial": {
+        "path": "artifacts/continuation-20261105/appearance-settlement/standards-review-1.md",
+        "sha256": "8536c8b75524599963f166db4955ddceb5c1c89cdcfe037628d43142881db52c"
+      },
+      "initialFindings": 1,
+      "final": {
+        "path": "artifacts/continuation-20261105/appearance-settlement/standards-review-final.md",
+        "sha256": "069c9e3215d51eb8eef4b4cca14dc1844356ca5806a31767cf82b438965f9f48"
+      },
+      "remainingFindings": 0
+    }
+  },
+  "upstream": {
+    "path": "artifacts/continuation-20261105/appearance-settlement/upstream-refresh.json",
+    "sha256": "428d321054f8fadd53de9e9d44389b1f0e8a9d388581c28c5fe8a7e841025d95",
+    "latestAllState": 20,
+    "changedHeadsBasesStates": 0,
+    "pr608": "open",
+    "pr609": "closed, unmerged"
+  },
+  "observableBoundary": [
+    "Parsed real public handler and concrete Player/AppearanceManager/CurrencyManager/AccountCurrencyManager with fixture catalogs/tables/session and other managers",
+    "Complete race/sex/customisation/visual/bone replacement and selected fee under distinct original Character receipt",
+    "Original Player/account/identity/realm/session/queue/wallet continuity across pricing, projection, enrollment and retained publication",
+    "Credit rollback and durable token compensation before retry; Auth/Character lost acknowledgements do not replay net payment",
+    "Private live appearance through complete followup; direct header/retained leaf/manager mutation fencing",
+    "Fresh admission recognizes paid receipt or finishes interrupted refund from exact debit anchor",
+    "Free/queued-unaffordable, removed rows/next request, signed zero and existing finite/malformed controls preserved",
+    "Fresh retained bone packets and successful-notice cursor; peer queue/session replacement suppression"
+  ],
+  "providerEvidence": "SQLite disposable durable Auth and Character files only; no new configured MySQL or copied-upgrade qualification",
+  "remaining": [
+    "Fresh configured MySQL and copied-upgrade",
+    "Physical process interruption/restart and full deployment",
+    "Actual customization tables and authoritative costs",
+    "Broker/socket and native/retail; broader F-026"
+  ],
+  "nativeClientAndCua": "remain stopped",
+  "fullSolutionAndSuite": "not run; scoped owning/test builds and selected tests only",
+  "entitlements": "defaults15:1/17:1 preserved; no automatic44 or seven baseline grants; focused settlement tests assert no created entitlement rows"
+}

@@ -1,5 +1,15 @@
 # Continue on another machine
 
+Latest appearance settlement: [confirmed public payment and graph](Decomp/Analysis/APPEARANCE_CHANGE_SETTLEMENT.md)
+completes Credits AND Service Tokens with full Character replacement, original
+actor ownership, compensation/admission recovery and confirmed publication in
+Source/SQLite. Four baseline/three review negatives are fixed;40 new/65 final
+appearance cases, clean scoped builds and both reviews pass.267 unchanged
+cross-feature controls retain the earlier329-case candidate. Exact Source/DLL
+and validation identities are in the linked portable record. Actual catalogs,
+fresh configured MySQL/copied-upgrade, physical restart, deployment/socket and
+native/retail stay open. Preserve concurrent root work and keep client/CUA stopped.
+
 Latest Primal evidence: [allocation-rule follow-through](Decomp/Analysis/PRIMAL_MATRIX_NATIVE_CONTRACT_2026_11_05.md#allocation-rule-follow-through)
 maps the native hex/starter/state, class reward selection and reward preview
 types/float arithmetic.14 full bodies/nine data anchors match the pinned PE;

@@ -1,5 +1,14 @@
 # NexusForever Feature Restoration - Current Status
 
+[Confirmed appearance settlement](Decomp/Analysis/APPEARANCE_CHANGE_SETTLEMENT.md)
+now couples public Credits/Service Token fees to the complete original Character
+appearance graph, compensation/admission recovery and confirmed publication.
+Four baseline and three review negatives are fixed.40 new/65 final appearance
+cases pass;267 unchanged cross-feature controls retain the preceding329-case
+scoped run. Both final reviews and clean scoped builds pass. Actual catalogs,
+configured MySQL/copied-upgrade, physical restart, sockets/deployment/native/
+retail and wider F-026 remain open. Continue the independent roadmap.
+
 [Primal Matrix allocation-rule evidence](Decomp/Analysis/PRIMAL_MATRIX_NATIVE_CONTRACT_2026_11_05.md#allocation-rule-follow-through)
 now maps the hex/starter unlock rule, four named states, class reward columns
 and five reward kinds.14 full native bodies/nine data anchors match the pinned
