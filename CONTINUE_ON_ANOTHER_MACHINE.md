@@ -1,5 +1,13 @@
 # Continue on another machine
 
+Latest Primal evidence: [allocation-rule follow-through](Decomp/Analysis/PRIMAL_MATRIX_NATIVE_CONTRACT_2026_11_05.md#allocation-rule-follow-through)
+maps the native hex/starter/state, class reward selection and reward preview
+types/float arithmetic.14 full bodies/nine data anchors match the pinned PE;
+REA identity is reused and standalone Ghidra/LLVM remain separate. No Source
+allocation was enabled. Exact tables and authoritative essence settlement remain
+required; do not repeat the recovered native searches. Continue independent
+roadmap work, preserve concurrent changes and keep client/CUA stopped.
+
 Latest appearance validation: [malformed input admission](Decomp/Analysis/APPEARANCE_CHANGE_ADMISSION.md)
 protects Credits and Service Token requests before debit/mutation and direct
 updates before partial changes. Fifteen baseline failures and eight explicit

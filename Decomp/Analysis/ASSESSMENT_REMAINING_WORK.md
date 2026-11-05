@@ -134,7 +134,15 @@ native range/anchor observations under the pinned REA identity. The handler is
 diagnostic only: authoritative catalogs, ownership/validation, checked essence
 settlement, saved allocation/reward adoption and committed recovery still gate
 gameplay. No placeholder snapshot, native execution or retail claim is added.
-Continue those evidence-backed requirements and independent broader work.
+The later [native allocation-rule follow-through](PRIMAL_MATRIX_NATIVE_CONTRACT_2026_11_05.md#allocation-rule-follow-through)
+maps the six-neighbor/starter predicate, four states, class reward columns and
+five reward categories/float previews.14 full bodies/nine data anchors match
+the pinned PE. Money11-14 affordability and type15/account-subtype15-18 quotes
+remain distinct client representations; neither alone authorizes server debit.
+The bounded archive lookup found no exact node/reward tables. Obtain that hashed
+corpus and authoritative balance/synchronization evidence before settlement,
+then complete persistence/rewards and committed recovery. Keep allocation
+diagnostic and continue independent broader work; do not redo the mapped search.
 
 [Committed Character affiliation publication](GUILD_DISBAND_RECOVERY.md#committed-character-affiliation-publication)
 connects public change/removal and published entity/login/join/ghost views to

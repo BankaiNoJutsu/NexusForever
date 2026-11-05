@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[Primal Matrix allocation-rule evidence](Decomp/Analysis/PRIMAL_MATRIX_NATIVE_CONTRACT_2026_11_05.md#allocation-rule-follow-through)
+now maps the hex/starter unlock rule, four named states, class reward columns
+and five reward kinds.14 full native bodies/nine data anchors match the pinned
+PE; two currency representations stay distinct. Actual catalogs and server
+settlement remain unqualified, so allocation stays diagnostic. Source is unchanged
+by this milestone; continue independent roadmap work with client/CUA stopped.
+
 [Malformed appearance admission](Decomp/Analysis/APPEARANCE_CHANGE_ADMISSION.md)
 now rejects duplicate labels and non-finite bones before either wallet is
 charged or appearance changes. Direct updates also reject null/oversized data

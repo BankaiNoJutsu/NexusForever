@@ -1,0 +1,522 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-05T22:35:11.845775+00:00",
+  "baseCommit": "22308c2ab0aca34d077e96dae3532e5330237902",
+  "milestone": "Primal Matrix native allocation-rule and currency-path qualification",
+  "classification": "Mapped-only; allocation remains diagnostic; not server or retail qualification",
+  "productionChanges": [],
+  "binary": {
+    "path": "C:\\GIT\\_archive\\cluster-3d\\NexusForever\\Decomp\\Client64\\WildStar64.exe",
+    "sha256": "231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5",
+    "build": 16042,
+    "reusedReaEvidence": "ev_142ebc012c9fce11df9c67703c5d9e335b4810c52c1d752b63ed2828030231d4",
+    "reaBundle": {
+      "path": "artifacts/continuation-20261105/blocker-next-targets/deep-rea-bundle.json",
+      "sha256": "d900a258756bfdec974ff1b901e22e7e72af469326fce8796cc1a65504d8fa6f"
+    }
+  },
+  "nativeVerification": {
+    "independentlyMatchedFunctionBodies": 14,
+    "independentlyMatchedDataAnchors": 9,
+    "ranges": [
+      {
+        "kind": "function-body",
+        "owner": "1406e73e0",
+        "startVA": "0x1406e73e0",
+        "bytes": 2776,
+        "sha256": "50cee90d2012f4b76a73de7b12cc96ae0aca1b7b0c3f8284a84d523a0d667b2f"
+      },
+      {
+        "kind": "function-body",
+        "owner": "1406e70a0",
+        "startVA": "0x1406e70a0",
+        "bytes": 819,
+        "sha256": "23d4159972db65fb48857feb747695072f878852a641de99c8b613879635b223"
+      },
+      {
+        "kind": "function-body",
+        "owner": "1406e4e00",
+        "startVA": "0x1406e4e00",
+        "bytes": 135,
+        "sha256": "3fc14d7504c64502e20c431a268d7d8bb69c267e35c2bf778f5ee3d33b450e69"
+      },
+      {
+        "kind": "function-body",
+        "owner": "1406e4f30",
+        "startVA": "0x1406e4f30",
+        "bytes": 138,
+        "sha256": "5a9649a2092416ef433559bf47dcb2855c34c26e49845e116f2008f917cf66cd"
+      },
+      {
+        "kind": "function-body",
+        "owner": "1406e4fc0",
+        "startVA": "0x1406e4fc0",
+        "bytes": 324,
+        "sha256": "abee38f4a2e7afaa46e341047bf0fa06081cb1334d9e9075f56a33d4f1e26fd8"
+      },
+      {
+        "kind": "function-body",
+        "owner": "1406e8a60",
+        "startVA": "0x1406e8a60",
+        "bytes": 2244,
+        "sha256": "1133c532853b0d6bc718acbba9c3048793e45ba00e1fd0a2fca99246075e5276"
+      },
+      {
+        "kind": "function-body",
+        "owner": "1404d64d0",
+        "startVA": "0x1404d64d0",
+        "bytes": 1422,
+        "sha256": "d0d5cc1da0dbcded8e9abefba31316ae80526db196aef33e87501a6b874291a1"
+      },
+      {
+        "kind": "function-body",
+        "owner": "1406e9330",
+        "startVA": "0x1406e9330",
+        "bytes": 1652,
+        "sha256": "7abd0601ad43baf47453ab6068a60cd97c1e650828318e8be360b332bf37d293"
+      },
+      {
+        "kind": "function-body",
+        "owner": "1406e6910",
+        "startVA": "0x1406e6910",
+        "bytes": 441,
+        "sha256": "bcb2f8bdca454b162249d1fdca7308ab0b395ede25759a8ad163c649447d4ab9"
+      },
+      {
+        "kind": "function-body",
+        "owner": "1406f7b60",
+        "startVA": "0x1406f7b60",
+        "bytes": 505,
+        "sha256": "a11eb86c43a1fcca16a410d04388c81bcd30d9327ba3114b3e07836037f1ab11"
+      },
+      {
+        "kind": "function-body",
+        "owner": "1404e5640",
+        "startVA": "0x1404e5640",
+        "bytes": 287,
+        "sha256": "4665ffb94bfc505bcdf0c4e2fd12bf5e378de51e439dc33e6846ab7ff5dd84e7"
+      },
+      {
+        "kind": "function-body",
+        "owner": "1406dfa40",
+        "startVA": "0x1406dfa40",
+        "bytes": 110,
+        "sha256": "eb41a510d9d6518e03b9eefc44ebdfcfb97ff44d21f9f5dcc6b66eb6b2a1169a"
+      },
+      {
+        "kind": "function-body",
+        "owner": "1406e6800",
+        "startVA": "0x1406e6800",
+        "bytes": 271,
+        "sha256": "5df60ee709bf8bf6a0ae36a31d01225ece3bb1f97def522804665bc24393b294"
+      },
+      {
+        "kind": "function-body",
+        "owner": "1406e7f70",
+        "startVA": "0x1406e7f70",
+        "bytes": 2023,
+        "sha256": "71d6aa26d1150cfcc545cf7af81fb04448c861ea43398a7b993a800aaee74cff"
+      },
+      {
+        "kind": "data",
+        "owner": "six-coordinate-offset-pairs",
+        "startVA": "0x140c49e40",
+        "bytes": 48,
+        "sha256": "abf0342e878986af1fbf9e5d0ddda461f12272b9138b4894dcdedf07edc3f088"
+      },
+      {
+        "kind": "data",
+        "owner": "ability-tier-lookup",
+        "startVA": "0x140b720a8",
+        "bytes": 12,
+        "sha256": "635f6e1cc26e8308362b460a02cd5cd62cd2f5b2d6613740fa6f31eebd866a8c"
+      },
+      {
+        "kind": "data",
+        "owner": "named-player-currency-binding",
+        "startVA": "0x140b72980",
+        "bytes": 16,
+        "sha256": "04134e7e0a7623fbcc81772dad0fd6fbed4766d58693eb884ecb05b8a5c31ed4"
+      },
+      {
+        "kind": "data",
+        "owner": "named-account-currency-binding",
+        "startVA": "0x140b69960",
+        "bytes": 16,
+        "sha256": "eaf07ea5424623e8879c142f400850fe9ec02f80455e9b1bf20c6ed7d32c1e5c"
+      },
+      {
+        "kind": "data",
+        "owner": "account-essence-enum-records",
+        "startVA": "0x140c37ce0",
+        "bytes": 64,
+        "sha256": "97773ed000774bd9b60a43c8f03384e4e8b95cd2e2f6562ce159390b1e1c1bc8"
+      },
+      {
+        "kind": "data",
+        "owner": "player-currency-name",
+        "startVA": "0x140b427a0",
+        "bytes": 18,
+        "sha256": "a32b49a530a2e4fe4142f56f42289c8d6b3cc0443c75640102b77da8d5f096da"
+      },
+      {
+        "kind": "data",
+        "owner": "account-currency-name",
+        "startVA": "0x140b0c3b8",
+        "bytes": 19,
+        "sha256": "cb9966439aacd357d4678ec1c8e5db11816faad84465c2a5b00f21f966e24439"
+      },
+      {
+        "kind": "data",
+        "owner": "node-state-enum-name",
+        "startVA": "0x140b3f110",
+        "bytes": 29,
+        "sha256": "40af51aab37018a357a239c573a311ac84641f883032ff6c74f7e0f090d2ba35"
+      },
+      {
+        "kind": "data",
+        "owner": "reward-type-enum-name",
+        "startVA": "0x140b3ef98",
+        "bytes": 30,
+        "sha256": "8716186e05e15e520895db9e5b5528d38834059603844c0b8f6101b6fa19a99a"
+      }
+    ],
+    "preliminaryPeRuntimeRangeMap": {
+      "path": "artifacts/continuation-20261105/primal-matrix-gameplay/native-inputs.json",
+      "sha256": "cd7ccc5d1c39eb88fc8e0533691488a6043832f8cde1482fa8b5316955250570"
+    },
+    "boundary": "Final FunctionManager body ranges, including the whole leaf and chained bodies, were read from the unchanged read-only Ghidra project then matched independently to PE bytes. Preliminary first runtime-function ranges are not whole-function proof."
+  },
+  "namedEnums": [
+    {
+      "name": "Matrix reward type",
+      "startVA": "0x140c33d50",
+      "bytes": 96,
+      "sha256": "bdc57bc68b5e20925b36ab9cb572fd605303205da491278a68ea830e7e9c35e8",
+      "records": [
+        {
+          "name": "None",
+          "value": 0,
+          "nameVA": "0x140ac8d88",
+          "nameSHA256": "89762610bdb9fd53bd5c3bedb0a98ffa83bce46d94bb3f50a40d0cce7addb291"
+        },
+        {
+          "name": "RewardProperty",
+          "value": 1,
+          "nameVA": "0x140ac8d98",
+          "nameSHA256": "b793df55fd19d7e820a4c70c26b2a51d3b6020c68a0eea7fb14a2fa78c208b16"
+        },
+        {
+          "name": "AbilityPoint",
+          "value": 2,
+          "nameVA": "0x140ac8d50",
+          "nameSHA256": "498846adb983e8322822cc3bc469bcb1283b7514aaf2fe2e3cc5267979e61061"
+        },
+        {
+          "name": "AMPPoint",
+          "value": 3,
+          "nameVA": "0x140ac8d70",
+          "nameSHA256": "7a7b9057d49ac11f0b6593bf90935e65ddbfd4f55262f598c6fbaecb8193532f"
+        },
+        {
+          "name": "AbilityUnlock",
+          "value": 4,
+          "nameVA": "0x140ac8d10",
+          "nameSHA256": "0b956697f102cfd96cc2c40af471da3fa66fe0cba7203d808bcde8baba0a7df3"
+        },
+        {
+          "name": "UnitProperty",
+          "value": 5,
+          "nameVA": "0x140ac8d30",
+          "nameSHA256": "f7bb1dbda4d0e27ccbeb78a19a42806906fd496d6fa7ee78426583967c7c216b"
+        }
+      ],
+      "corroboration": "Raw PE records; reward table selected by LLVM registrar1406e823d/1406e8250; account table additionally matches read-only Ghidra data bytes"
+    },
+    {
+      "name": "Account essence subtype",
+      "startVA": "0x140c37ce0",
+      "bytes": 64,
+      "sha256": "97773ed000774bd9b60a43c8f03384e4e8b95cd2e2f6562ce159390b1e1c1bc8",
+      "records": [
+        {
+          "name": "RedEssence",
+          "value": 15,
+          "nameVA": "0x140ab11a0",
+          "nameSHA256": "5d09c2881d686873a38e3e52eede9e58561a4cf2596c77cd094d95d2488194d7"
+        },
+        {
+          "name": "BlueEssence",
+          "value": 16,
+          "nameVA": "0x140ab11b8",
+          "nameSHA256": "d8566cc72e334c5700446feb1843f0a63a3b9aae0f0183c1c9c6c64a3bc9fcfd"
+        },
+        {
+          "name": "GreenEssence",
+          "value": 17,
+          "nameVA": "0x140ab1300",
+          "nameSHA256": "0d36137fbb10443cda0a2c0208c3ed4fbca7fd1b518531651b4d5b736290be14"
+        },
+        {
+          "name": "PurpleEssence",
+          "value": 18,
+          "nameVA": "0x140ab1320",
+          "nameSHA256": "a1e90f00275dd56a813014fadc0c7b2bf62c17e4926c75f229c7d74da838cbb1"
+        }
+      ],
+      "corroboration": "Raw PE records; reward table selected by LLVM registrar1406e823d/1406e8250; account table additionally matches read-only Ghidra data bytes"
+    }
+  ],
+  "hexNeighborOffsets": [
+    [
+      0,
+      -1
+    ],
+    [
+      1,
+      -1
+    ],
+    [
+      1,
+      0
+    ],
+    [
+      0,
+      1
+    ],
+    [
+      -1,
+      1
+    ],
+    [
+      -1,
+      0
+    ]
+  ],
+  "abilityTierLookup": [
+    1,
+    5,
+    9
+  ],
+  "nativeNodeStates": {
+    "Locked": 0,
+    "Unlocked": 1,
+    "Started": 2,
+    "Completed": 3
+  },
+  "normalNodeRule": "Nonzero editor allocation gives Started or Completed against row.MaxAllocations; zero allocation is Unlocked when row.Flags bit0 is set or any of six normal neighbors is Started/Completed, otherwise Locked. These are client editor rules, not independently observed server admission policy.",
+  "specialNodeBoundary": "Bootstrap treats type1 rows separately and retains a special grouping only when all six normal neighbors exist. Full special-group reward/application rules remain unqualified.",
+  "classRewardColumns": {
+    "1": "0x28 Warrior",
+    "2": "0x2c Engineer",
+    "3": "0x30 Esper",
+    "4": "0x34 Medic",
+    "5": "0x38 Stalker",
+    "7": "0x3c Spellslinger"
+  },
+  "rewardBoundary": "Five nonzero UI reward categories and their output fields are mapped. LLVM MULSS reads the table float for allocation-count scaling. Ability preview resolves a spell wrapper and a1/5/9 tier lookup; actual grant/application and referenced row validity remain open.",
+  "currencyPaths": {
+    "affordability": {
+      "helper": "0x1406e4e00",
+      "moneyGetter": "0x1406f7b60",
+      "namedBinding": "0x140b72980",
+      "moneyIds": {
+        "red": 11,
+        "blue": 12,
+        "green": 13,
+        "purple": 14
+      },
+      "cachedBalances": {
+        "red": "player-global+0x1648",
+        "blue": "player-global+0x1650",
+        "green": "player-global+0x1658",
+        "purple": "player-global+0x1660"
+      }
+    },
+    "confirmationQuote": {
+      "helper": "0x1406e6910",
+      "moneyObjectType": 15,
+      "accountSubtypes": {
+        "red": 15,
+        "blue": 16,
+        "green": 17,
+        "purple": 18
+      }
+    },
+    "accountGetter": {
+      "function": "0x1404e5640",
+      "namedBinding": "0x140b69960",
+      "boundary": "Different account cache and Game.Money type15/subtype construction; a UI alias is not server debit authority"
+    },
+    "serverDebitOwnership": "Unqualified; do not choose Character11-14 or Auth15-18 solely from client display/confirmation representations"
+  },
+  "authoredCorroboration": {
+    "path": "artifacts/continuation-20261105/primal-matrix-gameplay/PrimalMatrix.lua",
+    "sha256": "bb82d3f633e2482661c1b0ac96d5cd3c2401c11905a8781234abda922e5748f3",
+    "url": "https://raw.githubusercontent.com/Zod-/Wildstar-Carbine-Addons/aa608d0b837ff8037eb8509123d8e3ed4efcb9e4/Live/PrimalMatrix/PrimalMatrix.lua",
+    "versionBoundary": "Archived NCsoft-authored UI in a third-party immutable mirror; not authenticated final-build server source",
+    "selectedLines": "29-34 reward kinds,268-271 balance query,491/573-576 editor states,683-703 account metadata plus player-money amounts,764-772 pending connectivity error",
+    "locatorBasis": "Physical lines in the1170-line hash-bound raw UTF-8 file, checked by selected line contents"
+  },
+  "initialSpecFinding": {
+    "priority": "P3",
+    "issue": "Authored Lua line locators used rendered web line numbers rather than the hash-bound raw file lines",
+    "corrected": "Document anchor and generating-script metadata now use verified physical raw-file lines",
+    "initialContract": {
+      "path": "artifacts/continuation-20261105/primal-matrix-gameplay/review-initial-contract.md",
+      "sha256": "e8fe10f439f92e4a0b582a17bf6d20777ac0967de7d4b9fe2ebf5879e4e321cd"
+    },
+    "initialRecord": {
+      "path": "artifacts/continuation-20261105/primal-matrix-gameplay/review-initial-record.json",
+      "sha256": "779a3fd44ab82b2bbaef05be9aec265a4ed53c1a873df6a6f948a267cad2edc2"
+    },
+    "initialReview": {
+      "path": "artifacts/continuation-20261105/primal-matrix-gameplay/review-spec-initial.txt",
+      "sha256": "d67fb21ef5d7218267a7a3a67fc4241b8b715730749723d5d09e87d9922b1a6d"
+    }
+  },
+  "sourceInputs": [
+    {
+      "path": "Source/NexusForever.GameTable/Model/PrimalMatrixNodeEntry.cs",
+      "sha256": "1f781208a93cc678531e7308b88aad962ba3f69eb53d8d32fa0b21f0dedbaa4b"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/PrimalMatrixRewardEntry.cs",
+      "sha256": "e36421d3c419b55ae869207f643ce05d901bf4c3c446864fcebce9572685e288"
+    },
+    {
+      "path": "Source/NexusForever.Game.Static/Entity/CurrencyType.cs",
+      "sha256": "996ffa7aa242f2f2aaefde98ddcd58e01ea7892034cade59fd0ac099988a4aa8"
+    },
+    {
+      "path": "Source/NexusForever.Game.Static/Account/AccountCurrencyType.cs",
+      "sha256": "4f02a6d21fc378e6e6f7f69de0b6d9e8bc176e9166b05408871501b94527c5ff"
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/Network/Message/Handler/PrimalMatrix/ClientPrimalMatrixSaveHandler.cs",
+      "sha256": "12023f7848bb794657a27364ed58042cf1379b5ca18804b676815da82a92f71b"
+    }
+  ],
+  "review": {
+    "standards": {
+      "findings": 0,
+      "path": "artifacts/continuation-20261105/primal-matrix-gameplay/review-standards.txt",
+      "sha256": "90715d3c4b61aeaf1c70b482ec8023ab309706fdade8628166450854bfaac766"
+    },
+    "spec": {
+      "findings": 0,
+      "path": "artifacts/continuation-20261105/primal-matrix-gameplay/review-spec.txt",
+      "sha256": "2f3ca61e071ca0119c8658b91299ffd4ea85cc959e7cca169811ede8b8be7bff"
+    }
+  },
+  "nativePassTimes": [
+    {
+      "pass": "input",
+      "secondsBetweenLogTimestamps": 19.0
+    },
+    {
+      "pass": "rules",
+      "secondsBetweenLogTimestamps": 14.0
+    },
+    {
+      "pass": "ownership",
+      "secondsBetweenLogTimestamps": 16.0
+    },
+    {
+      "pass": "verification",
+      "secondsBetweenLogTimestamps": 55.0
+    }
+  ],
+  "ownedAnalyzerStopped": {
+    "path": "artifacts/continuation-20261105/primal-matrix-gameplay/process-check.json",
+    "sha256": "1647e9e46491f96a1775e71d1ca30acc14b8916b97c2b8d95a355c9a60ed2048"
+  },
+  "artifacts": [
+    {
+      "path": "artifacts/continuation-20261105/primal-matrix-gameplay/input-console.log",
+      "sha256": "9398e1d2e3801f5d54b34766e879f6f9f000ed031bc7450c63ecd007d9f66e33"
+    },
+    {
+      "path": "artifacts/continuation-20261105/primal-matrix-gameplay/rules-console.log",
+      "sha256": "443ddcd22c0c5f994b5f39c2cd60514942773f2fc76579261e90107990a481bc"
+    },
+    {
+      "path": "artifacts/continuation-20261105/primal-matrix-gameplay/ownership-console.log",
+      "sha256": "b69d36788f259cb7f1d3e36f446499c86ced871df5c9bc090b76296e9e5514c9"
+    },
+    {
+      "path": "artifacts/continuation-20261105/primal-matrix-gameplay/verification-console.log",
+      "sha256": "cdc3cf97d79242977ab26625be343c992107d2f1a14e879035e95bb77db89765"
+    },
+    {
+      "path": "artifacts/continuation-20261105/primal-matrix-gameplay/reward-llvm.txt",
+      "sha256": "9332db2f9b3d7984b4e303b57af208977428bf850d0df4c9d9e19342b0af2829"
+    },
+    {
+      "path": "artifacts/continuation-20261105/primal-matrix-gameplay/enum-llvm.txt",
+      "sha256": "7b0e6f41c2328737df953268a41bf3c39583ee1a1ed58f9590f5e0436bb26238"
+    },
+    {
+      "path": "artifacts/continuation-20261105/primal-matrix-gameplay/VerifyPrimalGameplay.java",
+      "sha256": "a261ad75f56f068c8e6a0e849e2bd025ea7198aecb73c020c48ccb27282b5f85"
+    },
+    {
+      "path": "artifacts/continuation-20261105/primal-matrix-gameplay/map-inputs.py",
+      "sha256": "18b9a0511f68f77627de201d67f91f75679ea0c0003b8d5f761042563608c8f8"
+    },
+    {
+      "path": "artifacts/continuation-20261105/primal-matrix-gameplay/write-record.py",
+      "sha256": "66932e6553491b164286333ded816adab3e99a64423b0fba5f73f1a46bb90f55"
+    },
+    {
+      "path": "artifacts/continuation-20261105/primal-matrix-gameplay/InspectCodeAddresses.java",
+      "sha256": "74a36c8db4d6c3fe68c6ef08c2d92abfd7edd697822f575e7297478b9cb26d1c"
+    }
+  ],
+  "retainedDiagnostics": [
+    {
+      "path": "artifacts/continuation-20261105/primal-matrix-gameplay/initial-map-failure.txt",
+      "sha256": "b22ca7b5239386c7ef6cc9b210f445b95c595568753ef904f4ba69d963bd3794"
+    },
+    {
+      "path": "artifacts/continuation-20261105/primal-matrix-gameplay/verification-path-failure.log",
+      "sha256": "aeb635097be24497ed0052be4f964c671df5521fb8d27eb63eea0dd6ccd31657"
+    },
+    {
+      "path": "artifacts/continuation-20261105/primal-matrix-gameplay/enum-initial-unaligned-llvm.txt",
+      "sha256": "ccb5e2eca18ae2f4ddd225fc7f5b4ba48665096b86fc97cbb71ace4bfc7c7135"
+    }
+  ],
+  "diagnosticBoundary": "Initial PE mapper required an unwind entry for a valid leaf; corrected to bounded preliminary range, then final full body verified. Initial multi-script-path invocation failed before project opening; corrected by an exact local Inspector copy. Initial enum LLVM window began midinstruction; final enum dump starts at the verified function entry, with the same mapped registrar instructions. No REA provider retry, installation or target execution.",
+  "boundedCorpusLookup": {
+    "root": "C:/GIT/_archive/cluster-3d/NexusForever",
+    "exactFileNames": [
+      "PrimalMatrixNode.tbl",
+      "PrimalMatrixReward.tbl"
+    ],
+    "matches": 0,
+    "method": "Earlier in this turn rg --files --no-ignore with exact filename globs; root confirmed present. This is not an exhaustive all-host or remote absence claim. The handoff identifies the old I:/Wildstar installation/archive/table corpus as an external input."
+  },
+  "upstream": {
+    "path": "artifacts/continuation-20261105/primal-matrix-gameplay/upstream-refresh.json",
+    "sha256": "7f4d03977661b6c845e1ebd376270d97eef71dfd887aa226d4c38e5af6c9c387",
+    "latestAllState": 20,
+    "changedHeadsBasesStates": 0,
+    "pr608": "open",
+    "pr609": "closed, unmerged"
+  },
+  "remaining": [
+    "Exact-build node/reward rows with identity/hash and referenced spell/property/catalog validation",
+    "Special grouping rewards and actual server prerequisites/eligibility",
+    "Authoritative four-essence debit/synchronization witness",
+    "Owner-bound settlement, allocation persistence/rewards and committed publication/recovery",
+    "Provider/socket/deployment/native and retail qualification"
+  ],
+  "preserved": [
+    "No Source/schema/configuration/labels/project mutation",
+    "Native client/CUA remain stopped",
+    "Defaults15:1/17:1 and no-auto44/seven policy",
+    "Concurrent root gameplay and native-label work"
+  ],
+  "validation": "23 native byte ranges match; six reward records decoded; no C# tests/builds for mapped-only evidence"
+}

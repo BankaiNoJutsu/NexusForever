@@ -1,5 +1,12 @@
 # Client Binary Decompile Continuation Guide
 
+[Primal Matrix allocation rules](PRIMAL_MATRIX_NATIVE_CONTRACT_2026_11_05.md#allocation-rule-follow-through)
+now have exact-build hex/starter/state, class-column and reward-enum/float
+preview evidence.14 full bodies/nine data anchors match the PE. Affordability
+Money11-14 and confirmation/account subtypes15-18 are distinct client rails;
+server debit ownership remains open. Exact node/reward rows are absent from the
+bounded archive lookup. Keep0072 diagnostic and continue independent work.
+
 [Malformed appearance admission](APPEARANCE_CHANGE_ADMISSION.md) now rejects
 duplicate labels/non-finite bones before payment or mutation, including both
 wallet routes. Direct Update rejects null/oversized data before partial changes.

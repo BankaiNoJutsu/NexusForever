@@ -10,6 +10,11 @@ request and maps the fields of the wrongly named `ServerAuctionPostAux` packet.
 It is static shipped-artifact/field corroboration, not a completed allocation
 service or retail runtime qualification. No production Source changed.
 
+The later [allocation-rule follow-through](#allocation-rule-follow-through)
+maps the editor's hex graph, node states, class reward selection and currency
+representations. It narrows the remaining inputs; the allocation handler stays
+diagnostic until actual catalogs and authoritative settlement are qualified.
+
 ## Two different contracts
 
 | Direction/opcode | Native payload | Meaning established by the client |
@@ -142,3 +147,106 @@ the pinned PE and the read-only Ghidra program.
 No application build/test or retail gameplay result is claimed for this
 research pass. Related [spell consumer corroboration](SPELL_AUX_CONSUMER_CORROBORATION_2026_11_05.md)
 separately identifies target-unit/count fields and retains timer-replay gates.
+
+## Allocation-rule follow-through
+
+5 November 2026, after published `22308c2a`. Read-only Ghidra12.0.4 and LLVM
+inspection of the same pinned PE resolves additional client editor and preview
+rules. This is mapped-only evidence, with no production Source, handler, schema,
+labels or project changes. The unavailable REA native provider was not retried;
+the existing shipped-artifact REA identity remains the provenance input.
+
+### Hex graph and admission state
+
+Cache bootstrap `1404d64d0` indexes normal nodes by row ID and coordinates.
+Its six coordinate offsets at `140c49e40` are `(0,-1)`, `(1,-1)`, `(1,0)`,
+`(0,1)`, `(-1,1)` and `(-1,0)`. Type1 rows form a separate special grouping;
+the cache retains one only when all six surrounding normal nodes exist. That
+bootstrap is not proof of the group's reward or server admission policy.
+
+The native enum registrar `1406e7f70` names states0 Locked,1 Unlocked,2 Started
+and3 Completed. State calculation `1406e4fc0` first handles nonzero editor
+allocations: below the row maximum gives Started, otherwise Completed. A zero
+allocation is Unlocked when row Flags bit0 is set or one of the six normal
+neighbors is Started/Completed; otherwise it is Locked. Input `1406e73e0` clamps
+editor increments to the row maximum and refuses to lower a node below its
+saved count. Its pending-only deallocation path invokes `1406e6800` and can
+restore an attempted edit after a connectivity failure. This establishes no
+postcommit refund, reset, respec or complete special-group reward rule.
+
+### Class rewards and numeric representation
+
+Selector `1406dfa40` reads the player's class and chooses node-row reward columns
+at offsets28/2C/30/34/38/3C for Warrior1, Engineer2, Esper3, Medic4, Stalker5 and
+Spellslinger7 respectively. Other class values return0. The enum table at
+`140c33d50`, selected by the registrar's LLVM instructions, gives:
+
+| Value | Name | Observed preview in `1406e8a60` |
+| --- | --- | --- |
+| 0 | None | No supported reward output |
+| 1 | RewardProperty | `tRewardProperty`, property identity and scaled `fValue` |
+| 2 | AbilityPoint | Scaled `nAbilityPoints` |
+| 3 | AMPPoint | Scaled `nAMPPoints` |
+| 4 | AbilityUnlock | Spell-wrapper lookup, `splAbility` and `nTierUnlocked` |
+| 5 | UnitProperty | Validated property metadata and scaled `tUnitProperty.fValue` |
+
+LLVM confirms `MULSS` against the table value after converting the allocation
+count to single precision. A decompiler's integer-pointer cast must not be used
+to replace the existing float fields with integer interpretation. Ability
+preview uses the separate tier lookup `[1,5,9]` at `140b720a8`; this is not proof
+that every reward grants an ability or that arbitrary object/subobject rows are
+valid. Actual reward rows and server application/adoption remain required.
+
+### Currency paths must remain distinct
+
+The `GameLib.GetPlayerCurrency` binding at `140b72980` selects `1406f7b60`.
+For Money IDs1 through14 it reads the player currency cache at
+`player-global+15F0 + id*8`. Matrix affordability `1406e4e00` reads offsets
+1648/1650/1658/1660, matching red11/blue12/green13/purple14, and includes pending
+costs before another increment. Node price builder `1406e9330` uses those same
+Money IDs. By contrast, confirmation staging `1406e6910` constructs Money type15
+with account subtypes15/16/17/18. The separate `GetAccountCurrency` binding
+`140b69960 -> 1404e5640` reads a different account cache and constructs that
+type/subtype representation. Native account enum records explicitly name the
+four essence subtypes.
+
+The immutable authored UI independently uses account-currency metadata for
+essence tooltips and `GameLib.GetPlayerCurrency` for displayed amounts and
+pending costs. Its editor exposes locked nodes and pending deallocation errors.
+[Authored Matrix UI](https://github.com/Zod-/Wildstar-Carbine-Addons/blob/aa608d0b837ff8037eb8509123d8e3ed4efcb9e4/Live/PrimalMatrix/PrimalMatrix.lua#L683-L703).
+The fetched bytes match the earlier recorded Lua SHA256. This third-party
+mirror preserves NCsoft-authored consumer source; it is not authenticated
+final-build server source. Neither representation alone authorizes choosing
+Character currencies11-14 or Auth currencies15-18 for a server debit. A matching
+allocation/balance or independent server-owned synchronization witness remains
+necessary before settlement.
+
+### Verification and next required input
+
+All14 selected FunctionManager body ranges and nine data anchors match raw PE
+bytes independently. Full bodies are verified, including chained bodies and
+the affordability leaf with no PE runtime-function entry. An initial mapper
+assumption about that leaf and an initial multi-script-path invocation error
+remain retained as tooling diagnostics. Four successful static passes take104s
+between their log timestamps; no C# build or test suite was needed or run.
+
+The bounded exact-name lookup under
+`C:/GIT/_archive/cluster-3d/NexusForever` found no `PrimalMatrixNode.tbl` or
+`PrimalMatrixReward.tbl`. This is not an all-host/remote absence claim. The
+handoff identifies the original installation/archive/table corpus as external.
+The next data input is an exact-build, hashed node/reward corpus plus referenced
+spell/property rows; the next ownership input is authoritative essence debit/
+synchronization evidence. Do not repeat the recovered enum/neighbor/class
+search or substitute synthetic rows as that missing corpus. Continue independent
+roadmap work while those inputs remain unavailable.
+
+The [portable follow-through record](coverage/primal-matrix-gameplay-contracts-20261105.json)
+binds the23 byte checks, six reward enum records, raw LLVM/Ghidra logs, named
+getters, authored-source identity and remaining gates. Local evidence is under
+`artifacts/continuation-20261105/primal-matrix-gameplay/`. No game client/DLL or
+Computer Use was executed. Allocation persistence, rewards, committed original-
+actor publication/recovery, provider/deployment/socket and native/retail remain
+open. Entitlement defaults15:1/17:1 and no-auto44/seven policy are unchanged.
+Spec review corrected one authored-source line-locator error against the
+hash-bound raw Lua; the initial artifacts are retained. Both final review axes
+have0 remaining findings.
