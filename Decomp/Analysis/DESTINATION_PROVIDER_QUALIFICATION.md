@@ -1,5 +1,12 @@
 # Destination configured-provider qualification
 
+[Appearance settlement](APPEARANCE_CHANGE_SETTLEMENT.md#configured-mysql-qualification)
+passes all40 original public Credits/Service Token cases on fresh MySQL8.4.13
+Auth/Character schemas with exact42/49 migration identities and configured
+retries, plus40 SQLite controls. Runtime/140 input identities and both reviews
+pass. All82 schemas are absent and owned workloads stopped. Other profiles,
+copied-upgrade, physical restart, actual content and native/retail remain open.
+
 [Pet-flair progression](PET_FLAIR_PROGRESSION.md#character-mysql-qualification)
 passes all16 cases on migrated49-identity MySQL8.4.13 Character schemas, with
 configured retries, exact owned-schema cleanup and terminal shutdown proof.

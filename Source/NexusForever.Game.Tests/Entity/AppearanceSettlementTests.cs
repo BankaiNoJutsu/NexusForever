@@ -32,11 +32,20 @@ namespace NexusForever.Game.Tests.Entity;
 
 public sealed class AppearanceSettlementTests
 {
+    private readonly Func<(DbContextOptions<CharacterContext> Character, DatabaseConnectionString Auth)> providerFixture;
+    public AppearanceSettlementTests() { }
+    internal AppearanceSettlementTests(Func<(DbContextOptions<CharacterContext> Character, DatabaseConnectionString Auth)> providerFixture)
+        => this.providerFixture = providerFixture;
+    private Task<Fixture> Create(IInterceptor interceptor = null)
+    {
+        var configured = providerFixture?.Invoke() ?? default;
+        return Fixture.Create(interceptor, configured.Character, configured.Auth);
+    }
     [Theory]
     [InlineData(false)] [InlineData(true)]
     public async Task PublicChangeKeepsItsAppearanceAndWalletPrivateUntilCharacterConfirmation(bool tokens)
     {
-        using var f = await Fixture.Create();
+        using var f = await Create();
         f.Request(tokens);
 
         Assert.Equal(Sex.Male, f.Actor.Player.Sex);
@@ -54,7 +63,7 @@ public sealed class AppearanceSettlementTests
     [InlineData(false)] [InlineData(true)]
     public async Task PublicChangeSettlesTheFullAppearanceAndOnlyItsSelectedPayment(bool tokens)
     {
-        using var f = await Fixture.Create();
+        using var f = await Create();
         f.Request(tokens); await f.Actor.Drain();
 
         using var stored = f.Source.Context(); using var auth = f.Auth.Context();
@@ -74,7 +83,7 @@ public sealed class AppearanceSettlementTests
     [InlineData(false)] [InlineData(true)]
     public async Task PrimaryCommitKeepsLiveAppearancePrivateUntilFollowupConfirmation(bool tokens)
     {
-        var hold = new FollowupHold(); using var f = await Fixture.Create(hold);
+        var hold = new FollowupHold(); using var f = await Create(hold);
         f.Request(tokens); await f.Drive(() => hold.Reached);
         Assert.Equal(Sex.Male, f.Actor.Player.Sex);
         Assert.Equal(10u, Assert.Single(f.Appearance.GetCustomisations()).Value);
@@ -87,9 +96,8 @@ public sealed class AppearanceSettlementTests
     [InlineData(false)] [InlineData(true)]
     public async Task RejectedCompleteGraphRestoresPaymentBeforeRetry(bool tokens)
     {
-        using var f = await Fixture.Create();
-        using (var setup = f.Source.Context()) await setup.Database.ExecuteSqlRawAsync(
-            "CREATE TRIGGER reject_appearance BEFORE UPDATE ON character_customisation BEGIN SELECT RAISE(ABORT, 'owned appearance rejection'); END");
+        using var f = await Create();
+        using (var setup = f.Source.Context()) await Reject(setup, "reject_appearance", "character_customisation", "UPDATE");
         f.Request(tokens); await f.Drive(() => f.Database.Rollbacks != 0);
         using (var stored = f.Source.Context()) using (var auth = f.Auth.Context())
         {
@@ -112,7 +120,7 @@ public sealed class AppearanceSettlementTests
     [InlineData(false)] [InlineData(true)]
     public async Task LostCommitAcknowledgementDoesNotReplayThePayment(bool authFailure)
     {
-        var lost = new LostAcknowledgement(authFailure); using var f = await Fixture.Create(authFailure ? null : lost);
+        var lost = new LostAcknowledgement(authFailure); using var f = await Create(authFailure ? null : lost);
         if (authFailure) f.Auth.Interceptor = lost;
         f.Request(true); await f.Actor.Drain();
         Assert.True(lost.Observed);
@@ -125,7 +133,7 @@ public sealed class AppearanceSettlementTests
     [InlineData(false)] [InlineData(true)]
     public async Task AcceptedChangeFencesDirectLeafAndHeaderMutation(bool tokens)
     {
-        using var f = await Fixture.Create(); f.Request(tokens);
+        using var f = await Create(); f.Request(tokens);
         Assert.Throws<InvalidOperationException>(() => f.Actor.Player.Sex = Sex.Female);
         Assert.Throws<InvalidOperationException>(() => f.Actor.Player.Race = Race.Human);
         Assert.Throws<InvalidOperationException>(() => Assert.Single(f.Appearance.GetCustomisations()).Value = 88);
@@ -141,7 +149,7 @@ public sealed class AppearanceSettlementTests
     [InlineData(false)] [InlineData(true)]
     public async Task PacketRetryKeepsTheConfirmedPaymentAndFreshBonePayload(bool tokens)
     {
-        using var f = await Fixture.Create(); int calls = 0; ServerEntityBoneUpdate rejected = null;
+        using var f = await Create(); int calls = 0; ServerEntityBoneUpdate rejected = null;
         f.Connection.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
         {
             if (args[0] is ServerEntityBoneUpdate packet && ++calls == 1)
@@ -161,7 +169,7 @@ public sealed class AppearanceSettlementTests
     [InlineData(false)] [InlineData(true)]
     public async Task PricingCannotRebindTheRequestToAnotherPlayer(bool tokens)
     {
-        using var f = await Fixture.Create(); var replacement = RecordingDispatchProxy<IPlayer>.Create(out _);
+        using var f = await Create(); var replacement = RecordingDispatchProxy<IPlayer>.Create(out _);
         var catalog = (RecordingDispatchProxy<ICustomisationManager>)(object)f.Customisations;
         catalog.SetMethodHandler(tokens ? nameof(ICustomisationManager.CalculateCostTokens) : nameof(ICustomisationManager.CalculateCostCredits), _ =>
         { f.Connection.SetProperty(nameof(IWorldSession.Player), replacement); return 7u; });
@@ -175,7 +183,7 @@ public sealed class AppearanceSettlementTests
     [InlineData(false)] [InlineData(true)]
     public async Task UnavailableFundsBeforeActorCaptureRejectTheQueuedChange(bool tokens)
     {
-        using var f = await Fixture.Create(); f.Request(tokens);
+        using var f = await Create(); f.Request(tokens);
         if (tokens) f.Tokens.CurrencySubtractAmount(AccountCurrencyType.ServiceToken, 100);
         else f.Credits.CurrencySubtractAmount(CurrencyType.Credits, 100);
         await f.Actor.Drain(); Assert.Equal(0, f.Database.Attempts);
@@ -187,7 +195,7 @@ public sealed class AppearanceSettlementTests
     [Fact]
     public async Task NewAdmissionRecognizesThePaidAppearanceWithoutRefundOrRedelivery()
     {
-        using var f = await Fixture.Create(); f.Request(true); await f.Actor.Drain();
+        using var f = await Create(); f.Request(true); await f.Actor.Drain();
         using (var update = f.Auth.Context()) await update.AccountWorldSession.ExecuteUpdateAsync(set => set.SetProperty(row => row.Epoch, 2ul));
         var admitted = new AccountModel { Id = 12, WorldSessionEpoch = 2 };
         await VendorAccountPurchase.RecoverAtAdmissionAsync(admitted, f.Auth.Database, f.Database, 1);
@@ -201,7 +209,7 @@ public sealed class AppearanceSettlementTests
     [InlineData(false)] [InlineData(true)]
     public async Task NextRequestReplacesTheFullGraphAndPaysOnlyItsOwnFee(bool tokens)
     {
-        using var f = await Fixture.Create(); f.Request(tokens); await f.Actor.Drain();
+        using var f = await Create(); f.Request(tokens); await f.Actor.Drain();
         ((RecordingDispatchProxy<ICustomisationManager>)(object)f.Customisations).SetMethodReturn(nameof(ICustomisationManager.GetItemVisuals), Array.Empty<IItemVisual>());
         f.Request(tokens, empty: true); await f.Actor.Drain();
         using var stored = f.Source.Context(); using var auth = f.Auth.Context();
@@ -216,7 +224,7 @@ public sealed class AppearanceSettlementTests
     [InlineData(false)] [InlineData(true)]
     public async Task FreeAppearanceCommitsWithoutAnAccountPaymentAnchor(bool tokens)
     {
-        using var f = await Fixture.Create();
+        using var f = await Create();
         var catalog = (RecordingDispatchProxy<ICustomisationManager>)(object)f.Customisations;
         catalog.SetMethodReturn(nameof(ICustomisationManager.CalculateCostCredits), 0u);
         catalog.SetMethodReturn(nameof(ICustomisationManager.CalculateCostTokens), 0u);
@@ -231,7 +239,7 @@ public sealed class AppearanceSettlementTests
     [InlineData(false)] [InlineData(true)]
     public async Task ReboundSessionCannotReceiveTheOriginalConfirmedAppearance(bool tokens)
     {
-        using var f = await Fixture.Create(); var replacement = RecordingDispatchProxy<IPlayer>.Create(out _);
+        using var f = await Create(); var replacement = RecordingDispatchProxy<IPlayer>.Create(out _);
         f.Database.Committed = primary => { if (primary) f.Connection.SetProperty(nameof(IWorldSession.Player), replacement); };
         f.Request(tokens); await f.Actor.Drain();
         using var stored = f.Source.Context(); using var auth = f.Auth.Context();
@@ -246,7 +254,7 @@ public sealed class AppearanceSettlementTests
     [InlineData(false)] [InlineData(true)]
     public async Task ProjectionFailureCannotReserveAPaymentOrPartiallyChangeTheActor(bool tokens)
     {
-        using var f = await Fixture.Create();
+        using var f = await Create();
         var catalog = (RecordingDispatchProxy<ICustomisationManager>)(object)f.Customisations;
         catalog.SetMethodHandler(nameof(ICustomisationManager.GetItemVisuals), _ => throw new IOException("Owned projection failure."));
         Assert.Throws<IOException>(() => f.Request(tokens)); await f.Actor.Drain();
@@ -258,9 +266,8 @@ public sealed class AppearanceSettlementTests
     [Fact]
     public async Task RejectedAuthDebitCannotCommitTheAppearanceAndCanRetry()
     {
-        using var f = await Fixture.Create();
-        using (var auth = f.Auth.Context()) await auth.Database.ExecuteSqlRawAsync(
-            "CREATE TRIGGER reject_appearance_debit BEFORE INSERT ON account_currency_operation BEGIN SELECT RAISE(ABORT, 'owned debit rejection'); END");
+        using var f = await Create();
+        using (var auth = f.Auth.Context()) await Reject(auth, "reject_appearance_debit", "account_currency_operation", "INSERT");
         f.Request(true); await f.Drive(() => f.Database.Rollbacks != 0);
         using (var stored = f.Source.Context()) using (var auth = f.Auth.Context())
         {
@@ -274,11 +281,9 @@ public sealed class AppearanceSettlementTests
     [Fact]
     public async Task AdmissionCompletesAnInterruptedRefundFromTheOriginalDurableAnchor()
     {
-        using var f = await Fixture.Create();
-        using (var stored = f.Source.Context()) await stored.Database.ExecuteSqlRawAsync(
-            "CREATE TRIGGER reject_appearance BEFORE UPDATE ON character_customisation BEGIN SELECT RAISE(ABORT, 'owned graph rejection'); END");
-        using (var auth = f.Auth.Context()) await auth.Database.ExecuteSqlRawAsync(
-            "CREATE TRIGGER reject_appearance_refund BEFORE INSERT ON account_currency_operation WHEN NEW.subtract = 0 BEGIN SELECT RAISE(ABORT, 'owned refund rejection'); END");
+        using var f = await Create();
+        using (var stored = f.Source.Context()) await Reject(stored, "reject_appearance", "character_customisation", "UPDATE");
+        using (var auth = f.Auth.Context()) await Reject(auth, "reject_appearance_refund", "account_currency_operation", "INSERT", refundsOnly: true);
         f.Request(true); await f.Drive(() => { using var auth = f.Auth.Context(); return auth.AccountCurrencyOperation.Any(row => row.Subtract); });
         using (var auth = f.Auth.Context())
         {
@@ -299,7 +304,7 @@ public sealed class AppearanceSettlementTests
     [InlineData("epoch")] [InlineData("queue")] [InlineData("wallet")]
     public async Task QueuedRequestCannotAcquireReplacementOwnership(string replacement)
     {
-        using var f = await Fixture.Create(); f.Request(true);
+        using var f = await Create(); f.Request(true);
         if (replacement == "epoch") ((RecordingDispatchProxy<IAccount>)(object)f.Actor.Player.Account).SetProperty(nameof(IAccount.WorldSessionEpoch), 2ul);
         else if (replacement == "queue") f.Connection.SetProperty(nameof(IWorldSession.Events), new EventQueue());
         else f.Actor.Set(nameof(Player.CurrencyManager), RecordingDispatchProxy<ICurrencyManager>.Create(out _));
@@ -312,7 +317,7 @@ public sealed class AppearanceSettlementTests
     [Fact]
     public async Task SignedZeroSurvivesProviderNormalizationAndCompleteFollowup()
     {
-        using var f = await Fixture.Create(); f.Request(false, bone: -0f); await f.Actor.Drain();
+        using var f = await Create(); f.Request(false, bone: -0f); await f.Actor.Drain();
         using var stored = f.Source.Context(); Assert.Equal(0f, stored.CharacterBone.Single().Bone);
         Assert.Equal(93ul, stored.CharacterCurrency.Single().Amount); Assert.Single(f.Packets<ServerEntityBoneUpdate>());
     }
@@ -321,7 +326,7 @@ public sealed class AppearanceSettlementTests
     [InlineData(false)] [InlineData(true)]
     public async Task ProjectionCannotRebindTheRequestToAnotherPlayer(bool tokens)
     {
-        using var f = await Fixture.Create(); var replacement = RecordingDispatchProxy<IPlayer>.Create(out _);
+        using var f = await Create(); var replacement = RecordingDispatchProxy<IPlayer>.Create(out _);
         ((RecordingDispatchProxy<ICustomisationManager>)(object)f.Customisations).SetMethodHandler(nameof(ICustomisationManager.GetItemVisuals), _ =>
         {
             f.Connection.SetProperty(nameof(IWorldSession.Player), replacement);
@@ -336,7 +341,7 @@ public sealed class AppearanceSettlementTests
     [InlineData(false)] [InlineData(true)]
     public async Task ChangedSqlPayerCannotReceiveOrPayForTheAcceptedAppearance(bool tokens)
     {
-        using var f = await Fixture.Create(); f.Request(tokens);
+        using var f = await Create(); f.Request(tokens);
         using (var stored = f.Source.Context()) await stored.Character.ExecuteUpdateAsync(set => set.SetProperty(row => row.AccountId, 13u));
         await f.Drive(() => f.Database.Attempts >= 2);
         using (var stored = f.Source.Context()) using (var auth = f.Auth.Context())
@@ -352,7 +357,7 @@ public sealed class AppearanceSettlementTests
     [Fact]
     public async Task FailedBoneNoticeCannotCrossAVisiblePeersReplacedQueue()
     {
-        using var f = await Fixture.Create(); using var peer = await Fixture.Create(); peer.Actor.Set(nameof(Player.Guid), 88u);
+        using var f = await Create(); using var peer = await Create(); peer.Actor.Set(nameof(Player.Guid), 88u);
         var visible = (Dictionary<uint, IGridEntity>)typeof(GridEntity).GetField("visibleEntities", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(f.Actor.Player)!;
         visible.Add(88, peer.Actor.Player); int attempts = 0;
         f.Connection.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
@@ -370,7 +375,7 @@ public sealed class AppearanceSettlementTests
     [InlineData(false)] [InlineData(true)]
     public async Task PricingCannotMoveTheSamePlayerToAReplacementSession(bool tokens)
     {
-        using var f = await Fixture.Create(); var replacement = RecordingDispatchProxy<IWorldSession>.Create(out var swapped);
+        using var f = await Create(); var replacement = RecordingDispatchProxy<IWorldSession>.Create(out var swapped);
         swapped.SetProperty(nameof(IWorldSession.Events), f.Actor.Events); swapped.SetProperty(nameof(IWorldSession.Player), f.Actor.Player);
         ((RecordingDispatchProxy<ICustomisationManager>)(object)f.Customisations).SetMethodHandler(
             tokens ? nameof(ICustomisationManager.CalculateCostTokens) : nameof(ICustomisationManager.CalculateCostCredits), _ =>
@@ -384,6 +389,13 @@ public sealed class AppearanceSettlementTests
         using var auth = f.Auth.Context(); using var stored = f.Source.Context();
         Assert.Equal(100ul, auth.AccountCurrency.Single().Amount); Assert.Equal(100ul, stored.CharacterCurrency.Single().Amount);
     }
+
+    private static Task Reject(DbContext context, string name, string table, string operation, bool refundsOnly = false)
+        => context.Database.ExecuteSqlRawAsync(context.Database.IsSqlite()
+            ? $"CREATE TRIGGER {name} BEFORE {operation} ON {table} {(refundsOnly ? "WHEN NEW.subtract = 0 " : "")}BEGIN SELECT RAISE(ABORT, 'owned appearance rejection'); END"
+            : refundsOnly
+                ? $"CREATE TRIGGER {name} BEFORE {operation} ON {table} FOR EACH ROW BEGIN IF NEW.`subtract` = 0 THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='owned appearance rejection'; END IF; END"
+                : $"CREATE TRIGGER {name} BEFORE {operation} ON {table} FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='owned appearance rejection'");
 
     private sealed class AppearanceDatabase(SourceFixture source, IInterceptor interceptor) : CharacterDatabase
     {
@@ -441,9 +453,9 @@ public sealed class AppearanceSettlementTests
         internal IEnumerable<T> Packets<T>() => Connection.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted))
             .Select(row => row.Arguments[0]).OfType<T>();
 
-        internal static async Task<Fixture> Create(IInterceptor interceptor = null)
+        internal static async Task<Fixture> Create(IInterceptor interceptor, DbContextOptions<CharacterContext> options, DatabaseConnectionString authConfig)
         {
-            var source = new SourceFixture(null); source.Seed();
+            var source = new SourceFixture(options); source.Seed();
             using (var setup = source.Context())
             {
                 var character = setup.Character.Single(); character.AccountId = 12; character.Race = (byte)Race.Human; character.Sex = (byte)Sex.Male;
@@ -461,13 +473,13 @@ public sealed class AppearanceSettlementTests
             custom.SetMethodReturn(nameof(ICustomisationManager.CalculateCostCredits), 7u);
             custom.SetMethodReturn(nameof(ICustomisationManager.CalculateCostTokens), 7u);
             custom.SetMethodReturn(nameof(ICustomisationManager.GetItemVisuals), new IItemVisual[] { new ItemVisual { Slot = ItemSlot.BodyHair, DisplayId = 22 } });
-            var auth = new AuthStore();
+            var auth = new AuthStore(authConfig);
             var events = new EventQueue(); var session = RecordingDispatchProxy<IWorldSession>.Create(out var connection);
             connection.SetProperty(nameof(IWorldSession.Events), events); connection.SetProperty(nameof(IWorldSession.CanProcessIncomingPackets), true);
             var account = (RecordingDispatchProxy<IAccount>)(object)source.Source.Player.Account;
             account.SetProperty(nameof(IAccount.Id), 12u); account.SetProperty(nameof(IAccount.WorldSessionEpoch), 1ul); account.SetProperty(nameof(IAccount.Session), session);
             var database = new AppearanceDatabase(source, interceptor);
-            using (var context = source.Context()) database.Initialise(new DatabaseConnectionString { Provider = DatabaseProvider.Sqlite, ConnectionString = context.Database.GetDbConnection().ConnectionString });
+            using (var context = source.Context()) database.Initialise(new DatabaseConnectionString { Provider = context.Database.IsSqlite() ? DatabaseProvider.Sqlite : DatabaseProvider.MySql, ConnectionString = context.Database.GetDbConnection().ConnectionString });
             CharacterModel model = Assert.Single(await database.GetCharacters(12));
             var actor = new Actor(source, actorModel: model, actorSession: session, actorEvents: events, characterDatabase: database, authDatabase: auth.Database);
             actor.Set(nameof(Player.Race), Race.Human); actor.Set(nameof(Player.Sex), Sex.Male); actor.Set(nameof(Player.Guid), 77u);
@@ -510,13 +522,15 @@ public sealed class AppearanceSettlementTests
     private sealed class AuthStore : IDisposable
     {
         private readonly string path = Path.Combine(Path.GetTempPath(), $"nf-appearance-{Guid.NewGuid():N}.sqlite");
-        private DatabaseConnectionString Config => new() { Provider = DatabaseProvider.Sqlite, ConnectionString = $"Data Source={path};Pooling=False" };
+        private readonly DatabaseConnectionString configured;
+        private DatabaseConnectionString Config => configured ?? new() { Provider = DatabaseProvider.Sqlite, ConnectionString = $"Data Source={path};Pooling=False" };
         internal readonly AuthDatabase Database;
         internal IInterceptor Interceptor;
         internal readonly AccountModel Model;
         internal AuthContext Context() => Interceptor == null ? new AuthContext(Config) : new FaultAuthContext(Config, Interceptor);
-        internal AuthStore()
+        internal AuthStore(DatabaseConnectionString configured)
         {
+            this.configured = configured;
             Database = new AppearanceAuthDatabase(Context); Database.Initialise(Config);
             using var context = Context(); context.Database.EnsureCreated();
             Model = new() { Id = 12, Email = "appearance-12@example.local", WorldSessionEpoch = 1 };

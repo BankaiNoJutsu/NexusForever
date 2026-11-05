@@ -85,3 +85,42 @@ Fresh configured MySQL/copied-upgrade, physical process interruption/restart,
 actual customisation catalogs/costs, sockets/deployment and native/retail
 qualification remain open. Client and Computer Use remain stopped. F-026 and
 the wider assessment Goal remain partial; continue the independent roadmap.
+
+## Configured MySQL qualification
+
+6 November2026. All40 existing public appearance settlement cases now also
+pass on fresh MySQL8.4.13 Auth and Character schemas with the production
+configured retry strategy. The cases retain their original assertions and
+payment/recovery/publication flow. Fixture changes supply provider connections
+and equivalent SQL rejection triggers; production Source and core runtime DLLs
+remain unchanged from `9751a136`.
+
+Each fixture receives a separate migrated pair, including the visible peer:
+41 Auth schemas apply all42 compiled migration identities and41 Character
+schemas apply all49. Exact applied identity sets match before and after each
+case. The recorded engine/datadir and loopback TLS connection are verified.
+The gate covers both fees, full graph replacement, rollback/refund before retry,
+lost Auth/Character commit replies, admission recovery, free/queued-unaffordable
+requests, signed zero, later requests and original actor/session/queue notices.
+It supplies no actual catalog or retail price evidence.
+
+All40 default SQLite controls also pass. All140 runner/dependency DLLs and
+the bound harness/fixture files keep their before/after byte identities; the
+final6278-file Source comparison retains only the intended test-fixture delta
+and documented historical encoding variants. Both review axes have zero
+findings. The [provider record](coverage/appearance-mysql-20261106.json) binds
+the exact source/runtime identities, selected cases, migrations, cleanup and
+shutdown evidence. Local artifacts are under
+`artifacts/continuation-20261106/appearance-mysql/`.
+
+All82 named schemas are independently confirmed absent. The exact engine,
+runner, helper and listener are stopped. The same single provider run took
+856.1s including fresh migrations; startup took about110s before readiness.
+The test-only/runner builds took28.12/8.66s, and the40 SQLite controls took34s.
+No full solution or full suite was run, and no service or global setup changed.
+
+This qualifies the recorded fresh configured MySQL profile and supersedes that
+specific open gate in the earlier Source/SQLite result. Other profiles and
+copied upgrades, physical process/power interruption and full deployed restart,
+actual customisation rows/costs, sockets/native/retail and the wider F-026 and
+assessment Goal remain open. Client and Computer Use remain stopped.

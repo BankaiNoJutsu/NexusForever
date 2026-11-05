@@ -1,5 +1,15 @@
 # Continue on another machine
 
+Latest appearance provider result: [fresh configured MySQL](Decomp/Analysis/APPEARANCE_CHANGE_SETTLEMENT.md#configured-mysql-qualification)
+passes all40 original cases on paired Auth42/Character49-migration schemas,
+plus40 default SQLite controls. Production Source/core DLLs are unchanged
+from9751a136;140 runner inputs retain before/after identities and both reviews
+pass. All82 schemas are absent and owned engine/runner/helper/listener stopped.
+Other profiles/copied-upgrade, physical restart, actual catalogs/costs and
+native/retail remain open. The prior Source milestone9751a136 is now published
+with verified parity after a later normal push; its three rejected pushes are
+retained. Continue independent roadmap work, preserving concurrent changes.
+
 Latest appearance settlement: [confirmed public payment and graph](Decomp/Analysis/APPEARANCE_CHANGE_SETTLEMENT.md)
 completes Credits AND Service Tokens with full Character replacement, original
 actor ownership, compensation/admission recovery and confirmed publication in

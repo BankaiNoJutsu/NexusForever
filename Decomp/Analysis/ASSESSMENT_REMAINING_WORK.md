@@ -1,5 +1,15 @@
 # Assessment follow-through goal
 
+[Appearance MySQL qualification](APPEARANCE_CHANGE_SETTLEMENT.md#configured-mysql-qualification)
+passes all40 existing public settlement cases on fresh Auth/Character schemas,
+with exact42/49 compiled migrations and configured retries, plus40 SQLite
+controls. Assertions and production Source/core DLLs are unchanged;140 runner
+inputs retain their identities and both reviews pass. All82 schemas are absent
+and the owned engine/runner/helper/listener are stopped. The recorded fresh
+profile is qualified; other profiles/copied-upgrade, physical interruption/
+restart, actual customisation rows/costs, deployed sockets/native/retail and
+wider F-026 remain open. Continue independent actionable gameplay/progression.
+
 [Confirmed appearance settlement](APPEARANCE_CHANGE_SETTLEMENT.md) completes the
 real parsed public Credits AND Service Token fee, full Character appearance
 replacement, rejection/compensation/admission recovery and original committed

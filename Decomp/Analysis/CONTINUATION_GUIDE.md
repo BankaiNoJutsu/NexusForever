@@ -1,5 +1,13 @@
 # Client Binary Decompile Continuation Guide
 
+[Appearance MySQL qualification](APPEARANCE_CHANGE_SETTLEMENT.md#configured-mysql-qualification)
+passes40 original public cases on fresh Auth42/Character49-migration schemas
+with configured retries, plus40 SQLite controls. Production runtime and140
+runner inputs are unchanged; both reviews pass. All82 schemas are absent and
+the owned workloads are stopped. Other profiles/copied-upgrade, physical
+restart, actual rows/costs and native/retail remain open. Continue the wider
+roadmap with client/CUA stopped.
+
 [Confirmed appearance settlement](APPEARANCE_CHANGE_SETTLEMENT.md) now binds
 public Credits/Service Token fees to the complete Character graph and retains
 compensation, admission recovery and original confirmed notices. Four baseline

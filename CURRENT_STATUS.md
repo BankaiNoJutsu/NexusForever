@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[Appearance MySQL qualification](Decomp/Analysis/APPEARANCE_CHANGE_SETTLEMENT.md#configured-mysql-qualification)
+passes the same40 public payment/graph/recovery/publication cases on fresh
+Auth42/Character49-migration schemas, plus40 default SQLite controls. Production
+Source/core DLLs and140 runner inputs keep their identities; both reviews pass.
+All82 schemas are absent and owned processes/listener stopped. Other profiles/
+copied-upgrade, physical restart, actual catalogs and native/retail stay open.
+
 [Confirmed appearance settlement](Decomp/Analysis/APPEARANCE_CHANGE_SETTLEMENT.md)
 now couples public Credits/Service Token fees to the complete original Character
 appearance graph, compensation/admission recovery and confirmed publication.

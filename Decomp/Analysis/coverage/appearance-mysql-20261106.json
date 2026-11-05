@@ -1,0 +1,892 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-05T23:53:22.559072+00:00",
+  "baseCommit": "9751a1363ab6653fef4ab0350f22643fc18a2caf",
+  "milestone": "Fresh configured MySQL Auth and Character public appearance settlement",
+  "classification": "Qualified recorded fresh MySQL8.4.13 profile; not copied-upgrade, physical restart or retail qualification",
+  "productionSourceChanged": false,
+  "sourceBoundary": {
+    "sourceCount": 6278,
+    "onlyChangedSource": [
+      "Source/NexusForever.Game.Tests/Entity/AppearanceSettlementTests.cs"
+    ],
+    "literalCleanFilterMatches": [
+      "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+      "Source/NexusForever.ClientConnector/packages.config",
+      "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+      "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+      "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+      "Source/NexusForever.Database/NexusForever.Database.csproj",
+      "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj"
+    ],
+    "explicitEncodingVariant": [
+      "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs"
+    ]
+  },
+  "fixtureSource": {
+    "path": "Source/NexusForever.Game.Tests/Entity/AppearanceSettlementTests.cs",
+    "sha256": "3a8039a33ac4111ec1fad6fc8c157b5e50aa001ff16a620c7b7aaf9ecf19b413"
+  },
+  "assertions": {
+    "baseCommit": "9751a1363ab6653fef4ab0350f22643fc18a2caf",
+    "trackedChanges": [
+      "Source/NexusForever.Game.Tests/Entity/AppearanceSettlementTests.cs"
+    ],
+    "localHarnessFiles": [
+      "provider/Program.cs",
+      "provider/Provider.csproj",
+      "provider/start-owned-mysql.ps1",
+      "provider/run-provider.ps1"
+    ],
+    "assertCallSequenceUnchanged": true,
+    "assertCalls": 128,
+    "fixtureSHA256": "3a8039a33ac4111ec1fad6fc8c157b5e50aa001ff16a620c7b7aaf9ecf19b413",
+    "productionSourceAndCoreDllsUnchanged": true,
+    "assertionBearingLinesIdentical": true,
+    "assertionBearingLines": 98
+  },
+  "engine": {
+    "Pid": 15444,
+    "Version": "8.4.13",
+    "DataRoot": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261031\\provider-mysql8\\private-00eb166874374f73\\data\\",
+    "Isolation": "REPEATABLE-READ",
+    "TlsRequired": true,
+    "TlsCipher": "TLS_AES_256_GCM_SHA384"
+  },
+  "engineReadyLog": {
+    "path": "artifacts/continuation-20261106/appearance-mysql/provider/mysql.stderr.log",
+    "sha256": "890d05151488489c2e847143ba4a9b935bc87e575785236156f4822a9cf5c364"
+  },
+  "invocation": {
+    "path": "artifacts/continuation-20261106/appearance-mysql/provider/invocation.json",
+    "sha256": "4c631427e655982e5ad0b702d8b450721739adfb6679333e86474add4167255a",
+    "cases": [
+      "PublicChangeKeepsItsAppearanceAndWalletPrivateUntilCharacterConfirmation(False)",
+      "PublicChangeKeepsItsAppearanceAndWalletPrivateUntilCharacterConfirmation(True)",
+      "PublicChangeSettlesTheFullAppearanceAndOnlyItsSelectedPayment(False)",
+      "PublicChangeSettlesTheFullAppearanceAndOnlyItsSelectedPayment(True)",
+      "PrimaryCommitKeepsLiveAppearancePrivateUntilFollowupConfirmation(False)",
+      "PrimaryCommitKeepsLiveAppearancePrivateUntilFollowupConfirmation(True)",
+      "RejectedCompleteGraphRestoresPaymentBeforeRetry(False)",
+      "RejectedCompleteGraphRestoresPaymentBeforeRetry(True)",
+      "LostCommitAcknowledgementDoesNotReplayThePayment(False)",
+      "LostCommitAcknowledgementDoesNotReplayThePayment(True)",
+      "AcceptedChangeFencesDirectLeafAndHeaderMutation(False)",
+      "AcceptedChangeFencesDirectLeafAndHeaderMutation(True)",
+      "PacketRetryKeepsTheConfirmedPaymentAndFreshBonePayload(False)",
+      "PacketRetryKeepsTheConfirmedPaymentAndFreshBonePayload(True)",
+      "PricingCannotRebindTheRequestToAnotherPlayer(False)",
+      "PricingCannotRebindTheRequestToAnotherPlayer(True)",
+      "UnavailableFundsBeforeActorCaptureRejectTheQueuedChange(False)",
+      "UnavailableFundsBeforeActorCaptureRejectTheQueuedChange(True)",
+      "NewAdmissionRecognizesThePaidAppearanceWithoutRefundOrRedelivery()",
+      "NextRequestReplacesTheFullGraphAndPaysOnlyItsOwnFee(False)",
+      "NextRequestReplacesTheFullGraphAndPaysOnlyItsOwnFee(True)",
+      "FreeAppearanceCommitsWithoutAnAccountPaymentAnchor(False)",
+      "FreeAppearanceCommitsWithoutAnAccountPaymentAnchor(True)",
+      "ReboundSessionCannotReceiveTheOriginalConfirmedAppearance(False)",
+      "ReboundSessionCannotReceiveTheOriginalConfirmedAppearance(True)",
+      "ProjectionFailureCannotReserveAPaymentOrPartiallyChangeTheActor(False)",
+      "ProjectionFailureCannotReserveAPaymentOrPartiallyChangeTheActor(True)",
+      "RejectedAuthDebitCannotCommitTheAppearanceAndCanRetry()",
+      "AdmissionCompletesAnInterruptedRefundFromTheOriginalDurableAnchor()",
+      "QueuedRequestCannotAcquireReplacementOwnership(epoch)",
+      "QueuedRequestCannotAcquireReplacementOwnership(queue)",
+      "QueuedRequestCannotAcquireReplacementOwnership(wallet)",
+      "SignedZeroSurvivesProviderNormalizationAndCompleteFollowup()",
+      "ProjectionCannotRebindTheRequestToAnotherPlayer(False)",
+      "ProjectionCannotRebindTheRequestToAnotherPlayer(True)",
+      "ChangedSqlPayerCannotReceiveOrPayForTheAcceptedAppearance(False)",
+      "ChangedSqlPayerCannotReceiveOrPayForTheAcceptedAppearance(True)",
+      "FailedBoneNoticeCannotCrossAVisiblePeersReplacedQueue()",
+      "PricingCannotMoveTheSamePlayerToAReplacementSession(False)",
+      "PricingCannotMoveTheSamePlayerToAReplacementSession(True)"
+    ]
+  },
+  "results": {
+    "path": "artifacts/continuation-20261106/appearance-mysql/provider/results.json",
+    "sha256": "108d99261519b455af2a90ef80cab53ef9b3f6f729667b3df162fb49cf1cb93d",
+    "cases": [
+      {
+        "Name": "PublicChangeKeepsItsAppearanceAndWalletPrivateUntilCharacterConfirmation(False)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_01_01_c",
+          "nf_appearance_c56d88673292_01_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "PublicChangeKeepsItsAppearanceAndWalletPrivateUntilCharacterConfirmation(True)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_02_01_c",
+          "nf_appearance_c56d88673292_02_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "PublicChangeSettlesTheFullAppearanceAndOnlyItsSelectedPayment(False)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_03_01_c",
+          "nf_appearance_c56d88673292_03_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "PublicChangeSettlesTheFullAppearanceAndOnlyItsSelectedPayment(True)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_04_01_c",
+          "nf_appearance_c56d88673292_04_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "PrimaryCommitKeepsLiveAppearancePrivateUntilFollowupConfirmation(False)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_05_01_c",
+          "nf_appearance_c56d88673292_05_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "PrimaryCommitKeepsLiveAppearancePrivateUntilFollowupConfirmation(True)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_06_01_c",
+          "nf_appearance_c56d88673292_06_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "RejectedCompleteGraphRestoresPaymentBeforeRetry(False)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_07_01_c",
+          "nf_appearance_c56d88673292_07_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "RejectedCompleteGraphRestoresPaymentBeforeRetry(True)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_08_01_c",
+          "nf_appearance_c56d88673292_08_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "LostCommitAcknowledgementDoesNotReplayThePayment(False)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_09_01_c",
+          "nf_appearance_c56d88673292_09_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "LostCommitAcknowledgementDoesNotReplayThePayment(True)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_10_01_c",
+          "nf_appearance_c56d88673292_10_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "AcceptedChangeFencesDirectLeafAndHeaderMutation(False)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_11_01_c",
+          "nf_appearance_c56d88673292_11_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "AcceptedChangeFencesDirectLeafAndHeaderMutation(True)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_12_01_c",
+          "nf_appearance_c56d88673292_12_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "PacketRetryKeepsTheConfirmedPaymentAndFreshBonePayload(False)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_13_01_c",
+          "nf_appearance_c56d88673292_13_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "PacketRetryKeepsTheConfirmedPaymentAndFreshBonePayload(True)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_14_01_c",
+          "nf_appearance_c56d88673292_14_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "PricingCannotRebindTheRequestToAnotherPlayer(False)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_15_01_c",
+          "nf_appearance_c56d88673292_15_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "PricingCannotRebindTheRequestToAnotherPlayer(True)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_16_01_c",
+          "nf_appearance_c56d88673292_16_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "UnavailableFundsBeforeActorCaptureRejectTheQueuedChange(False)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_17_01_c",
+          "nf_appearance_c56d88673292_17_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "UnavailableFundsBeforeActorCaptureRejectTheQueuedChange(True)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_18_01_c",
+          "nf_appearance_c56d88673292_18_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "NewAdmissionRecognizesThePaidAppearanceWithoutRefundOrRedelivery()",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_19_01_c",
+          "nf_appearance_c56d88673292_19_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "NextRequestReplacesTheFullGraphAndPaysOnlyItsOwnFee(False)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_20_01_c",
+          "nf_appearance_c56d88673292_20_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "NextRequestReplacesTheFullGraphAndPaysOnlyItsOwnFee(True)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_21_01_c",
+          "nf_appearance_c56d88673292_21_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "FreeAppearanceCommitsWithoutAnAccountPaymentAnchor(False)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_22_01_c",
+          "nf_appearance_c56d88673292_22_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "FreeAppearanceCommitsWithoutAnAccountPaymentAnchor(True)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_23_01_c",
+          "nf_appearance_c56d88673292_23_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "ReboundSessionCannotReceiveTheOriginalConfirmedAppearance(False)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_24_01_c",
+          "nf_appearance_c56d88673292_24_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "ReboundSessionCannotReceiveTheOriginalConfirmedAppearance(True)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_25_01_c",
+          "nf_appearance_c56d88673292_25_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "ProjectionFailureCannotReserveAPaymentOrPartiallyChangeTheActor(False)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_26_01_c",
+          "nf_appearance_c56d88673292_26_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "ProjectionFailureCannotReserveAPaymentOrPartiallyChangeTheActor(True)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_27_01_c",
+          "nf_appearance_c56d88673292_27_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "RejectedAuthDebitCannotCommitTheAppearanceAndCanRetry()",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_28_01_c",
+          "nf_appearance_c56d88673292_28_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "AdmissionCompletesAnInterruptedRefundFromTheOriginalDurableAnchor()",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_29_01_c",
+          "nf_appearance_c56d88673292_29_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "QueuedRequestCannotAcquireReplacementOwnership(epoch)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_30_01_c",
+          "nf_appearance_c56d88673292_30_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "QueuedRequestCannotAcquireReplacementOwnership(queue)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_31_01_c",
+          "nf_appearance_c56d88673292_31_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "QueuedRequestCannotAcquireReplacementOwnership(wallet)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_32_01_c",
+          "nf_appearance_c56d88673292_32_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "SignedZeroSurvivesProviderNormalizationAndCompleteFollowup()",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_33_01_c",
+          "nf_appearance_c56d88673292_33_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "ProjectionCannotRebindTheRequestToAnotherPlayer(False)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_34_01_c",
+          "nf_appearance_c56d88673292_34_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "ProjectionCannotRebindTheRequestToAnotherPlayer(True)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_35_01_c",
+          "nf_appearance_c56d88673292_35_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "ChangedSqlPayerCannotReceiveOrPayForTheAcceptedAppearance(False)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_36_01_c",
+          "nf_appearance_c56d88673292_36_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "ChangedSqlPayerCannotReceiveOrPayForTheAcceptedAppearance(True)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_37_01_c",
+          "nf_appearance_c56d88673292_37_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "FailedBoneNoticeCannotCrossAVisiblePeersReplacedQueue()",
+        "FixtureCount": 2,
+        "Schemas": [
+          "nf_appearance_c56d88673292_38_01_c",
+          "nf_appearance_c56d88673292_38_01_a",
+          "nf_appearance_c56d88673292_38_02_c",
+          "nf_appearance_c56d88673292_38_02_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "PricingCannotMoveTheSamePlayerToAReplacementSession(False)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_39_01_c",
+          "nf_appearance_c56d88673292_39_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      },
+      {
+        "Name": "PricingCannotMoveTheSamePlayerToAReplacementSession(True)",
+        "FixtureCount": 1,
+        "Schemas": [
+          "nf_appearance_c56d88673292_40_01_c",
+          "nf_appearance_c56d88673292_40_01_a"
+        ],
+        "Passed": true,
+        "BodyError": null,
+        "CleanupError": null
+      }
+    ],
+    "elapsedSecondsIncludingMigrations": 856.1087074
+  },
+  "migrations": {
+    "Auth": {
+      "count": 42,
+      "identities": [
+        "20200229014621_HelloWorld",
+        "20200521145304_AccountRBAC",
+        "20200522025519_ItemLookupPermission",
+        "20200523051100_InstantLogout",
+        "20200606111612_RealmMOTD",
+        "20200612112459_StoryBuilder",
+        "20200627002155_RBACPrimaryKeys",
+        "20200704005118_CharacterReputation",
+        "20201119110054_RBACSignature",
+        "20210423124959_MapInstance",
+        "20210904122547_GuildMissingRBAC",
+        "20210929151553_GMFlag",
+        "20211031052535_RealmRestartCommandRBAC",
+        "20211122162603_QuestList Permissions",
+        "20211125025917_RealmMaxPlayersPermission",
+        "20220214062812_EntitlementRBAC",
+        "20230423114106_ScriptRBAC",
+        "20230524232136_RBAC-ItemInfo",
+        "20230725012211_AccountBanAndSuspensions",
+        "20230725022144_AccountBanAndSuspensionsRBAC",
+        "20230917125110_EntityThreatPermissions",
+        "20241129014903_AccountExternalReference",
+        "20241129224234_AccountExternalReferenceMultiple",
+        "20260516120000_AccountInventory",
+        "20260517120000_AccountItemCooldown",
+        "20260522120000_AccountPendingItem",
+        "20260522130000_AccountCREDDExchange",
+        "20260522140000_AccountDailyLoginAndStoreHistory",
+        "20260522150000_AccountRewardRotationGrant",
+        "20260522190000_AccountFortuneSession",
+        "20260604120000_DailyLoginLastClaimedDay",
+        "20260608120000_BaselineAccountEntitlements",
+        "20260609224418_StorePurchaseHistoryIdentity",
+        "20260610114005_StorePurchaseHistoryAccountPurchasedUtcIndex",
+        "20261029200000_AccountPendingItemSequence",
+        "20261029210000_AccountLoyalty",
+        "20261029220000_AccountInventoryDurability",
+        "20261029230000_AccountInventorySourceIdentity",
+        "20261030165039_AccountWorldSessionEpoch",
+        "20261031050655_AccountCurrencyOperations",
+        "20261102061747_RepairCreddHistoryIdentity",
+        "20261105080121_CraftingAccountAwards"
+      ],
+      "inventory": {
+        "path": "artifacts/continuation-20261106/appearance-mysql/provider/auth-migration-inventory.json",
+        "sha256": "508e377a49da78a185ac51d20c99ffd6cade3fabb0392859171b1de782039832"
+      }
+    },
+    "Character": {
+      "count": 49,
+      "identities": [
+        "20200229014638_HelloWorld",
+        "20200331222803_CharacterXp",
+        "20200404023142_CharacterTradeskillMaterials",
+        "20200413023902_CharacterLastOnline",
+        "20200704001002_CharacterReputation",
+        "20210102050727_Guilds",
+        "20210118051339_CharacterNet5Migration",
+        "20210219004038_ChatChannels",
+        "20210305042232_GuildAchievements",
+        "20210717152515_Communities",
+        "20210906140425_StartingLocations",
+        "20210906140942_PlayerRotation",
+        "20230524231831_BaseProperties",
+        "20241208062241_BoneIndexFix",
+        "20250805092649_CharacterOnline",
+        "20260516125523_CostumeMessageChanges",
+        "20260517120000_ItemSoulbound",
+        "20260518000000_CharacterTradeskill",
+        "20260518120000_CharacterSchematicArchive",
+        "20260522091203_ResidenceNeighbors",
+        "20260522114611_MarketplacePersistence",
+        "20260522180000_RealmBankItems",
+        "20260522190000_CharacterChallenges",
+        "20260522191000_LeaderboardScores",
+        "20260523125655_CharacterMatchingPenalty",
+        "20260527191317_CharacterPathMissionState",
+        "20260531224115_ItemMicrochipIdsAndRuneSlots",
+        "20260603120000_MailContentType",
+        "20260603153000_CharacterPvpFlagDisableCooldown",
+        "20260604130000_CostumeMessageSemantics",
+        "20260714083313_CharacterBonusAbilityTierPoints",
+        "20260726061619_StatData",
+        "20261029120419_CharacterBind",
+        "20261029122531_CharacterTaxiNode",
+        "20261029215652_CharacterChallengeRewardTracks",
+        "20261030230416_ContractQuestAcceptance",
+        "20261030234801_ContractCompletionReceipts",
+        "20261031030109_ContractRewardSelections",
+        "20261031033000_RepairLegacyCharacterColumns",
+        "20261031043515_ContractRewardClaims",
+        "20261031055232_ContractClaimDelivery",
+        "20261031085420_RealmBankItemCodecs",
+        "20261101100717_MarketplaceBidReceipts",
+        "20261102061753_AlignNullableItemAndLeaderboardColumns",
+        "20261102073206_RepairCostumeTimestampGeneration",
+        "20261102182000_BankReconciliationReceipts",
+        "20261103170256_RealmFirstClaims",
+        "20261104102636_CharacterBonusAmpPower",
+        "20261105080127_CraftingAccountAwards"
+      ],
+      "inventory": {
+        "path": "artifacts/continuation-20261106/appearance-mysql/provider/character-migration-inventory.json",
+        "sha256": "6fbc75317baf3e321caa13f713275f7b8315b9f21c846afa64f1ffd6b483c49f"
+      }
+    }
+  },
+  "schemas": {
+    "path": "artifacts/continuation-20261106/appearance-mysql/provider/owned-schemas.json",
+    "sha256": "f0a5563a84040d99995df5d8579a5eb50bd160abb8b7280c5fe5175e9df2044a",
+    "count": 82,
+    "allCreatedAndDropped": true,
+    "perRole": {
+      "Auth": 41,
+      "Character": 41
+    },
+    "allAppliedIdentitiesMatchCompiledInventories": true,
+    "allContextsUseConfiguredRetryStrategy": true
+  },
+  "cleanup": {
+    "path": "artifacts/continuation-20261106/appearance-mysql/provider/cleanup-proof.json",
+    "sha256": "95a748459e8b8e95ba0dbcfa860972519e6784f338ccd29279fbaa464305e923",
+    "ownedSchemasAbsent": [
+      "nf_appearance_c56d88673292_01_01_c",
+      "nf_appearance_c56d88673292_01_01_a",
+      "nf_appearance_c56d88673292_02_01_c",
+      "nf_appearance_c56d88673292_02_01_a",
+      "nf_appearance_c56d88673292_03_01_c",
+      "nf_appearance_c56d88673292_03_01_a",
+      "nf_appearance_c56d88673292_04_01_c",
+      "nf_appearance_c56d88673292_04_01_a",
+      "nf_appearance_c56d88673292_05_01_c",
+      "nf_appearance_c56d88673292_05_01_a",
+      "nf_appearance_c56d88673292_06_01_c",
+      "nf_appearance_c56d88673292_06_01_a",
+      "nf_appearance_c56d88673292_07_01_c",
+      "nf_appearance_c56d88673292_07_01_a",
+      "nf_appearance_c56d88673292_08_01_c",
+      "nf_appearance_c56d88673292_08_01_a",
+      "nf_appearance_c56d88673292_09_01_c",
+      "nf_appearance_c56d88673292_09_01_a",
+      "nf_appearance_c56d88673292_10_01_c",
+      "nf_appearance_c56d88673292_10_01_a",
+      "nf_appearance_c56d88673292_11_01_c",
+      "nf_appearance_c56d88673292_11_01_a",
+      "nf_appearance_c56d88673292_12_01_c",
+      "nf_appearance_c56d88673292_12_01_a",
+      "nf_appearance_c56d88673292_13_01_c",
+      "nf_appearance_c56d88673292_13_01_a",
+      "nf_appearance_c56d88673292_14_01_c",
+      "nf_appearance_c56d88673292_14_01_a",
+      "nf_appearance_c56d88673292_15_01_c",
+      "nf_appearance_c56d88673292_15_01_a",
+      "nf_appearance_c56d88673292_16_01_c",
+      "nf_appearance_c56d88673292_16_01_a",
+      "nf_appearance_c56d88673292_17_01_c",
+      "nf_appearance_c56d88673292_17_01_a",
+      "nf_appearance_c56d88673292_18_01_c",
+      "nf_appearance_c56d88673292_18_01_a",
+      "nf_appearance_c56d88673292_19_01_c",
+      "nf_appearance_c56d88673292_19_01_a",
+      "nf_appearance_c56d88673292_20_01_c",
+      "nf_appearance_c56d88673292_20_01_a",
+      "nf_appearance_c56d88673292_21_01_c",
+      "nf_appearance_c56d88673292_21_01_a",
+      "nf_appearance_c56d88673292_22_01_c",
+      "nf_appearance_c56d88673292_22_01_a",
+      "nf_appearance_c56d88673292_23_01_c",
+      "nf_appearance_c56d88673292_23_01_a",
+      "nf_appearance_c56d88673292_24_01_c",
+      "nf_appearance_c56d88673292_24_01_a",
+      "nf_appearance_c56d88673292_25_01_c",
+      "nf_appearance_c56d88673292_25_01_a",
+      "nf_appearance_c56d88673292_26_01_c",
+      "nf_appearance_c56d88673292_26_01_a",
+      "nf_appearance_c56d88673292_27_01_c",
+      "nf_appearance_c56d88673292_27_01_a",
+      "nf_appearance_c56d88673292_28_01_c",
+      "nf_appearance_c56d88673292_28_01_a",
+      "nf_appearance_c56d88673292_29_01_c",
+      "nf_appearance_c56d88673292_29_01_a",
+      "nf_appearance_c56d88673292_30_01_c",
+      "nf_appearance_c56d88673292_30_01_a",
+      "nf_appearance_c56d88673292_31_01_c",
+      "nf_appearance_c56d88673292_31_01_a",
+      "nf_appearance_c56d88673292_32_01_c",
+      "nf_appearance_c56d88673292_32_01_a",
+      "nf_appearance_c56d88673292_33_01_c",
+      "nf_appearance_c56d88673292_33_01_a",
+      "nf_appearance_c56d88673292_34_01_c",
+      "nf_appearance_c56d88673292_34_01_a",
+      "nf_appearance_c56d88673292_35_01_c",
+      "nf_appearance_c56d88673292_35_01_a",
+      "nf_appearance_c56d88673292_36_01_c",
+      "nf_appearance_c56d88673292_36_01_a",
+      "nf_appearance_c56d88673292_37_01_c",
+      "nf_appearance_c56d88673292_37_01_a",
+      "nf_appearance_c56d88673292_38_01_c",
+      "nf_appearance_c56d88673292_38_01_a",
+      "nf_appearance_c56d88673292_38_02_c",
+      "nf_appearance_c56d88673292_38_02_a",
+      "nf_appearance_c56d88673292_39_01_c",
+      "nf_appearance_c56d88673292_39_01_a",
+      "nf_appearance_c56d88673292_40_01_c",
+      "nf_appearance_c56d88673292_40_01_a"
+    ]
+  },
+  "shutdown": {
+    "path": "artifacts/continuation-20261106/appearance-mysql/shutdown-verification.json",
+    "sha256": "01fd4a67bee7ddb599bf0168ce9dab76e91856d7bb14ef210611850996b42a42",
+    "proof": {
+      "ProcessAbsent": true,
+      "Generations": [
+        {
+          "StartedUtc": "2026-11-05T23:35:33.9762865Z",
+          "Pid": 44096,
+          "Absent": true
+        },
+        {
+          "StartedUtc": "2026-11-05T23:33:56.4456194Z",
+          "Pid": 41356,
+          "Absent": true
+        }
+      ],
+      "ListenerAbsent": true,
+      "ObservedUtc": "2026-11-05T23:50:10.8651557Z",
+      "Pid": 15444,
+      "StartedUtc": "2026-11-05T23:33:41.6498805Z",
+      "RunExitCode": 0
+    },
+    "helper": {
+      "path": "artifacts/continuation-20261106/appearance-mysql/finish-owned.ps1",
+      "sha256": "97bad5a5ddd648ea82d60adc9159f70646b6ed7bc97d8076c19494ffcb1747b9"
+    }
+  },
+  "inputBindings": {
+    "before": {
+      "path": "artifacts/continuation-20261106/appearance-mysql/provider/inputs.json",
+      "sha256": "d89abb029580d0885d6fe70bfaa3bbf1b32ea158b1bcd578bc2ef579ec7a9e36"
+    },
+    "after": {
+      "path": "artifacts/continuation-20261106/appearance-mysql/provider/inputs-after.json",
+      "sha256": "6a4fee2eaa14b37bad901f1ac7f40015548ef314e78bb8fbbe57570442583aeb"
+    },
+    "finalSourceBoundary": {
+      "path": "artifacts/continuation-20261106/appearance-mysql/provider/source-after.json",
+      "sha256": "ca9816f25b67a99ebf7d58661dcdd749cd34180a98a7dbd3b5c423ace2e1fd7f"
+    },
+    "runnerAndDependencyDlls": 140,
+    "allByteIdentitiesUnchanged": true,
+    "productionCoreDlls": [
+      {
+        "path": "artifacts/continuation-20261106/appearance-mysql/provider/bin/Debug/net10.0/NexusForever.Game.dll",
+        "sha256": "83c9f227a4b568a3539c61135432b151569d5b4b16c047fa31377e92669c0ecd"
+      },
+      {
+        "path": "artifacts/continuation-20261106/appearance-mysql/provider/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+        "sha256": "2594bc2449ab760eeedc6dfe0ce0c5d57756b497da86d692a59c6eb6437f971c"
+      },
+      {
+        "path": "artifacts/continuation-20261106/appearance-mysql/provider/bin/Debug/net10.0/NexusForever.Database.Character.dll",
+        "sha256": "e07deffeb14813d67ecf1bb0422707d3a108208fa0228ebf89e7f0c34b46e535"
+      },
+      {
+        "path": "artifacts/continuation-20261106/appearance-mysql/provider/bin/Debug/net10.0/NexusForever.Game.Abstract.dll",
+        "sha256": "8dc0b74cb835b742ac8709ca9566df4aae52b0770e718a14210a04fb41c548a1"
+      }
+    ]
+  },
+  "sqliteControls": {
+    "path": "artifacts/continuation-20261106/appearance-mysql/sqlite-controls.trx",
+    "sha256": "c45d860fd8b7a864884851f0e44e4b5699f2c08343e138aa212ce1e9e97a7a96",
+    "passed": 40,
+    "failed": 0
+  },
+  "builds": [
+    {
+      "path": "artifacts/continuation-20261106/appearance-mysql/test-build.log",
+      "sha256": "8e16d01704af6316a1801c0627b0abb30b2fde9c4199dd5a50627ae2a7f2fb7a",
+      "elapsed": "00:00:28.12"
+    },
+    {
+      "path": "artifacts/continuation-20261106/appearance-mysql/provider/build.log",
+      "sha256": "e9e099b409e5d8aad5bc767d6228de6aae51175bfc4e420f3f7d4a509cbfcf28",
+      "elapsed": "00:00:08.66"
+    }
+  ],
+  "review": {
+    "spec": {
+      "remainingFindings": 0,
+      "sourceAndHarness": {
+        "path": "artifacts/continuation-20261106/appearance-mysql/review-spec.txt",
+        "sha256": "8036e3b63d7c232af429c527ad5759870931a96861c6fec4fbd773a88b84bcbf"
+      },
+      "finalEvidence": {
+        "path": "artifacts/continuation-20261106/appearance-mysql/evidence-spec-final.txt",
+        "sha256": "31fa306c68d56ab9a0a0e5d08192cfb08f6cea14bc9cb9e9936b114b7a4eeb85"
+      }
+    },
+    "standards": {
+      "remainingFindings": 0,
+      "sourceAndHarness": {
+        "path": "artifacts/continuation-20261106/appearance-mysql/review-standards.txt",
+        "sha256": "00070ab0f8a69a7d098de5ba968482c222a5b9afc22adc156c813b031e1a63b4"
+      },
+      "finalEvidence": {
+        "path": "artifacts/continuation-20261106/appearance-mysql/evidence-standards-final.txt",
+        "sha256": "68fc63415c477e968d9e390a690583a82f2b785c48294458dc725804096e810e"
+      }
+    }
+  },
+  "upstream": {
+    "path": "artifacts/continuation-20261106/appearance-mysql/upstream-refresh.json",
+    "sha256": "68a92e06a12ae1ea67716079456cb45db364cf06032fd0e2512de48e6fb16775",
+    "latestAllState": 20,
+    "changedHeadsBasesStates": 0,
+    "pr608": "open",
+    "pr609": "closed, unmerged"
+  },
+  "qualificationBoundary": [
+    "Same40 existing parsed-public Source settlement cases, including both credit/token routes, complete graph, compensation, acknowledgement uncertainty, original actor/queue/wallet continuity and admission recovery",
+    "Fresh per-fixture Character/Auth schema pairs, including separate visible peer pair",
+    "Existing default SQLite profile remains40passing with unchanged assertions",
+    "Engine/runtime/datadir are reused owned fixtures; no installation, service, login-path, root-user or global configuration changes"
+  ],
+  "remaining": [
+    "Other provider profiles and copied upgrades",
+    "Physical process/power interruption and full deployment/restart",
+    "Actual customization catalogs and authoritative prices",
+    "Broker/socket/native/retail and broader F-026/assessment scope"
+  ],
+  "nativeClientAndCua": "remain stopped",
+  "fullSolutionAndSuite": "not run; test-only build and existing40-case scoped profile selection"
+}
