@@ -257,6 +257,44 @@ public class EntityCreatePacketTests
         Assert.Equal(7, model.QuestChecklistIdx);
     }
 
+    [Theory]
+    [InlineData(EntityType.CollectableUnit, false)]
+    [InlineData(EntityType.CollectableUnit, true)]
+    [InlineData(EntityType.NonPlayer, false)]
+    [InlineData(EntityType.NonPlayer, true)]
+    public void BuildCreatePacket_WritesPlacedOrScriptedObjectiveIndex(EntityType type, bool overrideIndex)
+    {
+        const uint creatureId = 24286u;
+        IScriptManager scripts = RecordingDispatchProxy<IScriptManager>.Create(out var scriptProxy);
+        scriptProxy.SetMethodReturn(nameof(IScriptManager.InitialiseEntityScripts), RecordingDispatchProxy<IScriptCollection>.Create(out _));
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out var tableProxy);
+        tableProxy.SetProperty(nameof(IGameTableManager.UnitProperty2), CreateGameTable<UnitProperty2Entry>());
+        tableProxy.SetProperty(nameof(IGameTableManager.CreatureLevel), CreateGameTable<CreatureLevelEntry>());
+        tableProxy.SetProperty(nameof(IGameTableManager.Creature2DisplayInfo), CreateGameTable<Creature2DisplayInfoEntry>());
+        tableProxy.SetProperty(nameof(IGameTableManager.Creature2OutfitInfo), CreateGameTable<Creature2OutfitInfoEntry>());
+        tableProxy.SetProperty(nameof(IGameTableManager.Creature2ArcheType), CreateGameTable<Creature2ArcheTypeEntry>());
+        tableProxy.SetProperty(nameof(IGameTableManager.Creature2Difficulty), CreateGameTable<Creature2DifficultyEntry>());
+        tableProxy.SetProperty(nameof(IGameTableManager.Creature2Tier), CreateGameTable<Creature2TierEntry>());
+        using ServiceProvider provider = BuildProvider(services =>
+        {
+            services.AddSingleton(scripts);
+            services.AddSingleton(tables);
+            services.AddSingleton<ICreatureInfoManager>(new TestCreatureInfoManager(new TestCreatureInfo(creatureId)));
+        });
+        IWorldEntity entity = provider.GetRequiredService<IEntityFactory>().CreateWorldEntity(type);
+        entity.Initialise(new EntityModel { Type = type, Creature = creatureId, QuestChecklistIdx = 7 });
+        if (overrideIndex)
+            entity.SetQuestChecklistIndex(byte.MaxValue);
+
+        byte[] payload = WritePacket(entity.BuildCreatePacket(false));
+
+        using var reader = new GamePacketReader(new MemoryStream(payload));
+        reader.ReadUInt();
+        Assert.Equal((uint)type, reader.ReadUInt(6u));
+        Assert.Equal(creatureId, reader.ReadUInt(18u));
+        Assert.Equal(overrideIndex ? byte.MaxValue : (byte)7, reader.ReadByte());
+    }
+
     [Fact]
     public void ServerEntityCreate_WriteSerializesMappedWorldPlacementAndTailFields()
     {

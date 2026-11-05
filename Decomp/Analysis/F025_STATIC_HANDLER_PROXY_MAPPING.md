@@ -315,3 +315,35 @@ server ownership policy, producer, recipients, and send order remain open.
 The production emitter is still gated. The owning build passed with zero
 warnings or errors and all 151 scoped tests passed, including registration,
 full-width owner serialization, clear serialization, and the pre-create guard.
+
+## 5 November: 093B and entity-create objective index
+
+The build 16042 registration at `0x14007504C` selects the shared reader
+at `0x14007A040`. It reads a 32-bit unit ID followed by a 32-bit
+objective index. The apply case at `0x1403ED9C2` calls `0x1403DC280`.
+That helper resolves the unit, skips the local player and unchanged values,
+and stores a changed index at entity `+0x35F8`.
+
+Entity creation also supplies that field. The reader table at
+`0x140C1EA30` routes types 0, 8, 10, and 32 through `0x140095FB0`.
+It reads an 18-bit Creature2 ID followed by an eight-bit checklist index.
+The matching apply cases at `0x140457247` and `0x140457669` sign-extend
+the index byte into `+0x35F8`. The constructor initializes this field
+to `-1`. The check at `0x1404A0057` skips the objective mask test for
+that sentinel and otherwise uses the index as the shift amount.
+
+The existing NPC and collectable producers previously wrote zero regardless
+of the placement's index or a script override. Both now send the stored
+byte, including the Northern Wilds Granok drop-pod fallback's `0xFF`.
+The existing creation packet widths and zero defaults are preserved.
+The server's `0x093B` model already matches the two-word reader. Dynamic
+emission still requires evidence for its server producer and send order.
+
+The [28 verified byte anchors](coverage/f025-093b-objective-index-20261105.json)
+bind the registration, readers, both apply paths and the objective mask test
+to the pinned PE and REA record. After supplying the missing table stubs,
+all four baseline cases reproduced the zero byte. The final owning build
+passed without warnings or errors, and all 184 scoped entity-create,
+visibility, objective and map-script tests passed. Local disassembly, build
+and regression evidence is under `artifacts/continuation-20261105/f025-093b-objectives/`.
+Native client and deployed socket behavior remain open.

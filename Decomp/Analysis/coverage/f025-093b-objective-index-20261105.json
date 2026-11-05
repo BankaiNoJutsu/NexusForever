@@ -1,0 +1,177 @@
+{
+  "build": 16042,
+  "sourceReferenceCommit": "e737c0b5d5f6a47301f07c6fa1d8f3268cb4fd9e",
+  "clientSha256": "231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5",
+  "reaEvidenceId": "ev_142ebc012c9fce11df9c67703c5d9e335b4810c52c1d752b63ed2828030231d4",
+  "llvmObjdumpSha256": "3ae6715601f2eb0c1d0839929c46089906ba0f1e5e032fe519656a40c936b863",
+  "anchors": [
+    {
+      "name": "093b-register-reader",
+      "va": "0x14007502e",
+      "fileOffset": 476206,
+      "bytes": "488d0d0b500000"
+    },
+    {
+      "name": "093b-register-length-and-opcode",
+      "va": "0x140075045",
+      "fileOffset": 476229,
+      "bytes": "458d4108488bcbba3b090000"
+    },
+    {
+      "name": "093b-u32-unit",
+      "va": "0x14007a065",
+      "fileOffset": 496741,
+      "bytes": "41b820000000488bd3"
+    },
+    {
+      "name": "093b-u32-index",
+      "va": "0x14007a077",
+      "fileOffset": 496759,
+      "bytes": "488d530441b820000000"
+    },
+    {
+      "name": "093b-dispatch",
+      "va": "0x1403f36ac",
+      "fileOffset": 4139692,
+      "bytes": "c2d93e00"
+    },
+    {
+      "name": "093b-apply-call",
+      "va": "0x1403ed9c8",
+      "fileOffset": 4115912,
+      "bytes": "e8b3e8feff"
+    },
+    {
+      "name": "093b-unit-lookup",
+      "va": "0x1403dc292",
+      "fileOffset": 4044434,
+      "bytes": "e839ceffff"
+    },
+    {
+      "name": "093b-skip-unresolved-and-local",
+      "va": "0x1403dc297",
+      "fileOffset": 4044439,
+      "bytes": "4c8bc04885c0744e483943787448"
+    },
+    {
+      "name": "093b-compare-packet-index",
+      "va": "0x1403dc2a5",
+      "fileOffset": 4044453,
+      "bytes": "8b4704413980f8350000743c"
+    },
+    {
+      "name": "093b-store-index-and-dirty",
+      "va": "0x1403dc2b8",
+      "fileOffset": 4044472,
+      "bytes": "418980f835000041c780a818000001000000"
+    },
+    {
+      "name": "creation-default-minus-one",
+      "va": "0x140454dc8",
+      "fileOffset": 4538824,
+      "bytes": "c783f8350000ffffffff"
+    },
+    {
+      "name": "creation-type-reader-dispatch",
+      "va": "0x14009702a",
+      "fileOffset": 615466,
+      "bytes": "41ff94c430eac100"
+    },
+    {
+      "name": "creation-type-apply-dispatch",
+      "va": "0x140456b14",
+      "fileOffset": 4546324,
+      "bytes": "4863430483f8240f8786140000418b8c85a88045004903cdffe1"
+    },
+    {
+      "name": "non-player-creation-reader",
+      "va": "0x140c1ea30",
+      "fileOffset": 12701232,
+      "bytes": "b05f094001000000"
+    },
+    {
+      "name": "non-player-creation-apply",
+      "va": "0x1404580a8",
+      "fileOffset": 4551848,
+      "bytes": "47724500"
+    },
+    {
+      "name": "collectable-creation-reader",
+      "va": "0x140c1ea70",
+      "fileOffset": 12701296,
+      "bytes": "b05f094001000000"
+    },
+    {
+      "name": "collectable-creation-apply",
+      "va": "0x1404580c8",
+      "fileOffset": 4551880,
+      "bytes": "47724500"
+    },
+    {
+      "name": "simple-creation-reader",
+      "va": "0x140c1ea80",
+      "fileOffset": 12701312,
+      "bytes": "b05f094001000000"
+    },
+    {
+      "name": "simple-creation-apply",
+      "va": "0x1404580d0",
+      "fileOffset": 4551888,
+      "bytes": "69764500"
+    },
+    {
+      "name": "simple-collidable-creation-reader",
+      "va": "0x140c1eb30",
+      "fileOffset": 12701488,
+      "bytes": "b05f094001000000"
+    },
+    {
+      "name": "simple-collidable-creation-apply",
+      "va": "0x140458128",
+      "fileOffset": 4551976,
+      "bytes": "47724500"
+    },
+    {
+      "name": "creation-read-u18",
+      "va": "0x140095fd5",
+      "fileOffset": 611285,
+      "bytes": "41b812000000488bd3"
+    },
+    {
+      "name": "creation-read-index-byte",
+      "va": "0x140095fee",
+      "fileOffset": 611310,
+      "bytes": "e8cd5efdff"
+    },
+    {
+      "name": "creation-byte-read-width",
+      "va": "0x14006bf0c",
+      "fileOffset": 439052,
+      "bytes": "41b808000000"
+    },
+    {
+      "name": "creation-store-index",
+      "va": "0x140457247",
+      "fileOffset": 4548167,
+      "bytes": "0fbe430c448b63088987f8350000"
+    },
+    {
+      "name": "simple-store-index",
+      "va": "0x140457669",
+      "fileOffset": 4549225,
+      "bytes": "0fbe430c448b63088987f8350000"
+    },
+    {
+      "name": "objective-absent-sentinel",
+      "va": "0x1404a0057",
+      "fileOffset": 4846679,
+      "bytes": "8bb6f835000083feff"
+    },
+    {
+      "name": "objective-mask-test",
+      "va": "0x1404a0069",
+      "fileOffset": 4846697,
+      "bytes": "ff50408bceba01000000d3e223c2"
+    }
+  ]
+}

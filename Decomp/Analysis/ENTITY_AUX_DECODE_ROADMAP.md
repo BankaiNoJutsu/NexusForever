@@ -209,7 +209,8 @@ live sniff/order witness is recovered.
 | Reader | Opcodes sharing it |
 | --- | --- |
 | `ServerSpellUInt32TripletListRow_ReadPayload` @ `140080bf0` | `0x0889`, `0x0908`, `0x090A` (12-byte triplet; registration @ `140078cb0`, `1400751a3`, `1400751d4`) |
-| `ServerEntityStatUInt32UInt5UInt32_ReadPayload` @ `140097620` | `0x08F4`, `0x938`, `0x93B` (registration table) |
+| `ServerEntityStatUInt32UInt5UInt32_ReadPayload` @ `140097620` | `0x08F4`, `0x0938` |
+| `ServerTwoUInt32_ReadPayload` @ `14007A040` | Includes `0x093B`. Registration at `14007504C` selects this reader and an eight-byte payload. |
 | `ServerUInt32WideString_ReadPayload` @ `1400980f0` | `0x08CC` (`Network_RegisterServerOpcode_08CC` @ `140075236`) and others |
 
 Do not assign one gameplay meaning per opcode until per-opcode consumer handlers are mapped.

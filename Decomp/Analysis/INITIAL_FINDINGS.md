@@ -15105,8 +15105,9 @@ Entity/cluster aux decompile follow-up (2026-05-23, consumer discovery):
 - Labeled `ServerUInt32Triple_ReadPayload` @ `1400a8a30` and
   `QueuedStateReplay_EnqueueUnitCreatedRecord` @ `1405cef50` (replay case `0x12`; not yet
   correlated to `0x025F`-`0x0264`).
-- `ServerEntityStatUInt32UInt5UInt32_ReadPayload` @ `140097620` is registered for **`0x08F4`,
-  `0x938`, and `0x93B`**; do not treat as a single gameplay packet.
+- `ServerEntityStatUInt32UInt5UInt32_ReadPayload` @ `140097620` is registered for
+  `0x08F4` and `0x0938`. The later [objective-index trace](F025_STATIC_HANDLER_PROXY_MAPPING.md#5-november-093b-and-entity-create-objective-index)
+  resolves `0x093B` to the shared two-word reader at `14007A040`.
 - **Mapped (2026-05-23):** live post-read apply dispatcher =
   `WorldSocket_ProcessServerMessage` @ `140014f10`. `WorldSocket_Ctor` @ `14000a490` installs
   callback table `PTR_LAB_140b55100` at socket `+0x100` with filter `140014d30` @ `+0x08` and

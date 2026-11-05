@@ -738,6 +738,11 @@ uses the confirmed title and creature IDs and preserves the wide-name
 fallback. This reconciles the model from upstream #514. The combined
 update's server producer and ordering remain open.
 
+The [objective-index trace](F025_STATIC_HANDLER_PROXY_MAPPING.md#5-november-093b-and-entity-create-objective-index)
+maps the separate `0x093B` reader and its shared entity-create field.
+NPC and collectable creation now preserve configured and scripted indexes.
+Dynamic update timing remains open.
+
 Next integrated evidence outcome: continue independent broader feature/upstream
 requirements and corroborate the remaining mapped F-025 field meanings
 and server producer/ordering requirements using independent table, packet or

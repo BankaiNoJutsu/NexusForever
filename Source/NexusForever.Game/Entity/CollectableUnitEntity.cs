@@ -43,8 +43,8 @@ namespace NexusForever.Game.Entity
         {
             return new CollectableUnitEntityModel
             {
-                CreatureId = CreatureId,
-                QuestChecklistIdx = 0
+                CreatureId        = CreatureId,
+                QuestChecklistIdx = QuestChecklistIdx
             };
         }
     }
