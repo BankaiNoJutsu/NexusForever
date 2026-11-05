@@ -1,5 +1,12 @@
 # Client Binary Decompile Continuation Guide
 
+[Original-recipient chat delivery](INCOMING_CHAT_OWNERSHIP.md) now queues admitted
+whisper/channel text and automatic replies on the original World recipient.
+Five baseline failures and two item-link aliasing probes are fixed;21 new/all57
+affected cases, clean owning/test builds and both final reviews pass on an
+isolated published base. F-012 stays partial; durable settings and external
+qualification remain open. Preserve concurrent PvP/prerequisite/native work.
+
 [Confirmed pet-flair grants](PET_FLAIR_PROGRESSION.md) now use the real spell
 producer, frozen Character rows and original World unlock/initial-bit packets.
 Three baseline defects are fixed;16 new/all299 affected cases and both reviews

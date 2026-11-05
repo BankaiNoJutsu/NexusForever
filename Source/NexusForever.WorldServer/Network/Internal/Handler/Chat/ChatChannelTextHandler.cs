@@ -32,51 +32,52 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Chat
 
         #endregion
 
-        public async Task Handle(ChatChannelTextMessage message)
+        public Task Handle(ChatChannelTextMessage message)
         {
             ChatChannelEntry entry = gameTableManager.ChatChannel.GetEntry((ulong)message.ChatChannel.Type);
             if (entry == null)
-                return;
+                return Task.CompletedTask;
 
-            foreach (var member in message.ChatChannel.Members)
+            var senderIdentity = message.Sender.Identity;
+            var senderName = message.Sender.Character.IdentityName;
+            var recipients = message.ChatChannel.Members.Select(member => member.Identity).ToArray();
+            var type = message.ChatChannel.Type;
+            ulong chatId = (entry.Flags & ChatChannelEntryFlags.ServerSide) != 0 ? message.ChatChannel.ChatId : 0;
+            bool bubble = (entry.Flags & ChatChannelEntryFlags.ShowChatBubble) != 0;
+            string text = message.Text.Text;
+
+            foreach (var identity in recipients)
             {
-                if (member.Identity == message.Sender.Identity)
+                if (identity == senderIdentity)
                     continue;
 
-                IPlayer player = playerManager.GetPlayer(member.Identity.ToGameIdentity());
-                if (player == null)
+                var recipient = IncomingChatRecipient.Capture(playerManager, identity.ToGameIdentity());
+                if (recipient == null)
                     continue;
 
                 var builder = new ChatMessageBuilder();
-                builder.Type = message.ChatChannel.Type;
-
-                if ((entry.Flags & ChatChannelEntryFlags.ServerSide) != 0)
-                    builder.ChatId = message.ChatChannel.ChatId;
+                builder.Type = type;
+                builder.ChatId = chatId;
                 
-                builder.Text    = message.Text.Text;
+                builder.Text    = text;
                 builder.Formats = chatFormatManager.ToNetwork(message.Text.Format).ToList();
 
-                builder.FromName = message.Sender.Character.IdentityName.Name;
-                if (member.Identity.RealmId != message.Sender.Identity.RealmId)
-                    builder.FromRealm = message.Sender.Character.IdentityName.RealmName;
+                builder.FromName = senderName.Name;
+                if (identity.RealmId != senderIdentity.RealmId)
+                    builder.FromRealm = senderName.RealmName;
 
-                if ((entry.Flags & ChatChannelEntryFlags.ShowChatBubble) != 0)
+                recipient.Enqueue(() =>
                 {
-                    uint? guid = await player.SynchroniseAsync<uint?>(() =>
+                    if (bubble)
                     {
-                        IPlayer sender = player.GetVisiblePlayer(message.Sender.Identity.ToGameIdentity());
+                        IPlayer sender = recipient.Player.GetVisiblePlayer(senderIdentity.ToGameIdentity());
                         if (sender != null)
-                            return sender.Guid;
-
-                        return null;
-                    });
-
-                    if (guid != null)
-                        builder.Guid = guid.Value;
-                }
-
-                player.Session.EnqueueMessageEncrypted(builder.Build());
+                            builder.Guid = sender.Guid;
+                    }
+                    recipient.Send(builder.Build());
+                });
             }
+            return Task.CompletedTask;
         }
     }
 }

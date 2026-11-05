@@ -1,5 +1,13 @@
 # Continue on another machine
 
+Latest chat delivery: [original recipients](Decomp/Analysis/INCOMING_CHAT_OWNERSHIP.md)
+bind broker whisper/channel text, bubble lookup and automatic replies to each
+admitted World recipient. Five baseline defects and two reviewed item-link
+aliasing cases are fixed.21 new/all57 affected cases, clean owning/test builds
+and both final reviews pass in an isolated published-base checkout. F-012 stays
+partial; durable settings/broker/socket/native/retail remain open. Preserve the
+concurrent PvP/prerequisite/native notes and their worktree changes.
+
 Latest pet progression: [confirmed flair grants](Decomp/Analysis/PET_FLAIR_PROGRESSION.md)
 bind the real spell effect to the frozen Character graph and original World
 unlock/initial-bit publication. Three baseline defects are fixed;16 new/all299

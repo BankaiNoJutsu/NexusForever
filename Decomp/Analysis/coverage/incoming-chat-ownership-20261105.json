@@ -1,0 +1,381 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-05T20:41:52.783850+00:00",
+  "milestone": "F-012 original-recipient broker-to-World chat delivery",
+  "baseCommit": "d3fb873417fce4c1268f3b10d93906faa484d24f",
+  "observedHead": "d3fb873417fce4c1268f3b10d93906faa484d24f",
+  "branch": "legacy-di-storefront-hardening",
+  "sources": [
+    {
+      "path": "Source/NexusForever.WorldServer/Network/Internal/Handler/Chat/ChatWhisperTextHandler.cs",
+      "sha256": "e131efa0e37800ced57804eaa3250cbe91b4e6a724770cf996a16cc2e06f1c2f",
+      "gitBlob": "d019060a49422b1f8812cc44d371b1b0a0d804f6"
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/Network/Internal/Handler/Chat/ChatChannelTextHandler.cs",
+      "sha256": "12edd3a120b096edae217a7c7d2529ac9776bcf9b3b0db50338adef022e2e59e",
+      "gitBlob": "3a6b6c1ee13009650923509acc9120caed719b3d"
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/Network/Internal/Handler/Chat/IncomingChatRecipient.cs",
+      "sha256": "c6345bf294228a96b2a7e44d4f3ce22ed004a12e11c1c410c9716eba96d85912",
+      "gitBlob": "3e676f0dd8b6ac3c652570e206050a999b5138f3"
+    },
+    {
+      "path": "Source/NexusForever.Game/Chat/Format/Formatter/ItemFullChatFormatter.cs",
+      "sha256": "401bcee346ac932062d7b8e29e0e99af3cba8a886ece1a8ae3e21ebdd1675460",
+      "gitBlob": "8416b8d7381781c2da81eb1c7fdc091f32919b0b"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Chat/IncomingChatOwnershipTests.cs",
+      "sha256": "0c16b934fc10b99300f8cb856ffebd719350f8941f8f7c4bef3bd16192e07d31",
+      "gitBlob": "abc3f9edab87601b67ee298c39f8ad5cc4bbdc6d"
+    }
+  ],
+  "assemblies": [
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Abstract/bin/Debug/net10.0/NexusForever.Game.Abstract.dll",
+      "sha256": "319cd85afe18a2d696a14c540d1ee5299ccfae9fe25220de26412955573bb562"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Abstract.dll",
+      "sha256": "319cd85afe18a2d696a14c540d1ee5299ccfae9fe25220de26412955573bb562"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game/bin/Debug/net10.0/NexusForever.Game.dll",
+      "sha256": "b5830b46324acb64afc914adbfd0f840ca9741e12f4eb2d1fb5025a15b125546"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.dll",
+      "sha256": "b5830b46324acb64afc914adbfd0f840ca9741e12f4eb2d1fb5025a15b125546"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.WorldServer/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+      "sha256": "cab7b64aa9864fc7316566db048242315f6888eac8d728b760bf435f589597c6"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+      "sha256": "cab7b64aa9864fc7316566db048242315f6888eac8d728b760bf435f589597c6"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+      "sha256": "0bdbce9eb06ba984e38728f19f2fbbe112ce3340ea4f66fd6787e327463b3a00"
+    }
+  ],
+  "qualification": "Isolated published-base Source plus exact five-file candidate; synthetic actors, no provider/broker/socket/native/retail runtime",
+  "isolatedCheckout": "artifacts\\continuation-20261105\\incoming-chat-ownership\\candidate",
+  "baseline": {
+    "path": "artifacts/continuation-20261105/incoming-chat-ownership/baseline.trx",
+    "sha256": "cdff0995f653dd418f05f4b7e7d33f6db4e71278a7997194df86ac198489c99a",
+    "counters": {
+      "total": 5,
+      "executed": 5,
+      "passed": 0,
+      "failed": 5,
+      "error": 0,
+      "timeout": 0,
+      "aborted": 0,
+      "inconclusive": 0,
+      "passedButRunAborted": 0,
+      "notRunnable": 0,
+      "notExecuted": 0,
+      "disconnected": 0,
+      "warning": 0,
+      "completed": 0,
+      "inProgress": 0,
+      "pending": 0
+    },
+    "groups": {
+      "IncomingChatOwnershipTests": {
+        "Failed": 5
+      }
+    },
+    "nonPassing": [
+      {
+        "name": "NexusForever.Game.Tests.Chat.IncomingChatOwnershipTests.ReplacementDuringFormattingCannotReceiveTheEarlierText(channel: True)",
+        "outcome": "Failed",
+        "message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [ServerChat { AutoResponse = False, Channel = Channel { ChatChannelId = Guild, ChatId = 0 }, ChatMessageId = 0, CrossFaction = False, Formats = [], \u00b7\u00b7\u00b7 }]"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Chat.IncomingChatOwnershipTests.ReplacementDuringFormattingCannotReceiveTheEarlierText(channel: False)",
+        "outcome": "Failed",
+        "message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [ServerChat { AutoResponse = False, Channel = Channel { ChatChannelId = Whisper, ChatId = 0 }, ChatMessageId = 0, CrossFaction = False, Formats = [], \u00b7\u00b7\u00b7 }]"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Chat.IncomingChatOwnershipTests.RecipientReplacementAfterDeliveryCannotSendAStaleAutomaticReply",
+        "outcome": "Failed",
+        "message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [ChatWhisperTextMessage { AutoResponse = True, IsAccountWhisper = False, Recipient = Identity { Id = 7, RealmId = 2 }, RecipientName = IdentityName { Name = Sender, RealmName = Other realm }, Sender = Identity { Id = 42, RealmId = 1 }, \u00b7\u00b7\u00b7 }]"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Chat.IncomingChatOwnershipTests.BrokerTextWaitsForItsOriginalWorldQueue(channel: True)",
+        "outcome": "Failed",
+        "message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [ServerChat { AutoResponse = False, Channel = Channel { ChatChannelId = Guild, ChatId = 0 }, ChatMessageId = 0, CrossFaction = False, Formats = [], \u00b7\u00b7\u00b7 }]"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Chat.IncomingChatOwnershipTests.BrokerTextWaitsForItsOriginalWorldQueue(channel: False)",
+        "outcome": "Failed",
+        "message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [ServerChat { AutoResponse = False, Channel = Channel { ChatChannelId = Whisper, ChatId = 0 }, ChatMessageId = 0, CrossFaction = False, Formats = [], \u00b7\u00b7\u00b7 }]"
+      }
+    ]
+  },
+  "firstCandidate": {
+    "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate.trx",
+    "sha256": "845bf830c0eb670e921860727b036c41bf206fdcad55ba8600f5f761b227a518",
+    "counters": {
+      "total": 5,
+      "executed": 5,
+      "passed": 5,
+      "failed": 0,
+      "error": 0,
+      "timeout": 0,
+      "aborted": 0,
+      "inconclusive": 0,
+      "passedButRunAborted": 0,
+      "notRunnable": 0,
+      "notExecuted": 0,
+      "disconnected": 0,
+      "warning": 0,
+      "completed": 0,
+      "inProgress": 0,
+      "pending": 0
+    },
+    "groups": {
+      "IncomingChatOwnershipTests": {
+        "Passed": 5
+      }
+    },
+    "nonPassing": []
+  },
+  "expandedCandidate": {
+    "path": "artifacts/continuation-20261105/incoming-chat-ownership/expanded.trx",
+    "sha256": "4f6d4a37777a704e9e0fb297d1ed242d3553153c821462a3f546100bfed3f6e4",
+    "counters": {
+      "total": 19,
+      "executed": 19,
+      "passed": 19,
+      "failed": 0,
+      "error": 0,
+      "timeout": 0,
+      "aborted": 0,
+      "inconclusive": 0,
+      "passedButRunAborted": 0,
+      "notRunnable": 0,
+      "notExecuted": 0,
+      "disconnected": 0,
+      "warning": 0,
+      "completed": 0,
+      "inProgress": 0,
+      "pending": 0
+    },
+    "groups": {
+      "IncomingChatOwnershipTests": {
+        "Passed": 19
+      }
+    },
+    "nonPassing": []
+  },
+  "firstAffected": {
+    "path": "artifacts/continuation-20261105/incoming-chat-ownership/affected.trx",
+    "sha256": "3cddb9f9b3dac24836d9cafc5d5d0df1ec3dfa047402459cd2e9bca72cedd8c0",
+    "counters": {
+      "total": 55,
+      "executed": 55,
+      "passed": 55,
+      "failed": 0,
+      "error": 0,
+      "timeout": 0,
+      "aborted": 0,
+      "inconclusive": 0,
+      "passedButRunAborted": 0,
+      "notRunnable": 0,
+      "notExecuted": 0,
+      "disconnected": 0,
+      "warning": 0,
+      "completed": 0,
+      "inProgress": 0,
+      "pending": 0
+    },
+    "groups": {
+      "ClientWhoRequestHandlerTests": {
+        "Passed": 9
+      },
+      "EventQueueTests": {
+        "Passed": 13
+      },
+      "IncomingChatOwnershipTests": {
+        "Passed": 19
+      },
+      "ChatMessageBuilderTests": {
+        "Passed": 6
+      },
+      "ChatFormatManagerTests": {
+        "Passed": 3
+      },
+      "ClientEmoteHandlerTests": {
+        "Passed": 2
+      },
+      "FriendshipSocialOptionTests": {
+        "Passed": 3
+      }
+    },
+    "nonPassing": []
+  },
+  "reviewFindingBeforeFix": {
+    "path": "artifacts/continuation-20261105/incoming-chat-ownership/item-link-before-fix.trx",
+    "sha256": "a3ca64b1dee50e0cf7041cce2c66b8700e94a5e73ee58154aded32e500440b81",
+    "counters": {
+      "total": 2,
+      "executed": 2,
+      "passed": 0,
+      "failed": 2,
+      "error": 0,
+      "timeout": 0,
+      "aborted": 0,
+      "inconclusive": 0,
+      "passedButRunAborted": 0,
+      "notRunnable": 0,
+      "notExecuted": 0,
+      "disconnected": 0,
+      "warning": 0,
+      "completed": 0,
+      "inProgress": 0,
+      "pending": 0
+    },
+    "groups": {
+      "IncomingChatOwnershipTests": {
+        "Failed": 2
+      }
+    },
+    "nonPassing": [
+      {
+        "name": "NexusForever.Game.Tests.Chat.IncomingChatOwnershipTests.QueuedFullItemLinkKeepsItsAdmittedChargeAndRuneLists(channel: False)",
+        "outcome": "Failed",
+        "message": "Assert.Equal() Failure: Collections differ\r\n                       \u2193 (pos 0)\r\nExpected: float[]     [1.5]\r\nActual:   List<float> [99]\r\n                       \u2191 (pos 0)"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Chat.IncomingChatOwnershipTests.QueuedFullItemLinkKeepsItsAdmittedChargeAndRuneLists(channel: True)",
+        "outcome": "Failed",
+        "message": "Assert.Equal() Failure: Collections differ\r\n                       \u2193 (pos 0)\r\nExpected: float[]     [1.5]\r\nActual:   List<float> [99]\r\n                       \u2191 (pos 0)"
+      }
+    ]
+  },
+  "finalAffected": {
+    "path": "artifacts/continuation-20261105/incoming-chat-ownership/corrected-affected.trx",
+    "sha256": "39077d72d0f998c7d3560849b237f8da4c41e05aa430bf914ee81e55bece468a",
+    "counters": {
+      "total": 57,
+      "executed": 57,
+      "passed": 57,
+      "failed": 0,
+      "error": 0,
+      "timeout": 0,
+      "aborted": 0,
+      "inconclusive": 0,
+      "passedButRunAborted": 0,
+      "notRunnable": 0,
+      "notExecuted": 0,
+      "disconnected": 0,
+      "warning": 0,
+      "completed": 0,
+      "inProgress": 0,
+      "pending": 0
+    },
+    "groups": {
+      "ChatMessageBuilderTests": {
+        "Passed": 6
+      },
+      "ClientWhoRequestHandlerTests": {
+        "Passed": 9
+      },
+      "IncomingChatOwnershipTests": {
+        "Passed": 21
+      },
+      "EventQueueTests": {
+        "Passed": 13
+      },
+      "ChatFormatManagerTests": {
+        "Passed": 3
+      },
+      "FriendshipSocialOptionTests": {
+        "Passed": 3
+      },
+      "ClientEmoteHandlerTests": {
+        "Passed": 2
+      }
+    },
+    "nonPassing": []
+  },
+  "builds": [
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/isolated-baseline-build.log",
+      "sha256": "d172dc4fdf8c22113489b653da3f5508bddc5da186676ef06633a73f15b5c18d"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/corrected-final-owning-build.log",
+      "sha256": "569cc1f719a14437d0b99a4fd671dd13bff620e07f092fc20b87923402ceba79"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/corrected-final-test-build.log",
+      "sha256": "34118e1c9accaa78815cd51b45f6a397d948594dce6f9749009fd843ca956677"
+    }
+  ],
+  "buildBoundary": "Initial isolated test-project build hydrated project references and had existing Aspire010 warning. Final owning WorldServer --no-restore and test-only --no-restore -p:BuildProjectReferences=false builds have zero warnings/errors. No full solution/full suite.",
+  "testFilter": "FullyQualifiedName~NexusForever.Game.Tests.Chat.|FullyQualifiedName~FriendshipSocialOptionTests|FullyQualifiedName~EventQueueTests",
+  "unqualifiedSharedTreeAttempts": [
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/baseline-test-build.log",
+      "sha256": "56f70336c37f3bb16659e22b99f2e96b24a981c025e86aebf9da2734c94ea77c"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/baseline-corrected-test-build.log",
+      "sha256": "b6c48f70cc9685ac9fe339deec5866395445a1c8fc136819e87aa187b4a498a3"
+    }
+  ],
+  "sharedTreeBoundary": "Local discard-name compile correction and concurrent PvP API/fixture drift prevented shared-tree baseline qualification. Attempted local fixture exclusion did not resolve it. Qualified isolated builds use no fixture exclusion and do not include concurrent changes.",
+  "review": {
+    "fixedBase": "d3fb873417fce4c1268f3b10d93906faa484d24f",
+    "standards": {
+      "initialFindings": 0,
+      "finalFindings": 0,
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/review-standards.txt",
+      "sha256": "21fa301d7a7eddf4cbd7f7819ffb0fcdbded084c5a2a9ab4a032a729fa547a19"
+    },
+    "spec": {
+      "initialFindings": 1,
+      "resolvedFindings": 1,
+      "finalFindings": 0,
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/review-spec.txt",
+      "sha256": "72e0a04fad819f1bf10f99b57ad15f1118840c76f42376d9a80675d32b5fc8c8"
+    }
+  },
+  "upstream": {
+    "path": "artifacts/continuation-20261105/incoming-chat-ownership/upstream-refresh.json",
+    "sha256": "dcdfa30859ae0592da58dbfd621c5da2e04ba3cdf97525ee75b1acef07b3f6ef",
+    "latestAllStateCount": 20,
+    "changedRecordsSincePetFlairMilestone": 0,
+    "pr608": "open",
+    "pr609": "closed, unmerged"
+  },
+  "semantics": [
+    "Original recipient identity/Character/realm/Player/registry/account/session/epoch/EventQueue and disconnect checks",
+    "Independent channel recipients and original World bubble/presence lookup",
+    "Queued network item-link lists copy admitted broker values",
+    "Handler completion admits transient World work; queued errors use existing EventQueue diagnostics; no durable or exactly-once claim"
+  ],
+  "preserved": [
+    "Channel ID/bubble/realm fields and sender exclusion",
+    "Whisper/account-whisper and away/busy routing",
+    "Automatic reply loop prevention",
+    "Default entitlements15:1/17:1; no automatic44/seven grants",
+    "All unrelated work and staging"
+  ],
+  "remaining": [
+    "F-012 partial",
+    "durable social settings",
+    "persistent channels",
+    "entitlement/quota/throttle",
+    "exact leave/reconnect semantics",
+    "provider/restart/broker/socket/deployment",
+    "two-client/native/retail"
+  ]
+}

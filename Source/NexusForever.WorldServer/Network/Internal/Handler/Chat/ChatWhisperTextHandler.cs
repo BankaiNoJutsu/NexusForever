@@ -35,53 +35,51 @@ namespace NexusForever.WorldServer.Network.Internal.Handler.Chat
 
         public Task Handle(ChatWhisperTextMessage message)
         {
-            IPlayer player = playerManager.GetPlayer(message.Recipient.ToGameIdentity());
-            if (player == null)
+            var recipient = IncomingChatRecipient.Capture(playerManager, message.Recipient.ToGameIdentity());
+            if (recipient == null)
                 return Task.CompletedTask;
 
+            // The routing records and strings are immutable values; do not retain
+            // the mutable broker envelope across the World queue boundary.
+            var sender = message.Sender; var senderName = message.SenderName;
+            var recipientIdentity = message.Recipient; var recipientName = message.RecipientName;
+            bool accountWhisper = message.IsAccountWhisper, automatic = message.AutoResponse;
+
             var builder = new ChatMessageBuilder();
-            builder.Type    = message.IsAccountWhisper ? ChatChannelType.AccountWhisper : ChatChannelType.Whisper;
+            builder.Type    = accountWhisper ? ChatChannelType.AccountWhisper : ChatChannelType.Whisper;
             builder.Text    = message.Text.Text;
             builder.Formats = chatFormatManager.ToNetwork(message.Text.Format).ToList();
-            builder.AutoResponse = message.AutoResponse;
+            builder.AutoResponse = automatic;
 
-            builder.FromName = message.SenderName.Name;
-            if (message.Recipient.RealmId != message.Sender.RealmId)
-                builder.FromRealm = message.SenderName.RealmName;
+            builder.FromName = senderName.Name;
+            if (recipientIdentity.RealmId != sender.RealmId)
+                builder.FromRealm = senderName.RealmName;
 
-            player.Session.EnqueueMessageEncrypted(builder.Build());
+            recipient.Enqueue(() =>
+            {
+                if (!recipient.Send(builder.Build()) || automatic) return;
+                IPlayer player = recipient.Player;
+                string text = player.PresenceState switch
+                {
+                    AccountPresenceState.Away => player.AwayAutoResponseMessage,
+                    AccountPresenceState.Busy => player.BusyAutoResponseMessage,
+                    _ => null
+                };
+                if (string.IsNullOrWhiteSpace(text) || !recipient.IsCurrent) return;
 
-            if (!message.AutoResponse)
-                SendAutoResponse(player, message);
+                messagePublisher.PublishAsync(new ChatWhisperTextMessage
+                {
+                    Sender           = recipientIdentity,
+                    SenderName       = recipientName,
+                    Recipient        = sender,
+                    RecipientName    = senderName,
+                    Text             = new ChatChannelText { Text = text },
+                    IsAccountWhisper = accountWhisper,
+                    AutoResponse     = true
+                }).FireAndForgetAsync();
+            });
 
             return Task.CompletedTask;
-        }
-
-        private void SendAutoResponse(IPlayer player, ChatWhisperTextMessage message)
-        {
-            string text = player.PresenceState switch
-            {
-                AccountPresenceState.Away => player.AwayAutoResponseMessage,
-                AccountPresenceState.Busy => player.BusyAutoResponseMessage,
-                _ => null
-            };
-
-            if (string.IsNullOrWhiteSpace(text))
-                return;
-
-            messagePublisher.PublishAsync(new ChatWhisperTextMessage
-            {
-                Sender           = message.Recipient,
-                SenderName       = message.RecipientName,
-                Recipient        = message.Sender,
-                RecipientName    = message.SenderName,
-                Text             = new ChatChannelText
-                {
-                    Text = text
-                },
-                IsAccountWhisper = message.IsAccountWhisper,
-                AutoResponse     = true
-            }).FireAndForgetAsync();
         }
     }
 }

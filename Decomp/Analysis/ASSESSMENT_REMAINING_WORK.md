@@ -1,5 +1,14 @@
 # Assessment follow-through goal
 
+[Original-recipient incoming chat](INCOMING_CHAT_OWNERSHIP.md) completes the
+broker-to-World whisper/channel actor boundary, including bubble lookup and
+automatic replies. Five baseline failures and two review-driven item-link
+probes are fixed;21 new/all57 affected cases, clean scoped builds and both
+final review axes pass in an isolated published-base checkout. F-012 remains
+partial; durable social options, broker/socket/native/retail and wider delivery
+semantics remain open. Preserve concurrent PvP/prerequisite/native work and
+continue the independent actionable gameplay queue.
+
 [Confirmed pet-flair progression](PET_FLAIR_PROGRESSION.md) completes the real
 spell grant, frozen normal-save rows and confirmed original World unlock/initial
 bits. Three baseline defects are fixed;16 new/all299 affected cases, clean

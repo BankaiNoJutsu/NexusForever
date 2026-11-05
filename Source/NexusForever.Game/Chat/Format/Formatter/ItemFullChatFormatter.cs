@@ -42,8 +42,8 @@ namespace NexusForever.Game.Chat.Format.Formatter
                 WorldRequirements = format.WorldRequirements,
                 Unknown2 = format.Unknown2,
                 WorldRequirementItem2Id = format.WorldRequirementItem2Id,
-                ChargeAmounts = format.ChargeAmounts,
-                RuneSlotItem2Ids = format.RuneSlotItem2Ids,
+                ChargeAmounts = format.ChargeAmounts.ToList(),
+                RuneSlotItem2Ids = format.RuneSlotItem2Ids.ToList(),
             };
         }
     }

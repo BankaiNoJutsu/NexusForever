@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[Original-recipient chat delivery](Decomp/Analysis/INCOMING_CHAT_OWNERSHIP.md)
+now binds broker whisper/channel text, bubble lookup and automatic replies to
+each admitted World recipient. Five baseline failures and two item-link
+aliasing cases are fixed;21 new/all57 affected cases, clean scoped builds and
+both final reviews pass on an isolated published base. F-012 stays partial;
+durable settings and provider/broker/socket/native/retail remain open.
+
 [Confirmed pet-flair progression](Decomp/Analysis/PET_FLAIR_PROGRESSION.md)
 now binds the real spell grant to frozen Character rows and original World
 unlock/initial ownership packets. Three baseline defects are fixed;16 new/all299
@@ -22024,6 +22031,9 @@ Real boss-token inventory, cast acceptance/results, match-results population,
 and warplot plug state remain blocked.
 
 ### F-012 - ICComm / Chat / Friendship - PARTIAL (blocked)
+
+See [original-recipient incoming chat](Decomp/Analysis/INCOMING_CHAT_OWNERSHIP.md) for the later delivery slice and remaining qualification.
+
 Transient membership, offline cleanup, directed/ordered delivery. Entitlement
 checks, persistent channels, throttling, auto-response persistence incomplete.
 Needs decomp.

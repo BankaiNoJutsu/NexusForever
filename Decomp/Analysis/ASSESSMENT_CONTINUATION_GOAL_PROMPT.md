@@ -1,6 +1,6 @@
 # Assessment continuation Goal prompt
 
-Updated 5 November 2026 with verified pet-flair/creation/LAS milestones and bank contracts,
+Updated 5 November 2026 with verified chat/pet-flair/creation/LAS milestones and bank contracts,
 remaining implementation/evidence priorities and current REA boundary. Retains
 roadmap-driven execution, scoped-only validation and the existing main-thread
 regular commit/push policy.
@@ -76,6 +76,14 @@ Verified continuation status - 5 November 2026
   resumption as directed below; do not count unchanged PRs as new implementation.
 
 Next actionable outcomes and remaining gates
+- The later Decomp/Analysis/INCOMING_CHAT_OWNERSHIP.md milestone completes the
+  broker-to-World whisper/channel original-recipient boundary, including bubble
+  lookup and automatic replies. Five baseline failures and two reviewed mutable
+  item-link probes are fixed;21 new/all57 affected cases, clean scoped builds
+  and both final review axes pass against an isolated published-base candidate.
+  Do not repeat this completed Source slice. F-012 remains partial; durable
+  social settings, broker/socket/native/retail and broader semantics stay open.
+  Preserve concurrent PvP/prerequisite/native work; continue independent gameplay.
 - The later Decomp/Analysis/PET_FLAIR_PROGRESSION.md milestone completes the
   real spell-effect flair grant's frozen Character rows and confirmed original
   World unlock/initial-bit publication. Three baseline failures are fixed;
