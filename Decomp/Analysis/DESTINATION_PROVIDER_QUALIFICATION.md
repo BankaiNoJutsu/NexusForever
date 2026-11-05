@@ -1,5 +1,9 @@
 # Destination configured-provider qualification
 
+[Path progression publication](#path-progression-publication) covers committed
+mission notices, XP display, and item and satchel persistence controls on
+migrated MySQL Character schemas.
+
 [Satchel transfer settlement](#satchel-transfer-settlement) covers manual
 withdrawals and deposits on migrated MySQL Character schemas.
 
@@ -54,6 +58,25 @@ The [portable report](coverage/marketplace-mysql-concurrency-20261103.json) bind
 unchanged Source/DLLs and all44 outcomes. Owned workloads are stopped. No full
 suite was run. Other profiles, physical failures, other financial commands,
 broker/restart, deployment, native and retail qualification remain separate.
+
+### Path progression publication
+
+5 November 2026. Five compiled Player cases verify that the Path log and
+incremental XP use confirmed totals, later earning waits for its own save,
+and mission notices wait through rollback. Enqueue controls exercise retry,
+Path switching, and session replacement. Three companion cases verify the
+item and auto-satchel material rows commit with the Path level reward marker,
+including rewards earned after the save freezes and material retry after a
+rejected save.
+
+Each case used a separate disposable MySQL 8.4.13 Character schema with 48
+migrations and `MySqlRetryingExecutionStrategy`. The TLS control connection
+reported `REPEATABLE-READ`. The fixture records World sends and scripts the
+Auth phase. Startup to runner launch took 251 seconds and the provider cases
+took 147 seconds. The [portable result](coverage/path-publication-mysql-20261105.json)
+binds the eight outcomes to the tested DLLs and the owned fixture shutdown.
+Path item and satchel notice ordering, full-bag delivery, deployed behavior,
+and native presentation remain open.
 
 ### Satchel transfer settlement
 

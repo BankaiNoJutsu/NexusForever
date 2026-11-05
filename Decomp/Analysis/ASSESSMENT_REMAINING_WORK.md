@@ -386,6 +386,10 @@ uncommitted total in the full log and an enqueue failure escaping the XP
 grant. The owning build took 33 seconds with zero warnings or errors.
 All 232 scoped cases passed in 40 seconds. Local evidence is under
 `artifacts/continuation-20261105/path-xp-publication/`.
+The [configured MySQL gate](DESTINATION_PROVIDER_QUALIFICATION.md#path-progression-publication)
+passes five publication cases and three item and satchel persistence controls.
+The [Path reward record](LAUGHINGWS_PATH_FORTUNE_BLOCKER_REVIEW.md#lws-061-path-reward-precision)
+tracks the remaining item notification and full-inventory evidence.
 
 ### Committed reputation deltas
 

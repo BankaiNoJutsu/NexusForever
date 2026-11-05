@@ -1,0 +1,81 @@
+{
+  "productionSourceCommit": "dc0d8952c16463a6fd2007b9a0842626fcf0a4eb",
+  "testFixture": {
+    "path": "Source/NexusForever.Game.Tests/Entity/PlayerExperiencePersistenceTests.cs",
+    "gitBlob": "ba024da16eecf10ce08e51171eca22cadec8a35f"
+  },
+  "engine": {
+    "version": "8.4.13",
+    "sha256": "7a976874ef3974d612081960b1c193c663b4434692b6257382352c587e367ad6",
+    "tlsRequired": true,
+    "controlConnectionIsolation": "REPEATABLE-READ"
+  },
+  "strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+  "migrationsPerSchema": 48,
+  "testCases": [
+    {
+      "name": "PathXpAndThePathLogUseTheCommittedFrozenTotals",
+      "passed": true
+    },
+    {
+      "name": "FailedPathXpEnqueueRetriesOnlyForTheDisplayedPath(False)",
+      "passed": true
+    },
+    {
+      "name": "PathCompletionWaitsForCommitAndResumesOnlyOnTheOriginalSession(False)",
+      "passed": true
+    },
+    {
+      "name": "AutoStoredPathMaterialSurvivesFailedSaveAndWaitsForItsFrozenRewardMarker(False)",
+      "passed": true
+    },
+    {
+      "name": "FailedPathXpEnqueueRetriesOnlyForTheDisplayedPath(True)",
+      "passed": true
+    },
+    {
+      "name": "PathCompletionWaitsForCommitAndResumesOnlyOnTheOriginalSession(True)",
+      "passed": true
+    },
+    {
+      "name": "AutoStoredPathMaterialSurvivesFailedSaveAndWaitsForItsFrozenRewardMarker(True)",
+      "passed": true
+    },
+    {
+      "name": "APathItemRewardAcceptedDuringAuthWaitsForTheSaveOfItsRewardedMarker",
+      "passed": true
+    }
+  ],
+  "startupSeconds": 250.9389763,
+  "elapsedSeconds": 146.975476,
+  "sqliteControls": {
+    "cases": 8,
+    "trxSha256": "afefc54c64a6846af41074f2430dbd29315d46f6538b956ac28edb2b2f910de5"
+  },
+  "assemblies": [
+    {
+      "file": "NexusForever.Game.Tests.dll",
+      "sha256": "ba1e57b662321b99dab65683a1745b3f9217339a47e176c8dda60e650cc16451"
+    },
+    {
+      "file": "NexusForever.Game.dll",
+      "sha256": "9f4031782098390e68e404e947ef973f316eed118c41e6aaa19438d6a24e82e6"
+    },
+    {
+      "file": "NexusForever.Database.Character.dll",
+      "sha256": "b2fc8210b442cb1ae1a1b919ade95c9df40555243e1456d59d5bb2f7bdca64a7"
+    }
+  ],
+  "runnerSourceSha256": "21d7d2b0d77863c7645c976284a1585e5fd967d85a31b2dd14d0058f556e8c46",
+  "runnerSha256": "6a94d43de41e40dedfe66d7f7da11362fb9141f9751cfbdea0da40629343479a",
+  "resultsSha256": "43484c387eb203ce14f663cf6bedb562d953af8b41d8db73086f7e6a8b6ece81",
+  "shutdown": {
+    "serverAbsent": true,
+    "listenerAbsent": true,
+    "runnerAbsent": true,
+    "helperAbsent": true,
+    "proofSha256": "313951e9ee2f65b8bb858357d69a3ce6793efcebe2c72f4726ec5eb59404816e"
+  },
+  "limits": "The compiled cases use the Player Character save with fixture Auth and a recording World session. Commit and enqueue faults are injected. Item and satchel controls cover persistence, while item publication, full-bag delivery, deployment, native behavior and retail qualification remain open.",
+  "localArtifacts": "artifacts/continuation-20261105/path-publication-mysql/"
+}

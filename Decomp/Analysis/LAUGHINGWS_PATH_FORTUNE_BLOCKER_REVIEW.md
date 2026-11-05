@@ -59,6 +59,24 @@ and a client-mapped mission XP fallback. It still keeps guardrails:
 - flagged reward rows remain unsupported;
 - exact reward presentation and overflow behavior remain unmapped.
 
+Carbine's April 2013 M30 beta notes describe sending pushed items by mail
+when inventory is full. The economy section also lists Path rewards as a
+source of housing items. These are separate entries from an early build.
+Build 16042 still needs a Path reward tied to a full-inventory outcome,
+including whether the whole grant or only the remainder goes to mail.
+[Archived Carbine notes](https://forums.craftingworlds.com/threads/carbine-releases-statement-and-patch-notes.2661/)
+
+The current fork freezes Path reward markers together with ordinary Item
+and satchel writes in the Character save. Live `ServerItemAdd` and stack
+updates still leave `Inventory.ItemCreate` during the award. The publication
+gate needs to keep a later move, stack update or deletion ordered after the
+reward that created the item, and cover material notices when the reward
+goes into the satchel.
+
+For a bag-only grant, the item loop can fill existing stacks and return an
+inventory-full error for the remainder. The Path caller receives no accepted
+quantity and still advances the rewarded level after the call returns.
+
 The decompile pass corrected the prior `PathRewardTable` reading: `Lua_PathMission_GetRewardXp`
 (`WildStar64.exe` `14067c010`) calls `GameFormula_GetEntryById` (`140200220`)
 with `0x017a`, reads `entry + 0x04` (`GameFormula.Dataint0`), and falls back to
