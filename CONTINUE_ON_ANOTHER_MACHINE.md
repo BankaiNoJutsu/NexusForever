@@ -1,5 +1,13 @@
 # Continue on another machine
 
+Latest appearance validation: [malformed input admission](Decomp/Analysis/APPEARANCE_CHANGE_ADMISSION.md)
+protects Credits and Service Token requests before debit/mutation and direct
+updates before partial changes. Fifteen baseline failures and eight explicit
+wallet/mutation observations are fixed;25 new/all55 scoped cases and clean
+owning/test builds pass in isolation. Actual rows, atomic settlement/recovery,
+committed visuals and provider/native/retail remain open. Preserve concurrent
+work, keep client/CUA stopped and continue the broader roadmap.
+
 Latest physical recovery: [crafting producer termination](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#crafting-physical-producer-termination-and-fresh-worker-recovery)
 passes one unchanged public-handler control and three committed SQLite windows.
 The original producer is killed after independent durable-state inspection; a

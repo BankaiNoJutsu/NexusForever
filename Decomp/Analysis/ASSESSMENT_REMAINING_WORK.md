@@ -1,5 +1,14 @@
 # Assessment follow-through goal
 
+[Malformed appearance admission](APPEARANCE_CHANGE_ADMISSION.md) completes the
+parsed public Credits/Service Token and direct-manager structural input gate.
+Fifteen baseline failures are fixed; eight public observations retain the
+original charge and mutation. All25 new/55 affected cases and clean owning/test
+builds pass. No price/range policy is invented. F-026 remains partial: actual
+rows, atomic appearance/payment settlement, save recovery and committed visual
+publication plus provider/socket/native/retail qualification remain separate.
+Continue independent progression/gameplay while preserving concurrent work.
+
 [Action-bar lookup refusals](UPSTREAM_608_CAST_REFUSALS.md#action-bar-cast-resolution---5-november-2026)
 complete the public ordinary/position stale-slot feedback boundary. Eight
 corrected baseline failures are fixed;21 new/all116 affected cases and both

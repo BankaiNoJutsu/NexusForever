@@ -101,12 +101,26 @@ namespace NexusForever.Game.Entity
         /// </remarks>
         public void Update(Race race, Sex sex, IList<(uint Label, uint Value)> customisations, IList<float> bones)
         {
+            if (!IsValidInput(customisations, bones))
+                throw new ArgumentException("Appearance data requires unique labels and at most 256 finite bones.");
+
             owner.Race = race;
             owner.Sex  = sex;
 
             UpdateCustomisations(customisations);
             UpdateAppearances(race, sex, customisations);
             UpdateBones(bones);
+        }
+
+        /// <summary>
+        /// Check unique labels and finite, addressable bones before applying or charging for an update.
+        /// Catalog validation remains with <see cref="ICustomisationManager"/>.
+        /// </summary>
+        public static bool IsValidInput(IList<(uint Label, uint Value)> customisations, IList<float> bones)
+        {
+            return customisations != null && bones != null
+                && customisations.Select(customisation => customisation.Label).Distinct().Count() == customisations.Count
+                && bones.Count <= byte.MaxValue + 1 && bones.All(float.IsFinite);
         }
 
         private void UpdateCustomisations(IList<(uint Label, uint Value)> customisations)

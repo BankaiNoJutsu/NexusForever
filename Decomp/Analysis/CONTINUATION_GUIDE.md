@@ -1,5 +1,12 @@
 # Client Binary Decompile Continuation Guide
 
+[Malformed appearance admission](APPEARANCE_CHANGE_ADMISSION.md) now rejects
+duplicate labels/non-finite bones before payment or mutation, including both
+wallet routes. Direct Update rejects null/oversized data before partial changes.
+Fifteen baseline failures are fixed;25 new/all55 scoped cases and clean builds
+pass. Actual rows, durable atomic settlement/recovery, committed visuals and
+external qualification remain open; no retail range/cost policy is inferred.
+
 [Crafting physical process recovery](DESTINATION_PROVIDER_QUALIFICATION.md#crafting-physical-producer-termination-and-fresh-worker-recovery)
 passes an unchanged public-handler control and three committed SQLite crash
 windows. Fresh real hosted workers finish the same receipts without regranting

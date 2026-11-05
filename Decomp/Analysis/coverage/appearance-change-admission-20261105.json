@@ -1,0 +1,456 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-05T22:08:20.393301+00:00",
+  "baseCommit": "4eef7e20a032fac832352c62794cad47b32305f2",
+  "milestone": "Appearance input admission before payment and mutation",
+  "sources": [
+    {
+      "path": "Source/NexusForever.Game/Entity/AppearanceManager.cs",
+      "sha256": "a602db9f286a3da5d1effce463f340bd5d6a717bbf7651d9898ce17fed50f159",
+      "gitBlob": "90af1a446881b7baa2e205342126323fd053d414"
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/Network/Message/Handler/Entity/Player/ClientAppearanceChangeHandler.cs",
+      "sha256": "ac84650fc213d820068e873f5462ad0f68ab036181879bb3bee33f559d2ef23f",
+      "gitBlob": "0a95df9619950da4f47c3be34a12f30133017383"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Entity/AppearanceChangeAdmissionTests.cs",
+      "sha256": "84b622fdbe17d1d33e3b74e6730ac21a360066cff27f8e7c9bd09b9cfd4a3daa",
+      "gitBlob": "e462e9b34437da13674758abd270fa1d2de39ea3"
+    }
+  ],
+  "assemblies": [
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Abstract/bin/Debug/net10.0/NexusForever.Game.Abstract.dll",
+      "sha256": "319cd85afe18a2d696a14c540d1ee5299ccfae9fe25220de26412955573bb562"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Abstract.dll",
+      "sha256": "319cd85afe18a2d696a14c540d1ee5299ccfae9fe25220de26412955573bb562"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game/bin/Debug/net10.0/NexusForever.Game.dll",
+      "sha256": "993730177bafb9ada41f92bd8857d4053949a5567c1a7d8d5de5c421841c18e0"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.dll",
+      "sha256": "993730177bafb9ada41f92bd8857d4053949a5567c1a7d8d5de5c421841c18e0"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.WorldServer/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+      "sha256": "93b2b451a384122539715ae038d6e4841666395a123edfebae7b2e51f2950190"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+      "sha256": "93b2b451a384122539715ae038d6e4841666395a123edfebae7b2e51f2950190"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+      "sha256": "f1c0f7447ae43e4a6660f4d9274feb8d7d97a8035fa5396ee14d6078172a0baa"
+    }
+  ],
+  "sourceBoundary": {
+    "trackedCompared": 6270,
+    "expectedChanges": [
+      "Source/NexusForever.Game/Entity/AppearanceManager.cs",
+      "Source/NexusForever.WorldServer/Network/Message/Handler/Entity/Player/ClientAppearanceChangeHandler.cs"
+    ],
+    "newTest": "Source/NexusForever.Game.Tests/Entity/AppearanceChangeAdmissionTests.cs",
+    "literalCleanFilterMatches": [
+      "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+      "Source/NexusForever.ClientConnector/packages.config",
+      "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+      "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+      "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+      "Source/NexusForever.Database/NexusForever.Database.csproj",
+      "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj"
+    ],
+    "explicitBomNewlineVariant": [
+      "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs"
+    ],
+    "otherSourceMatchesPublishedBase": true,
+    "concurrentRootWorkExcluded": true
+  },
+  "baseline": {
+    "path": "artifacts/continuation-20261105/appearance-change-admission/baseline.trx",
+    "sha256": "07019d9609bb56f0b53ec3bb9e7f677551482f7f52fdcd30f79947fec6b41e05",
+    "counters": {
+      "total": 25,
+      "executed": 25,
+      "passed": 10,
+      "failed": 15,
+      "error": 0,
+      "timeout": 0,
+      "aborted": 0,
+      "inconclusive": 0,
+      "passedButRunAborted": 0,
+      "notRunnable": 0,
+      "notExecuted": 0,
+      "disconnected": 0,
+      "warning": 0,
+      "completed": 0,
+      "inProgress": 0,
+      "pending": 0
+    },
+    "groups": {
+      "AppearanceChangeAdmissionTests": {
+        "Failed": 15,
+        "Passed": 10
+      }
+    },
+    "nonPassing": [
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"positive-infinity\")",
+        "outcome": "Failed",
+        "message": "Assert.Throws() Failure: No exception was thrown\r\nExpected: typeof(NexusForever.Network.InvalidPacketValueException)"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"duplicate-label\")",
+        "outcome": "Failed",
+        "message": "Assert.Throws() Failure: No exception was thrown\r\nExpected: typeof(NexusForever.Network.InvalidPacketValueException)"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"nan\")",
+        "outcome": "Failed",
+        "message": "Assert.Throws() Failure: No exception was thrown\r\nExpected: typeof(NexusForever.Network.InvalidPacketValueException)"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"positive-infinity\")",
+        "outcome": "Failed",
+        "message": "Assert.Throws() Failure: No exception was thrown\r\nExpected: typeof(NexusForever.Network.InvalidPacketValueException)"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"nan\")",
+        "outcome": "Failed",
+        "message": "Assert.ThrowsAny() Failure: No exception was thrown\r\nExpected: typeof(System.ArgumentException)"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"duplicate-label\")",
+        "outcome": "Failed",
+        "message": "Assert.Throws() Failure: No exception was thrown\r\nExpected: typeof(NexusForever.Network.InvalidPacketValueException)"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"negative-infinity\")",
+        "outcome": "Failed",
+        "message": "Assert.Throws() Failure: No exception was thrown\r\nExpected: typeof(NexusForever.Network.InvalidPacketValueException)"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"null-bones\")",
+        "outcome": "Failed",
+        "message": "Assert.ThrowsAny() Failure: Exception type was not compatible\r\nExpected: typeof(System.ArgumentException)\r\nActual:   typeof(System.NullReferenceException)\r\n---- System.NullReferenceException : Object reference not set to an instance of an object."
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"too-many-bones\")",
+        "outcome": "Failed",
+        "message": "Assert.Equal() Failure: Values differ\r\nExpected: Male\r\nActual:   Female"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"positive-infinity\")",
+        "outcome": "Failed",
+        "message": "Assert.ThrowsAny() Failure: No exception was thrown\r\nExpected: typeof(System.ArgumentException)"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"null-customisations\")",
+        "outcome": "Failed",
+        "message": "Assert.ThrowsAny() Failure: Exception type was not compatible\r\nExpected: typeof(System.ArgumentException)\r\nActual:   typeof(System.NullReferenceException)\r\n---- System.NullReferenceException : Object reference not set to an instance of an object."
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"duplicate-label\")",
+        "outcome": "Failed",
+        "message": "Assert.ThrowsAny() Failure: No exception was thrown\r\nExpected: typeof(System.ArgumentException)"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"negative-infinity\")",
+        "outcome": "Failed",
+        "message": "Assert.Throws() Failure: No exception was thrown\r\nExpected: typeof(NexusForever.Network.InvalidPacketValueException)"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"nan\")",
+        "outcome": "Failed",
+        "message": "Assert.Throws() Failure: No exception was thrown\r\nExpected: typeof(NexusForever.Network.InvalidPacketValueException)"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"negative-infinity\")",
+        "outcome": "Failed",
+        "message": "Assert.ThrowsAny() Failure: No exception was thrown\r\nExpected: typeof(System.ArgumentException)"
+      }
+    ],
+    "testNames": [
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"positive-infinity\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"duplicate-label\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.FiniteRequestsKeepTheExistingPaymentAndAppearanceFlow(tokens: False, count: 0)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"nan\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.FiniteRequestsKeepTheExistingPaymentAndAppearanceFlow(tokens: True, count: 3)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"positive-infinity\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"nan\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.UnaffordableValidRequestKeepsBothWalletsAndAppearance(tokens: True)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.FiniteRequestsKeepTheExistingPaymentAndAppearanceFlow(tokens: True, count: 256)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"duplicate-label\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"negative-infinity\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"null-bones\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.FiniteRequestsKeepTheExistingPaymentAndAppearanceFlow(tokens: True, count: 0)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"too-many-bones\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.FiniteRequestsKeepTheExistingPaymentAndAppearanceFlow(tokens: False, count: 256)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"too-many-bones\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"positive-infinity\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.FiniteRequestsKeepTheExistingPaymentAndAppearanceFlow(tokens: False, count: 3)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"null-customisations\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"duplicate-label\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"negative-infinity\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"nan\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"too-many-bones\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"negative-infinity\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.UnaffordableValidRequestKeepsBothWalletsAndAppearance(tokens: False)"
+    ]
+  },
+  "baselineBinaries": [
+    {
+      "path": "artifacts/continuation-20261105/appearance-change-admission/baseline-NexusForever.Game.dll",
+      "sha256": "b5830b46324acb64afc914adbfd0f840ca9741e12f4eb2d1fb5025a15b125546"
+    },
+    {
+      "path": "artifacts/continuation-20261105/appearance-change-admission/baseline-NexusForever.WorldServer.dll",
+      "sha256": "94636fe8f81e99915512717e1880533386bafe67d21b93857d46f7ac3a7dac77"
+    }
+  ],
+  "diagnosticBaseline": {
+    "path": "artifacts/continuation-20261105/appearance-change-admission/diagnostic-baseline.trx",
+    "sha256": "f5bed95eb565da35cadc0cee438659c7200782a601109a5401b5a51d9051f0c4",
+    "counters": {
+      "total": 10,
+      "executed": 10,
+      "passed": 2,
+      "failed": 8,
+      "error": 0,
+      "timeout": 0,
+      "aborted": 0,
+      "inconclusive": 0,
+      "passedButRunAborted": 0,
+      "notRunnable": 0,
+      "notExecuted": 0,
+      "disconnected": 0,
+      "warning": 0,
+      "completed": 0,
+      "inProgress": 0,
+      "pending": 0
+    },
+    "groups": {
+      "AppearanceChangeAdmissionTests": {
+        "Failed": 8,
+        "Passed": 2
+      }
+    },
+    "nonPassing": [
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"positive-infinity\")",
+        "outcome": "Failed",
+        "message": "Malformed appearance was accepted: credits=93, tokens=100, sex=Female, bones=\u221e."
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"negative-infinity\")",
+        "outcome": "Failed",
+        "message": "Malformed appearance was accepted: credits=100, tokens=93, sex=Female, bones=-\u221e."
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"positive-infinity\")",
+        "outcome": "Failed",
+        "message": "Malformed appearance was accepted: credits=100, tokens=93, sex=Female, bones=\u221e."
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"negative-infinity\")",
+        "outcome": "Failed",
+        "message": "Malformed appearance was accepted: credits=93, tokens=100, sex=Female, bones=-\u221e."
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"duplicate-label\")",
+        "outcome": "Failed",
+        "message": "Malformed appearance was accepted: credits=100, tokens=93, sex=Female, bones=0.75."
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"nan\")",
+        "outcome": "Failed",
+        "message": "Malformed appearance was accepted: credits=100, tokens=93, sex=Female, bones=NaN."
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"duplicate-label\")",
+        "outcome": "Failed",
+        "message": "Malformed appearance was accepted: credits=93, tokens=100, sex=Female, bones=0.75."
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"nan\")",
+        "outcome": "Failed",
+        "message": "Malformed appearance was accepted: credits=93, tokens=100, sex=Female, bones=NaN."
+      }
+    ],
+    "testNames": [
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"positive-infinity\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"negative-infinity\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"positive-infinity\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"too-many-bones\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"negative-infinity\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"too-many-bones\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"duplicate-label\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"nan\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"duplicate-label\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"nan\")"
+    ]
+  },
+  "diagnosticSelection": "Malformed public-handler method; parameter-name exclusion was not a supported filter, so both existing oversized-bone controls also ran and passed. Eight failures retain explicit debit and mutation observations.",
+  "baselineBinaryProvenance": {
+    "Game": "Matches the Game DLL copied in crafting-process-recovery/inputs.json",
+    "WorldServer": "Matches the WorldServer DLL copied in crafting-process-recovery/inputs.json"
+  },
+  "finalAffected": {
+    "path": "artifacts/continuation-20261105/appearance-change-admission/affected.trx",
+    "sha256": "e2f7b31df894a2f1f26e0bc6723a1faadddc2940563a4ebe35c5f765470aed50",
+    "counters": {
+      "total": 55,
+      "executed": 55,
+      "passed": 55,
+      "failed": 0,
+      "error": 0,
+      "timeout": 0,
+      "aborted": 0,
+      "inconclusive": 0,
+      "passedButRunAborted": 0,
+      "notRunnable": 0,
+      "notExecuted": 0,
+      "disconnected": 0,
+      "warning": 0,
+      "completed": 0,
+      "inProgress": 0,
+      "pending": 0
+    },
+    "groups": {
+      "ProtocolRuntimeHardeningTests": {
+        "Passed": 21
+      },
+      "AppearanceChangeAdmissionTests": {
+        "Passed": 25
+      },
+      "CostumeManagerTests": {
+        "Passed": 6
+      },
+      "AccountCostumeManagerTests": {
+        "Passed": 3
+      }
+    },
+    "nonPassing": [],
+    "testNames": [
+      "NexusForever.Game.Tests.Entity.ProtocolRuntimeHardeningTests.MapCell_GetCellCoordRejectsUpperWorldBoundary(x: 0, z: 32768)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"null-customisations\")",
+      "NexusForever.Game.Tests.Entity.ProtocolRuntimeHardeningTests.MapGrid_GetGridCoordRejectsUpperWorldBoundary(x: 0, z: 32768)",
+      "NexusForever.Game.Tests.Entity.CostumeManagerTests.SaveCostume_WithMissingDyeColorRampStaticDataSendsInvalidDye(includeEmptyTable: False)",
+      "NexusForever.Game.Tests.Account.Inventory.AccountCostumeManagerTests.ForgetItem_WithMissingItemTableSendsInvalidWithoutForgetting",
+      "NexusForever.Game.Tests.Entity.ProtocolRuntimeHardeningTests.SetPositionProjectileCommand_ReadRoundTripsFloatGravity",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"negative-infinity\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"null-bones\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"too-many-bones\")",
+      "NexusForever.Game.Tests.Entity.ProtocolRuntimeHardeningTests.ClientEntityCommand_ReadRejectsUnsupportedCommandType",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"duplicate-label\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.FiniteRequestsKeepTheExistingPaymentAndAppearanceFlow(tokens: False, count: 256)",
+      "NexusForever.Game.Tests.Entity.ProtocolRuntimeHardeningTests.ServerEntityCreate_WriteRejectsSpellInitData",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"too-many-bones\")",
+      "NexusForever.Game.Tests.Entity.ProtocolRuntimeHardeningTests.SharedItem_WriteUsesTradingPartnerCountForTradingPartnerPayload",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"nan\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.UnaffordableValidRequestKeepsBothWalletsAndAppearance(tokens: True)",
+      "NexusForever.Game.Tests.Entity.ProtocolRuntimeHardeningTests.ClientResurrectAccept_ReadRejectsUnsupportedResurrectionType",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"negative-infinity\")",
+      "NexusForever.Game.Tests.Entity.ProtocolRuntimeHardeningTests.SetPositionMultiSplineCommand_ReadRoundTripsPackedSpeedAndFloatFields",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.FiniteRequestsKeepTheExistingPaymentAndAppearanceFlow(tokens: True, count: 256)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.FiniteRequestsKeepTheExistingPaymentAndAppearanceFlow(tokens: False, count: 3)",
+      "NexusForever.Game.Tests.Entity.ProtocolRuntimeHardeningTests.ServerCharacterListEntry_WriteUsesCharacterRowPayload",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"positive-infinity\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"too-many-bones\")",
+      "NexusForever.Game.Tests.Entity.ProtocolRuntimeHardeningTests.MapCell_GetCellCoordRejectsUpperWorldBoundary(x: 32768, z: 0)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"duplicate-label\")",
+      "NexusForever.Game.Tests.Entity.CostumeManagerTests.SaveCostume_WithMissingItemDisplayStaticDataAndNoDyeSavesCostume",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.FiniteRequestsKeepTheExistingPaymentAndAppearanceFlow(tokens: False, count: 0)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"duplicate-label\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"negative-infinity\")",
+      "NexusForever.Game.Tests.Entity.ProtocolRuntimeHardeningTests.GamePacketReader_ReadBitRejectsTruncatedStream",
+      "NexusForever.Game.Tests.Entity.ProtocolRuntimeHardeningTests.MapGrid_GetGridCoordRejectsUpperWorldBoundary(x: 32768, z: 0)",
+      "NexusForever.Game.Tests.Entity.ProtocolRuntimeHardeningTests.ServerEntityCreate_WriteRejectsUnsupportedWorldPlacementType",
+      "NexusForever.Game.Tests.Entity.CostumeManagerTests.GenerateDyeMask_WithMissingDyeColorRampStaticDataThrowsInvalidDye(includeEmptyTable: False)",
+      "NexusForever.Game.Tests.Entity.CostumeManagerTests.GenerateDyeMask_WithMissingDyeColorRampStaticDataThrowsInvalidDye(includeEmptyTable: True)",
+      "NexusForever.Game.Tests.Entity.ProtocolRuntimeHardeningTests.GamePacketWriter_WriteRejectsValueOutsideBitWidth",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.FiniteRequestsKeepTheExistingPaymentAndAppearanceFlow(tokens: True, count: 0)",
+      "NexusForever.Game.Tests.Entity.CostumeManagerTests.SaveCostume_WithMissingDyeColorRampStaticDataSendsInvalidDye(includeEmptyTable: True)",
+      "NexusForever.Game.Tests.Entity.CostumeManagerTests.SaveCostume_WithKnownDyeColorRampStaticDataSavesCostume",
+      "NexusForever.Game.Tests.Entity.ProtocolRuntimeHardeningTests.ServerCharacterListCharacter_WriteRejectsMismatchedCustomisationLabelsAndValues",
+      "NexusForever.Game.Tests.Account.Inventory.AccountCostumeManagerTests.UnlockItem_WithMissingFormulaTableUsesDefaultLimitAndUnlocks",
+      "NexusForever.Game.Tests.Entity.ProtocolRuntimeHardeningTests.SetPositionKeysCommand_WriteRejectsMismatchedTimesAndPositions",
+      "NexusForever.Game.Tests.Entity.ProtocolRuntimeHardeningTests.ClientEntityCommand_ReadsTimeCountAndSetTimePayload",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: False, fault: \"positive-infinity\")",
+      "NexusForever.Game.Tests.Entity.ProtocolRuntimeHardeningTests.ServerEntityCommand_WritesGuidTimeFlagsAndSetTimePayload",
+      "NexusForever.Game.Tests.Entity.ProtocolRuntimeHardeningTests.ClientStatisticsConnection_ReadsPackedUnitCountAndFlag",
+      "NexusForever.Game.Tests.Entity.ProtocolRuntimeHardeningTests.SetRotationSplineCommand_ReadRoundTripsFloatPosition",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.UnaffordableValidRequestKeepsBothWalletsAndAppearance(tokens: False)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.MalformedParsedRequestCannotChargeEitherWalletOrChangeAppearance(tokens: True, fault: \"nan\")",
+      "NexusForever.Game.Tests.Entity.ProtocolRuntimeHardeningTests.AppearanceManager_UpdateBonesCanRemoveAllExistingBones",
+      "NexusForever.Game.Tests.Account.Inventory.AccountCostumeManagerTests.UnlockItem_WithNonEquippableItemSendsInvalidWithoutUnlockingOrSoulbinding",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.FiniteRequestsKeepTheExistingPaymentAndAppearanceFlow(tokens: True, count: 3)",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"nan\")",
+      "NexusForever.Game.Tests.Entity.AppearanceChangeAdmissionTests.DirectAppearanceUpdateRejectsInvalidInputBeforeAnyMutation(fault: \"positive-infinity\")"
+    ]
+  },
+  "newCases": 25,
+  "uniqueAffected": 55,
+  "filter": "FullyQualifiedName~AppearanceChangeAdmissionTests|FullyQualifiedName~ProtocolRuntimeHardeningTests|FullyQualifiedName~CostumeManagerTests",
+  "builds": [
+    {
+      "path": "artifacts/continuation-20261105/appearance-change-admission/owning-build.log",
+      "sha256": "ea65faa616ec955856787cb090a68891da744dbec470f11fbee7911e3b8f956c"
+    },
+    {
+      "path": "artifacts/continuation-20261105/appearance-change-admission/final-test-build.log",
+      "sha256": "3e9ae1270644a56d5c355e3a106d70c243dece999789f9899665051cd9f1bb24"
+    }
+  ],
+  "fixtureCompileFailures": [
+    {
+      "path": "artifacts/continuation-20261105/appearance-change-admission/baseline-test-build.log",
+      "sha256": "d53d4eba774982df0d3f34c6eab7a2c7d998c4b4db9665e41f9d097f2671b2a1"
+    },
+    {
+      "path": "artifacts/continuation-20261105/appearance-change-admission/corrected-baseline-test-build.log",
+      "sha256": "daf8df83d02d1f94e86591681813021b63ca7592a9162ccc9c4c787132ffe005"
+    }
+  ],
+  "fixtureCorrections": "Missing session/table imports, ItemSlot.BodyHair name and concrete Character currency enumeration API corrected before executing the baseline; no production-negative count includes compile errors",
+  "review": {
+    "standards": {
+      "findings": 0,
+      "path": "artifacts/continuation-20261105/appearance-change-admission/review-standards.txt",
+      "sha256": "d50152164beab858e9e34650c312b8b74d9179f53fd52bb3c3b7ae230a4e8039"
+    },
+    "spec": {
+      "findings": 0,
+      "path": "artifacts/continuation-20261105/appearance-change-admission/review-spec.txt",
+      "sha256": "257d459aa2e0cbafe3f64d996992c00246de9542e9025f496099b072c89486f7"
+    }
+  },
+  "upstream": {
+    "path": "artifacts/continuation-20261105/appearance-change-admission/upstream-refresh.json",
+    "sha256": "5333abb22afabab341aef62eb271db250f390ff8be5bb71766a646b2c86ac1e3",
+    "latestAllState": 20,
+    "changedHeadsBasesStates": 0,
+    "pr608": "open",
+    "pr609": "closed, unmerged"
+  },
+  "observableBoundary": [
+    "Actual parsed request body; concrete appearance and both currency managers with fixture Player/session/catalog/table collaborators",
+    "Reject duplicate labels, NaN and both infinities before pricing, debit, mutation or packet publication",
+    "Direct manager rejects null inputs and oversized bones before any race/sex/customisation/visual/bone mutation",
+    "Finite zero/256/extreme inputs and selected-wallet debit remain accepted; no range or retail price rule invented",
+    "Unaffordable valid requests remain inert; entitlement defaults unchanged"
+  ],
+  "remaining": [
+    "Actual customization rows and authoritative costs",
+    "Atomic appearance/payment persistence, rejection recovery and committed visual publication",
+    "Provider/socket/deployment and native/retail"
+  ],
+  "nativeClientAndCua": "remain stopped",
+  "fullSolutionAndSuite": "not run; owning build and scoped checks only"
+}

@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[Malformed appearance admission](Decomp/Analysis/APPEARANCE_CHANGE_ADMISSION.md)
+now rejects duplicate labels and non-finite bones before either wallet is
+charged or appearance changes. Direct updates also reject null/oversized data
+before mutation. Fifteen baseline failures and eight explicit debit/mutation
+observations are fixed;25 new/all55 scoped cases and clean builds pass. Actual
+catalogs, atomic settlement/recovery and provider/native/retail remain open.
+
 [Crafting physical process recovery](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#crafting-physical-producer-termination-and-fresh-worker-recovery)
 passes one unchanged public-handler control and three abrupt producer-loss
 windows on migrated SQLite files. Fresh hosted workers finish the same paid

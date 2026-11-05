@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using NexusForever.Game.Abstract.Customisation;
+using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network;
@@ -26,12 +27,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
 
         public void HandleMessage(IWorldSession session, ClientCharacterAppearanceChange appearanceChange)
         {
-            if (appearanceChange.Bones.Count > byte.MaxValue + 1)
-                throw new InvalidPacketValueException();
-
             List<(uint Label, uint Value)> customisations = appearanceChange.Labels
                 .Zip(appearanceChange.Values, ValueTuple.Create)
                 .ToList();
+
+            if (!AppearanceManager.IsValidInput(customisations, appearanceChange.Bones))
+                throw new InvalidPacketValueException();
 
             if (!customisationManager.Validate(appearanceChange.Race, appearanceChange.Sex, session.Player.Faction1, customisations))
                 throw new InvalidPacketValueException();
