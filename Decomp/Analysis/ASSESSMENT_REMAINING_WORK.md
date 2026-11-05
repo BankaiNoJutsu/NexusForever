@@ -838,10 +838,16 @@ committed Character proof, leaves unpaid reservations untouched and preserves
 original actor publication. All 61 affected SQLite and ten new configured MySQL
 cases pass, including offline wallet/item/Cosmic delivery, concurrent workers and
 interrupted acknowledgements; all twenty schemas are removed and owned workloads stopped.
-Continue the broader progression/gameplay/evidence queue. Physical process/
-connection failure and backup/route/catalog migration remain open alongside
-shared virtual-effect replay, material/modifier validation,
-actual-table, crafting socket and native/retail qualification remain open. Keep
+The later [physical producer-loss gate](DESTINATION_PROVIDER_QUALIFICATION.md#crafting-physical-producer-termination-and-fresh-worker-recovery)
+passes one unchanged public-handler control and three committed SQLite windows.
+Fresh hosted-worker processes complete the same source/receipts without Player
+admission, recrafting or replacing consumed awards. Exact11 Auth/17 Character
+migration histories and final integrity pass; all16 child generations stop.
+Production Source is unchanged. Physical MySQL/connection loss, OS/power/storage
+failure, full deployed startup/restart, Cosmic/Loyalty physical replay and
+backup/route/catalog migration remain open alongside shared virtual-effect
+replay, material/modifier validation, actual-table, crafting socket and native/retail.
+Continue the broader progression/gameplay/evidence queue. Keep
 the original rollback negative as superseded evidence rather than an open Source
 defect. Do not infer retail economics or full recipe completion from the fixtures.
 

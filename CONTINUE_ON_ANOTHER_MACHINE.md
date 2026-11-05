@@ -1,5 +1,13 @@
 # Continue on another machine
 
+Latest physical recovery: [crafting producer termination](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#crafting-physical-producer-termination-and-fresh-worker-recovery)
+passes one unchanged public-handler control and three committed SQLite windows.
+The original producer is killed after independent durable-state inspection; a
+fresh real hosted worker completes receipts without admission or replacing
+consumed awards. All16 child generations are absent and local evidence retained.
+Production Source is unchanged. Physical MySQL, full deployed restart, actual
+content and native/retail remain open; use scoped checks and continue the queue.
+
 Latest cast feedback: [action-bar lookup refusals](Decomp/Analysis/UPSTREAM_608_CAST_REFUSALS.md#action-bar-cast-resolution---5-november-2026)
 preserve parsed ordinary/position context tokens, including zero, after stale
 item/book lookups. Eight corrected baseline failures are fixed;21 new/all116

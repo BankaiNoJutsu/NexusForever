@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[Crafting physical process recovery](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#crafting-physical-producer-termination-and-fresh-worker-recovery)
+passes one unchanged public-handler control and three abrupt producer-loss
+windows on migrated SQLite files. Fresh hosted workers finish the same paid
+receipts without admission, recrafting or replacing consumed awards. All16
+child generations stop; production Source is unchanged. Physical MySQL, full
+deployed restart, actual content and native/retail gates remain open.
+
 [Action-bar cast lookup refusals](Decomp/Analysis/UPSTREAM_608_CAST_REFUSALS.md#action-bar-cast-resolution---5-november-2026)
 now answer parsed ordinary/position requests after their ability item or spell
 entry disappears, preserving token zero and original ownership. Eight corrected

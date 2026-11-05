@@ -1,0 +1,1903 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-05T21:52:04.878713+00:00",
+  "milestone": "Crafting SQLite physical producer termination and fresh hosted-worker recovery",
+  "productionSourceCommit": "d9672a10607ae2bdc2e352092df9e8bd1b1ef00e",
+  "productionChanges": [],
+  "inputs": {
+    "recordedAtUtc": "2026-11-05T21:47:01.194928+00:00",
+    "productionSourceCommit": "d9672a10607ae2bdc2e352092df9e8bd1b1ef00e",
+    "sourceBoundary": {
+      "trackedFilesCompared": 6270,
+      "unexpectedChanges": [],
+      "historicalLiteralCleanFilterMatches": [
+        "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+        "Source/NexusForever.ClientConnector/packages.config",
+        "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+        "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+        "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+        "Source/NexusForever.Database/NexusForever.Database.csproj",
+        "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj"
+      ],
+      "explicitBomNewlineOnlyVariant": [
+        "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs"
+      ],
+      "concurrentRootSourceExcluded": true
+    },
+    "harness": [
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/Program.cs",
+        "sha256": "eae47406e1dbdfb78f39f68be8f78231c14497400468a761972e4d3a85093875"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/Probe.csproj",
+        "sha256": "6ea86486a5b314308d36425021492797e710e69873b84d7ff43810901e7ff572"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/run-case.ps1",
+        "sha256": "5e2dafdeeea84f5ec4d6b60c8d33f0fd4b371e81d70b4f461b73c1f17ce5744b"
+      }
+    ],
+    "probe": {
+      "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/CraftingProcessProbe.dll",
+      "sha256": "2c1e140edc8fdc693688782db0bd2e1daea9533ca3ed146145b6cb592e49b4eb"
+    },
+    "copiedDependencies": [
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Aspire.Hosting.AppHost.dll",
+        "sha256": "9d241fac4ea6f912abe94bdaa1043633ce62c3989be4aadbee61cba7bd16c09f"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Aspire.Hosting.dll",
+        "sha256": "9c5f526f0d2474bf1d547e09ccb2015522f4e92c48e3feb69538f0b7844f1d92"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Aspire.Hosting.Docker.dll",
+        "sha256": "513608d74a705e3ad9319881a55ab245ebd0bf7127777ee5d3cbbcf66a27d358"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Aspire.Hosting.MySql.dll",
+        "sha256": "91c9f18a1c51e6cfb39d8e6e3703181b113c07dad431c2d83af95d62877b453b"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Aspire.Hosting.RabbitMQ.dll",
+        "sha256": "7b22016ca210d666f09f83e332ef8900db218c196b117dd1ad52c4cc53a55334"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Azure.Core.Amqp.dll",
+        "sha256": "d53d832629b76fcae7f0e0352788c43c79e13480247dba11e37961b60e52c142"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Azure.Core.dll",
+        "sha256": "1d6df436afdc73c30d476be938f6513c90ef8fc884a7bae280091a9bed0a5490"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Azure.Identity.dll",
+        "sha256": "31574a3d35ffeb0e25a00ebb317937222fe5283b91af608613f2e3bf0f26c50a"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Azure.Messaging.ServiceBus.dll",
+        "sha256": "6895bb412db0242bed71d10d3325b86d51611e578529c91108afdeb96bff08fc"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Basic.Reference.Assemblies.Net100.dll",
+        "sha256": "35ce19c341334cc79951576712d105a75b681b58532c0dd010ac302936d208ba"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/CommandLine.dll",
+        "sha256": "8a55501cd1a1590a4bd93a17c6fdd2c01a0ed5bff1aea9036bdc78d98c9a3fad"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/DotNet.Glob.dll",
+        "sha256": "5263008e364a7a072eddf6d483ed988baf4f50dc0391e358b490ac6c01a6acf5"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Fractions.dll",
+        "sha256": "e8407a878af8aec1f485f50a9f356c439371610fff20756d4f2284ac6c995cbf"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Google.Protobuf.dll",
+        "sha256": "8997a69619b59db587a45e75a03c164a44afb613f82db138d35e1636e4cbdc73"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Grpc.AspNetCore.Server.ClientFactory.dll",
+        "sha256": "c57f69775e2b8acda401efb5f152eba6cfd23d0fc9277b7d2e0ed1f1533158e3"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Grpc.AspNetCore.Server.dll",
+        "sha256": "a66e142b1a3cbaf8ed3f0835faac72e0484d4eb8b1295e0d3d1de69d72e575b2"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Grpc.Core.Api.dll",
+        "sha256": "440b6b0a5beca40718a01b3e892baa6e2fd03933f3f501fc40e2a956b0d937a1"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Grpc.Net.Client.dll",
+        "sha256": "4070680267f1eba977958284088f8bf63bccb2f9fea873d6b244fd7d4b76afd3"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Grpc.Net.ClientFactory.dll",
+        "sha256": "b62b17995c8576378e790ce1c5dff994c0cf605a6d7da7510078857f59f09d97"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Grpc.Net.Common.dll",
+        "sha256": "c6ee8099f5fd7013825d2ff636375391c8992704ad40b9819f6c9078c25c6574"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/HealthChecks.MySql.dll",
+        "sha256": "9947a05820c92ceb061edf02271844da0fe5d6bd47a2364f6e14287f9ba1fc7d"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/HealthChecks.Rabbitmq.dll",
+        "sha256": "258cf95771cab344da41843ad69f19598fafe6847ce4200ea3045819ca654983"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/HealthChecks.Uris.dll",
+        "sha256": "32f8e0615a70e07c6c37c3e2e0774207c84d2f2695942fba82e7bc3bee1a5708"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Hex1b.dll",
+        "sha256": "1113557a5737e1fac2fdda1f6579737c50eac4620e83fefb3c29fa2ecc9b12bc"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/KubernetesClient.dll",
+        "sha256": "1fdb3ddc3db829a3f4015afc328a00d3747fb228c7866df6f765be4cedb800ce"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/MessagePack.Annotations.dll",
+        "sha256": "bd364b1513c9df5d4063b6ee3602a5bf951507484f46a2366a6f2a9aeb1c4cf2"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/MessagePack.dll",
+        "sha256": "1ebc0c2baec5a89b3738e892d61c92f037dd588db52412e1e3bdf2adc407aa94"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.Azure.Amqp.dll",
+        "sha256": "eb58a9058b6cde95081608e1921967cc704d6e411745436b20c68caa37389980"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.Bcl.AsyncInterfaces.dll",
+        "sha256": "f1e1d6e1a2990071b450bdf6c9618408ac0e3f24a3c7a3bef1f50508ba732ca5"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.CodeAnalysis.CSharp.dll",
+        "sha256": "54142770a00e594942ee8923726ea49126303d0c523932886c2417eb66dc07f8"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.CodeAnalysis.dll",
+        "sha256": "ad857f1ce7f8e26c2722ade705fac3f90502a47590c14075df1327210f10b1ef"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.Data.Sqlite.dll",
+        "sha256": "1078d41c6c0f2cee48a8b706e3a54ce145705993f19f703d2b3bdf2abcc59088"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.EntityFrameworkCore.Abstractions.dll",
+        "sha256": "98c8252995283ef0884b904dbab03696ca7f71a05b8dde34dace5eeb9bf4382c"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.EntityFrameworkCore.dll",
+        "sha256": "acb89dff050d681fab6f86d2175929471200b9bed66ac9321cbe6a17eaa26933"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.EntityFrameworkCore.Relational.dll",
+        "sha256": "ac1146e68d53d56b79e9473f68c557999de99674be392bbbbb02ae93a296b93e"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.EntityFrameworkCore.Sqlite.dll",
+        "sha256": "b8c5027b27be2012094699cbd5260239778a1891dc5c1887797d331b67f0ef89"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.Extensions.AI.Abstractions.dll",
+        "sha256": "dd444efc3b9e2db2e4e7616909731b8dde824b554455014002167918b823eac4"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.Extensions.DependencyModel.dll",
+        "sha256": "2385bfbc9344e03acb2ff44f1ed21a3770fbafdf1ba4be2dbcacd42027b8c3bd"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.Extensions.Hosting.Systemd.dll",
+        "sha256": "b83961fadb9b88ed05ccb4dea45165b5393b4eaf1258dce0b7d0f60e9c0c1d46"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.Extensions.Hosting.WindowsServices.dll",
+        "sha256": "caa306587f796d0290aada4fdfaec1394f1f206409ea4d5a20f309b61fc59959"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.Identity.Client.dll",
+        "sha256": "5795027e9ae95eececb310a4fed3c502bb368039d186ab0884f64b7792b84717"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.Identity.Client.Extensions.Msal.dll",
+        "sha256": "07109a2f30df782300077a567ade47cbd0a0502c75cd7c8a62192f7d64bb004e"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.IdentityModel.Abstractions.dll",
+        "sha256": "24e97b54b6b5c234a124a336757e3116617ac6c30b655cdae74517dc2ecb5746"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.NET.StringTools.dll",
+        "sha256": "887dec541cd0a719b7111458eb90a83b4491d6dd24eff2b16cf03d2782fd26a0"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.TestPlatform.CommunicationUtilities.dll",
+        "sha256": "7ed97ccfd6f9c74f054de4cf84a7b4b0179eb6064e3a406e746849c6989e0d6a"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.TestPlatform.CoreUtilities.dll",
+        "sha256": "db70e6632a13a6d46cc3bb75f71273b3e9c64ca1e5dd0537572fb0dadf444009"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.TestPlatform.CrossPlatEngine.dll",
+        "sha256": "eaf5a87745d6ab7f7ef7db6e85dfa96817ecdb06b51a642edd6f9c6b805c3616"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.TestPlatform.PlatformAbstractions.dll",
+        "sha256": "f5541efe526d719aef103026770faf0435218afc5be90f653a01886ff8bebc80"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.TestPlatform.Utilities.dll",
+        "sha256": "358ae71a7f820dfd7e3b2d86ad9a7402c72166c7197bccd89f39b9d62ec3f0ae"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.VisualStudio.CodeCoverage.Shim.dll",
+        "sha256": "ef1f649984cf2ff2d4f51944270d6b1557752ba0099ec97894361abe3e6640c1"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.VisualStudio.TestPlatform.Common.dll",
+        "sha256": "6e16cf009ff956b97eef96aefc64a33a9bff7df86a8e7e6e5664ec03e648bcc1"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.VisualStudio.TestPlatform.ObjectModel.dll",
+        "sha256": "9d0a31a406ab064d2bc009a5523b5e73b71d3fe1dddd19cffe4a70f14cde3f75"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.VisualStudio.Threading.dll",
+        "sha256": "138e3548e487152de355b81303ae98e1bb52a31fe5c9107fa81a15f66404f426"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.VisualStudio.Validation.dll",
+        "sha256": "59cd5e953cce597847e515a73a1c0975cd5a6b94921a7b91e81045fa9922f57c"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microsoft.Win32.SystemEvents.dll",
+        "sha256": "ca495bf6c86b7f092d624928101985a941532d149dcd8acfea170f8a53be8850"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Microting.EntityFrameworkCore.MySql.dll",
+        "sha256": "c8dc4aff0fa81bcb09c11c7bbd15780378e39317c32b23f75a85dea4a9894171"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/ModelContextProtocol.Core.dll",
+        "sha256": "cd434634473f1d6b945a5583d48782207a1e79b8202cf6adb174e41ed2ca4643"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/ModelContextProtocol.dll",
+        "sha256": "1f0760611e72588fbffe2c7bacfce55b9942d7ed5cb5cd4a3ded5d5f7600e930"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/MySqlConnector.dll",
+        "sha256": "a3104353e86cc96123d8015fc5a3bf4ab88b127b9180caaa4db9a006c49f467b"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Nerdbank.MessagePack.dll",
+        "sha256": "fc086ce3623a9a3f9213159d438c642d225046e371489e8e7f126d4c62f188fa"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Nerdbank.Streams.dll",
+        "sha256": "e5c90ffcb7a0bd0cedf51ac33e818b9f64045e9839b19701eb73460356631872"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Newtonsoft.Json.dll",
+        "sha256": "a28c251dfe36d881e9e2462e171441b8b0ec156fe3f452602c9149b1b9efe05b"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Nexus.Archive.dll",
+        "sha256": "fd2fc160b92cd14a6f226a5095cde744d81a3c807ca45bf78c91cf2a2ba0237b"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.API.Account.Client.dll",
+        "sha256": "dcc138d6ebbedc6142fecadbcd0512815a32f0eb7c0266a03bbf461824951418"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.API.Character.Client.dll",
+        "sha256": "8b6ec8947c3c48537b39ee8eb5927ea4a873a149d27f25fbed2c518f820fdcc3"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.API.dll",
+        "sha256": "2cab2612f5a2463d1d091d55619dec8c718609ea3df939ecfba8e8373b2aacbe"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Aspire.AppHost.dll",
+        "sha256": "502a444ce79cb4b804299940f807544e7ea50fa9ac0194f022bc07a46bbe60a9"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Aspire.Database.Migrations.dll",
+        "sha256": "316406232c49a962bd0cb4ec578c1a1b4fd606458ab8931b1caf2ed884a6dde6"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Cryptography.dll",
+        "sha256": "0be240820a34f144d7a0bcbf5604e493949dc092582b850ec06a4dbb5fe41a02"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Database.Auth.dll",
+        "sha256": "a5f2852d869f372f13809519c4745940496159001a417b551a3a8aa2677cf382"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Database.Character.dll",
+        "sha256": "77ec3b4ee427490f8c9a64a0c1ad2a7f0e3cf47df3423a215aeb2f393e6bece8"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Database.Chat.dll",
+        "sha256": "1ca123c52f3930de7eaaf49ff296f817242c45fc5cac4e24ac6ac0e9e8762a2c"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Database.dll",
+        "sha256": "a30b2064fd1410686eded7ab814429988ebccea3cbad8e2a18d5f07191c56c20"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Database.Friendship.dll",
+        "sha256": "c34de843d4336bfee2edd1b4d7f8b25b873d6ae1712c6e3af2a652af2b71acb3"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Database.Group.dll",
+        "sha256": "e6a745dac3fb9ef3e2c78ad6d685347aa1b50825bf631834c63279d4d366eabd"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Database.Query.dll",
+        "sha256": "22058e812ee2ff729630958815a8559bdc189af43397e75888e6f09d304c70b2"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Database.Sqlite.Migrations.dll",
+        "sha256": "f93f3979990cbafa52116c01611711279f38c4e5e36c6c80c295aa81f1dcf38c"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Database.World.dll",
+        "sha256": "02b482a13ddcd662a69c8e0aebaf1d6dfcef7a8d263e561569d02dc94115c1e4"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Game.Abstract.dll",
+        "sha256": "319cd85afe18a2d696a14c540d1ee5299ccfae9fe25220de26412955573bb562"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Game.dll",
+        "sha256": "b5830b46324acb64afc914adbfd0f840ca9741e12f4eb2d1fb5025a15b125546"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Game.Static.dll",
+        "sha256": "779eb188ecdfdbd6d3f50dfa60466b11e4472a4762e4c827d998eeae7136961e"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+        "sha256": "f900d1862ab8ca26e4dedb8279a8a534582b0040f5f016936c119ca5cd395db6"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.GameTable.dll",
+        "sha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.IO.dll",
+        "sha256": "730c11e787d926cc0740c8277e1bc1666ab38e533d8ed07b4678ba97c6b6e0ca"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.LoadTest.dll",
+        "sha256": "24983c296979deb5ec68481f9a52605014d310601e06cfc422fb68ba9c4dfeee"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.MapGenerator.dll",
+        "sha256": "ea62235d26f8d42b1090d906202a125a8a360473dd1d9bf93733fb7af60f0778"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Network.Auth.dll",
+        "sha256": "de7bf01546c28442714e0c7486aa37d01bc142f6168e0fbff883e116f4ebbaa9"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Network.dll",
+        "sha256": "ab9aa9f265093846927da9b4b2871e6573b8cdaab304f7bfc5a9329d3f3ee290"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Network.Internal.dll",
+        "sha256": "f8223b4b8b4e65db8b10af9a13959915e8e35b95a49443ec000188a0524efcae"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Network.Sts.dll",
+        "sha256": "c567a1260a9e6c00dce554d67e9df25511a2e1295cac59e2497735349f381232"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Network.World.dll",
+        "sha256": "2c1edaf7620b57f1f6d48d36975dc072041b58fbe15a8a07366aac1e97972e39"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Script.dll",
+        "sha256": "6162e0143353d8076ab0235622589389cd5157dcc7f84d330b0209eeaab7c78e"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Script.Instance.dll",
+        "sha256": "7c4656128e0c81700576d5b25e7d403139e2340047af1f0d4a0049843f1aa771"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Script.Main.dll",
+        "sha256": "7fa8b77fa675281e0e3514e8cb60f9dbd064df23605edcafc4664d15e35abd87"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Server.Character.dll",
+        "sha256": "19e92c61311aa4a58953aaf4f4bb9eba985663a29984a562dc7f652322596b31"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Server.ChatServer.dll",
+        "sha256": "534e5e3a67d5e641ed3e1782ff80432a0ac9e01913b12f1125f44264876f0365"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Server.Friendship.dll",
+        "sha256": "fcedff6e42584776a6c2e538eb3ab560509cebb33b816fe807f0ad6960eac9d7"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Server.GroupServer.dll",
+        "sha256": "d916050d197079a147561667b0402af0857a42386173497ba8a4fdf21f6fc28b"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.Shared.dll",
+        "sha256": "0ed6771d65fededb95a55bb4463d1f7a102dd7d22ff84063e80e7301cd2304f0"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.StsServer.dll",
+        "sha256": "1d9624ba15b8c39c4af097cd8fd9b830bcf268eef6657f88b8c6687239133f78"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+        "sha256": "94636fe8f81e99915512717e1880533386bafe67d21b93857d46f7ac3a7dac77"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NLog.dll",
+        "sha256": "9a706ace1a30cf5a9e169ceddf39d69df30ad99da5c4775d86413ac766cbb825"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/NLog.Extensions.Logging.dll",
+        "sha256": "9372ad36ff9c48826905d6eee58598b5df42334f9b35b93527927f38ae273504"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/OpenTelemetry.Api.dll",
+        "sha256": "9c636063c335902c73f916c133de22fe8af476c68189080176443b0b82d4d399"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/OpenTelemetry.Api.ProviderBuilderExtensions.dll",
+        "sha256": "fcd57330a4a3252773a0c71b9a497ee7834f415210fa405151275f97575ed164"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/OpenTelemetry.dll",
+        "sha256": "a19a8b4d39a00dca043919473c0d5b46a174a4363d611c8dd237b8f2b3f8a5b8"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/OpenTelemetry.Exporter.OpenTelemetryProtocol.dll",
+        "sha256": "3297002036e73a2ea7385d9521464dee725bbbd6491e20c559498cbe81598a3c"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/OpenTelemetry.Extensions.Hosting.dll",
+        "sha256": "97e52b88bfbad51767829ba834a3a35a63692170109c21a7103f5170c389d6f9"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Polly.Core.dll",
+        "sha256": "f7f50017ca9f457b854498358ae595c2a8ab69c1fd8b915139d22bed8f7e4f2a"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/PolyType.dll",
+        "sha256": "33d30bc1baf80b85ad9b428a388d9999eaf20999d555a6e684aa758f4f679968"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/QRCoder.dll",
+        "sha256": "2c9a588e08ec91f00fac37a4a43995c8f1966a6cce615e9e8c063eec3d0f145a"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Quartz.dll",
+        "sha256": "b195bbaec686ec9d3a8c38fdf961cf0f3818455c99c9553e1c317a55a6024069"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Quartz.Extensions.DependencyInjection.dll",
+        "sha256": "9e53ba9d6862cf12b11bd92b07527b1398b905a1adcf72b7c40076695c707a9d"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Quartz.Extensions.Hosting.dll",
+        "sha256": "6cc40edeb789e85b7455045dc864b91a369fb3415323d4d45537bbaf3849e361"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/RabbitMQ.Client.dll",
+        "sha256": "22d9ffa8cc2de798c61ec95b3f0b576c90d3370afa7128998859d3b2734d2910"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Rebus.AzureServiceBus.dll",
+        "sha256": "522bb2cc849518f9178bcb0611c7235336fe823567383f43c33bf16ae97a920f"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Rebus.dll",
+        "sha256": "93ae1869924a4a114ecc2c01046369819c0f4ffffba044bc5655013846ef4dea"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Rebus.RabbitMq.dll",
+        "sha256": "911aedfb5da1a76585928888d694d54880af8a1c2ec94275d8efc4ed77562413"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Rebus.ServiceProvider.dll",
+        "sha256": "ddc438278adb90788513722b7ad07ae6c3cbc92f491954fed7251f9b4a4bcdc4"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/Semver.dll",
+        "sha256": "a99edcb96efce3d6ff019c667e132d81d879f5a92bc9337591e0b7309d7f493f"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/SharpCompress.dll",
+        "sha256": "db4d49f11b30f2ababc6ed98551de818d8b6f15da88fada8bccd360ea3e12d73"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/SQLitePCLRaw.batteries_v2.dll",
+        "sha256": "94ac800c6b93ae50a025f247547781debe18391110667c5e242f51d8ac188ffb"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/SQLitePCLRaw.core.dll",
+        "sha256": "3d2ed8e186f124f988ebdb45d0354185b424357be2433bba0033ab9ec31bd25b"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/SQLitePCLRaw.provider.e_sqlite3.dll",
+        "sha256": "232990c8372aff30574eef9cc280b486ee6f39f8a66f83ea495dd0dbae98740c"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/StreamJsonRpc.dll",
+        "sha256": "ddc6a4d60e6cc940aae31faafc1fdcdbe520dfa51bec8dfc7f505449291536d5"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/System.ClientModel.dll",
+        "sha256": "dec5e22b71a1685c5e6e97cd28b629f0aa6703fb87b6950df28e79fc1804290c"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/System.Drawing.Common.dll",
+        "sha256": "98d07e6b1e7d3641a8608a360b3dc273fe8a0f78926b6e1e5f679a7a074d491f"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/System.IO.Hashing.dll",
+        "sha256": "cea6795cf9f7b139b2215ff6de794a6f6e44e78640fb30fa4c0d5fa8472df8e5"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/System.Memory.Data.dll",
+        "sha256": "2c1035b0106dbb2de7913d151e06071ed617bb58bbb3d6cd46a2dd0f6a03617b"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/System.Security.Cryptography.ProtectedData.dll",
+        "sha256": "80566f0839ece5946e66bf9f00d723e59e371ba1341a18e00c7c7a7c49298e1d"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/System.ServiceProcess.ServiceController.dll",
+        "sha256": "486a4fbb24ab089926fb05ab6b95af7bb04d2ff35eef55b6858437ebc4d040dc"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/testhost.dll",
+        "sha256": "3c2a3ed4b330b9cdaf1ee62580b7d373ec58ccf8b71fc34e0a51de28620899e9"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/xunit.abstractions.dll",
+        "sha256": "3166dc70323fb30ccf1cedb0fe86f2ad122c46d254542342d90386efc4c9285c"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/xunit.assert.dll",
+        "sha256": "bcd9711b22d227ac8cd4c1568e72433a0f576d2ec8aae64ac508081892015b1d"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/xunit.core.dll",
+        "sha256": "2f7feeec8c6dec7df684c25fb80aadb292b963d09723460f03d53c5ad2088acc"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/xunit.execution.dotnet.dll",
+        "sha256": "e70febe547c15f8155db3e2d95c3ba4445a59cbc21a3e7541ab22ed49d3dcf7b"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/xunit.runner.visualstudio.testadapter.dll",
+        "sha256": "384aba4bad96399a7fd2205a5a3517b643a16f4d7e843bd0b92e1e42f81fce2a"
+      },
+      {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/YamlDotNet.dll",
+        "sha256": "d618138109a40e4a7250e49e2abad8c450e3636bee18d7499ab231e37fa9150a"
+      }
+    ],
+    "nativeSqlite": {
+      "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/e_sqlite3.dll",
+      "sha256": "b7385d722c83fb52142a00477a726723745916d22a555711ee89834c1111fb2e"
+    },
+    "originalTest": "CraftingSettlementTests.CraftingPublishesItsFrozenInventoryAndResultAfterTheCharacterSave(simple,account,commit)",
+    "assertionsUnchanged": true,
+    "productionChanges": []
+  },
+  "inputManifest": {
+    "path": "artifacts/continuation-20261105/crafting-process-recovery/inputs.json",
+    "sha256": "329ea08c0690abf8715e8bf7f20c504e56e1856e8fdfe5d1c93ff0d87d736e5c"
+  },
+  "sourceInputs": [
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/Crafting/CraftingSettlementTests.cs",
+      "sha256": "3b1603f28a34b35578d9bc62e058e1e4ecdf2f27aea5c3e56e2afc17cae1923d"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/Crafting/CraftingAccountOutboxTests.cs",
+      "sha256": "2e22ddf3f6dbb4f7ce64ad1b6f9802b908fd8c4698e59ea783de611c0a7f272a"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game/Crafting/CraftingAccountOutbox.cs",
+      "sha256": "5d55eef31e1fc34cd25880345b1f7c8d27aa899e13b2de533947912bf6021ac5"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game/Crafting/CraftingAccountDelivery.cs",
+      "sha256": "a4cdbdd40ca25ba5b918e5d520344b12b9b099e4479e6e7873bc1f15fdeede94"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.WorldServer/Service/CraftingAccountOutboxHostedService.cs",
+      "sha256": "e3c4bfa55645cbf3f47dcd0b2a972aa846ff0f079b6ec1e8db155eebc29a0c52"
+    }
+  ],
+  "controlAndCrashCases": [
+    {
+      "window": "none",
+      "passed": true,
+      "state": {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/run-state-none.json",
+        "sha256": "f4003cdf2015b8bfe36c12631a2c87b0e790d5db72a6f9f9232ee373351ac8fa"
+      },
+      "generations": [
+        {
+          "Pid": 44432,
+          "StartedUtc": "2026-11-05T21:46:20.3998898Z",
+          "Mode": "--prepare",
+          "Label": "prepare",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\cases\\case-547b2b93f15c4fdc9fd15070f9d2088c\\manifest.json",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 20280,
+          "StartedUtc": "2026-11-05T21:46:24.6603164Z",
+          "Mode": "--produce",
+          "Label": "producer",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\cases\\case-547b2b93f15c4fdc9fd15070f9d2088c\\manifest.json",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "ExitCode": 0,
+          "Absent": true
+        }
+      ],
+      "elapsedSeconds": 10.234995,
+      "schema": {
+        "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-547b2b93f15c4fdc9fd15070f9d2088c/schema.json",
+        "sha256": "8d856046e58ec5f6dd5480a549bee2d0648bd33a445357004064cc20f3509c3b"
+      },
+      "migrations": {
+        "Auth": 11,
+        "Character": 17
+      },
+      "control": {
+        "View": {
+          "CraftedItems": 1,
+          "Materials": 0,
+          "Wallet": 2,
+          "Inventory": 0,
+          "CurrencyOperations": 1,
+          "InventoryReceipts": 1,
+          "Entitlements": 0,
+          "SourceDelivered": true,
+          "AuthDelivered": true,
+          "AuthCompleted": true,
+          "SourceCancelled": false,
+          "AuthCancelled": false,
+          "SourceId": "e3f9602faee94cdf845f770c82913acb",
+          "AuthId": "e3f9602faee94cdf845f770c82913acb",
+          "SourcePayloadHash": "9430f2f153f11b630999b775e339b322fae6220c5c6be323689040421afbb5f3",
+          "AuthPayloadHash": "9430f2f153f11b630999b775e339b322fae6220c5c6be323689040421afbb5f3",
+          "Epoch": 2,
+          "InventoryIds": [],
+          "ReceiptInventoryIds": [
+            1
+          ],
+          "OperationKeys": [
+            "craft-award:1:e3f9602faee94cdf845f770c82913acb:0:0"
+          ]
+        },
+        "OwnedCommits": 39,
+        "Generation": {
+          "Pid": 20280,
+          "StartedUtc": "2026-11-05T21:46:24.6603164Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "ProbeDll": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\bin\\Debug\\net10.0\\CraftingProcessProbe.dll",
+          "ProbeSha256": "2c1e140edc8fdc693688782db0bd2e1daea9533ca3ed146145b6cb592e49b4eb"
+        }
+      },
+      "boundary": "Original public-handler test and all its assertions, including final admission and consumption controls, completed unchanged",
+      "rawEvidence": [
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-547b2b93f15c4fdc9fd15070f9d2088c/auth.sqlite",
+          "sha256": "f54289803f51cf363e49f61533c8382f7120ce7426dbe03b6e9d62e0223349d2"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-547b2b93f15c4fdc9fd15070f9d2088c/auth.sqlite-shm",
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-547b2b93f15c4fdc9fd15070f9d2088c/auth.sqlite-wal",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-547b2b93f15c4fdc9fd15070f9d2088c/characters.sqlite",
+          "sha256": "0456a105894e1228370a0b7de4a4abbf955e6759e70b66b4b94ea896c6dc1df5"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-547b2b93f15c4fdc9fd15070f9d2088c/characters.sqlite-shm",
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-547b2b93f15c4fdc9fd15070f9d2088c/characters.sqlite-wal",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-547b2b93f15c4fdc9fd15070f9d2088c/manifest.json",
+          "sha256": "cf350f3d0aed52f131b1466c3ca5614fee9a77a9228df11dd27e1081c5c07081"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-547b2b93f15c4fdc9fd15070f9d2088c/prepare.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-547b2b93f15c4fdc9fd15070f9d2088c/prepare.stdout.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-547b2b93f15c4fdc9fd15070f9d2088c/producer-complete.json",
+          "sha256": "b1469cb179a68861999ede53138c33e12530577965d2f0175cef22de2a6ebb15"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-547b2b93f15c4fdc9fd15070f9d2088c/producer-start.json",
+          "sha256": "3758a55fe8fa6a13bdff38973494f3f5870b4300537411d699d4e559b78103cd"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-547b2b93f15c4fdc9fd15070f9d2088c/producer.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-547b2b93f15c4fdc9fd15070f9d2088c/producer.stdout.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-547b2b93f15c4fdc9fd15070f9d2088c/schema.json",
+          "sha256": "8d856046e58ec5f6dd5480a549bee2d0648bd33a445357004064cc20f3509c3b"
+        }
+      ]
+    },
+    {
+      "window": "character-paid",
+      "passed": true,
+      "state": {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/run-state-character-paid.json",
+        "sha256": "d2443b23c8ab7a322382a5cf38fa0babdf821ee1011f24297983b118654df7ef"
+      },
+      "generations": [
+        {
+          "Pid": 37376,
+          "StartedUtc": "2026-11-05T21:47:01.4761934Z",
+          "Mode": "--prepare",
+          "Label": "prepare",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\cases\\case-6a5b0537992a404bbe5b8d57a856d8f5\\manifest.json",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 45364,
+          "StartedUtc": "2026-11-05T21:47:05.8340279Z",
+          "Mode": "--produce",
+          "Label": "producer",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\cases\\case-6a5b0537992a404bbe5b8d57a856d8f5\\manifest.json",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "ExitCode": -1,
+          "Absent": true
+        },
+        {
+          "Pid": 23192,
+          "StartedUtc": "2026-11-05T21:47:11.3617808Z",
+          "Mode": "--inspect",
+          "Label": "before-kill",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\cases\\case-6a5b0537992a404bbe5b8d57a856d8f5\\manifest.json",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 43440,
+          "StartedUtc": "2026-11-05T21:47:14.1445673Z",
+          "Mode": "--recover",
+          "Label": "recover",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\cases\\case-6a5b0537992a404bbe5b8d57a856d8f5\\manifest.json",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "ExitCode": 0,
+          "Absent": true
+        }
+      ],
+      "elapsedSeconds": 16.710385,
+      "schema": {
+        "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-6a5b0537992a404bbe5b8d57a856d8f5/schema.json",
+        "sha256": "2ca89279d6c5c1dc10ace71587e08969274abd83a540600657d19275635d83ef"
+      },
+      "migrations": {
+        "Auth": 11,
+        "Character": 17
+      },
+      "checkpoint": {
+        "Window": "character-paid",
+        "Transaction": "Microsoft.EntityFrameworkCore.Database.Transaction.TransactionCommitted",
+        "FullName": "Microsoft.EntityFrameworkCore.Diagnostics.TransactionEndEventData",
+        "DataSource": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\cases\\case-6a5b0537992a404bbe5b8d57a856d8f5\\characters.sqlite",
+        "Generation": {
+          "Pid": 45364,
+          "StartedUtc": "2026-11-05T21:47:05.8340279Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "ProbeDll": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\bin\\Debug\\net10.0\\CraftingProcessProbe.dll",
+          "ProbeSha256": "2c1e140edc8fdc693688782db0bd2e1daea9533ca3ed146145b6cb592e49b4eb"
+        },
+        "OwnedCommits": 13
+      },
+      "beforeKill": {
+        "CraftedItems": 1,
+        "Materials": 0,
+        "Wallet": 0,
+        "Inventory": 0,
+        "CurrencyOperations": 0,
+        "InventoryReceipts": 0,
+        "Entitlements": 0,
+        "SourceDelivered": false,
+        "AuthDelivered": false,
+        "AuthCompleted": false,
+        "SourceCancelled": false,
+        "AuthCancelled": false,
+        "SourceId": "8586c522a35546ba8b1758e35cef111a",
+        "AuthId": "8586c522a35546ba8b1758e35cef111a",
+        "SourcePayloadHash": "0113b196d61935518f530d7f1b339c35069a985c24598d3de6577e78651a94c5",
+        "AuthPayloadHash": "0113b196d61935518f530d7f1b339c35069a985c24598d3de6577e78651a94c5",
+        "Epoch": 1,
+        "InventoryIds": [],
+        "ReceiptInventoryIds": [],
+        "OperationKeys": []
+      },
+      "abruptTermination": {
+        "CommittedStateObserved": true,
+        "Window": "character-paid",
+        "ObservedUtc": "2026-11-05T21:47:14.1379735Z",
+        "GenerationVerified": true,
+        "StartedUtc": "2026-11-05T21:47:05.8340279Z",
+        "Pid": 45364,
+        "ExitCode": -1
+      },
+      "recovery": {
+        "Before": {
+          "CraftedItems": 1,
+          "Materials": 0,
+          "Wallet": 0,
+          "Inventory": 0,
+          "CurrencyOperations": 0,
+          "InventoryReceipts": 0,
+          "Entitlements": 0,
+          "SourceDelivered": false,
+          "AuthDelivered": false,
+          "AuthCompleted": false,
+          "SourceCancelled": false,
+          "AuthCancelled": false,
+          "SourceId": "8586c522a35546ba8b1758e35cef111a",
+          "AuthId": "8586c522a35546ba8b1758e35cef111a",
+          "SourcePayloadHash": "0113b196d61935518f530d7f1b339c35069a985c24598d3de6577e78651a94c5",
+          "AuthPayloadHash": "0113b196d61935518f530d7f1b339c35069a985c24598d3de6577e78651a94c5",
+          "Epoch": 1,
+          "InventoryIds": [],
+          "ReceiptInventoryIds": [],
+          "OperationKeys": []
+        },
+        "After": {
+          "CraftedItems": 1,
+          "Materials": 0,
+          "Wallet": 7,
+          "Inventory": 1,
+          "CurrencyOperations": 1,
+          "InventoryReceipts": 1,
+          "Entitlements": 0,
+          "SourceDelivered": true,
+          "AuthDelivered": true,
+          "AuthCompleted": true,
+          "SourceCancelled": false,
+          "AuthCancelled": false,
+          "SourceId": "8586c522a35546ba8b1758e35cef111a",
+          "AuthId": "8586c522a35546ba8b1758e35cef111a",
+          "SourcePayloadHash": "0113b196d61935518f530d7f1b339c35069a985c24598d3de6577e78651a94c5",
+          "AuthPayloadHash": "0113b196d61935518f530d7f1b339c35069a985c24598d3de6577e78651a94c5",
+          "Epoch": 1,
+          "InventoryIds": [
+            1
+          ],
+          "ReceiptInventoryIds": [
+            1
+          ],
+          "OperationKeys": [
+            "craft-award:1:8586c522a35546ba8b1758e35cef111a:0:0"
+          ]
+        },
+        "HostedWorkerStopped": true,
+        "AdditionalDrain": 0,
+        "ElapsedSeconds": 1.5175858,
+        "Generation": {
+          "Pid": 43440,
+          "StartedUtc": "2026-11-05T21:47:14.1445673Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "ProbeDll": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\bin\\Debug\\net10.0\\CraftingProcessProbe.dll",
+          "ProbeSha256": "2c1e140edc8fdc693688782db0bd2e1daea9533ca3ed146145b6cb592e49b4eb"
+        },
+        "WorldSession": "No original Player/session is created in this fresh worker process"
+      },
+      "rawEvidence": [
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-6a5b0537992a404bbe5b8d57a856d8f5/auth.sqlite",
+          "sha256": "b2fff5cc70de2e2403351ec5087e4212f376acac842db09ab218b4c742d9c614"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-6a5b0537992a404bbe5b8d57a856d8f5/auth.sqlite-shm",
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-6a5b0537992a404bbe5b8d57a856d8f5/auth.sqlite-wal",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-6a5b0537992a404bbe5b8d57a856d8f5/before-kill.json",
+          "sha256": "404d4af9cd7417bd501d087f2384cd1ecd77681525ee7cebe6575a9d7b72b19e"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-6a5b0537992a404bbe5b8d57a856d8f5/before-kill.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-6a5b0537992a404bbe5b8d57a856d8f5/before-kill.stdout.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-6a5b0537992a404bbe5b8d57a856d8f5/characters.sqlite",
+          "sha256": "d5efcbd5528870f936f0f6143b87b0dc88890082f322a2ebc2280a8d3446f385"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-6a5b0537992a404bbe5b8d57a856d8f5/characters.sqlite-shm",
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-6a5b0537992a404bbe5b8d57a856d8f5/characters.sqlite-wal",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-6a5b0537992a404bbe5b8d57a856d8f5/manifest.json",
+          "sha256": "41b2e8834a73ec2a6e156379441f27f6a6ede9f8242be213e3a95205254a003b"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-6a5b0537992a404bbe5b8d57a856d8f5/prepare.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-6a5b0537992a404bbe5b8d57a856d8f5/prepare.stdout.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-6a5b0537992a404bbe5b8d57a856d8f5/producer-killed.json",
+          "sha256": "cea86f6b6086fab1f300b4b16b2b84df9d38d5b222a330d3bfa4308c0eae5c97"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-6a5b0537992a404bbe5b8d57a856d8f5/producer-start.json",
+          "sha256": "a46008fdc7d054e1bf0fbaf63575f0b304a2a2c0d4235e9131cce2f2686a6d53"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-6a5b0537992a404bbe5b8d57a856d8f5/producer.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-6a5b0537992a404bbe5b8d57a856d8f5/producer.stdout.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-6a5b0537992a404bbe5b8d57a856d8f5/recover.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-6a5b0537992a404bbe5b8d57a856d8f5/recover.stdout.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-6a5b0537992a404bbe5b8d57a856d8f5/recovery.json",
+          "sha256": "0e1d9d7cd347c5b92429b6df5884bfe5dd00b9f99ff1fcb98a4d7694545e9a9e"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-6a5b0537992a404bbe5b8d57a856d8f5/schema.json",
+          "sha256": "2ca89279d6c5c1dc10ace71587e08969274abd83a540600657d19275635d83ef"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-6a5b0537992a404bbe5b8d57a856d8f5/snapshot.json",
+          "sha256": "404d4af9cd7417bd501d087f2384cd1ecd77681525ee7cebe6575a9d7b72b19e"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-6a5b0537992a404bbe5b8d57a856d8f5/window-reached.json",
+          "sha256": "d62cdbeee0e54162ec9ee125df11299da7c25f07466c75bfaaa69d04ba952da8"
+        }
+      ]
+    },
+    {
+      "window": "auth-applied",
+      "passed": true,
+      "state": {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/run-state-auth-applied.json",
+        "sha256": "d0adcf49793db804e4b0fefadd549c42da718d2ed1d054cc78774f5e66efc398"
+      },
+      "generations": [
+        {
+          "Pid": 39852,
+          "StartedUtc": "2026-11-05T21:47:27.2865505Z",
+          "Mode": "--prepare",
+          "Label": "prepare",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\cases\\case-4f87d562f7a94e1382c220a176976547\\manifest.json",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 11668,
+          "StartedUtc": "2026-11-05T21:47:31.4401759Z",
+          "Mode": "--produce",
+          "Label": "producer",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\cases\\case-4f87d562f7a94e1382c220a176976547\\manifest.json",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "ExitCode": -1,
+          "Absent": true
+        },
+        {
+          "Pid": 20928,
+          "StartedUtc": "2026-11-05T21:47:37.0768239Z",
+          "Mode": "--inspect",
+          "Label": "before-kill",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\cases\\case-4f87d562f7a94e1382c220a176976547\\manifest.json",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 8516,
+          "StartedUtc": "2026-11-05T21:47:39.9130409Z",
+          "Mode": "--consume",
+          "Label": "consume",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\cases\\case-4f87d562f7a94e1382c220a176976547\\manifest.json",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 28148,
+          "StartedUtc": "2026-11-05T21:47:42.6433752Z",
+          "Mode": "--recover",
+          "Label": "recover",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\cases\\case-4f87d562f7a94e1382c220a176976547\\manifest.json",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "ExitCode": 0,
+          "Absent": true
+        }
+      ],
+      "elapsedSeconds": 18.933777,
+      "schema": {
+        "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/schema.json",
+        "sha256": "413c4245e0ce1d331312a4eaae3c9ad1ffd87229f648990ed03c7a451f781865"
+      },
+      "migrations": {
+        "Auth": 11,
+        "Character": 17
+      },
+      "fixtureConsumption": {
+        "Before": {
+          "CraftedItems": 1,
+          "Materials": 0,
+          "Wallet": 7,
+          "Inventory": 1,
+          "CurrencyOperations": 1,
+          "InventoryReceipts": 1,
+          "Entitlements": 0,
+          "SourceDelivered": false,
+          "AuthDelivered": true,
+          "AuthCompleted": false,
+          "SourceCancelled": false,
+          "AuthCancelled": false,
+          "SourceId": "cde1dea181e343649bb6b471c712366e",
+          "AuthId": "cde1dea181e343649bb6b471c712366e",
+          "SourcePayloadHash": "7882dc3b21c742de23383a45892d8f681671a6587c5d95b6a758198bce86efe3",
+          "AuthPayloadHash": "7882dc3b21c742de23383a45892d8f681671a6587c5d95b6a758198bce86efe3",
+          "Epoch": 1,
+          "InventoryIds": [
+            1
+          ],
+          "ReceiptInventoryIds": [
+            1
+          ],
+          "OperationKeys": [
+            "craft-award:1:cde1dea181e343649bb6b471c712366e:0:0"
+          ]
+        },
+        "After": {
+          "CraftedItems": 1,
+          "Materials": 0,
+          "Wallet": 2,
+          "Inventory": 0,
+          "CurrencyOperations": 1,
+          "InventoryReceipts": 1,
+          "Entitlements": 0,
+          "SourceDelivered": false,
+          "AuthDelivered": true,
+          "AuthCompleted": false,
+          "SourceCancelled": false,
+          "AuthCancelled": false,
+          "SourceId": "cde1dea181e343649bb6b471c712366e",
+          "AuthId": "cde1dea181e343649bb6b471c712366e",
+          "SourcePayloadHash": "7882dc3b21c742de23383a45892d8f681671a6587c5d95b6a758198bce86efe3",
+          "AuthPayloadHash": "7882dc3b21c742de23383a45892d8f681671a6587c5d95b6a758198bce86efe3",
+          "Epoch": 1,
+          "InventoryIds": [],
+          "ReceiptInventoryIds": [
+            1
+          ],
+          "OperationKeys": [
+            "craft-award:1:cde1dea181e343649bb6b471c712366e:0:0"
+          ]
+        },
+        "Generation": {
+          "Pid": 8516,
+          "StartedUtc": "2026-11-05T21:47:39.9130409Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "ProbeDll": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\bin\\Debug\\net10.0\\CraftingProcessProbe.dll",
+          "ProbeSha256": "2c1e140edc8fdc693688782db0bd2e1daea9533ca3ed146145b6cb592e49b4eb"
+        },
+        "Boundary": "Owned-fixture consumption mirrors the existing logical-restart control; it is not a public spending-flow qualification"
+      },
+      "checkpoint": {
+        "Window": "auth-applied",
+        "Transaction": "Microsoft.EntityFrameworkCore.Database.Transaction.TransactionCommitted",
+        "FullName": "Microsoft.EntityFrameworkCore.Diagnostics.TransactionEndEventData",
+        "DataSource": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\cases\\case-4f87d562f7a94e1382c220a176976547\\auth.sqlite",
+        "Generation": {
+          "Pid": 11668,
+          "StartedUtc": "2026-11-05T21:47:31.4401759Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "ProbeDll": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\bin\\Debug\\net10.0\\CraftingProcessProbe.dll",
+          "ProbeSha256": "2c1e140edc8fdc693688782db0bd2e1daea9533ca3ed146145b6cb592e49b4eb"
+        },
+        "OwnedCommits": 16
+      },
+      "beforeKill": {
+        "CraftedItems": 1,
+        "Materials": 0,
+        "Wallet": 7,
+        "Inventory": 1,
+        "CurrencyOperations": 1,
+        "InventoryReceipts": 1,
+        "Entitlements": 0,
+        "SourceDelivered": false,
+        "AuthDelivered": true,
+        "AuthCompleted": false,
+        "SourceCancelled": false,
+        "AuthCancelled": false,
+        "SourceId": "cde1dea181e343649bb6b471c712366e",
+        "AuthId": "cde1dea181e343649bb6b471c712366e",
+        "SourcePayloadHash": "7882dc3b21c742de23383a45892d8f681671a6587c5d95b6a758198bce86efe3",
+        "AuthPayloadHash": "7882dc3b21c742de23383a45892d8f681671a6587c5d95b6a758198bce86efe3",
+        "Epoch": 1,
+        "InventoryIds": [
+          1
+        ],
+        "ReceiptInventoryIds": [
+          1
+        ],
+        "OperationKeys": [
+          "craft-award:1:cde1dea181e343649bb6b471c712366e:0:0"
+        ]
+      },
+      "abruptTermination": {
+        "CommittedStateObserved": true,
+        "ObservedUtc": "2026-11-05T21:47:39.9045894Z",
+        "Pid": 11668,
+        "GenerationVerified": true,
+        "StartedUtc": "2026-11-05T21:47:31.4401759Z",
+        "ExitCode": -1,
+        "Window": "auth-applied"
+      },
+      "recovery": {
+        "Before": {
+          "CraftedItems": 1,
+          "Materials": 0,
+          "Wallet": 2,
+          "Inventory": 0,
+          "CurrencyOperations": 1,
+          "InventoryReceipts": 1,
+          "Entitlements": 0,
+          "SourceDelivered": false,
+          "AuthDelivered": true,
+          "AuthCompleted": false,
+          "SourceCancelled": false,
+          "AuthCancelled": false,
+          "SourceId": "cde1dea181e343649bb6b471c712366e",
+          "AuthId": "cde1dea181e343649bb6b471c712366e",
+          "SourcePayloadHash": "7882dc3b21c742de23383a45892d8f681671a6587c5d95b6a758198bce86efe3",
+          "AuthPayloadHash": "7882dc3b21c742de23383a45892d8f681671a6587c5d95b6a758198bce86efe3",
+          "Epoch": 1,
+          "InventoryIds": [],
+          "ReceiptInventoryIds": [
+            1
+          ],
+          "OperationKeys": [
+            "craft-award:1:cde1dea181e343649bb6b471c712366e:0:0"
+          ]
+        },
+        "After": {
+          "CraftedItems": 1,
+          "Materials": 0,
+          "Wallet": 2,
+          "Inventory": 0,
+          "CurrencyOperations": 1,
+          "InventoryReceipts": 1,
+          "Entitlements": 0,
+          "SourceDelivered": true,
+          "AuthDelivered": true,
+          "AuthCompleted": true,
+          "SourceCancelled": false,
+          "AuthCancelled": false,
+          "SourceId": "cde1dea181e343649bb6b471c712366e",
+          "AuthId": "cde1dea181e343649bb6b471c712366e",
+          "SourcePayloadHash": "7882dc3b21c742de23383a45892d8f681671a6587c5d95b6a758198bce86efe3",
+          "AuthPayloadHash": "7882dc3b21c742de23383a45892d8f681671a6587c5d95b6a758198bce86efe3",
+          "Epoch": 1,
+          "InventoryIds": [],
+          "ReceiptInventoryIds": [
+            1
+          ],
+          "OperationKeys": [
+            "craft-award:1:cde1dea181e343649bb6b471c712366e:0:0"
+          ]
+        },
+        "HostedWorkerStopped": true,
+        "AdditionalDrain": 0,
+        "ElapsedSeconds": 1.1668112,
+        "Generation": {
+          "Pid": 28148,
+          "StartedUtc": "2026-11-05T21:47:42.6433752Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "ProbeDll": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\bin\\Debug\\net10.0\\CraftingProcessProbe.dll",
+          "ProbeSha256": "2c1e140edc8fdc693688782db0bd2e1daea9533ca3ed146145b6cb592e49b4eb"
+        },
+        "WorldSession": "No original Player/session is created in this fresh worker process"
+      },
+      "rawEvidence": [
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/auth.sqlite",
+          "sha256": "62c7040a1d3cd5bd68db221efcfa497a58afc86ee355d23937c44caf709cbdae"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/auth.sqlite-shm",
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/auth.sqlite-wal",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/before-kill.json",
+          "sha256": "a79c8ce3a5a66ccd1807500960d9e10077da9cc3f8ae6a3e67d3ff8a0b517dda"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/before-kill.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/before-kill.stdout.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/characters.sqlite",
+          "sha256": "3b99550744ed8035a68905b181252b230f8a9d1f309e99f6d866d492afe58b4e"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/characters.sqlite-shm",
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/characters.sqlite-wal",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/consume.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/consume.stdout.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/consumed.json",
+          "sha256": "731860c75155c3b2d7b3bef88a664a6616fa25da0827cac9d9aa5038f3ffad7f"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/manifest.json",
+          "sha256": "9262789ddade9db963e0728eaab40150c7f4fdb515de344bff0a5a6cb821db96"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/prepare.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/prepare.stdout.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/producer-killed.json",
+          "sha256": "640e81d133a6ea2666b31191f6c2c611439e879608dce84cea8a568e234f39be"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/producer-start.json",
+          "sha256": "879c6b027223a4f771993227f406913ecff4f58488030f92c827e567c645059e"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/producer.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/producer.stdout.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/recover.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/recover.stdout.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/recovery.json",
+          "sha256": "9ef21a1af98ca2dd5c0324321715e3dd232c6a6b18fea3de003790ec77e8afd8"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/schema.json",
+          "sha256": "413c4245e0ce1d331312a4eaae3c9ad1ffd87229f648990ed03c7a451f781865"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/snapshot.json",
+          "sha256": "a79c8ce3a5a66ccd1807500960d9e10077da9cc3f8ae6a3e67d3ff8a0b517dda"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-4f87d562f7a94e1382c220a176976547/window-reached.json",
+          "sha256": "6b791906461899be45deb1228e0e7e3c2a72bce32d447fd1897408c2d914984e"
+        }
+      ]
+    },
+    {
+      "window": "character-acknowledged",
+      "passed": true,
+      "state": {
+        "path": "artifacts/continuation-20261105/crafting-process-recovery/run-state-character-acknowledged.json",
+        "sha256": "ad6cb5cab4756d6ff9bc56dc81280dfa408c4c12d4938ac5defcf5b8cf597e23"
+      },
+      "generations": [
+        {
+          "Pid": 33624,
+          "StartedUtc": "2026-11-05T21:47:46.2204053Z",
+          "Mode": "--prepare",
+          "Label": "prepare",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\cases\\case-a5180496377d41b0aae03de790200bb3\\manifest.json",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 21648,
+          "StartedUtc": "2026-11-05T21:47:50.3139111Z",
+          "Mode": "--produce",
+          "Label": "producer",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\cases\\case-a5180496377d41b0aae03de790200bb3\\manifest.json",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "ExitCode": -1,
+          "Absent": true
+        },
+        {
+          "Pid": 44108,
+          "StartedUtc": "2026-11-05T21:47:55.9351308Z",
+          "Mode": "--inspect",
+          "Label": "before-kill",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\cases\\case-a5180496377d41b0aae03de790200bb3\\manifest.json",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 27352,
+          "StartedUtc": "2026-11-05T21:47:58.7366414Z",
+          "Mode": "--consume",
+          "Label": "consume",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\cases\\case-a5180496377d41b0aae03de790200bb3\\manifest.json",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 26300,
+          "StartedUtc": "2026-11-05T21:48:01.5099538Z",
+          "Mode": "--recover",
+          "Label": "recover",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\cases\\case-a5180496377d41b0aae03de790200bb3\\manifest.json",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "ExitCode": 0,
+          "Absent": true
+        }
+      ],
+      "elapsedSeconds": 18.648393,
+      "schema": {
+        "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/schema.json",
+        "sha256": "34b4d7f1fbf678bcef0212aece1594dfa12861d49e8f9586c1e8ed97c10e7e8a"
+      },
+      "migrations": {
+        "Auth": 11,
+        "Character": 17
+      },
+      "fixtureConsumption": {
+        "Before": {
+          "CraftedItems": 1,
+          "Materials": 0,
+          "Wallet": 7,
+          "Inventory": 1,
+          "CurrencyOperations": 1,
+          "InventoryReceipts": 1,
+          "Entitlements": 0,
+          "SourceDelivered": true,
+          "AuthDelivered": true,
+          "AuthCompleted": false,
+          "SourceCancelled": false,
+          "AuthCancelled": false,
+          "SourceId": "efd9993ab38e4932a42d811d6889378d",
+          "AuthId": "efd9993ab38e4932a42d811d6889378d",
+          "SourcePayloadHash": "97dbbdbcc3d7a39fe778eb1fd815b3ac8a7b7afee3d7d558d873d52c56d4b874",
+          "AuthPayloadHash": "97dbbdbcc3d7a39fe778eb1fd815b3ac8a7b7afee3d7d558d873d52c56d4b874",
+          "Epoch": 1,
+          "InventoryIds": [
+            1
+          ],
+          "ReceiptInventoryIds": [
+            1
+          ],
+          "OperationKeys": [
+            "craft-award:1:efd9993ab38e4932a42d811d6889378d:0:0"
+          ]
+        },
+        "After": {
+          "CraftedItems": 1,
+          "Materials": 0,
+          "Wallet": 2,
+          "Inventory": 0,
+          "CurrencyOperations": 1,
+          "InventoryReceipts": 1,
+          "Entitlements": 0,
+          "SourceDelivered": true,
+          "AuthDelivered": true,
+          "AuthCompleted": false,
+          "SourceCancelled": false,
+          "AuthCancelled": false,
+          "SourceId": "efd9993ab38e4932a42d811d6889378d",
+          "AuthId": "efd9993ab38e4932a42d811d6889378d",
+          "SourcePayloadHash": "97dbbdbcc3d7a39fe778eb1fd815b3ac8a7b7afee3d7d558d873d52c56d4b874",
+          "AuthPayloadHash": "97dbbdbcc3d7a39fe778eb1fd815b3ac8a7b7afee3d7d558d873d52c56d4b874",
+          "Epoch": 1,
+          "InventoryIds": [],
+          "ReceiptInventoryIds": [
+            1
+          ],
+          "OperationKeys": [
+            "craft-award:1:efd9993ab38e4932a42d811d6889378d:0:0"
+          ]
+        },
+        "Generation": {
+          "Pid": 27352,
+          "StartedUtc": "2026-11-05T21:47:58.7366414Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "ProbeDll": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\bin\\Debug\\net10.0\\CraftingProcessProbe.dll",
+          "ProbeSha256": "2c1e140edc8fdc693688782db0bd2e1daea9533ca3ed146145b6cb592e49b4eb"
+        },
+        "Boundary": "Owned-fixture consumption mirrors the existing logical-restart control; it is not a public spending-flow qualification"
+      },
+      "checkpoint": {
+        "Window": "character-acknowledged",
+        "Transaction": "Microsoft.EntityFrameworkCore.Database.Transaction.TransactionCommitted",
+        "FullName": "Microsoft.EntityFrameworkCore.Diagnostics.TransactionEndEventData",
+        "DataSource": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\cases\\case-a5180496377d41b0aae03de790200bb3\\characters.sqlite",
+        "Generation": {
+          "Pid": 21648,
+          "StartedUtc": "2026-11-05T21:47:50.3139111Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "ProbeDll": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\bin\\Debug\\net10.0\\CraftingProcessProbe.dll",
+          "ProbeSha256": "2c1e140edc8fdc693688782db0bd2e1daea9533ca3ed146145b6cb592e49b4eb"
+        },
+        "OwnedCommits": 20
+      },
+      "beforeKill": {
+        "CraftedItems": 1,
+        "Materials": 0,
+        "Wallet": 7,
+        "Inventory": 1,
+        "CurrencyOperations": 1,
+        "InventoryReceipts": 1,
+        "Entitlements": 0,
+        "SourceDelivered": true,
+        "AuthDelivered": true,
+        "AuthCompleted": false,
+        "SourceCancelled": false,
+        "AuthCancelled": false,
+        "SourceId": "efd9993ab38e4932a42d811d6889378d",
+        "AuthId": "efd9993ab38e4932a42d811d6889378d",
+        "SourcePayloadHash": "97dbbdbcc3d7a39fe778eb1fd815b3ac8a7b7afee3d7d558d873d52c56d4b874",
+        "AuthPayloadHash": "97dbbdbcc3d7a39fe778eb1fd815b3ac8a7b7afee3d7d558d873d52c56d4b874",
+        "Epoch": 1,
+        "InventoryIds": [
+          1
+        ],
+        "ReceiptInventoryIds": [
+          1
+        ],
+        "OperationKeys": [
+          "craft-award:1:efd9993ab38e4932a42d811d6889378d:0:0"
+        ]
+      },
+      "abruptTermination": {
+        "CommittedStateObserved": true,
+        "ObservedUtc": "2026-11-05T21:47:58.7286572Z",
+        "Pid": 21648,
+        "GenerationVerified": true,
+        "StartedUtc": "2026-11-05T21:47:50.3139111Z",
+        "ExitCode": -1,
+        "Window": "character-acknowledged"
+      },
+      "recovery": {
+        "Before": {
+          "CraftedItems": 1,
+          "Materials": 0,
+          "Wallet": 2,
+          "Inventory": 0,
+          "CurrencyOperations": 1,
+          "InventoryReceipts": 1,
+          "Entitlements": 0,
+          "SourceDelivered": true,
+          "AuthDelivered": true,
+          "AuthCompleted": false,
+          "SourceCancelled": false,
+          "AuthCancelled": false,
+          "SourceId": "efd9993ab38e4932a42d811d6889378d",
+          "AuthId": "efd9993ab38e4932a42d811d6889378d",
+          "SourcePayloadHash": "97dbbdbcc3d7a39fe778eb1fd815b3ac8a7b7afee3d7d558d873d52c56d4b874",
+          "AuthPayloadHash": "97dbbdbcc3d7a39fe778eb1fd815b3ac8a7b7afee3d7d558d873d52c56d4b874",
+          "Epoch": 1,
+          "InventoryIds": [],
+          "ReceiptInventoryIds": [
+            1
+          ],
+          "OperationKeys": [
+            "craft-award:1:efd9993ab38e4932a42d811d6889378d:0:0"
+          ]
+        },
+        "After": {
+          "CraftedItems": 1,
+          "Materials": 0,
+          "Wallet": 2,
+          "Inventory": 0,
+          "CurrencyOperations": 1,
+          "InventoryReceipts": 1,
+          "Entitlements": 0,
+          "SourceDelivered": true,
+          "AuthDelivered": true,
+          "AuthCompleted": true,
+          "SourceCancelled": false,
+          "AuthCancelled": false,
+          "SourceId": "efd9993ab38e4932a42d811d6889378d",
+          "AuthId": "efd9993ab38e4932a42d811d6889378d",
+          "SourcePayloadHash": "97dbbdbcc3d7a39fe778eb1fd815b3ac8a7b7afee3d7d558d873d52c56d4b874",
+          "AuthPayloadHash": "97dbbdbcc3d7a39fe778eb1fd815b3ac8a7b7afee3d7d558d873d52c56d4b874",
+          "Epoch": 1,
+          "InventoryIds": [],
+          "ReceiptInventoryIds": [
+            1
+          ],
+          "OperationKeys": [
+            "craft-award:1:efd9993ab38e4932a42d811d6889378d:0:0"
+          ]
+        },
+        "HostedWorkerStopped": true,
+        "AdditionalDrain": 0,
+        "ElapsedSeconds": 0.9619653,
+        "Generation": {
+          "Pid": 26300,
+          "StartedUtc": "2026-11-05T21:48:01.5099538Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "ProbeDll": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\crafting-process-recovery\\bin\\Debug\\net10.0\\CraftingProcessProbe.dll",
+          "ProbeSha256": "2c1e140edc8fdc693688782db0bd2e1daea9533ca3ed146145b6cb592e49b4eb"
+        },
+        "WorldSession": "No original Player/session is created in this fresh worker process"
+      },
+      "rawEvidence": [
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/auth.sqlite",
+          "sha256": "d389b2a7f6a6882aa269744a2c2b12725dd3e7dc3080d42fb10635075577524b"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/auth.sqlite-shm",
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/auth.sqlite-wal",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/before-kill.json",
+          "sha256": "3655aa814d509b93d0a0d2d82e78b06547a0ede7d884e7999b680ea182b56416"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/before-kill.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/before-kill.stdout.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/characters.sqlite",
+          "sha256": "cf4cffa9d1626bdb76386be73136d74c0c3a610f94cf9a3b451443fb72de339d"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/characters.sqlite-shm",
+          "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/characters.sqlite-wal",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/consume.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/consume.stdout.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/consumed.json",
+          "sha256": "6db80dcb450203dfd1c3e4302a91bc1c1ea93030e9c73403e6b0b250340b58c9"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/manifest.json",
+          "sha256": "933a0432f4b77f78ed5d1a7a4b179c2d202aa4f2a2e6c56bb00f727348b7ba79"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/prepare.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/prepare.stdout.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/producer-killed.json",
+          "sha256": "66502a92f9c9d1aa7b1fca369d98af392386c634415b4e3072b3bf4b5a5e8da5"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/producer-start.json",
+          "sha256": "23615ddc131d23b44c05a0c3410c58c1a264e79dc199aa61f21a5b814dc8d13f"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/producer.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/producer.stdout.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/recover.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/recover.stdout.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/recovery.json",
+          "sha256": "ec6f5cc465ed770f6d437c47591fb366a01b83a3ba9899ca68aee6265e10375a"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/schema.json",
+          "sha256": "34b4d7f1fbf678bcef0212aece1594dfa12861d49e8f9586c1e8ed97c10e7e8a"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/snapshot.json",
+          "sha256": "3655aa814d509b93d0a0d2d82e78b06547a0ede7d884e7999b680ea182b56416"
+        },
+        {
+          "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-a5180496377d41b0aae03de790200bb3/window-reached.json",
+          "sha256": "77bc7c4676ca007db3732095b0207a1cf3ac18f06643d7c47ec2301e75f76490"
+        }
+      ]
+    }
+  ],
+  "migrationIdentities": {
+    "Auth": [
+      "20260607222112_AuthSqliteInitial",
+      "20260608120000_BaselineAccountEntitlements",
+      "20260609224504_StorePurchaseHistoryIdentity",
+      "20260610114027_StorePurchaseHistoryAccountPurchasedUtcIndex",
+      "20261029165726_AccountPendingItemSequence",
+      "20261029174036_AccountLoyalty",
+      "20261029175217_AccountInventoryDurability",
+      "20261029175905_AccountInventorySourceIdentity",
+      "20261030165054_AccountWorldSessionEpoch",
+      "20261031051048_AccountCurrencyOperations",
+      "20261105080133_CraftingAccountAwards"
+    ],
+    "Character": [
+      "20260607222133_CharacterSqliteInitial",
+      "20260714083425_CharacterBonusAbilityTierPoints",
+      "20260728192555_CharacterStatData",
+      "20261029120447_CharacterBind",
+      "20261029122550_CharacterTaxiNode",
+      "20261029215707_CharacterChallengeRewardTracks",
+      "20261030230524_ContractQuestAcceptance",
+      "20261030234818_ContractCompletionReceipts",
+      "20261031030210_ContractRewardSelections",
+      "20261031043709_ContractRewardClaims",
+      "20261031055429_ContractClaimDelivery",
+      "20261031085546_RealmBankItemCodecs",
+      "20261101100740_MarketplaceBidReceipts",
+      "20261102182001_BankReconciliationReceipts",
+      "20261103170302_RealmFirstClaims",
+      "20261104102643_CharacterBonusAmpPower",
+      "20261105080139_CraftingAccountAwards"
+    ]
+  },
+  "finalSuccessfulChildGenerations": 16,
+  "allRecordedSuccessfulChildrenStopped": true,
+  "faultMechanism": "Exact-owned EF TransactionCommitted diagnostic callback pauses after the real SQLite commit. A fresh inspector verifies durable state before the parent verifies PID generation/executable/command/DLL identity again and calls Process.Kill. Recovery runs in a different process using the unchanged real CraftingAccountOutboxHostedService and the same configured migrated files.",
+  "consumptionBoundary": "Two delivered-but-unfinished scenarios reduce wallet7 to2 and remove the granted account item directly in an owned Auth transaction. This mirrors existing logical-restart coverage; it does not qualify the public spending/consumption flow.",
+  "initialHarnessFailures": {
+    "control": {
+      "path": "artifacts/continuation-20261105/crafting-process-recovery/initial-control/run-state-none.json",
+      "sha256": "0a16f372b0403c73d4e61858085decbb263b19b50f7351e5ed0d65873a422c8d"
+    },
+    "originalProbe": {
+      "path": "artifacts/continuation-20261105/crafting-process-recovery/initial-control/CraftingProcessProbe.dll",
+      "sha256": "bd3c72706ba9040a6119d23fa686cb6b6bb31361d1cba4fe9111e6e06a52896d"
+    },
+    "originalProgram": {
+      "path": "artifacts/continuation-20261105/crafting-process-recovery/initial-control/Program.cs.txt",
+      "sha256": "6840120f835809282550e9b8b995b93cc63a8cb25658a2fe489f9ab245b55010"
+    },
+    "explanation": "Original compiled public test passed its assertions then the initial observer expected pre-consumption wallet7/inventory1/epoch1 instead of the original test final wallet2/inventory0/epoch2. Only the control observer was corrected; crash expectations and original test assertions are unchanged. Archived .cs briefly entered default SDK compile glob; renaming archival source .cs.txt fixed the retained duplicate-definition compile failure.",
+    "duplicateArchiveBuild": {
+      "path": "artifacts/continuation-20261105/crafting-process-recovery/corrected-build.log",
+      "sha256": "74ff7d1ce05f84a06e1ee39cfb105d8f3c748689a7a4872e788f04b20a1810f6"
+    },
+    "initialControlCaseEvidence": [
+      {
+        "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-0ea90a0d24b140f4a5a8ba006294d178/auth.sqlite",
+        "sha256": "b731575d84138215157c9d8b7a8b95749b5df12eddad870018d41dfaa331444d"
+      },
+      {
+        "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-0ea90a0d24b140f4a5a8ba006294d178/characters.sqlite",
+        "sha256": "dc8a3e5f118e899dba2d3795b3024eb663df548ed5cbab67ec85c13e2a5dccf2"
+      },
+      {
+        "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-0ea90a0d24b140f4a5a8ba006294d178/manifest.json",
+        "sha256": "7281876e3b9b8be9ed04539ed6264ed6b21491e7f86d2559d6cfbd1f50f8d302"
+      },
+      {
+        "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-0ea90a0d24b140f4a5a8ba006294d178/prepare.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-0ea90a0d24b140f4a5a8ba006294d178/prepare.stdout.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-0ea90a0d24b140f4a5a8ba006294d178/produce-failure.json",
+        "sha256": "c7c876f45fab632993b36a682ec15e66f7cc3bb0061cf01fa2e87b67e5d0c82d"
+      },
+      {
+        "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-0ea90a0d24b140f4a5a8ba006294d178/producer-start.json",
+        "sha256": "509181a1314e4991c1befa7e0b7ff0b9d14f00d7a6bebc46c5104caaddaac0e8"
+      },
+      {
+        "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-0ea90a0d24b140f4a5a8ba006294d178/producer.stderr.log",
+        "sha256": "500506e21f9019c807201fe8f7de9e73afb4265c769527564f6ec175feed6422"
+      },
+      {
+        "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-0ea90a0d24b140f4a5a8ba006294d178/producer.stdout.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-0ea90a0d24b140f4a5a8ba006294d178/schema.json",
+        "sha256": "5139d4034949b81de281d57084c6895ee35f0d21886c23155aca5f70f6643a02"
+      },
+      {
+        "path": "C:/GIT/NexusForever/continuation/artifacts/continuation-20261105/crafting-process-recovery/cases/case-0ea90a0d24b140f4a5a8ba006294d178/snapshot.json",
+        "sha256": "45ed0460f769e045df95e33b093776d7a8dbe5d35581a234f33b19942b977a43"
+      }
+    ]
+  },
+  "build": {
+    "path": "artifacts/continuation-20261105/crafting-process-recovery/final-corrected-build.log",
+    "sha256": "66fd2e2bb2db28a76106e30cd4723b79ec1cea2c0a8dac2c08e9a4e2ad9c0041"
+  },
+  "review": {
+    "standards": {
+      "findings": 0,
+      "path": "artifacts/continuation-20261105/crafting-process-recovery/review-standards.txt",
+      "sha256": "368ec339d03f9a2a58dbca541ff944746feb4f73f09c8126ae2a65844702adeb"
+    },
+    "spec": {
+      "findings": 0,
+      "path": "artifacts/continuation-20261105/crafting-process-recovery/review-spec.txt",
+      "sha256": "6479e47830d7499d13947bb559edcfa86efcc353c7e4061d2981d7e4e6beb6bb"
+    }
+  },
+  "finalProcessCheck": {
+    "path": "artifacts/continuation-20261105/crafting-process-recovery/final-process-check.json",
+    "sha256": "22a740df0f9dc7bed0d6655b23e4827e54e76234e28dfbaf937d6474ed05b03b"
+  },
+  "runtimeManifests": [
+    {
+      "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/CraftingProcessProbe.deps.json",
+      "sha256": "6b1e739c44127e99c025a9567dfbbfa82d5a2b9d5ac0682d62cdb8c48333a110"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-process-recovery/bin/Debug/net10.0/CraftingProcessProbe.runtimeconfig.json",
+      "sha256": "501d9a7d5e2b71a3ba56f3f76f421199364e699895ba531a80d370172b551f36"
+    }
+  ],
+  "upstream": {
+    "path": "artifacts/continuation-20261105/crafting-process-recovery/upstream-refresh.json",
+    "sha256": "41195dd79bd147594786d5a6ea5c1208bafba346158d6ebb23765e083dc7991c",
+    "latestAllState": 20,
+    "changedHeadsBasesStates": 0,
+    "pr608": "open",
+    "pr609": "closed, unmerged"
+  },
+  "boundaries": [
+    "SQLite11 Auth/17 Character compiled migrations; exact applied identities unchanged and final integrity_check ok",
+    "One unchanged public simple/account/commit recipe fixture; synthetic game tables and session sends",
+    "Fresh hosted service through minimal database/realm dependencies; full WorldServer host/DI startup not launched",
+    "No Player/session/re-admission in crash recovery; epoch remains1",
+    "No production source, migration, package, runtime configuration or entitlement policy changes",
+    "No full-solution build or full test suite; prior owning builds reused after DLL hash verification",
+    "Native client and Computer Use remain stopped"
+  ],
+  "remaining": [
+    "Physical MySQL process/connection failure",
+    "OS/power/storage failure",
+    "Full deployed WorldServer/broker restart, sockets and load",
+    "Backup/route/catalog migration and Cosmic/Loyalty physical replay",
+    "Other recipe/modifier/material/virtual-effect flows and actual content",
+    "Public consumption settlement",
+    "Native/retail qualification"
+  ]
+}

@@ -1,5 +1,12 @@
 # Client Binary Decompile Continuation Guide
 
+[Crafting physical process recovery](DESTINATION_PROVIDER_QUALIFICATION.md#crafting-physical-producer-termination-and-fresh-worker-recovery)
+passes an unchanged public-handler control and three committed SQLite crash
+windows. Fresh real hosted workers finish the same receipts without regranting
+consumed awards or creating a Player/admission. All16 child generations stop;
+Source is unchanged. Physical MySQL, full deployed startup/restart, other flows,
+actual content and native/retail remain open. Continue the wider roadmap.
+
 [Action-bar lookup refusals](UPSTREAM_608_CAST_REFUSALS.md#action-bar-cast-resolution---5-november-2026)
 now answer ordinary/position requests after stale item/book lookup, including
 token zero. Eight corrected baseline failures are fixed;21 new/all116 unique

@@ -322,6 +322,60 @@ native/retail qualification remain open. Projected tables and fixture World send
 do not establish retail behavior. No full solution build or full test suite was
 run; native client/CUA remain stopped and entitlement policy is unchanged.
 
+### Crafting physical producer termination and fresh worker recovery
+
+5 November 2026. Three physical producer-termination cases pass on separate,
+owned SQLite Auth/Character files. Each starts the unchanged compiled public
+`CraftingSettlementTests.CraftingPublishesItsFrozenInventoryAndResultAfterTheCharacterSave`
+case (`simple`, `account`, `commit`) with its real Player/handler and provider
+injection. An unarmed control finishes all original assertions, including its
+later admission/consumption checks; 39 owned commits calibrate the diagnostics.
+No production source or test assertions changed.
+
+An EF `TransactionCommitted` observer pauses the producer after the real commit.
+A separate process reads the committed rows, then the parent rechecks the exact
+owned PID generation, executable, command and probe DLL before `Process.Kill()`.
+The three checkpoints are:
+
+| Committed checkpoint before kill | Fresh hosted-worker outcome |
+| --- | --- |
+| Character payment/output and source; Auth reservation not delivered | Delivers wallet7 and one account item, acknowledges Character and completes Auth |
+| Auth delivery; Character acknowledgement unfinished | Completes both acknowledgements, preserving wallet2 and the removed item |
+| Character acknowledgement; Auth completion unfinished | Completes Auth, preserving wallet2 and the removed item |
+
+The latter two cases perform direct owned-fixture consumption after the kill,
+mirroring the existing logical-restart control. This is not public spending-flow
+qualification. Each recovery process starts the unchanged real
+`CraftingAccountOutboxHostedService` with the same configured files and minimal
+database/realm dependencies; it creates no Player/session or admission. The
+original source/receipt IDs and payload hashes persist, one crafted item and
+material consumption stay unchanged, and exactly one currency operation and
+inventory receipt remain. The epoch stays1 and no entitlement is granted.
+The hosted worker stops cleanly; a subsequent drain returns0 without row changes.
+
+All four successful cases apply the exact compiled SQLite migration inventories
+(11 Auth/17 Character); final histories match and both files pass
+`integrity_check`. All16 successful child generations are absent. Files and logs
+are retained, including the initial observer expectation error after the original
+control's own assertions passed, and an archived-source compile-glob error.
+Correcting those harness issues changed no public-test assertions. The final
+probe build has0 warnings/errors (2.6s); the control takes10.2s and the three
+crash/recovery cases take54.3s combined. Existing owning builds are reused after
+all138 copied dependency DLLs and owning copies match; all6270 tracked candidate
+Source inputs match published `d9672a10`, apart from the recorded literal
+clean-filter and BOM/newline checkout variants. Concurrent root work is excluded.
+
+The [portable record](coverage/crafting-process-recovery-20261105.json) binds
+the protocol, original test/production DLLs, checkpoint snapshots, abrupt exits,
+fresh recoveries, final integrity, review and retained failures. Local evidence
+is under `artifacts/continuation-20261105/crafting-process-recovery/`.
+Both final review axes report0 findings.
+This qualifies the three recorded SQLite process-loss windows. Physical MySQL
+connection/server loss, OS/power/storage failure, full deployed WorldServer/DI
+startup and broker restart, sockets/load, Cosmic/Loyalty physical replay, actual
+recipe/material/modifier data and native/retail remain open. No full solution or
+suite was run. Native client/CUA remain stopped and entitlement policy is unchanged.
+
 ### Vendor repair settlement
 
 5 November 2026. All seven compiled repair cases passed on separate disposable
