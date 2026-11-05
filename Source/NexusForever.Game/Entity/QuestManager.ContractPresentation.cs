@@ -46,7 +46,9 @@ namespace NexusForever.Game.Entity
             var rows = committedContractTracks.Select(track =>
             {
                 var claimed = new NetworkBitArray(32, NetworkBitArray.BitOrder.LeastSignificantBit);
-                foreach (var slot in track.Slots.Where(slot => slot.Claimed)) claimed.SetBit(slot.Ordinal, true);
+                // The Character receipt reserves an account award immediately. Show it as claimed only after Auth delivery is acknowledged.
+                foreach (var slot in track.Slots.Where(slot => slot.Claim is { RealmId: 0 } or { AccountDelivered: true }))
+                    claimed.SetBit(slot.Ordinal, true);
                 return new RewardTrack
                 {
                     RewardTrackId = track.TrackId, RewardPointsEarned = track.Points, IsActive = track.Active,

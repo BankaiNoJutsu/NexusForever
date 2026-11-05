@@ -42,6 +42,63 @@ public sealed partial class ContractClaimTransactionTests
         Assert.Equal(wallet.Amount, f.Live.Inner.Source.SessionProxy.GetInvocations("EnqueueMessageEncrypted").Select(call => call.Arguments[0]).OfType<ServerAccountCurrencyGrant>().Last().AccountCurrency.Amount);
     }
 
+    [Theory]
+    [InlineData(4u)] [InlineData(5u)]
+    public async Task AccountClaimBitWaitsForWalletCreditAndSourceAcknowledgement(uint trackId)
+    {
+        using var f = new AccountSyncFixture(characterOptions, authOptions);
+        uint reward = await ContractLiveCompletionTests.SeedQueuedClaim(f.Live, trackId, final: false);
+        var authGate = new SyncPause();
+        var sourceGate = new SyncPause(source: true);
+        f.AuthFault = authGate;
+        f.CharacterFault = sourceGate;
+        var session = f.Live.Inner.Source.SessionProxy;
+        object[] Packets() => session.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(call => call.Arguments[0]).ToArray();
+        bool ShowsClaim(object packet) => packet is ServerRewardTracksReload reload
+            && reload.RewardsTracks.Any(row => row.RewardTrackId == trackId && (row.ClaimedRewards.GetBuffer()[0] & 1) != 0);
+
+        void AssertPending(uint accountProgress)
+        {
+            using var pending = f.Live.Inner.Context();
+            Assert.False(Assert.Single(pending.CharacterContractAccountOutbox).Delivered);
+            Assert.True(f.Actor.Quests.CommittedContractTracks.Single().Slots[0].Claimed);
+            Assert.False(f.Actor.Quests.QueueContractRewardClaim(reward, 2));
+
+            // Another owner can trigger a composed reload while the wallet transaction is paused.
+            Assert.True(f.Actor.Player.RewardTrackPresentation.PublishAccountTracks(
+                [new() { RewardTrackId = 9, RewardPointsEarned = accountProgress, IsActive = true }]));
+            Assert.Contains(Packets().OfType<ServerRewardTracksReload>(),
+                packet => packet.RewardsTracks.Any(row => row.RewardTrackId == 9 && row.RewardPointsEarned == accountProgress));
+            Assert.DoesNotContain(Packets(), ShowsClaim);
+        }
+
+        Assert.True(f.Actor.Quests.QueueContractRewardClaim(reward, 2));
+        try
+        {
+            await f.AwaitGate(authGate);
+            AssertPending(801);
+            authGate.Release.TrySetResult();
+            await f.AwaitGate(sourceGate);
+            AssertPending(802);
+        }
+        finally
+        {
+            authGate.Release.TrySetResult();
+            sourceGate.Release.TrySetResult();
+            await f.Actor.Drain();
+        }
+
+        object[] settled = Packets();
+        int wallet = Array.FindIndex(settled, packet =>
+            packet is ServerAccountCurrencyGrant grant && grant.AccountCurrency.Amount == 105);
+        int claimed = Array.FindIndex(settled, ShowsClaim);
+        Assert.True(wallet >= 0 && claimed > wallet);
+        using var read = f.Live.Inner.Context();
+        Assert.True(Assert.Single(read.CharacterContractAccountOutbox).Delivered);
+        Assert.True(f.Actor.Player.RewardTrackPresentation.IsPublishedContractSnapshot(f.Actor.Quests.CommittedContractTracks));
+    }
+
     [Fact]
     public async Task AccountDeliveryKeepsPendingAndLaterWalletIntentAndOrdinaryQuestSavesBehindItsQueueBarrier()
     {
@@ -207,14 +264,17 @@ public sealed partial class ContractClaimTransactionTests
         using var source = f.Live.Inner.Context(); Assert.True(source.CharacterContractAccountOutbox.Single().Delivered); Assert.Equal(3ul, source.CharacterContractRewardTrack.Single().Revision);
     }
 
-    private sealed class SyncPause : DbTransactionInterceptor
+    private sealed class SyncPause(bool source = false) : DbTransactionInterceptor
     {
         internal readonly TaskCompletionSource Entered = new(TaskCreationOptions.RunContinuationsAsynchronously), Release = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private int fired;
         public override async ValueTask<InterceptionResult> TransactionCommittingAsync(DbTransaction transaction, TransactionEventData data,
             InterceptionResult result, CancellationToken cancellationToken = default)
         {
-            if (data.Context is AuthContext auth && auth.AccountCurrencyOperation.Local.Any() && Interlocked.CompareExchange(ref fired, 1, 0) == 0)
+            bool isTarget = source
+                ? data.Context is CharacterContext character && character.CharacterContractAccountOutbox.Local.Any(row => row.Delivered)
+                : data.Context is AuthContext auth && auth.AccountCurrencyOperation.Local.Any();
+            if (isTarget && Interlocked.CompareExchange(ref fired, 1, 0) == 0)
             { Entered.TrySetResult(); await Release.Task.WaitAsync(TimeSpan.FromSeconds(20), cancellationToken); }
             return result;
         }

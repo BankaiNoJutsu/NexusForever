@@ -1,5 +1,29 @@
 # Contract account delivery through the session reward queue
 
+## Claimed bit after account settlement
+
+5 November 2026. A Character claim receipt reserves its selected slot as soon
+as the Character transaction commits. For a compensation award, the composed
+reward-track reload sets the claimed bit only once the source outbox records
+acknowledged Auth delivery. Character-only item and credit claims retain their
+existing publication path. Duplicate requests remain blocked while Auth settles.
+
+The baseline reproduced an early claimed bit on both Contract tracks while
+Auth was paused. The regression also forces a reload from the account owner
+during both the Auth commit and the Character acknowledgement. It checks the
+settled wallet update precedes the first claimed bit. The owning build passed
+with zero warnings and errors in 25 seconds. All 76 targeted claim, wallet,
+relog, and compositor cases passed in 16 seconds. A broader filter was
+stopped after 10 minutes 25 seconds and remains recorded as interrupted.
+Local evidence is under
+`artifacts/continuation-20261105/contract-account-claimed-publication/`.
+The retained six-table audit supplies quote effects for 726 choices, including
+486 force-bound item choices. The raw build 16042 tables were unavailable in the
+checked destination and archived checkout. Actual Item2 stack and delivery
+qualification, retail reset policy and public 07CE routing remain open.
+
+## Historical continuation
+
 Latest continuation: [Realm bank persistence and loading](REALM_BANK_CODECS_AND_LOADING.md)
 qualifies checkpoint10277: **10,277 full tests**,18 new/207 focused,1,796 MySQL
 cases (530 configured-strategy cases), four Auth race probes, four model gates and
