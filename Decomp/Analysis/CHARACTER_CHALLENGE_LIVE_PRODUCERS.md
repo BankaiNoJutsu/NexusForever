@@ -46,6 +46,22 @@ load on the original Player and after replacement. The final owning build
 took 25 seconds with zero warnings or errors. All 77 scoped tests passed in
 34 seconds.
 
+## Target progress belongs to the original attempt
+
+5 November 2026. Combat kills and object activations capture the active
+attempts at the start of target progress. A Challenge completed by the event
+can run a Quest objective callback that starts or restarts another attempt.
+The new attempt does not inherit the event. An unchanged matching attempt
+still earns its credit.
+
+The baseline threw on both the combat and activation paths when the
+completion callback added a Challenge. It also gave progress to a restarted
+Checklist attempt when no row was added. The test enters both existing
+gameplay hooks and drives the callback through the Challenge completion's
+Quest objective update. The owning build took 44 seconds with zero warnings
+or errors. All 214 scoped tests passed in 61 seconds. Local results are under
+`artifacts/continuation-20261105/challenge-target-ownership/`.
+
 ## Terminal Challenge area timers
 
 5 November 2026. Completing an attempt or reaching its active timeout

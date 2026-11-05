@@ -233,6 +233,60 @@ public class ChallengeManagerTests
     }
 
     [Theory]
+    [InlineData("combat-new")]
+    [InlineData("activation-new")]
+    [InlineData("activation-restarted")]
+    [InlineData("activation-both")]
+    public void TargetProgressOnlyCreditsAttemptsActiveWhenTheEventArrives(string scenario)
+    {
+        const ushort secondChallenge = ChallengeId + 1;
+        const uint creature = 4242;
+        bool combat = scenario == "combat-new";
+        bool alreadyActive = scenario is "activation-restarted" or "activation-both";
+        var tables = CreateGameTablesWithMultipleTypes(
+            (ChallengeId, combat ? ChallengeType.Combat : ChallengeType.Ability),
+            (secondChallenge, ChallengeType.ChecklistActivate));
+        tables.Challenge.GetEntry(ChallengeId).Target = creature;
+        tables.Challenge.GetEntry(ChallengeId).ChallengeTierId00 = 2002;
+        tables.Challenge.GetEntry(secondChallenge).Target = creature;
+        SetAutoProperty(tables, nameof(GameTableManager.ChallengeTier), CreateGameTable(
+            new ChallengeTierEntry { Id = 2001, Count = 5 },
+            new ChallengeTierEntry { Id = 2002, Count = 1 }));
+        IPlayer player = CreatePlayer(RecipientGuid, out var session, tables, out var quests);
+        IChallengeManager manager = player.ChallengeManager;
+        manager.HandleChoice(ChallengeId, ChallengeChoice.Activate);
+        if (alreadyActive)
+            manager.HandleChoice(secondChallenge, ChallengeChoice.Activate);
+
+        bool changed = false;
+        quests.SetMethodHandler(nameof(IQuestManager.ObjectiveUpdate), args =>
+        {
+            if (scenario != "activation-both" && !changed && (QuestObjectiveType)args[0] == QuestObjectiveType.CompleteChallenge)
+            {
+                changed = true;
+                if (alreadyActive)
+                    manager.HandleChoice(secondChallenge, ChallengeChoice.Abandon);
+                manager.HandleChoice(secondChallenge, ChallengeChoice.Activate);
+            }
+            return null;
+        });
+
+        if (combat)
+            ChallengeCombatHooks.OnCreatureKilled(player, creature);
+        else
+            ChallengeActivationHooks.OnTargetActivated(player, creature);
+
+        var rows = GetMessages<ServerChallengeUpdate>(session).Last().ActiveChallenges;
+        var first = rows.Single(row => row.ChallengeId == ChallengeId);
+        Assert.False(first.Activated);
+        Assert.Equal(1u, first.CompletionCount);
+        var second = rows.Single(row => row.ChallengeId == secondChallenge);
+        Assert.True(second.Activated);
+        Assert.Equal(scenario == "activation-both" ? 1u : 0u, second.CurrentCount);
+        Assert.Equal(scenario != "activation-both", changed);
+    }
+
+    [Theory]
     [InlineData("status")]
     [InlineData("medal")]
     [InlineData("completed")]

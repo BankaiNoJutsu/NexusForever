@@ -529,22 +529,27 @@ namespace NexusForever.Game.Challenges
         internal void TryAdvanceCombatKill(uint creatureId)
         {
             if (!CharacterRewardsReady) return;
-            if (TryAdvanceActiveCombatKill(creatureId))
+            if (TryAdvanceMatchingChallenges(creatureId, static type => type == (uint)ChallengeType.Combat))
                 return;
 
             TryAutoActivateCombatKill(creatureId);
         }
 
-        private bool TryAdvanceActiveCombatKill(uint creatureId)
+        private bool TryAdvanceMatchingChallenges(uint creatureId, Func<uint, bool> matchesType)
         {
+            // Progress and completion callbacks can activate or restart another
+            // Challenge. That new attempt cannot consume this earlier event.
+            var attempts = activeChallenges.Where(pair => pair.Value.Activated)
+                .Select(pair => (pair.Key, pair.Value, pair.Value.ActivationGeneration, pair.Value.ActiveAttemptId))
+                .ToArray();
             bool advanced = false;
-            foreach ((ushort challengeId, ChallengeRuntimeState state) in activeChallenges)
+            foreach (var (challengeId, state, activation, attempt) in attempts)
             {
-                if (!state.Activated)
+                if (!state.Activated || state.ActivationGeneration != activation || state.ActiveAttemptId != attempt)
                     continue;
 
                 ChallengeEntry entry = gameTableManager.Challenge?.GetEntry(challengeId);
-                if (entry == null || entry.ChallengeTypeEnum != (uint)ChallengeType.Combat)
+                if (entry == null || !matchesType(entry.ChallengeTypeEnum))
                     continue;
 
                 if (!MatchesChallengeTarget(entry, creatureId))
@@ -602,20 +607,8 @@ namespace NexusForever.Game.Challenges
 
         internal void TryAdvanceActivationTarget(uint creatureId)
         {
-            foreach ((ushort challengeId, ChallengeRuntimeState state) in activeChallenges)
-            {
-                if (!state.Activated)
-                    continue;
-
-                ChallengeEntry entry = gameTableManager.Challenge?.GetEntry(challengeId);
-                if (entry == null || !IsActivationChallengeType(entry.ChallengeTypeEnum))
-                    continue;
-
-                if (!MatchesChallengeTarget(entry, creatureId))
-                    continue;
-
-                TryAdvanceProgress(challengeId);
-            }
+            if (CharacterRewardsReady)
+                TryAdvanceMatchingChallenges(creatureId, IsActivationChallengeType);
         }
 
         private static bool IsActivationChallengeType(uint challengeType)
