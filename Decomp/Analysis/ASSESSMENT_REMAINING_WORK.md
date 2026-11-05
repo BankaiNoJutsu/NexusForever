@@ -698,6 +698,11 @@ independently maps its14-bit CharacterTitle and18-bit cached Creature2 name keys
 The formatter's raw+34 meaning and concrete producer eligibility/order remain
 unqualified. This is mapped-only evidence with no Source/emitter or retail change.
 
+The [093D capacity cross-check](F025_STATIC_HANDLER_PROXY_MAPPING.md#5-november-093d-capacity-consumers)
+maps the second word of selector 21 to an Interrupt Armor capacity addend
+and selector 22 to the base Absorption capacity getter. The first word,
+other selectors, and server producer and ordering remain unqualified.
+
 Next integrated evidence outcome: continue independent broader feature/upstream
 requirements and corroborate the remaining mapped F-025 field meanings
 and server producer/ordering requirements using independent table, packet or

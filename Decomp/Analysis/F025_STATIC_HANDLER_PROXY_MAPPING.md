@@ -172,3 +172,28 @@ an exhaustive cache/type/call-graph inventory. The formatter's entity+34 meaning
 full locale/gender formatting, cache eligibility and complete producer/ordering
 requirements remain unresolved. No client launch, native UI observation,
 production emitter, source behavior or retail-matrix promotion occurred.
+
+## 5 November: 093D capacity consumers
+
+The matching build 16042 constructor at `0x140454380` installs the table
+`0x140b66fd0` and clears 216 bytes beginning at entity `+0xBE8`.
+That equals 27 pairs at the eight-byte stride used by the `0x093D` apply
+case. The unsigned compare against 26 accepts selectors 0 through 26.
+Two paths read the second word of selected pairs.
+
+| Selector | Entity field | Observed consumer |
+| --- | --- | --- |
+| 21 | `+0xC94` | The capacity table at `0x1404669FC` routes Vital 0x14 (Interrupt Armor) to `0x1404668D5`. The branch truncates the base float at `+0x724`. For a base other than -1 it adds the truncated float at `+0xC94`. The separate entity update switch at `0x1403DA044` uses the same operands and sum to clamp the value stored at `+0x4B0`. |
+| 22 | `+0xC9C` | Vital 0x15 (Absorption) takes the capacity branch at `0x140466908`. It calls virtual slot `+0x90`. On the constructor's base table that slot points to `0x140466510`, which truncates the float at `+0xC9C`. The current-value branch calls slot `+0x88`, whose base target reads `+0x4C`. |
+
+The [19 verified instruction and data anchors](coverage/f025-093d-consumers-20261105.json)
+bind the case table, stores, constructor and consumers to the same PE and
+REA identity record. The exact-displacement scan also found unrelated objects
+and stack uses. A bounded Lua-name check found capacity/current-value strings
+without a direct binding witness, so the mappings above rest on the decoded
+vital tables and base entity paths.
+
+The first word, 25 other selectors, possible virtual overrides, server
+producer and packet order remain open. The serializer retains raw words
+and the five-bit selector. All 105 scoped wire and emission controls passed
+using the unchanged binaries. Static inspection did not execute the client.

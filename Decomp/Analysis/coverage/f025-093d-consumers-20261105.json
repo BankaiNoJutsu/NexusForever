@@ -1,0 +1,129 @@
+{
+  "build": 16042,
+  "productionSourceCommit": "5b8cdfa1d1bb70c3ee026404d934702df7bf9d3b",
+  "clientSha256": "231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5",
+  "reaEvidenceId": "ev_142ebc012c9fce11df9c67703c5d9e335b4810c52c1d752b63ed2828030231d4",
+  "llvmObjdumpSha256": "3ae6715601f2eb0c1d0839929c46089906ba0f1e5e032fe519656a40c936b863",
+  "anchors": [
+    {
+      "name": "packet-case-table-slot",
+      "va": "0x1403f36b4",
+      "fileOffset": 4139700,
+      "bytes": "6ad53e00"
+    },
+    {
+      "name": "packet-unsigned-maximum",
+      "va": "0x1403ed589",
+      "fileOffset": 4114825,
+      "bytes": "83f81a0f8789f1ffff"
+    },
+    {
+      "name": "packet-pair-store",
+      "va": "0x1403ed59a",
+      "fileOffset": 4114842,
+      "bytes": "8984cae80b0000f30f1184caec0b0000"
+    },
+    {
+      "name": "entity-vtable-reference",
+      "va": "0x140454391",
+      "fileOffset": 4536209,
+      "bytes": "488d05382c7100"
+    },
+    {
+      "name": "entity-vtable-install",
+      "va": "0x1404543d5",
+      "fileOffset": 4536277,
+      "bytes": "488901"
+    },
+    {
+      "name": "entity-pair-zero-fill",
+      "va": "0x140454fb5",
+      "fileOffset": 4539317,
+      "bytes": "488d8be80b000033d241b8d8000000e867f83800"
+    },
+    {
+      "name": "interrupt-armor-capacity-branch",
+      "va": "0x140466a48",
+      "fileOffset": 4611656,
+      "bytes": "d5684600"
+    },
+    {
+      "name": "interrupt-armor-base-and-sentinel",
+      "va": "0x1404668d5",
+      "fileOffset": 4611285,
+      "bytes": "f30f2c8b2407000083f9ff750f"
+    },
+    {
+      "name": "interrupt-armor-slot-21-capacity",
+      "va": "0x1404668f1",
+      "fileOffset": 4611313,
+      "bytes": "f30f2c83940c000003c1"
+    },
+    {
+      "name": "interrupt-armor-clamp-branch",
+      "va": "0x1403da098",
+      "fileOffset": 4035736,
+      "bytes": "db9f3d00"
+    },
+    {
+      "name": "interrupt-armor-slot-21-clamp",
+      "va": "0x1403d9fe8",
+      "fileOffset": 4035560,
+      "bytes": "f30f2c83940c000003c1"
+    },
+    {
+      "name": "absorption-capacity-branch",
+      "va": "0x140466a4c",
+      "fileOffset": 4611660,
+      "bytes": "08694600"
+    },
+    {
+      "name": "absorption-capacity-virtual-call",
+      "va": "0x14046690e",
+      "fileOffset": 4611342,
+      "bytes": "ff9090000000"
+    },
+    {
+      "name": "absorption-capacity-vtable-slot",
+      "va": "0x140b67060",
+      "fileOffset": 11952224,
+      "bytes": "1065464001000000"
+    },
+    {
+      "name": "absorption-slot-22-capacity",
+      "va": "0x140466510",
+      "fileOffset": 4610320,
+      "bytes": "f3480f2c819c0c0000c3"
+    },
+    {
+      "name": "absorption-current-branch",
+      "va": "0x140466790",
+      "fileOffset": 4610960,
+      "bytes": "46664600"
+    },
+    {
+      "name": "absorption-current-virtual-call",
+      "va": "0x14046664c",
+      "fileOffset": 4610636,
+      "bytes": "ff9088000000"
+    },
+    {
+      "name": "absorption-current-vtable-slot",
+      "va": "0x140b67058",
+      "fileOffset": 11952216,
+      "bytes": "3024484001000000"
+    },
+    {
+      "name": "absorption-current-field",
+      "va": "0x140482430",
+      "fileOffset": 4724784,
+      "bytes": "8b414cc3"
+    }
+  ],
+  "localArtifacts": "artifacts/continuation-20261105/f025-093d-consumers",
+  "limits": [
+    "Static archived client evidence. The first 32-bit member and 25 other selectors remain unknown.",
+    "The observed Absorption capacity virtual target is the base entity table installed by the selected constructor.",
+    "Direct Lua name references, retail server producer, packet ordering and client execution remain unqualified."
+  ]
+}
