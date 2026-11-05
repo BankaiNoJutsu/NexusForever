@@ -21108,6 +21108,40 @@ capture or dynamic breakpoint on the runtime apply dispatch.
 
 ### F-008 - Crafting / Tradeskill - PARTIAL (12/12 handlers functional)
 
+#### Committed virtual crafting event publication
+
+5 November 2026. Virtual loot produced by a recipe keeps its Character quest
+objective change in the crafting save and retains the shared public-event
+objective update until that save confirms. Other participants can no longer see
+progress from a craft whose material debit rolls back. Publication retains the
+original map, public-event manager, player GUID and map-admission generation;
+replacing the session or map owner discards the pending effect. Ordinary loot
+outside the existing Character mutation scope keeps its immediate behavior.
+The event manager still applies its current membership checks at publication.
+
+Seven baseline cases reproduced early shared progress. The candidate's seven
+virtual cases cover confirmed commit, rollback, lost acknowledgement, session
+replacement, map replacement, readmission and event-manager replacement. They
+inspect persisted material/output and real quest-objective rows as well as the
+shared-effect call and encrypted session queue. A separate successful recipe
+control uses the real account currency and inventory managers with a disposable
+Auth database. Item/table selection and the public-event manager are adapters;
+this qualifies source/SQLite publication ordering, not actual-table economics or
+retail event behavior. The owning Game build passes in11 seconds with zero
+warnings/errors; the test build takes15 seconds and all42 affected crafting/loot
+cases pass in14 seconds. No full solution build or full suite was run.
+Local logs and source/binary identities are retained under
+`artifacts/continuation-20261105/crafting-virtual/`.
+
+The account rollback probe remains a failed, independent settlement gate:
+Character output and material changes roll back, but Auth retains7 currency14
+and1 account item1101. Its successful control passes. The reproduction is
+retained for the next paired-delivery implementation, not counted as a qualified
+account-settlement result. Durable Auth/Character handoff and recovery remain
+actionable. Lost-acknowledgement/restart replay of the shared event effect,
+configured-provider, actual-table, crafting socket and native/retail evidence
+also remain open. Native client/CUA launch remain stopped.
+
 #### Committed Character crafting responses
 
 5 November 2026. Simple, complex, craft-item and auto-craft requests now run
@@ -21138,8 +21172,9 @@ The initial test enum-type compile error is corrected and retained in its log.
 
 This closes the Character response boundary in source. It does not close paired
 Auth/Character settlement for generated account awards: Auth still precedes the
-Character write. Durable award handoff/restart recovery and commit ownership of
-virtual-item shared map-event effects remain required. Configured-provider,
+Character write. Durable award handoff/restart recovery remains required.
+Shared virtual-item publication now has the source boundary recorded above;
+its uncertain-outcome/restart replay remains open. Configured-provider,
 actual-table, crafting socket and native qualification remain open. The separate
 quest loopback controls retain their own transport scope. No full solution build
 or full suite was run, and native client/CUA launch remain stopped.

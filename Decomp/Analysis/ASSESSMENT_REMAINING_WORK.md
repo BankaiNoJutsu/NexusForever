@@ -565,8 +565,15 @@ Character item/cash output persist before success. The57-case scoped gate and12
 final crafting cases pass. Eleven baseline early-publication failures and a
 post-commit wallet replacement failure are reproduced and fixed. The full recipe
 settlement requirement remains open: generated account awards still use Auth
-before Character and need durable paired delivery/recovery. Virtual-item effects
-on shared map events need their own commit owner. Continue those requirements,
+before Character and need durable paired delivery/recovery. The later
+[virtual crafting publication](../../CURRENT_STATUS.md#committed-virtual-crafting-event-publication)
+step retains shared map-event effects until Character confirmation and guards
+the original session/map/admission. Seven early-publication failures are fixed.
+The owning build and42 affected crafting/loot cases pass; no full suite was run.
+A separate real-manager SQLite probe confirms the account defect: Character
+rollback leaves7 currency14 and1 account item1101 in Auth; its successful control
+passes. That negative remains open and is not part of the qualified virtual
+publication outcome. Continue paired account settlement,
 uncertain-outcome/restart handling, material/modifier validation and configured-
 provider/actual-table/socket/native qualification. Do not treat direct-item and
 Character-cash fixtures as proof for all loot/reward kinds or retail economics.

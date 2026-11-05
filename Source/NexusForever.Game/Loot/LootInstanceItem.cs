@@ -3,6 +3,7 @@ using NexusForever.Game;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Loot;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Achievement;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Entity;
@@ -488,8 +489,7 @@ namespace NexusForever.Game.Loot
                     break;
                 case LootItemType.VirtualItem:
                     player.QuestManager.ObjectiveUpdate(QuestObjectiveType.VirtualCollect, StaticId, Amount);
-                    int publicEventProgress = Amount > (uint)int.MaxValue ? int.MaxValue : (int)Amount;
-                    player.Map?.PublicEventManager.UpdateObjective(player, PublicEventObjectiveType.VirtualCollect, StaticId, publicEventProgress);
+                    UpdateVirtualPublicEvent(player);
                     break;
                 default:
                     log.Warn($"Loot item type {Type} is not supported for delivery.");
@@ -502,6 +502,31 @@ namespace NexusForever.Game.Loot
             if (sendAsGrant)
                 SendGrant(player);
             return true;
+        }
+
+        private void UpdateVirtualPublicEvent(IPlayer player)
+        {
+            var map = player.Map;
+            var publicEvents = map?.PublicEventManager;
+            if (publicEvents == null) return;
+            uint itemId = StaticId;
+            int progress = Amount > (uint)int.MaxValue ? int.MaxValue : (int)Amount;
+            if (player is Entity.Player { QuestManager: Entity.QuestManager { IsOrdinaryCompletionMutationInProgress: true } quests } owner)
+            {
+                uint guid = owner.Guid;
+                IPlayerMapAdmission admission = owner;
+                ulong generation = admission.MapAdmissionGeneration;
+                // Other event participants cannot be covered by the crafting
+                // session's captured packets. Publish only after its Character
+                // save, while the original map admission still owns the credit.
+                quests.RetainOrdinaryCompletionPublication(() =>
+                {
+                    if (ReferenceEquals(owner.Map, map) && ReferenceEquals(map.PublicEventManager, publicEvents)
+                        && owner.Guid == guid && admission.IsMapAdmissionCurrent(generation))
+                        publicEvents.UpdateObjective(owner, PublicEventObjectiveType.VirtualCollect, itemId, progress);
+                });
+            }
+            else publicEvents.UpdateObjective(player, PublicEventObjectiveType.VirtualCollect, itemId, progress);
         }
 
         private void SendGrant(IPlayer player)
