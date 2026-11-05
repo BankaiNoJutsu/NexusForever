@@ -1,5 +1,9 @@
 # Destination configured-provider qualification
 
+[CREDD compatibility settlement](#credd-compatibility-settlement) covers
+the World handler and Realm recovery on migrated MySQL 8.4.13 Auth and
+Character schemas.
+
 [Public event quest recovery](#public-event-quest-recovery) covers the queued
 World Character save on migrated MySQL 8.4.13 schemas.
 
@@ -43,6 +47,24 @@ The [portable report](coverage/marketplace-mysql-concurrency-20261103.json) bind
 unchanged Source/DLLs and all44 outcomes. Owned workloads are stopped. No full
 suite was run. Other profiles, physical failures, other financial commands,
 broker/restart, deployment, native and retail qualification remain separate.
+
+### CREDD compatibility settlement
+
+5 November 2026. The three `0x0268` handler cases exercise committed
+delivery, a rejected Character credit with Auth compensation, and session
+replacement. Success and compensated failure check the stored and adopted
+values at result enqueue. Five receipt cases exercise a lost Auth
+acknowledgment, abandoned and resumed delivery, the usage cap, and a
+rejected Auth usage write. Repeated Realm recovery applies compensation
+once and preserves the seeded entitlement values.
+
+Every case applied 41 Auth and 48 Character migrations on MySQL 8.4.13.
+Both contexts used `MySqlRetryingExecutionStrategy`. The TLS control
+connection reported `REPEATABLE-READ`. The owning build and eight scoped
+SQLite controls passed. Session sends use a recording fixture. The
+[portable result](coverage/credd-mysql-20261105.json) records the cases,
+binary identities, and owned shutdown. Physical connection failures,
+deployed restart and delivery, and retail `0x0770` remain open.
 
 ### Public event quest recovery
 

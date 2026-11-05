@@ -45,8 +45,8 @@ public sealed partial class AccountCurrencyDurabilityTests
         byte usageType = (byte)EntitlementType.CREDDUsage;
         bool rejected = outcome is "usage-at-cap" or "usage-sql-rejected";
         uint beforeUsage = outcome == "usage-at-cap" ? 5u : 1u;
-        using var auth = new Fixture(null, AccountCurrencyType.Credd);
-        using var character = new CharacterFixture(null);
+        using var auth = new Fixture(providerOptions, AccountCurrencyType.Credd);
+        using var character = new CharacterFixture(vendorCharacterOptions);
         character.Seed();
         await SeedVendorPayment(auth, character);
 
@@ -54,22 +54,27 @@ public sealed partial class AccountCurrencyDurabilityTests
         using (var context = auth.Context())
         {
             authDatabase.Initialise(new DatabaseConnectionString
-                { Provider = DatabaseProvider.Sqlite, ConnectionString = context.Database.GetDbConnection().ConnectionString });
+                { Provider = context.Database.IsSqlite() ? DatabaseProvider.Sqlite : DatabaseProvider.MySql,
+                    ConnectionString = context.Database.GetDbConnection().ConnectionString });
             context.AccountEntitlement.AddRange(
                 new AccountEntitlementModel { Id = accountId, EntitlementId = usageType, Amount = beforeUsage },
                 new AccountEntitlementModel { Id = accountId, EntitlementId = 15, Amount = 1 },
                 new AccountEntitlementModel { Id = accountId, EntitlementId = 17, Amount = 1 });
             await context.SaveChangesAsync();
             if (outcome == "usage-sql-rejected")
-                await context.Database.ExecuteSqlRawAsync("""
+                await context.Database.ExecuteSqlRawAsync(context.Database.IsSqlite() ? """
                     CREATE TRIGGER reject_credd_usage BEFORE UPDATE ON account_entitlement
                     BEGIN SELECT RAISE(ABORT, 'owned CREDD usage write rejection'); END
+                    """ : """
+                    CREATE TRIGGER reject_credd_usage BEFORE UPDATE ON account_entitlement
+                    FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'owned CREDD usage write rejection'
                     """);
         }
         var characterDatabase = new CharacterDatabase();
         using (var context = character.Context())
             characterDatabase.Initialise(new DatabaseConnectionString
-                { Provider = DatabaseProvider.Sqlite, ConnectionString = context.Database.GetDbConnection().ConnectionString });
+                { Provider = context.Database.IsSqlite() ? DatabaseProvider.Sqlite : DatabaseProvider.MySql,
+                    ConnectionString = context.Database.GetDbConnection().ConnectionString });
 
         var protocol = new VendorAccountPurchase(characterDatabase.CreateContext,
             () => auth.Context(outcome == "delivered" ? new CommitFailure(true) : null), realm: 1);
@@ -146,8 +151,8 @@ public sealed partial class AccountCurrencyDurabilityTests
     {
         bool rejectCharacter = outcome == "rollback";
         bool replace = outcome == "replacement";
-        using var auth = new Fixture(null, AccountCurrencyType.Credd);
-        using var character = new CharacterFixture(null);
+        using var auth = new Fixture(providerOptions, AccountCurrencyType.Credd);
+        using var character = new CharacterFixture(vendorCharacterOptions);
         character.Seed();
         var tables = (RecordingDispatchProxy<IGameTableManager>)(object)auth.Tables;
         tables.SetProperty(nameof(IGameTableManager.CurrencyType), PlayerBindPointTests.Table(
@@ -167,7 +172,8 @@ public sealed partial class AccountCurrencyDurabilityTests
         {
             authDatabase.Initialise(new DatabaseConnectionString
             {
-                Provider = DatabaseProvider.Sqlite, ConnectionString = context.Database.GetDbConnection().ConnectionString
+                Provider = context.Database.IsSqlite() ? DatabaseProvider.Sqlite : DatabaseProvider.MySql,
+                ConnectionString = context.Database.GetDbConnection().ConnectionString
             });
             context.AccountEntitlement.Add(new AccountEntitlementModel
                 { Id = auth.Account.Id, EntitlementId = (byte)EntitlementType.CREDDUsage, Amount = 1 });
@@ -185,14 +191,18 @@ public sealed partial class AccountCurrencyDurabilityTests
         using (var context = character.Context())
         {
             characterDatabase.Initialise(new DatabaseConnectionString
-                { Provider = DatabaseProvider.Sqlite, ConnectionString = context.Database.GetDbConnection().ConnectionString });
+                { Provider = context.Database.IsSqlite() ? DatabaseProvider.Sqlite : DatabaseProvider.MySql,
+                    ConnectionString = context.Database.GetDbConnection().ConnectionString });
             context.Character.Single().AccountId = auth.Account.Id;
             context.CharacterCurrency.Add(new CharacterCurrencyModel { Id = 42, CurrencyId = (byte)CurrencyType.Credits, Amount = 500 });
             await context.SaveChangesAsync();
             if (rejectCharacter)
-                await context.Database.ExecuteSqlRawAsync("""
+                await context.Database.ExecuteSqlRawAsync(context.Database.IsSqlite() ? """
                     CREATE TRIGGER reject_credd_credits BEFORE UPDATE ON character_currency
                     BEGIN SELECT RAISE(ABORT, 'owned CREDD Character write rejection'); END
+                    """ : """
+                    CREATE TRIGGER reject_credd_credits BEFORE UPDATE ON character_currency
+                    FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'owned CREDD Character write rejection'
                     """);
         }
 

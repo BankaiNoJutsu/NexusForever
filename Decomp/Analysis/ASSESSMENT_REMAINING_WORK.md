@@ -60,7 +60,8 @@ the Character save fails. The [CREDD settlement protocol](../../CURRENT_STATUS.m
 pairs the wallet and usage changes in Auth and resolves outstanding receipts
 at Realm admission. [Committed compatibility redemption](../../CURRENT_STATUS.md#committed-credd-compatibility-redemption)
 connects the `0x0268` handler and publishes after the original actor adopts
-the committed balances. Configured-provider and deployed delivery remain open.
+the committed balances. The [MySQL gate](DESTINATION_PROVIDER_QUALIFICATION.md#credd-compatibility-settlement)
+covers handler settlement and receipt recovery. Deployed delivery remains open.
 
 [Public event contribution ownership](../../CURRENT_STATUS.md#public-event-contribution-ownership)
 checks the enrolled actor for player-driven progress, stats, votes, scoreboards,

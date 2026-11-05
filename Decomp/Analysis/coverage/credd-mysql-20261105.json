@@ -1,0 +1,108 @@
+{
+  "productionSourceCommit": "23799006055efcd5b56ff6546a8b7560876bf17e",
+  "testFixture": {
+    "path": "Source/NexusForever.Game.Tests/Account/Currency/AccountCurrencyDurabilityTests.CreddRedemption.cs",
+    "gitBlob": "253d1dd90bb58aa10548335deb5767e6abf703ea"
+  },
+  "engine": {
+    "version": "8.4.13",
+    "sha256": "7a976874ef3974d612081960b1c193c663b4434692b6257382352c587e367ad6",
+    "controlConnectionIsolation": "REPEATABLE-READ",
+    "tlsRequired": true
+  },
+  "assemblies": [
+    {
+      "file": "NexusForever.Database.Auth.dll",
+      "sha256": "a3d61e197c530abefdf6411747bf87884bd518be6faf2cedc1c58d42def745b1"
+    },
+    {
+      "file": "NexusForever.Database.Character.dll",
+      "sha256": "5d9334c186855d13644238316347747c670d289e4530de2b660f695c0260e574"
+    },
+    {
+      "file": "NexusForever.Game.dll",
+      "sha256": "8bf1d89420e38d239960ea9eb679dade6f7e77d77653de064bd2c15a414efe9d"
+    },
+    {
+      "file": "NexusForever.Game.Tests.dll",
+      "sha256": "79eebc8b62df86b838a024fa37dd4edfe9c535869d08dc8b0baba84c58d35a56"
+    },
+    {
+      "file": "NexusForever.WorldServer.dll",
+      "sha256": "53e31f7ad0374686bb63baf5256a150aa2cf8438eff3c02714c64a27d9fa1807"
+    },
+    {
+      "file": "StorefrontWireValidate.dll",
+      "sha256": "98f6cdd76ddd24133994412976dca93803031380be685697b3cf4c763ebb9229"
+    }
+  ],
+  "strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+  "migrationsPerSchema": {
+    "Auth": 41,
+    "Character": 48
+  },
+  "startupToRunnerSeconds": 142.586,
+  "elapsedSeconds": 177.993,
+  "cases": [
+    {
+      "name": "CreddRedemptionHandlerPublishesOnlyAfterSettlement(commit)",
+      "passed": true
+    },
+    {
+      "name": "CreddRedemptionHandlerPublishesOnlyAfterSettlement(rollback)",
+      "passed": true
+    },
+    {
+      "name": "CreddRedemptionHandlerPublishesOnlyAfterSettlement(replacement)",
+      "passed": true
+    },
+    {
+      "name": "CreddDebitAndUsageShareDeliveryOrAdmissionCompensation(delivered)",
+      "passed": true
+    },
+    {
+      "name": "CreddDebitAndUsageShareDeliveryOrAdmissionCompensation(abandoned)",
+      "passed": true
+    },
+    {
+      "name": "CreddDebitAndUsageShareDeliveryOrAdmissionCompensation(resumed)",
+      "passed": true
+    },
+    {
+      "name": "CreddDebitAndUsageShareDeliveryOrAdmissionCompensation(usage-at-cap)",
+      "passed": true
+    },
+    {
+      "name": "CreddDebitAndUsageShareDeliveryOrAdmissionCompensation(usage-sql-rejected)",
+      "passed": true
+    }
+  ],
+  "sqliteControl": {
+    "passed": 8,
+    "failed": 0,
+    "trxSha256": "cff646d664b676c03279ad2439fa698db697da77196ad25881b850228badacd2"
+  },
+  "ownedShutdown": {
+    "caseSchemasDropped": 16,
+    "processAbsent": true,
+    "listenerAbsent": true,
+    "runnerAndHelperAbsent": true,
+    "observedUtc": "2026-11-05T00:30:23.4213624Z"
+  },
+  "scope": [
+    "The compatibility 0x0268 handler uses Player and settlement managers with configured MySQL Auth and Character storage. Session enqueues use a recording fixture.",
+    "The receipt cases call Realm admission recovery and verify compensation, exactly-once usage, and preserved seeded entitlements.",
+    "Faults use interceptors and schema-local triggers. Physical connection loss, deployed delivery and restart, native play and retail 0x0770 remain open."
+  ],
+  "localArtifacts": {
+    "directory": "artifacts/continuation-20261105/credd-mysql",
+    "sha256": {
+      "sqlite.log": "eedf2222b10563a418d680f139a6ca961b54106d861ac670f5557513216ab310",
+      "provider/Program.cs": "e8e086169f4615149ece56d757c701e244afad711cb604bc261d6a1f7bb87325",
+      "provider/Provider.csproj": "10b806000fc4254de1c1e333d688f93e38e6e29c677f9f3b0964dffe1d5683b5",
+      "provider/results.json": "1b5f41565fad509210651087e7f542dd2941ec8e11bbdfc23b854f479f30640d",
+      "provider/native-run-state.json": "87bf3b68b4279eeceb89a3cd59f087c416c02fdeddec0e1d37ae94558bd298de",
+      "shutdown-verification.json": "65bb514f5d76b49ef91e48523242539043955e5a65f372a6695947af95c69d54"
+    }
+  }
+}

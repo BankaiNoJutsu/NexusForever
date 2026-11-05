@@ -20987,7 +20987,9 @@ on stored and adopted balances at result enqueue. They cover success,
 Character write rejection with compensation, and player replacement.
 Local evidence is under `artifacts/continuation-20261105/credd-live-settlement/`.
 
-Configured MySQL, deployed delivery and retail `0x0770` grant rules remain open.
+The [configured MySQL gate](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#credd-compatibility-settlement)
+covers the handler and receipt recovery. Deployed delivery and retail
+`0x0770` grant rules remain open.
 
 #### Storefront and account inventory coverage
 
