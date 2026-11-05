@@ -548,6 +548,13 @@ report and 6,271-input/11-DLL bindings verify. Owned workloads are absent.
 Other profiles, physical network/deadlock, whole financial-command, deployment,
 restart/outbox and native/retail gates remain open. No full suite was run.
 
+[Committed rune crafting](../../CURRENT_STATUS.md#committed-rune-crafting)
+couples socket changes and rune consumption/recovery in the existing inventory
+transaction before success publication. Full bags preserve the installed rune,
+and metadata or result callbacks cannot grant to or refresh a replacement actor.
+The owning build and120 scoped cases pass. Configured-provider, actual-table,
+socket, native and retail fee qualification remain open for this new flow.
+
 [Committed tradeskill publication](TRADESKILL_PUBLICATION.md) retains learning,
 archiving/reactivation, XP/talent, schematic and successful reset notices until
 the original confirmed ordinary/frozen graph. Initial lists use published rows;

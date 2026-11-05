@@ -21107,6 +21107,41 @@ difficulty/content reward selection. Next evidence source is a retail `0x07CD`
 capture or dynamic breakpoint on the runtime apply dispatch.
 
 ### F-008 - Crafting / Tradeskill - PARTIAL (12/12 handlers functional)
+
+#### Committed rune crafting
+
+5 November 2026. Rune install, clear/recovery, socket add and reroll settle
+earlier Character changes before preparing the original item's socket mutation.
+The existing inventory transaction commits consumed or recovered runes with the
+socket row, then sends the result and item refresh on the original session.
+Rollback restores both inventory and sockets. Lost acknowledgement resolves the
+stored outcome without consuming another rune. The original item, location and
+socket snapshot must still match after the preceding save.
+
+Recovery with a full backpack retains the installed rune and returns failure.
+Replacing the session before commit suppresses publication. Replacing it during
+the result enqueue suppresses the remaining item refresh. Capacity and creation
+retain the original inventory even if a metadata lookup replaces the session's
+Player. The rejected preparation restores the original socket and never calls
+the replacement inventory's item grant.
+
+Twelve baseline cases reproduced success before saving. A separate review probe
+reproduced the foreign-inventory grant during metadata lookup. The final owning
+and test-project build took 24 seconds with zero warnings or errors. All120
+scoped crafting, rune socket/wire, inventory mutation and repair controls passed
+in13 seconds, including15 new settlement cases. Tested Game and WorldServer DLLs
+match their owning outputs. The earlier fixture constructor/import, analyzer,
+error-packet import and overload-access corrections remain in the local logs
+under `artifacts/continuation-20261105/rune-settlement/`.
+
+The new cases use disposable SQLite and projected item templates. They do not
+qualify configured MySQL, real-table delivery, deployed sockets or native rune
+presentation. Rune fees and retail economic rules retain their existing scope.
+No schema, entitlement default or native launch policy changed. No full solution
+build or full test suite was run under the user's scoped-only policy.
+
+#### Existing crafting behavior
+
 **All 12 client handlers complete** with proper request/response cycles.
 Fixed-recipe crafting, supply satchel, tradeskill lifecycle, schematic
 learning, profession modifiers, additive state/abandon clearing, rune slot management, rune fusion (add,

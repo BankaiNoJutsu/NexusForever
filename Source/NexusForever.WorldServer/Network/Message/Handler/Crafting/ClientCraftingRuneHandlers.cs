@@ -12,6 +12,7 @@ using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Crafting;
+using NexusForever.Network.World.Message.Model.Info;
 using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.WorldServer.Crafting;
@@ -96,6 +97,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             IItem item = CraftingRuneRequestHelper.GetInventoryItem(session, runeSlotAdd.ItemGuid);
             RuneType type = CraftingRuneRequestHelper.NormalizeRuneType(runeSlotAdd.Type);
 
+            if (CraftingRuneRequestHelper.TrySettleRuneChange(session, item, heldMutation,
+                _ => CraftingRuneRequestHelper.AddRuneSlot(item, type))) return;
+
             TradeskillResult result = CraftingRuneRequestHelper.AddRuneSlot(item, type);
             log.LogDebug("Processed rune slot add request from player {PlayerGuid}: item {ItemGuid}, isNotFusion {IsNotFusion}, rawType {RawRuneType}, type {RuneType}, result {Result}.",
                 session.Player?.Guid, runeSlotAdd.ItemGuid, runeSlotAdd.IsNotFusion, runeSlotAdd.Type, type, result);
@@ -120,6 +124,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             if (!InventoryMutationScope.TryAcquire(session.Player?.Inventory, out var mutationLease)) return;
             using var heldMutation = mutationLease;
             IItem item = CraftingRuneRequestHelper.GetInventoryItem(session, runeSlotClear.ItemGuid);
+
+            if (CraftingRuneRequestHelper.TrySettleRuneChange(session, item, heldMutation,
+                owner => CraftingRuneRequestHelper.ClearRuneSlot(owner, item, runeSlotClear.RuneSlotIndex, runeSlotClear.RecoverRune))) return;
 
             TradeskillResult result = CraftingRuneRequestHelper.ClearRuneSlot(session, item, runeSlotClear.RuneSlotIndex, runeSlotClear.RecoverRune);
             log.LogDebug("Processed rune slot clear request from player {PlayerGuid}: item {ItemGuid}, slot {RuneSlotIndex}, recover {RecoverRune}, groupCurrency {UseGroupCurrency}, result {Result}.",
@@ -152,6 +159,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             foreach (uint item2Id in runeInstall.RuneSlotItem2Id)
                 CraftingRuneRequestHelper.ValidateItem2(gameTableManager, item2Id);
 
+            uint[] runeIds = runeInstall.RuneSlotItem2Id.ToArray();
+            if (CraftingRuneRequestHelper.TrySettleRuneChange(session, item, heldMutation,
+                owner => CraftingRuneRequestHelper.InstallRunes(gameTableManager, owner, item, runeIds), install: true)) return;
+
             TradeskillResult result = CraftingRuneRequestHelper.InstallRunes(gameTableManager, session, item, runeInstall.RuneSlotItem2Id);
             log.LogDebug("Processed rune install request from player {PlayerGuid}: item {ItemGuid}, runeCount {RuneCount}, result {Result}.",
                 session.Player?.Guid, runeInstall.ItemGuid, runeInstall.RuneSlotItem2Id.Length, result);
@@ -179,6 +190,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             IItem item = CraftingRuneRequestHelper.GetInventoryItem(session, runeSlotReroll.ItemGuid);
             RuneType type = CraftingRuneRequestHelper.NormalizeRuneType(runeSlotReroll.Type, compactFirst: true);
 
+            if (CraftingRuneRequestHelper.TrySettleRuneChange(session, item, heldMutation,
+                _ => CraftingRuneRequestHelper.RerollRuneSlot(item, runeSlotReroll.SlotIndex, type))) return;
+
             TradeskillResult result = CraftingRuneRequestHelper.RerollRuneSlot(item, runeSlotReroll.SlotIndex, type);
             log.LogDebug("Processed rune slot reroll request from player {PlayerGuid}: item {ItemGuid}, slot {SlotIndex}, rawType {RawRuneType}, type {RuneType}, result {Result}.",
                 session.Player?.Guid, runeSlotReroll.ItemGuid, runeSlotReroll.SlotIndex, runeSlotReroll.Type, type, result);
@@ -191,6 +205,36 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
     internal static class CraftingRuneRequestHelper
     {
         private const int MaxRuneSlots = 8;
+
+        public static bool TrySettleRuneChange(IWorldSession session, IItem item, IDisposable mutation,
+            Func<IPlayer, TradeskillResult> change, bool install = false)
+        {
+            if (session.Player is not Player owner || owner.Inventory is not Inventory inventory) return false;
+            var events = session.Events;
+            var account = owner.Account;
+            ulong epoch = account.WorldSessionEpoch;
+            mutation.Dispose();
+            inventory.SettleRuneCrafting(owner, item, () => change(owner), Replies, CurrentActor);
+            return true;
+
+            bool CurrentActor() => ReferenceEquals(session.Player, owner) && ReferenceEquals(owner.Session, session)
+                && ReferenceEquals(session.Events, events) && ReferenceEquals(owner.Account, account)
+                && ReferenceEquals(account.Session, session) && account.WorldSessionEpoch == epoch
+                && ReferenceEquals(owner.Inventory, inventory) && !inventory.RequiresAuthoritativeReload;
+
+            IWritable[] Replies(TradeskillResult result)
+            {
+                var packets = new List<IWritable>();
+                if (install && result is TradeskillResult.InvalidSlot or TradeskillResult.MissingRune)
+                    packets.Add(new ServerGenericError { Error = result == TradeskillResult.InvalidSlot
+                        ? GenericError.CraftMicrochipInvalidSocket : GenericError.ItemBadId });
+                packets.Add(new ServerTradeskillSigilResult { TradeskillSigilResult = result });
+                if (result == TradeskillResult.Success && !owner.IsLoading)
+                    packets.Add(new ServerItemAdd { InventoryItem = new InventoryItem
+                        { Item = item.Build(), Reason = ItemUpdateReason.TradeskillGlyph } });
+                return packets.ToArray();
+            }
+        }
 
         public static void ValidateItem2(IGameTableManager gameTableManager, uint item2Id)
         {
@@ -296,13 +340,21 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
         }
 
         public static TradeskillResult ClearRuneSlot(IWorldSession session, IItem item, uint slotIndex, bool recoverRune)
+            => ClearRuneSlot(session.Player, item, slotIndex, recoverRune);
+
+        public static TradeskillResult ClearRuneSlot(IPlayer player, IItem item, uint slotIndex, bool recoverRune)
         {
             if (slotIndex >= item.RuneSlots.Count)
                 return TradeskillResult.InvalidSlot;
 
             ItemRuneSlot slot = item.RuneSlots[(int)slotIndex];
             if (recoverRune && slot.RuneItem2Id != 0u)
-                session.Player.Inventory.ItemCreate(InventoryLocation.Inventory, slot.RuneItem2Id, 1u, ItemUpdateReason.TradeskillGlyph);
+            {
+                IInventory inventory = player.Inventory;
+                if (!inventory.CanCreateItem(InventoryLocation.Inventory, slot.RuneItem2Id, 1u))
+                    return TradeskillResult.UnknownError;
+                inventory.ItemCreate(InventoryLocation.Inventory, slot.RuneItem2Id, 1u, ItemUpdateReason.TradeskillGlyph);
+            }
 
             slot.RuneItem2Id = 0u;
             item.TouchRuneSlots();
@@ -310,9 +362,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
         }
 
         public static TradeskillResult InstallRunes(IGameTableManager gameTableManager, IWorldSession session, IItem item, IReadOnlyList<uint> runeItem2Ids)
+            => InstallRunes(gameTableManager, session.Player, item, runeItem2Ids);
+
+        public static TradeskillResult InstallRunes(IGameTableManager gameTableManager, IPlayer player, IItem item, IReadOnlyList<uint> runeItem2Ids)
         {
-            if (session.Player == null)
+            if (player == null)
                 return TradeskillResult.UnknownError;
+            IInventory inventory = player.Inventory;
 
             TradeskillResult layoutResult = ItemRuneInstallValidator.ValidateInstallTargets(gameTableManager, item, runeItem2Ids);
             if (layoutResult != TradeskillResult.Success)
@@ -320,12 +376,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
 
             foreach (uint runeItem2Id in runeItem2Ids.Where(id => id != 0u))
             {
-                if (!session.Player.Inventory.HasItemCount(runeItem2Id, 1u))
+                if (!inventory.HasItemCount(runeItem2Id, 1u))
                     return TradeskillResult.MissingRune;
             }
 
             foreach (uint runeItem2Id in runeItem2Ids.Where(id => id != 0u))
-                session.Player.Inventory.ItemDelete(runeItem2Id, 1u, ItemUpdateReason.TradeskillGlyph);
+                inventory.ItemDelete(runeItem2Id, 1u, ItemUpdateReason.TradeskillGlyph);
 
             for (int i = 0; i < runeItem2Ids.Count; i++)
                 item.RuneSlots[i].RuneItem2Id = runeItem2Ids[i];
