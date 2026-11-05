@@ -83,12 +83,13 @@ namespace NexusForever.Game.Housing
         }
         internal void RequireOwner(CharacterContext context, object reservation)
         {
+            owner.RequirePaidCreationSave(context, reservation);
             owner.RequireDonationSave(reservation);
             owner.RequirePaidNameSave(reservation);
             owner.RequireDecorPurchaseSave(reservation);
             owner.RequireRemodelSave(reservation);
             owner.RequireAssociationSave(reservation);
-            if (context.IsSaveRejected || !registered() && !owner.OwnsCommunityRetirement(reservation) && !owner.OwnsDonation(reservation) && !owner.OwnsPaidName(reservation) && !owner.OwnsDecorPurchase(reservation) && !owner.OwnsRemodel(reservation) && !owner.OwnsAssociation(reservation))
+            if (context.IsSaveRejected || !registered() && !owner.OwnsPaidCreationSave(context, reservation) && !owner.OwnsCommunityRetirement(reservation) && !owner.OwnsDonation(reservation) && !owner.OwnsPaidName(reservation) && !owner.OwnsDecorPurchase(reservation) && !owner.OwnsRemodel(reservation) && !owner.OwnsAssociation(reservation))
                 throw new InvalidOperationException("Residence lost its original registered owner or fresh context.");
             CharacterDatabaseIdentity.Require(context, database);
         }

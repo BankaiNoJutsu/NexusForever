@@ -1,5 +1,12 @@
 # Client Binary Decompile Continuation Guide
 
+[Community credit creation finance](COMMUNITY_CREATION_FINANCE.md) now couples
+the fee, guild/leader/affiliation and complete residence/plot graph through the
+original recoverable Character save.15 new Community/22 ordinary finance and278
+affected cases, clean owning/test-only builds and both reviews pass. Service
+Tokens still need a durable Auth/Character handoff. Source/SQLite qualification
+does not close provider/physical/actual-table/deployment/native/retail gates.
+
 [ICComm join correlation and named scoped channels](ICCOMM_JOIN_CORRELATION.md)
 implements the public Source slice from the pinned native/authored lifecycle
 evidence: exact reply names and separate addon memberships within Group/Guild

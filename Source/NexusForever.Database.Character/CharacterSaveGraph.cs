@@ -75,6 +75,7 @@ namespace NexusForever.Database.Character
         internal static void ValidateCharacterOwner(CharacterContext context, EntityEntry entry, bool deleted)
         {
             if (context.GuildCreationOwner?.Authorizes(entry) == true) return;
+            if (context.CommunityCreationOwner?.Authorizes(entry) == true) return;
             if (context.HousingRenameOwner?.Authorizes(entry) == true) return;
             if (context.HousingDecorPurchaseOwner?.Authorizes(entry) == true) return;
             if (entry.Entity is RealmFirstAchievementModel { IsGuild: false, OwnerId: {} winner })

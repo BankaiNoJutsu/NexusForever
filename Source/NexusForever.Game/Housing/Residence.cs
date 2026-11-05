@@ -539,6 +539,8 @@ namespace NexusForever.Game.Housing
         {
             lock (saveOwnershipLock)
             {
+                try { RequirePaidCreationSave(context, null); }
+                catch (Exception error) { context.RejectSave(error); throw; }
                 if (communitySaveOwner != null)
                 {
                     if (persistence == null || persistence.Owns(context)) return;

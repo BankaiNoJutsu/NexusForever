@@ -1,5 +1,11 @@
 # Ordinary guild creation fee settlement
 
+Later Community result: [public credit creation finance](COMMUNITY_CREATION_FINANCE.md)
+now couples its separate guild/root/plot graph with Character credits through a
+dedicated Community receipt.15 new Community/22 ordinary finance and278 affected
+cases pass. This supersedes the pending Community credit next step below;
+durable Auth Service Token creation and other qualification gates remain open.
+
 5 November2026. Public ordinary Guild creation is implemented and verified in
 Source/disposable SQLite. The [portable milestone record](coverage/guild-creation-finance-20261105.json)
 binds19 Source files, seven root/test DLLs, retained negative regressions,

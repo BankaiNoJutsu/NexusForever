@@ -1,5 +1,14 @@
 # Assessment follow-through goal
 
+[Public Community credit creation](COMMUNITY_CREATION_FINANCE.md) now couples
+the accepted Character fee, guild/ranks/leader membership/affiliation and full
+residence/plot graph through one recoverable save. Both drafts remain private
+through ordinary followup; public factory/mutation/save fences and retained
+publication protect the original actors.15 new Community/22 ordinary finance
+and all278 affected cases, clean owning/test builds and both final reviews pass.
+Next integrate durable Auth Service Token creation; fresh provider/physical/
+actual-table/deployment/native/retail and cross-owner achievement gates remain.
+
 [ICComm join correlation and named scoped channels](ICCOMM_JOIN_CORRELATION.md)
 now pass the real public join/message/not-joined flow: exact request names on
 success/failure and independent addon memberships within Group/Guild scope.

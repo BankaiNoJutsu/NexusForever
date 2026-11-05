@@ -16,7 +16,12 @@ namespace NexusForever.Game.Guild
         public override GuildType Type => GuildType.Community;
         public override uint MaxMembers => 20u;
 
-        public IResidence Residence { get; set; }
+        private IResidence residence;
+        public IResidence Residence
+        {
+            get { lock (MutationGate) return residence; }
+            set { lock (MutationGate) { RequireMutationEditable(); residence = value; } }
+        }
 
         #region Dependency Injection
 
@@ -50,6 +55,22 @@ namespace NexusForever.Game.Guild
             base.Initialise(guildName, leaderRankName, councilRankName, memberRankName);
             Residence = globalResidenceManager.CreateCommunity(this);
 
+        }
+
+        internal void InitialiseDraft(string guildName, string leaderRankName, string councilRankName, string memberRankName)
+        {
+            if (globalResidenceManager is not GlobalResidenceManager registry)
+                throw new InvalidOperationException("Paid Community creation requires its original residence registry.");
+            base.Initialise(guildName, leaderRankName, councilRankName, memberRankName);
+            Residence = registry.CreateCommunityDraft(this);
+        }
+
+        internal void AdoptCreationResidence()
+        {
+            if (globalResidenceManager is not GlobalResidenceManager registry || Residence is not Residence root)
+                throw new InvalidOperationException("Paid Community creation lost its original residence owner.");
+            registry.AdoptCommunityDraft(this, root);
+            QueueCreatedDirectory(Name, LeaderId, (uint)Flags);
         }
 
         private IResidence creationResidence;
@@ -88,6 +109,7 @@ namespace NexusForever.Game.Guild
         {
             lock (residenceLifecycleLock)
             {
+                RequireMutationEditable();
                 creationResidence ??= residence;
                 QueueResidenceChange(residence);
             }

@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[Public Community credit creation](Decomp/Analysis/COMMUNITY_CREATION_FINANCE.md)
+now settles fee, guild/leader membership/affiliation and the full residence/plot
+graph together, with private drafts, recovery and committed publication.15 new
+Community/22 ordinary finance cases and all278 affected cases pass, as do clean
+owning/test builds and both Source reviews. Service Token creation still needs
+its durable Auth/Character handoff; provider/runtime/native/retail remain open.
+
 [ICComm join correlation](Decomp/Analysis/ICCOMM_JOIN_CORRELATION.md) now preserves
 exact request names on public success/failure replies and isolates named addon
 channels within Group/Guild scope. Eleven baseline failures are fixed;26 scoped

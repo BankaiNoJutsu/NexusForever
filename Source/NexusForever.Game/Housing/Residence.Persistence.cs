@@ -25,7 +25,11 @@ namespace NexusForever.Game.Housing
         internal bool OwnsCommunityRetirement(object reservation) => reservation != null
             && ReferenceEquals(reservation, retiringCommunityOwner) && ReferenceEquals(reservation, communitySaveOwner);
         internal bool HasPersistence => persistence != null;
-        internal void RequirePersistenceEditable() => persistence?.RequireEditable();
+        internal void RequirePersistenceEditable()
+        {
+            if (paidCreation != null) throw new InvalidOperationException("Paid Community creation has frozen its residence graph.");
+            persistence?.RequireEditable();
+        }
         internal void RequirePlotEditable(Plot plot)
         {
             if (persistence == null) return;

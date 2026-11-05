@@ -227,6 +227,7 @@ namespace NexusForever.Game.Housing
         /// </summary>
         public IResidence CreateCommunity(ICommunity community)
         {
+            if (community is Community draft) draft.RequireMutationEditable();
             var residence = new Residence(community, this, realmContext?.RealmId ?? (ushort)0, gameTableManager);
             BindPersistence(residence);
             if (residence.HasPersistence && community is Community original) original.PrepareResidenceCreation(residence);
@@ -234,6 +235,28 @@ namespace NexusForever.Game.Housing
 
             log.Trace($"Created new residence {residence.Id} for community {community.Name}.");
             return residence;
+        }
+
+        internal Residence CreateCommunityDraft(Community community)
+        {
+            community.RequireMutationEditable();
+            var residence = new Residence(community, this, realmContext?.RealmId ?? (ushort)0, gameTableManager);
+            BindPersistence(residence);
+            if (!residence.HasPersistence) throw new InvalidOperationException("Community draft requires a bound residence graph.");
+            community.PrepareResidenceCreation(residence);
+            return residence;
+        }
+
+        internal void AdoptCommunityDraft(Community community, Residence residence)
+        {
+            if (community.PendingCreate || !ReferenceEquals(community.Residence, residence) || residence.GuildOwnerId != community.Id)
+                throw new InvalidOperationException("Community adoption lost its confirmed original residence.");
+            if (residences.TryGetValue(residence.Id, out IResidence current))
+            {
+                if (!ReferenceEquals(current, residence)) throw new InvalidOperationException("Community residence identity changed.");
+                return;
+            }
+            StoreCommunity(residence, community);
         }
 
         private void StoreCommunity(IResidence residence, ICommunity community, bool loaded = false)

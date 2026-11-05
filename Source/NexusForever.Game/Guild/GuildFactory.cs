@@ -26,6 +26,14 @@ namespace NexusForever.Game.Guild
             return guildBase;
         }
 
+        public ICommunity CreateCommunityDraft(string name, string leaderRankName, string councilRankName, string memberRankName)
+        {
+            var community = serviceProvider.GetKeyedService<IGuildBase>(GuildType.Community) as Community
+                ?? throw new InvalidOperationException("Paid Community creation requires its concrete draft owner.");
+            community.InitialiseDraft(name, leaderRankName, councilRankName, memberRankName);
+            return community;
+        }
+
         public IGuildBase CreateGuild(GuildType type, string guildName, string leaderRankName, string councilRankName, string memberRankName, IGuildStandard standard = null)
         {
             IGuildBase guildBase = serviceProvider.GetKeyedService<IGuildBase>(type);

@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Data.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Database;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
@@ -15,6 +16,9 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Guild;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Guild;
+using NexusForever.Game.Housing;
+using NexusForever.Game.Static.Housing;
+using NexusForever.Game.Abstract.RBAC;
 using NexusForever.Game.Achievement;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
@@ -37,7 +41,7 @@ using GameGuild = NexusForever.Game.Guild.Guild;
 
 namespace NexusForever.Game.Tests.Guild;
 
-public sealed class GuildCreationFinanceTests
+public sealed partial class GuildCreationFinanceTests
 {
     [Fact]
     public async Task PublicCreationDoesNotPublishSuccessBeforeItsFeeAndGuildCommit()
@@ -340,15 +344,22 @@ public sealed class GuildCreationFinanceTests
     {
         public override Task SaveGuildCreationReconciliation(ulong characterId, Action<CharacterContext> action, GuildCreationSaveReconciliation receipt)
             => CharacterAtomicSave.ExecuteGuildCreationReconciliation(() => source.Context(interceptor), characterId, action, receipt);
+        public override Task SaveCommunityCreationReconciliation(ulong characterId, Action<CharacterContext> action, CommunityCreationSaveReconciliation receipt)
+            => CharacterAtomicSave.ExecuteCommunityCreationReconciliation(() => source.Context(interceptor), characterId, action, receipt);
     }
 
-    private static async Task<Fixture> Create(IInterceptor interceptor = null, bool matchingAchievements = false, bool completeGuildAchievement = false)
+    private static async Task<Fixture> Create(IInterceptor interceptor = null, bool matchingAchievements = false, bool completeGuildAchievement = false, bool community = false)
     {
         var source = new SourceFixture(null); source.Seed();
         var tables = source.Source.Tables;
         var table = (RecordingDispatchProxy<IGameTableManager>)(object)tables;
         table.SetProperty(nameof(IGameTableManager.CurrencyType), PlayerBindPointTests.Table(new CurrencyTypeEntry { Id = 1, CapAmount = 1000000 }));
-        table.SetProperty(nameof(IGameTableManager.GameFormula), PlayerBindPointTests.Table(new GameFormulaEntry { Id = 764, Dataint0 = 100 }));
+        table.SetProperty(nameof(IGameTableManager.GameFormula), PlayerBindPointTests.Table(new GameFormulaEntry { Id = 764, Dataint0 = 100 },
+            new GameFormulaEntry { Id = 1159, Dataint0 = 200, Dataint01 = 5 }));
+        table.SetProperty(nameof(IGameTableManager.HousingPlotInfo), PlayerBindPointTests.Table(
+            new HousingPlotInfoEntry { Id = 3, HousingPropertyInfoId = (uint)PropertyInfoId.Community, HousingPropertyPlotIndex = 0 },
+            new HousingPlotInfoEntry { Id = 4, HousingPropertyInfoId = (uint)PropertyInfoId.Community, HousingPropertyPlotIndex = 1 }));
+        table.SetProperty(nameof(IGameTableManager.HousingPlugItem), PlayerBindPointTests.Table(new HousingPlugItemEntry { Id = 573 }));
         table.SetProperty(nameof(IGameTableManager.GuildStandardPart), PlayerBindPointTests.Table(
             new GuildStandardPartEntry { Id = 1, GuildStandardPartTypeEnum = 3 },
             new GuildStandardPartEntry { Id = 2, GuildStandardPartTypeEnum = 4 },
@@ -382,16 +393,21 @@ public sealed class GuildCreationFinanceTests
         achievementCatalog.SetMethodHandler(nameof(IGlobalAchievementManager.GetGuildAchievements), args => matchingAchievements && (AchievementType)args[0] == AchievementType.GuildOrCircleJoin
             ? new IAchievementInfo[] { guildInfo } : []);
         GlobalGuildManager guilds = null;
-        var factory = RecordingDispatchProxy<IGuildFactory>.Create(out var creation);
-        creation.SetMethodHandler(nameof(IGuildFactory.CreateGuild), args =>
-        {
-            var guild = new GameGuild(realm, publisher, filter, characterManager: characters, gameTableManager: tables,
-                globalGuildManager: guilds, globalAchievementManager: achievements);
-            guild.Initialise((string)args[1], (string)args[2], (string)args[3], (string)args[4], (IGuildStandard)args[5]);
-            return guild;
-        });
+        GlobalResidenceManager residences = null;
+        var services = new ServiceCollection();
+        services.AddKeyedTransient<IGuildBase>(GuildType.Guild, (_, _) => new GameGuild(realm, publisher, filter,
+            characterManager: characters, gameTableManager: tables, globalGuildManager: guilds, globalAchievementManager: achievements));
+        services.AddKeyedTransient<IGuildBase>(GuildType.Community, (_, _) => new Community(realm, publisher, residences, filter, null, characters, guilds));
+        var factory = new GuildFactory(services.BuildServiceProvider());
         guilds = new GlobalGuildManager(factory, databases); guilds.Initialise();
+        residences = new GlobalResidenceManager(characters, guilds, realm, databases, gameTableManager: tables); residences.Initialise();
         var account = (RecordingDispatchProxy<IAccount>)(object)source.Source.Player.Account; account.SetProperty(nameof(IAccount.Id), 12u);
+        if (community)
+        {
+            var permissions = RecordingDispatchProxy<IAccountRBACManager>.Create(out var permission);
+            permission.SetMethodReturn(nameof(IAccountRBACManager.HasPermission), true);
+            account.SetProperty(nameof(IAccount.RbacManager), permissions);
+        }
         var events = new EventQueue(); var session = RecordingDispatchProxy<IWorldSession>.Create(out var connection);
         connection.SetProperty(nameof(IWorldSession.Events), events); connection.SetProperty(nameof(IWorldSession.CanProcessIncomingPackets), true);
         account.SetProperty(nameof(IAccount.Session), session);
@@ -400,6 +416,10 @@ public sealed class GuildCreationFinanceTests
             inventoryFactory: (owner, _) => BankDeferredCurrencyRecoveryTests.Inventory(owner, (IItemManager)(object)source.Source.ManagerProxy, tables,
                 new NexusForever.Game.RealmBank.RealmBankManager(databases)));
         actor.Set(nameof(Player.Name), "Leader"); actor.Set(nameof(Player.Guid), 4200u);
+        if (community)
+            ((Dictionary<Stat, IStatValue>)typeof(WorldEntity).GetField("stats", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(actor.Player))
+                .Add(Stat.Level, new StatValue(Stat.Level, 50u));
+        actor.Set(nameof(Player.ResidenceManager), new ResidenceManager(actor.Player, residences, characters));
         connection.SetProperty(nameof(IWorldSession.Player), actor.Player);
         typeof(GridEntity).GetField("visibleEntities", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(actor.Player, new Dictionary<uint, IGridEntity>());
         typeof(WorldEntity).GetField("itemVisuals", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(actor.Player, new Dictionary<ItemSlot, IItemVisual>());
@@ -408,16 +428,17 @@ public sealed class GuildCreationFinanceTests
         actor.Set(nameof(Player.GuildManager), membership); membership.Initialise(actor.Player, model);
         actor.Set(nameof(Player.AchievementManager), new CharacterAchievementManager(actor.Player, model, globalAchievementManager: achievements, gameTableManager: tables));
         await actor.Load();
-        return new(source, actor, currency, guilds, session, connection, tables, achievements);
+        return new(source, actor, currency, guilds, session, connection, tables, achievements, residences, community);
     }
 
     private sealed record Fixture(SourceFixture Source, Actor Actor, CurrencyManager Currency, GlobalGuildManager Guilds,
-        IWorldSession Session, RecordingDispatchProxy<IWorldSession> Messages, IGameTableManager Tables, IGlobalAchievementManager Achievements) : IDisposable
+        IWorldSession Session, RecordingDispatchProxy<IWorldSession> Messages, IGameTableManager Tables, IGlobalAchievementManager Achievements,
+        GlobalResidenceManager Residences, bool Community) : IDisposable
     {
         internal void Register()
         {
             var request = new ClientGuildRegister();
-            foreach (var (key, value) in new (string, object)[] { (nameof(request.GuildType), GuildType.Guild), (nameof(request.GuildName), "Paid guild"),
+            foreach (var (key, value) in new (string, object)[] { (nameof(request.GuildType), Community ? GuildType.Community : GuildType.Guild), (nameof(request.GuildName), "Paid guild"),
                 (nameof(request.MasterTitle), "Leader"), (nameof(request.CouncilTitle), "Council"), (nameof(request.MemberTitle), "Member") })
                 typeof(ClientGuildRegister).GetProperty(key)!.SetValue(request, value);
             request.GuildStandard.BackgroundIcon.GuildStandardPartId = 1;

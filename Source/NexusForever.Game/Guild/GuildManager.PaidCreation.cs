@@ -11,13 +11,15 @@ namespace NexusForever.Game.Guild
 
         public GuildResult RegisterPaidGuild(ClientGuildRegister request, ulong cost)
         {
-            if (request.GuildType != GuildType.Guild || paidCreation != null || owner is not Player player
+            if (request.GuildType is not (GuildType.Guild or GuildType.Community) || request.GuildType == GuildType.Community && request.AlternateCost
+                || paidCreation != null || owner is not Player player
                 || globalGuildManager is not GlobalGuildManager registry || !player.HousingNameCanBegin)
                 return GuildResult.UnableToProcess;
             var result = CanRegisterGuild(request);
             if (result.Result != GuildResult.Success) return result.Result;
             if (!player.CurrencyManager.CanAfford(Static.Entity.CurrencyType.Credits, cost)) return GuildResult.NotEnoughCredits;
-            return registry.QueuePaidCreation(player, this, request, new GuildStandard(request.GuildStandard, gameTableManager), cost);
+            return registry.QueuePaidCreation(player, this, request,
+                request.GuildType == GuildType.Guild ? new GuildStandard(request.GuildStandard, gameTableManager) : null, cost);
         }
 
         internal void AcceptPaidCreation(GuildCreationSettlement command)
@@ -42,12 +44,13 @@ namespace NexusForever.Game.Guild
                 }
             };
         }
-        internal void AdoptPaidCreation(GuildCreationSettlement command, IGuild guild)
+        internal void AdoptPaidCreation(GuildCreationSettlement command, IGuildBase guild)
         {
             if (!OwnsPaidCreation(command)) throw new InvalidOperationException("Guild creation changed its original membership manager.");
             if (guilds.TryGetValue(guild.Id, out var current) && !ReferenceEquals(current, guild))
                 throw new InvalidOperationException("Guild creation lost its local membership identity.");
-            guilds[guild.Id] = guild; Guild = guild;
+            guilds[guild.Id] = guild;
+            if (guild is IGuild ordinary) Guild = ordinary;
         }
         internal void ReleasePaidCreation(GuildCreationSettlement command)
         {

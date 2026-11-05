@@ -8,5 +8,7 @@ namespace NexusForever.Game.Abstract.Guild
         IGuildBase CreateGuild(GuildModel model);
 
         IGuildBase CreateGuild(GuildType type, string guildName, string leaderRankName, string councilRankName, string memberRankName, IGuildStandard standard = null);
+
+        ICommunity CreateCommunityDraft(string name, string leaderRankName, string councilRankName, string memberRankName);
     }
 }

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Entity;
@@ -34,15 +35,22 @@ namespace NexusForever.Game.Guild
         private int guildEffectCursor;
         private bool preparingGuildEffects;
         private int effectThread;
-        internal Guild Guild { get; }
+        internal GuildBase Guild { get; }
+        internal Residence CreationResidence { get; }
+        private readonly byte[] creationPlots;
         internal GuildManager Membership { get; }
         internal string Name { get; }
         internal ulong CharacterId { get; }
         internal bool Finished { get; private set; }
 
-        internal GuildCreationSettlement(GlobalGuildManager registry, Guild guild, Player player, GuildManager membership, ulong cost)
+        internal GuildCreationSettlement(GlobalGuildManager registry, GuildBase guild, Player player, GuildManager membership, ulong cost)
         {
             this.registry = registry; Guild = guild; this.player = player; Membership = membership; this.cost = cost;
+            if (guild is Community community)
+            {
+                CreationResidence = community.Residence as Residence ?? throw new InvalidOperationException("Community creation requires its concrete residence graph.");
+                creationPlots = CreationResidence.GetPlots().Select(plot => plot.Index).Order().ToArray();
+            }
             Name = guild.Name; CharacterId = player.CharacterId; session = player.Session; events = session.Events;
             account = player.Account; epoch = account.WorldSessionEpoch;
         }
@@ -53,6 +61,7 @@ namespace NexusForever.Game.Guild
         internal bool Begin()
         {
             Guild.PreparePaidCreation(player, this);
+            CreationResidence?.PreparePaidCreation(this);
             actor = player.BeginHousingName(this, CurrencyType.Credits, cost);
             if (actor == null) { CancelBeforeAttempt(); return false; }
             return true;
@@ -61,16 +70,16 @@ namespace NexusForever.Game.Guild
 
         internal void RetainGuildEffect(Abstract.Entity.IPlayer source, Abstract.Achievement.IGuildAchievementManager manager, Action effect)
         {
-            if (Guild.PendingCreate || !Owns() || !ReferenceEquals(source, player) || !ReferenceEquals(Guild.AchievementManager, manager))
+            if (Guild is not Guild achievementGuild || Guild.PendingCreate || !Owns() || !ReferenceEquals(source, player) || !ReferenceEquals(achievementGuild.AchievementManager, manager))
                 throw new InvalidOperationException("Paid creation guild effects require their committed original Character/guild owner.");
             guildEffects.Add(() =>
             {
-                if (!Guild.PendingDelete && ReferenceEquals(Guild.AchievementManager, manager)) effect();
+                if (!Guild.PendingDelete && ReferenceEquals(achievementGuild.AchievementManager, manager)) effect();
             });
         }
         internal bool AllowsAchievementMutation(Achievement.GuildAchievementManager manager)
             => preparingGuildEffects && effectThread == Environment.CurrentManagedThreadId && Owns() && !Guild.PendingCreate
-                && ReferenceEquals(Guild.AchievementManager, manager);
+                && Guild is Guild achievementGuild && ReferenceEquals(achievementGuild.AchievementManager, manager);
 
         bool IHousingFeeOperation.HasPendingOrdinaryEffects => guildEffectCursor < guildEffects.Count;
         void IHousingFeeOperation.PrepareOrdinaryEffects()
@@ -101,30 +110,51 @@ namespace NexusForever.Game.Guild
             }
         }
         CharacterSaveReconciliation IHousingFeeOperation.CreateReceipt(bool primary)
-            => new GuildCreationSaveReconciliation(Guid.NewGuid().ToString("N"), CharacterId, Guild.Id, (byte)Guild.Type, Name,
-                context =>
+        {
+            void Parent(CharacterContext context)
+            {
+                if (actor?.Owns() != true || !Owns()) throw new InvalidOperationException("Paid creation lost its complete original actor.");
+                CharacterDatabaseIdentity.Require(context, actor.Database);
+                var row = context.Guild.AsNoTracking().SingleOrDefault(row => row.Id == Guild.Id);
+                if ((!primary && row == null) || row != null && (row.Type != (byte)Guild.Type || row.LeaderId != CharacterId || row.DeleteTime != null || row.Name != Name))
+                    throw new InvalidOperationException("Paid creation SQL conflicts with its accepted guild.");
+                if (CreationResidence != null)
                 {
-                    if (actor?.Owns() != true || !Owns()) throw new InvalidOperationException("Paid creation lost its complete original actor.");
-                    CharacterDatabaseIdentity.Require(context, actor.Database);
-                    var row = context.Guild.AsNoTracking().SingleOrDefault(row => row.Id == Guild.Id);
-                    if ((!primary && row == null) || row != null && (row.Type != (byte)Guild.Type || row.LeaderId != CharacterId || row.DeleteTime != null || row.Name != Name))
-                        throw new InvalidOperationException("Paid creation SQL conflicts with its accepted guild.");
-                }, context =>
-                {
-                    if (primary && (!ReferenceEquals(enrollment, context) || enrolledRows == null
-                        || context.ChangeTracker.Entries<GuildModel>().Count(row => row.Entity.Id == Guild.Id) != 1
-                        || context.ChangeTracker.Entries<GuildDataModel>().Count(row => row.Entity.Id == Guild.Id) != 1
-                        || !context.ChangeTracker.Entries<GuildRankModel>().Where(row => row.Entity.Id == Guild.Id)
-                            .Select(row => row.Entity.Index).Order().SequenceEqual(new byte[] { 0, 1, 9 })
-                        || context.ChangeTracker.Entries<GuildMemberModel>().Count(row => row.Entity.Id == Guild.Id && row.Entity.CharacterId == CharacterId) != 1))
-                        throw new InvalidOperationException("Paid creation did not enroll its complete original guild graph.");
-                }, entry => primary && ReferenceEquals(entry.Context, enrollment) && enrolledRows?.Contains(entry.Entity) == true);
+                    if (!ReferenceEquals(((Community)Guild).Residence, CreationResidence))
+                        throw new InvalidOperationException("Paid Community creation changed its original residence actor.");
+                    var root = context.Residence.AsNoTracking().SingleOrDefault(row => row.Id == CreationResidence.Id);
+                    if ((!primary && root == null) || root != null && (root.OwnerId != null || root.GuildOwnerId != Guild.Id
+                        || root.PropertyInfoId != (byte)Static.Housing.PropertyInfoId.Community || root.Name != Name))
+                        throw new InvalidOperationException("Paid creation SQL conflicts with its accepted residence.");
+                }
+            }
+            void Enrolled(CharacterContext context)
+            {
+                if (primary && (!ReferenceEquals(enrollment, context) || enrolledRows == null
+                    || context.ChangeTracker.Entries<GuildModel>().Count(row => row.Entity.Id == Guild.Id) != 1
+                    || context.ChangeTracker.Entries<GuildDataModel>().Count(row => row.Entity.Id == Guild.Id) != (CreationResidence == null ? 1 : 0)
+                    || !context.ChangeTracker.Entries<GuildRankModel>().Where(row => row.Entity.Id == Guild.Id)
+                        .Select(row => row.Entity.Index).Order().SequenceEqual(new byte[] { 0, 1, 9 })
+                    || context.ChangeTracker.Entries<GuildMemberModel>().Count(row => row.Entity.Id == Guild.Id && row.Entity.CharacterId == CharacterId) != 1))
+                    throw new InvalidOperationException("Paid creation did not enroll its complete original guild graph.");
+                if (primary && CreationResidence != null && (context.ChangeTracker.Entries<ResidenceModel>().Count(row => row.Entity.Id == CreationResidence.Id) != 1
+                    || !context.ChangeTracker.Entries<ResidencePlotModel>().Where(row => row.Entity.Id == CreationResidence.Id)
+                        .Select(row => row.Entity.Index).Order().SequenceEqual(creationPlots)))
+                    throw new InvalidOperationException("Paid creation did not enroll its complete original residence graph.");
+            }
+            bool ExactRow(EntityEntry entry) => primary && ReferenceEquals(entry.Context, enrollment) && enrolledRows?.Contains(entry.Entity) == true;
+            string id = Guid.NewGuid().ToString("N");
+            return CreationResidence == null
+                ? new GuildCreationSaveReconciliation(id, CharacterId, Guild.Id, (byte)Guild.Type, Name, Parent, Enrolled, ExactRow)
+                : new CommunityCreationSaveReconciliation(id, CharacterId, Guild.Id, CreationResidence.Id, Name, Parent, Enrolled, ExactRow);
+        }
         void IHousingFeeOperation.Stage(CharacterContext context)
         {
             if (actor?.Owns() != true || !Owns()) throw new InvalidOperationException("Paid creation lost its original coupled enrollment.");
             enrollment = context;
             Guild.Save(context);
-            enrolledRows = context.ChangeTracker.Entries().Where(entry => entry.Entity is GuildModel or GuildDataModel or GuildRankModel or GuildMemberModel)
+            enrolledRows = context.ChangeTracker.Entries().Where(entry => entry.Entity is GuildModel or GuildDataModel or GuildRankModel or GuildMemberModel
+                    || CreationResidence != null && entry.Entity is ResidenceModel or ResidencePlotModel)
                 .Select(entry => entry.Entity).ToHashSet(ReferenceEqualityComparer.Instance);
         }
         internal void Advance()
@@ -156,7 +186,7 @@ namespace NexusForever.Game.Guild
                 // receipt's accepted parent while that save is still pending.
                 if (!releasedGuild)
                 {
-                    registry.AdoptPaidCreation(this); Guild.ReleasePaidCreation(this); releasedGuild = true;
+                    registry.AdoptPaidCreation(this); Guild.ReleasePaidCreation(this); CreationResidence?.ReleasePaidCreation(this); releasedGuild = true;
                 }
                 var prepared = new List<Func<Task>> { () => Guild.PublishMutationsAsync() };
                 foreach (var packet in actor.BeginPublication().Concat(Guild.CreationPackets(player)))

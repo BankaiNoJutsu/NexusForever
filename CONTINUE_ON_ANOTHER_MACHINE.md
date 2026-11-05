@@ -1,5 +1,14 @@
 # Continue on another machine
 
+Latest Community implementation: [public credit creation finance](Decomp/Analysis/COMMUNITY_CREATION_FINANCE.md)
+settles the accepted fee, guild/ranks/leader affiliation and complete residence/
+plot graph in one recoverable Character transaction. Both registries stay private
+through ordinary followup.15 new Community/22 ordinary finance and278 affected
+cases, clean owning/test-only builds and both final reviews pass. The executed
+public factory bypass is fixed. Service Tokens need the next durable Auth/
+Character handoff; provider/physical/actual-table/deployment/native/retail remain
+open. No full suite, client or CUA ran; defaults and direct/free creation remain.
+
 Latest ICComm implementation: [join correlation and named scoped channels](Decomp/Analysis/ICCOMM_JOIN_CORRELATION.md)
 fixes11 executed public-flow failures. Exact reply names and separate Group/Guild
 addon memberships pass26 selected cases, clean owning/test-only builds and both

@@ -54,6 +54,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Guild
                             return new GuildResultInfo(GuildResult.NotEnoughCredits); // this right guild result for account credits?
                         if (!guildRegister.AlternateCost && !session.Player.CurrencyManager.CanAfford(CurrencyType.Credits, entry.Dataint0))
                             return new GuildResultInfo(GuildResult.NotEnoughCredits);
+                        creationCost = entry.Dataint0;
                         break;
                     }
                 }
@@ -68,7 +69,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Guild
                 return;
             }
 
-            if (guildRegister.GuildType == GuildType.Guild && session.Player is NexusForever.Game.Entity.Player
+            if ((guildRegister.GuildType == GuildType.Guild || guildRegister.GuildType == GuildType.Community && !guildRegister.AlternateCost)
+                && session.Player is NexusForever.Game.Entity.Player
                 && session.Player.GuildManager is GuildManager membership)
             {
                 GuildResult paidResult = membership.RegisterPaidGuild(guildRegister, creationCost);

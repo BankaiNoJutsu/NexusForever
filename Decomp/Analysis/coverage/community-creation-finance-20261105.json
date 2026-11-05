@@ -1,0 +1,369 @@
+{
+  "date": "2026-11-05",
+  "milestone": "Public Community credit creation with complete Character, guild and residence graphs",
+  "sourceBaselineCommit": "8e20dc6364c3aaa5e7d28e2bba869885454f7470",
+  "publicationParent": "8e20dc6364c3aaa5e7d28e2bba869885454f7470",
+  "sourceFiles": [
+    {
+      "path": "Source/NexusForever.Database.Character/CharacterAtomicSave.cs",
+      "sha256": "d7e2abe15b299bda089fbce8ed2e2a42d92b3f102b476b5acbd056707a1ae483",
+      "gitBlob": "c815b5527b3136b965a42baa3b899d7f4ebb3f2b"
+    },
+    {
+      "path": "Source/NexusForever.Database.Character/CharacterDatabase.cs",
+      "sha256": "6a2ca27d4442e99e008b325528db207b71a22f3b2e9be51886f9b43b8e1f7838",
+      "gitBlob": "602e6cf409de25018a76a151f56b293cd68ca739"
+    },
+    {
+      "path": "Source/NexusForever.Database.Character/CharacterSaveGraph.cs",
+      "sha256": "0e66d72f888d21c845fac3f888394600e70e58938cec0ff5a32ae67182054882",
+      "gitBlob": "529359b6d8b5edcfab5513a158acb529bbd3356b"
+    },
+    {
+      "path": "Source/NexusForever.Database.Character/CommunityCreationSaveReconciliation.cs",
+      "sha256": "239397f20586466cdc2ae763a91ac93054831fc42a9d5471166fb0e93f24bfdb",
+      "gitBlob": "caf6ede7c536d98e4cd6df36717c6cb7b52f822b"
+    },
+    {
+      "path": "Source/NexusForever.Game.Abstract/Guild/IGuildFactory.cs",
+      "sha256": "6f92e57f14a34e69dd34dc9ed8aec6384cb1fbcaee81a518e143dee33f7af06f",
+      "gitBlob": "c870d04071b46d29a9c4ac6c7d163d44084528d5"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Guild/CommunityCreationFinanceTests.cs",
+      "sha256": "a3d59ece034ef0440bff41a28d403e5de1ee59e758b599627d9cdb92be191911",
+      "gitBlob": "26c0a44564816da1502eee629275acfcc5f611eb"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Guild/GuildCreationFinanceTests.cs",
+      "sha256": "febf751f098885421b735b6dbce150476e6ee6c7d69e19ead28710304abe17bc",
+      "gitBlob": "0171f7cc3a682e4ff3b9d6b9945791e6cc811164"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/Player.cs",
+      "sha256": "7c4867fe9c5a279efc462ec71ebd5a00b3df29c3de04882c8b3a4ba95918b953",
+      "gitBlob": "b90b689d4b972579d9f0a2d715df8b04d3e6a1ff"
+    },
+    {
+      "path": "Source/NexusForever.Game/Guild/Community.cs",
+      "sha256": "c56af044f322f9e31007b5608af913655906cfd3946485c0899f35ac33270c6d",
+      "gitBlob": "4c82d6d99bce785269f774975ad0f73301926dec"
+    },
+    {
+      "path": "Source/NexusForever.Game/Guild/GlobalGuildManager.PaidCreation.cs",
+      "sha256": "42c0e036b1e8a13bc8f921cbb9347e7ea12a145bde2e463976d8da7ed0d3626e",
+      "gitBlob": "b83222a7f2774932215afc967110e92707e80816"
+    },
+    {
+      "path": "Source/NexusForever.Game/Guild/GuildCreationSettlement.cs",
+      "sha256": "eab834395610286930f59fd1c0b86aee333f7e15534b14b0732faadad056dfa2",
+      "gitBlob": "370653d98e2277340bec60298df8aa95d68df09c"
+    },
+    {
+      "path": "Source/NexusForever.Game/Guild/GuildFactory.cs",
+      "sha256": "f5b1b6354d86b81a27fcd8f93f853050b8bdb404ac2f2f364d510d4fba52b6d4",
+      "gitBlob": "70e2317e19ea77737d31cf2850a27d4e3f38eec3"
+    },
+    {
+      "path": "Source/NexusForever.Game/Guild/GuildManager.PaidCreation.cs",
+      "sha256": "2d7952884112a9f68b7c150ee39947a9e238016882b3c31ffc5573f38818d828",
+      "gitBlob": "4eae906b0a69264f884b6ba12bc437aa8a5082fa"
+    },
+    {
+      "path": "Source/NexusForever.Game/Housing/GlobalResidenceManager.cs",
+      "sha256": "1fc33fc01627e5c996e88e973c4c00aad3efd46fda62eed2da17c88e72cd1d65",
+      "gitBlob": "7ccc9abb5df46201f763f1358afec0ef2718c30f"
+    },
+    {
+      "path": "Source/NexusForever.Game/Housing/Residence.PaidCreation.cs",
+      "sha256": "555239e1019a73a1c793940b6022f072dedf07707e1164b96542db4b146d884b",
+      "gitBlob": "2207adf4d2e5e89b9b24df6cb20b0137177cc3b2"
+    },
+    {
+      "path": "Source/NexusForever.Game/Housing/Residence.Persistence.cs",
+      "sha256": "b672f31b47d3132493bb87134bc221cedcdf772a05ee20d879c48ef2d1d49313",
+      "gitBlob": "38e54c896fa37338bffcbd024cc946839cf7639c"
+    },
+    {
+      "path": "Source/NexusForever.Game/Housing/Residence.cs",
+      "sha256": "caad0f8b395c2277dd9aaaea2f429793dcabb54dd669ba95a59135c4334c4fda",
+      "gitBlob": "d7ac0b52c5224979088dca1f5e2dab51adab4455"
+    },
+    {
+      "path": "Source/NexusForever.Game/Housing/ResidencePersistence.cs",
+      "sha256": "1944d9f99590d3484420f881fad4f1b81453a5d7452412188064a95482b9d0ee",
+      "gitBlob": "900959aee2ab82eafcbe5713f69fa6c863ad797b"
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/Network/Message/Handler/Guild/ClientGuildRegisterHandler.cs",
+      "sha256": "b071bbc983d8fc8efb71cd8d9d69b8a09abadc4a5c49817cddb408ddefa6b2ad",
+      "gitBlob": "6bec66d2d767682eb7e3f42c070b4a6f84a390ef"
+    }
+  ],
+  "assemblies": {
+    "Source/NexusForever.Database.Character/bin/Debug/net10.0/NexusForever.Database.Character.dll": "d98512989891043678b69ed00374a5c098613ab2c653e3197f4fc4131c9ff67c",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Database.Character.dll": "d98512989891043678b69ed00374a5c098613ab2c653e3197f4fc4131c9ff67c",
+    "Source/NexusForever.Game.Abstract/bin/Debug/net10.0/NexusForever.Game.Abstract.dll": "cb8d4d22d1c406319ffb506681b05613099d156991fb4ca7e01b6547eaea0107",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Abstract.dll": "cb8d4d22d1c406319ffb506681b05613099d156991fb4ca7e01b6547eaea0107",
+    "Source/NexusForever.Game/bin/Debug/net10.0/NexusForever.Game.dll": "300422feb4b3d74305cd9ddafb6476f66fe18e4b03be6a0676ae9453aae0b1fc",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.dll": "300422feb4b3d74305cd9ddafb6476f66fe18e4b03be6a0676ae9453aae0b1fc",
+    "Source/NexusForever.WorldServer/bin/Debug/net10.0/NexusForever.WorldServer.dll": "1be4c10c6fdf164fadac5d78d310895aba3295aba24426425f9b011e7b83a96d",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.WorldServer.dll": "1be4c10c6fdf164fadac5d78d310895aba3295aba24426425f9b011e7b83a96d",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll": "44fe90592833d98f2ce93f0177b6f32dbd4e1add90db1dfcb2f86585af566ad7"
+  },
+  "baseline": {
+    "path": "artifacts/continuation-20261105/community-creation-finance/baseline-public.trx",
+    "sha256": "565a06bafc1b711bed10e0b771e2b12bb5b14b27476456a21aea7ff4957d36a9",
+    "counters": {
+      "total": "6",
+      "executed": "6",
+      "passed": "0",
+      "failed": "6",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "failedCases": [
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationFreezesThePrivateResidenceAgainstIndependentEditsAndSaves",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationCommitsFeeMembershipAffiliationAndEveryPlotTogether",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationKeepsTheDraftAndResidencePrivateBeforeItsFeeCommits",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationParticipantFailureRetainsAndRetriesTheEntireAcceptedGraph(table: \"character_currency\")",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationParticipantFailureRetainsAndRetriesTheEntireAcceptedGraph(table: \"guild_rank\")",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationParticipantFailureRetainsAndRetriesTheEntireAcceptedGraph(table: \"residence_plot\")"
+    ]
+  },
+  "initialCandidate": {
+    "path": "artifacts/continuation-20261105/community-creation-finance/candidate.trx",
+    "sha256": "9ae4046d735fdfcf5942caae22f0cc31e5abf060aa524e0793320b3bd9180952",
+    "counters": {
+      "total": "6",
+      "executed": "6",
+      "passed": "6",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    }
+  },
+  "expandedCandidate": {
+    "path": "artifacts/continuation-20261105/community-creation-finance/focused.trx",
+    "sha256": "c3d76772c4fde672fc2b3d8110ecf22cff8ab2c94756184a350efa8b1854dedc",
+    "counters": {
+      "total": "34",
+      "executed": "34",
+      "passed": "33",
+      "failed": "1",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "failedCases": [
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationReceiptCannotAuthorizeForeignResidenceRows(plot: False)"
+    ]
+  },
+  "factoryNegative": {
+    "path": "artifacts/continuation-20261105/community-creation-finance/factory-negative.trx",
+    "sha256": "366de8a09fd759ef2dedcb4ec4df700c0506e57b26546b2040f656b1b79b978f",
+    "counters": {
+      "total": "1",
+      "executed": "1",
+      "passed": "0",
+      "failed": "1",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "failedCases": [
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationPublicResidenceFactoryCannotPublishAnotherUnpaidRoot"
+    ]
+  },
+  "final": {
+    "path": "artifacts/continuation-20261105/community-creation-finance/final-affected.trx",
+    "sha256": "725e1ebc36ef3342a951d75615d6ef1f5add9bb0f367080fd246f0ee66ae60e4",
+    "counters": {
+      "total": "278",
+      "executed": "278",
+      "passed": "278",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    }
+  },
+  "newCommunityCases": 15,
+  "retainedOrdinaryFinanceCases": 22,
+  "testFilter": "FullyQualifiedName~GuildCreationFinanceTests|FullyQualifiedName~GuildCreationRecoveryTests|FullyQualifiedName~GuildAffiliation|FullyQualifiedName~GuildAchievementRecoveryTests|FullyQualifiedName~ResidenceRecoveryTests|FullyQualifiedName~CommunityResidenceLifecycleTests|FullyQualifiedName~CommunityVisitIndexTests|FullyQualifiedName~HousingRenameFeeRecoveryTests|FullyQualifiedName~HousingDecorPurchaseTests|FullyQualifiedName~CharacterAtomicSaveTests|FullyQualifiedName~BankReconciliationOwnershipTests",
+  "interpretation": {
+    "baselineFixtureErrors": "Initial compile and level initialization errors are retained separately and are not financial defect evidence.",
+    "baselineFactory": "Corrected public baseline used a concrete Community via proxy factory; final fixtures use the real keyed GuildFactory for both types.",
+    "expandedFailure": "Foreign root was correctly rejected by earlier Character ownership guard; exact diagnostic oracle corrected, empty SQL and receipt assertions preserved.",
+    "factoryFailure": "Executed public factory bypass fixed before final qualification.",
+    "sourceQualification": "Source and disposable SQLite fixtures only; housing table rows are fixture data."
+  },
+  "builds": {
+    "owningProject": "NexusForever.WorldServer",
+    "owningSeconds": 11.53,
+    "testOnlySeconds": 4.3,
+    "warnings": 0,
+    "errors": 0,
+    "affectedTestSecondsApproximate": 64
+  },
+  "reviews": {
+    "standards": {
+      "initial": 0,
+      "finalRemaining": 0,
+      "agent": "/root/iccomm_standards"
+    },
+    "spec": {
+      "initial": 1,
+      "finalRemaining": 0,
+      "agent": "/root/iccomm_spec"
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/continuation-20261105/community-creation-finance/baseline-build.log",
+      "sha256": "a3a4732274436aa6cd0ad4a46c9293330fbf16495047652b33c20b062640414d"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-creation-finance/baseline-fixture-build.log",
+      "sha256": "7ab8f9e5dbcedae2362a0458e1a9eeaec8906f14de78abe284241d62fa1b8f63"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-creation-finance/baseline-level-fixture-build.log",
+      "sha256": "7cd43e1518f10e84230f4aafc06b7ed8188b2aec60aaa31daaf18a4919c8ce4b"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-creation-finance/baseline.trx",
+      "sha256": "dbf642887c6209f1b3ed6c10bd33688e71a22923f245a1f9545d37fee2deae82"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-creation-finance/baseline-public-tests.log",
+      "sha256": "36e4b1cf7648560b5fb78cae7e144c612fefa76298ba7937fc05526cb013f853"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-creation-finance/baseline-public-cases.cs",
+      "sha256": "cdc5d6fcbcc3e7ab0fec9f0f78a9b6d00d777e4d83a1a69e35df1857fed1ab0b"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-creation-finance/owning-build.log",
+      "sha256": "e62eaa885d8eb5015dc4d85f35f5be58ff5edf9d34bf45cf0e8ebeac6a205d8e"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-creation-finance/candidate-test-build.log",
+      "sha256": "170032685199d3e5af9d568d6fe0f93dbef9c21cdca6d09a1025b7cecef5516b"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-creation-finance/candidate-tests.log",
+      "sha256": "bdcccb99456a037668267d8ada8a028ee384a739be275606cd28d18bd57d95f3"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-creation-finance/final-owning-build.log",
+      "sha256": "7f602010c36106103adf6d108cc184d182b888a73f67ba9798279afe2e0c19e5"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-creation-finance/final-test-build.log",
+      "sha256": "f9ebbd56290cdecf1e5a970914e0f677e490abf17f43847a1c231d0ebde0acbe"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-creation-finance/focused-tests.log",
+      "sha256": "40cbed436d1ce771ec7966b73151243a9e038a4ed4f9aa251de8d139c77769c8"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-creation-finance/factory-probe-build.log",
+      "sha256": "a9e5b9993996bb0618604aef7e8ab18fc7abf3edd7cf63f1f468e0d9d8afe18c"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-creation-finance/factory-negative.log",
+      "sha256": "c89674ecebeb96f2f417d7c561453d6cd3ae74d69d84af72a90e2c25749a969f"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-creation-finance/review-fix-owning-build.log",
+      "sha256": "152a982f2068c5e7dd630be948531380a6b678f02b8bd371323f2e3ce4f2f7bd"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-creation-finance/review-fix-test-build.log",
+      "sha256": "b990f5e1cde2dd59b822f5b4af2a07694607c310b0cbb750f1f2d3de47e2011f"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-creation-finance/final-affected.log",
+      "sha256": "47d8d144cd5038a82540ac2fd26006cb5711ef86c8172a534b411629ad912d9f"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-creation-finance/final-filter.txt",
+      "sha256": "eeedd6cc3e22fcfa6e30de89a1cf18cd9ae2ad6cd866828f95cf2f93e52668d0"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-creation-finance/review.md",
+      "sha256": "ef2b3408512bde6639f25136525b92c271d49fcbc437895b7bdfbe1211fe3fc3"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-creation-finance/upstream-refresh.json",
+      "sha256": "37c4971298a4e13d0b6bfdcfb2722b916c500deb36f567ac526a35455f5e3bbc"
+    }
+  ],
+  "upstream": {
+    "latestAllStatePulls": 20,
+    "changedReviewedHeadsBasesStatesOrMergeStates": 0,
+    "608": "open",
+    "609": "closed/unmerged"
+  },
+  "remaining": [
+    "Durable Auth/Character Service Token creation handoff",
+    "Configured-provider and copied-upgrade qualification",
+    "Actual-table, physical failure/restart and autonomous recovery",
+    "Broker/socket/deployment and native/retail qualification",
+    "Cross-owner Character/Guild achievement atomicity"
+  ],
+  "constraints": [
+    "No full solution build/full suite",
+    "No client or Computer Use",
+    "No entitlement/default/configuration changes",
+    "No upstream PR mutations"
+  ]
+}

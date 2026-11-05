@@ -31,7 +31,7 @@ Workspace and continuity
   sections as work changes.
 
 Verified continuation status - 5 November 2026
-- The latest verified implementation checkpoint is
+- The verified ordinary Guild implementation checkpoint is
   eaad953a0fb898258ef9bd0a96c84dc9c67508d7 (ordinary Guild creation finance).
   Local HEAD and origin/legacy-di-storefront-hardening matched this commit
   during the status check; the research commits below are also published.
@@ -76,12 +76,17 @@ Verified continuation status - 5 November 2026
   resumption as directed below; do not count unchanged PRs as new implementation.
 
 Next actionable outcomes and remaining gates
-- Continue Community creation finance through the real public route: couple
-  Character credits, guild/membership/affiliation and residence/plot creation.
-  Its Service Token option also needs a complete durable Auth/Character handoff.
-  The existing Community route remains unfinished. Do not reuse an ordinary
-  Guild receipt as authorization for residence rows or an Auth debit; preserve
-  direct/admin/free registration and the completed ordinary Guild guarantees.
+- Community credit creation now has the later verified result in
+  Decomp/Analysis/COMMUNITY_CREATION_FINANCE.md: the real public credit fee,
+  guild/membership/affiliation and full residence/plot graph settle together
+  under a dedicated Community receipt. Both registries stay private through
+  ordinary followup.15 new Community/22 ordinary finance and278 affected cases,
+  clean owning/test-only builds and both Source reviews pass. Do not repeat
+  the completed credit integration. Continue its Service Token option through
+  a complete durable Auth/Character handoff. The alternate-cost route remains
+  unfinished. Do not reuse an ordinary Guild receipt as authorization for
+  residence rows or an Auth debit; preserve direct/admin/free registration and
+  the completed ordinary Guild/Community credit guarantees.
 - Keep the full broader roadmap active: Contract public claim/reset requires
   remaining unclaimed/final-first/excess policy evidence and complete canonical
   delivery/recovery. Its726 choices are already recovered; retain the remaining
