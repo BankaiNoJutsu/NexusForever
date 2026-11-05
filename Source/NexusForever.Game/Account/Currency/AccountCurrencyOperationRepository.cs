@@ -26,6 +26,7 @@ namespace NexusForever.Game.Account.Currency
         private readonly List<(object Model, PropertyValues Values)> owned = [];
         private readonly List<(AccountWalletOperation Operation, ulong Before, ulong After)> witnesses = [];
         internal ulong Amount { get; private set; }
+        internal bool HasNewOperation => owned.Any(row => row.Model is AccountCurrencyOperationModel);
 
         internal static string DatabaseKey(AuthContext context)
         {

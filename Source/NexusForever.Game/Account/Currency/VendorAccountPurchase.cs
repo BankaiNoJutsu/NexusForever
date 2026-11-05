@@ -13,6 +13,7 @@ using NexusForever.Database.Auth.Model;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Static.Account;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Account.Reward;
 
 namespace NexusForever.Game.Account.Currency
@@ -20,7 +21,7 @@ namespace NexusForever.Game.Account.Currency
     internal enum VendorAccountAuthorization { Authorized, Delivered, Cancelled }
 
     /// <summary>Durable account payment and compensation for a single Character delivery transaction.</summary>
-    public sealed class VendorAccountPurchase
+    public sealed partial class VendorAccountPurchase
     {
         private const string DebitPrefix = "vendor-debit:";
         private const string DeliveredPrefix = "vendor-account-delivered:";
@@ -48,8 +49,8 @@ namespace NexusForever.Game.Account.Currency
             await using var reader = auth();
             string route = AccountCurrencyOperationRepository.DatabaseKey(reader);
             var anchors = await reader.AccountCurrencyOperation.AsNoTracking()
-                .Where(row => row.AccountId == account.Id && row.Subtract
-                    && row.OperationKey.StartsWith(DebitPrefix) && row.OperationKey.EndsWith(":0"))
+                .Where(row => row.AccountId == account.Id && row.Subtract && row.OperationKey.EndsWith(":0")
+                    && (row.OperationKey.StartsWith(DebitPrefix) || row.OperationKey.StartsWith(CreddDebitPrefix)))
                 .OrderBy(row => row.OperationKey).ToArrayAsync();
             var local = anchors.Select(row => (Debit: row, Intent: ReadIntent(row)))
                 .Where(entry => entry.Intent.Realm == realm).ToArray();
@@ -79,12 +80,24 @@ namespace NexusForever.Game.Account.Currency
                 throw new InvalidOperationException("Vendor recovery lost its admitted account or wallet rows.");
             account.AccountCurrency = account.AccountCurrency.Where(wallet => !affected.Contains(wallet.CurrencyId)).Concat(wallets).ToList();
             if (cosmic) account.Loyalty = refreshed.Loyalty;
+            if (local.Any(entry => entry.Intent.CreddUsageLimit.HasValue))
+            {
+                var usage = await fresh.AccountEntitlement.AsNoTracking()
+                    .SingleOrDefaultAsync(row => row.Id == account.Id && row.EntitlementId == (byte)EntitlementType.CREDDUsage
+                        && fresh.AccountWorldSession.Any(epoch => epoch.AccountId == row.Id && epoch.Epoch == account.WorldSessionEpoch));
+                if (usage == null)
+                    throw new InvalidOperationException("CREDD recovery lost its usage entitlement row.");
+                account.AccountEntitlement = account.AccountEntitlement
+                    .Where(value => value.EntitlementId != (byte)EntitlementType.CREDDUsage)
+                    .Append(usage).ToList();
+            }
         }
 
         internal sealed record Cost(AccountCurrencyType Currency, ulong Amount);
         internal sealed record Intent(string Id, uint Account, ulong Character, ushort Realm, string CharacterRoute, string AuthRoute,
             uint Item, uint Quantity, string QuoteFingerprint, ImmutableArray<Cost> Costs,
-            [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] ulong Epoch = 0);
+            [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] ulong Epoch = 0,
+            [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] uint? CreddUsageLimit = null);
 
         internal Intent Create(uint account, ulong character, uint item, uint quantity, string quoteFingerprint, IEnumerable<Cost> costs, ulong epoch)
         {
@@ -199,9 +212,13 @@ namespace NexusForever.Game.Account.Currency
                 foreach (var operation in operations)
                 {
                     AccountCurrencyOperationRepository repository = null;
+                    CreddUsageWrite usage = null;
                     context.EnlistSaveWork(unit =>
                     {
                         repository?.Detach();
+                        if (usage != null)
+                            unit.Entry(usage.Row).State = EntityState.Detached;
+                        usage = null;
                         repository = new(unit, operation.AccountId, operation.Currency, [operation],
                             vendorLoyalty: operation.Currency == AccountCurrencyType.CosmicReward);
                         repository.Stage();
@@ -209,7 +226,10 @@ namespace NexusForever.Game.Account.Currency
                         // allocate Realm admission epochs before committing.
                         if (subtract && !HasAdmittedEpoch(unit, intent))
                             throw new InvalidOperationException("Vendor payment lost its admitted account epoch.");
-                    }, _ => { }, () => repository?.CanCommit() == true);
+                        if (intent.CreddUsageLimit is uint limit && repository.HasNewOperation)
+                            usage = StageCreddUsage(unit, intent.Account, limit, subtract);
+                    }, _ => { }, () => repository?.CanCommit() == true
+                        && (usage == null || usage.CanCommit(context, intent.Account)));
                 }
                 await context.SaveChangesAsync();
             }
@@ -276,7 +296,9 @@ namespace NexusForever.Game.Account.Currency
         private static AccountWalletOperation[] Operations(Intent intent, bool subtract)
         {
             string payload = JsonSerializer.Serialize(intent);
-            string prefix = subtract ? DebitPrefix : "vendor-refund:";
+            string prefix = intent.CreddUsageLimit.HasValue
+                ? (subtract ? CreddDebitPrefix : "credd-redeem-refund:")
+                : (subtract ? DebitPrefix : "vendor-refund:");
             // The first key anchors the entire quote, even if a conflicting
             // retry supplies a different currency set under the same ID.
             return intent.Costs.Select((cost, index) => new AccountWalletOperation($"{prefix}{intent.Id}:{index}",
@@ -286,13 +308,16 @@ namespace NexusForever.Game.Account.Currency
         private void Validate(Intent intent)
         {
             if (intent == null || !Guid.TryParseExact(intent.Id, "N", out var id) || id == Guid.Empty || id.ToString("N") != intent.Id
-                || realm == 0 || intent.Realm != realm || intent.Account == 0 || intent.Character == 0 || intent.Item == 0 || intent.Quantity == 0
-                || intent.AuthRoute?.Length != 64 || intent.CharacterRoute?.Length != 64 || intent.QuoteFingerprint?.Length != 64
+                || realm == 0 || intent.Realm != realm || intent.Account == 0 || intent.Character == 0
+                || intent.AuthRoute?.Length != 64 || intent.CharacterRoute?.Length != 64
                 || intent.Costs.IsDefaultOrEmpty || intent.Costs.Length > 2
                 || intent.Costs.Any(cost => cost == null || cost.Amount == 0 || !Enum.IsDefined(cost.Currency)
                     || cost.Currency == AccountCurrencyType.None)
                 || !intent.Costs.Select(cost => cost.Currency).SequenceEqual(intent.Costs.Select(cost => cost.Currency).Distinct().Order()))
                 throw new InvalidOperationException("Vendor payment requires a canonical purchase and its original wallet owners.");
+            if (intent.CreddUsageLimit.HasValue ? !IsCreddRedemption(intent)
+                : intent.Item == 0 || intent.Quantity == 0 || intent.QuoteFingerprint?.Length != 64)
+                throw new InvalidOperationException("Account payment has an invalid delivery intent.");
         }
 
         private static string CharacterRoute(CharacterContext context)

@@ -20955,6 +20955,27 @@ cancellation, restore the debit and usage increment once. Publish success
 after both databases confirm delivery. Retail grant rules for empty
 `0x0770` remain open.
 
+#### CREDD settlement and Realm recovery
+
+5 November 2026. A CREDD settlement identity binds the account, Character,
+Realm, admission epoch, database routes, amount, and usage limit. Auth
+commits the debit receipt and usage increment in one transaction. The
+Character delivery or cancellation marker determines whether Realm admission
+keeps the debit or compensates it. Compensation restores the wallet and
+decrements the usage count in the same Auth transaction. Repeated recovery
+reuses the receipt, and admission refreshes both rows before session
+initialization.
+
+The owning build and 112 scoped SQLite checks passed. The CREDD cases
+covered an Auth acknowledgment loss, abandoned and resumed delivery, usage
+cap rejection, and a rejected usage write. They verified one compensation
+after repeated admission and preserved the existing `15:1` and `17:1` rows.
+Local results are under `artifacts/continuation-20261105/credd-redemption-settlement/`.
+
+The `0x0268` handler still needs live enrollment and committed publication.
+The existing 1000:1 ratio applies to this compatibility path. Retail
+`0x0770` grant rules remain open.
+
 #### Storefront and account inventory coverage
 
 Catalog, supported account-currency purchase, claim/return, pending item groups,

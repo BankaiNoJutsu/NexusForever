@@ -56,8 +56,10 @@ grant rules, result correlation and durable settlement remain open.
 checks the full character credit and the usage increment before debiting
 the original account. The [cross-database save probe](../../CURRENT_STATUS.md#credd-redemption-partial-commit)
 reproduces an Auth debit and usage increment with no Character credit when
-the Character save fails. Connect durable delivery and compensation before
-reporting success for the existing compatibility exchange.
+the Character save fails. The [CREDD settlement protocol](../../CURRENT_STATUS.md#credd-settlement-and-realm-recovery)
+pairs the wallet and usage changes in Auth and resolves outstanding receipts
+at Realm admission. Connect the compatibility packet handler to the protocol
+and publish the result after the original actor adopts the committed balances.
 
 [Public event contribution ownership](../../CURRENT_STATUS.md#public-event-contribution-ownership)
 checks the enrolled actor for player-driven progress, stats, votes, scoreboards,

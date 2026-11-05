@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NexusForever.Database;
 using NexusForever.Database.Auth;
 using NexusForever.Database.Auth.Model;
+using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Database.Configuration.Model;
 using NexusForever.Game.Abstract.Account;
@@ -28,6 +29,112 @@ namespace NexusForever.Game.Tests.Account.Currency;
 
 public sealed partial class AccountCurrencyDurabilityTests
 {
+    [Theory]
+    [InlineData("delivered")]
+    [InlineData("abandoned")]
+    [InlineData("resumed")]
+    [InlineData("usage-at-cap")]
+    [InlineData("usage-sql-rejected")]
+    public async Task CreddDebitAndUsageShareDeliveryOrAdmissionCompensation(string outcome)
+    {
+        const uint accountId = 77;
+        const ulong characterId = 42;
+        byte usageType = (byte)EntitlementType.CREDDUsage;
+        bool rejected = outcome is "usage-at-cap" or "usage-sql-rejected";
+        uint beforeUsage = outcome == "usage-at-cap" ? 5u : 1u;
+        using var auth = new Fixture(null, AccountCurrencyType.Credd);
+        using var character = new CharacterFixture(null);
+        character.Seed();
+        await SeedVendorPayment(auth, character);
+
+        var authDatabase = new AuthDatabase();
+        using (var context = auth.Context())
+        {
+            authDatabase.Initialise(new DatabaseConnectionString
+                { Provider = DatabaseProvider.Sqlite, ConnectionString = context.Database.GetDbConnection().ConnectionString });
+            context.AccountEntitlement.AddRange(
+                new AccountEntitlementModel { Id = accountId, EntitlementId = usageType, Amount = beforeUsage },
+                new AccountEntitlementModel { Id = accountId, EntitlementId = 15, Amount = 1 },
+                new AccountEntitlementModel { Id = accountId, EntitlementId = 17, Amount = 1 });
+            await context.SaveChangesAsync();
+            if (outcome == "usage-sql-rejected")
+                await context.Database.ExecuteSqlRawAsync("""
+                    CREATE TRIGGER reject_credd_usage BEFORE UPDATE ON account_entitlement
+                    BEGIN SELECT RAISE(ABORT, 'owned CREDD usage write rejection'); END
+                    """);
+        }
+        var characterDatabase = new CharacterDatabase();
+        using (var context = character.Context())
+            characterDatabase.Initialise(new DatabaseConnectionString
+                { Provider = DatabaseProvider.Sqlite, ConnectionString = context.Database.GetDbConnection().ConnectionString });
+
+        var protocol = new VendorAccountPurchase(characterDatabase.CreateContext,
+            () => auth.Context(outcome == "delivered" ? new CommitFailure(true) : null), realm: 1);
+        var intent = protocol.CreateCreddRedemption(accountId, characterId, amount: 2, usageLimit: 5, epoch: 1);
+        await Attempt(commit: outcome == "delivered");
+        if (outcome == "resumed")
+            await Attempt(commit: true);
+
+        AccountModel admitted;
+        using (var context = auth.Context())
+        {
+            var operations = context.AccountCurrencyOperation.ToArray();
+            if (rejected)
+                Assert.Empty(operations);
+            else
+                Assert.StartsWith("credd-redeem-debit:", Assert.Single(operations).OperationKey);
+            Assert.Equal(rejected ? 100ul : 98ul, context.AccountCurrency.Single(row => row.CurrencyId == (byte)AccountCurrencyType.Credd).Amount);
+            Assert.Equal(rejected ? beforeUsage : beforeUsage + 1, context.AccountEntitlement.Single(row => row.EntitlementId == usageType).Amount);
+            context.AccountWorldSession.Single().Epoch = 2;
+            await context.SaveChangesAsync();
+            admitted = context.Account.AsNoTracking().Include(row => row.AccountEntitlement)
+                .Include(row => row.AccountCurrency).Single();
+            admitted.WorldSessionEpoch = 2;
+        }
+
+        await VendorAccountPurchase.RecoverAtAdmissionAsync(admitted, authDatabase, characterDatabase, 1);
+        await VendorAccountPurchase.RecoverAtAdmissionAsync(admitted, authDatabase, characterDatabase, 1);
+        bool delivered = outcome is "delivered" or "resumed";
+        using var settled = auth.Context();
+        Assert.Equal(rejected ? 0 : delivered ? 1 : 2, settled.AccountCurrencyOperation.Count());
+        Assert.Equal(delivered ? 98ul : 100ul, admitted.AccountCurrency.Single(row => row.CurrencyId == (byte)AccountCurrencyType.Credd).Amount);
+        Assert.Equal(delivered ? beforeUsage + 1 : beforeUsage, admitted.AccountEntitlement.Single(row => row.EntitlementId == usageType).Amount);
+        Assert.Equal(new uint[] { 1, 1 }, admitted.AccountEntitlement.Where(row => row.EntitlementId is 15 or 17).Select(row => row.Amount));
+        using var source = character.Context();
+        Assert.Equal(delivered ? 2000ul : 0ul, source.CharacterCurrency.SingleOrDefault()?.Amount ?? 0ul);
+        Assert.Equal(rejected ? 0 : 1, source.BankReconciliationReceipt.Count());
+
+        async Task Attempt(bool commit)
+        {
+            await InVendorTransaction(characterDatabase.CreateContext, async (context, transaction) =>
+            {
+                var authorization = () => protocol.AuthorizeAsync(context, intent, unit =>
+                    unit.CharacterCurrency.Add(new CharacterCurrencyModel
+                    {
+                        Id = characterId, CurrencyId = (byte)CurrencyType.Credits,
+                        Amount = intent.Costs.Single().Amount * VendorAccountPurchase.CreddToCreditsRatio
+                    }));
+                if (rejected)
+                {
+                    if (outcome == "usage-at-cap")
+                        await Assert.ThrowsAsync<InvalidOperationException>(authorization);
+                    else
+                        await Assert.ThrowsAsync<DbUpdateException>(authorization);
+                    Assert.True(context.IsSaveRejected);
+                }
+                else
+                {
+                    Assert.Equal(VendorAccountAuthorization.Authorized, await authorization());
+                    await context.SaveChangesAsync();
+                }
+                if (commit)
+                    await transaction.CommitAsync();
+                else
+                    await transaction.RollbackAsync();
+            });
+        }
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
