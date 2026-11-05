@@ -1,5 +1,13 @@
 # Assessment follow-through goal
 
+[Action-bar lookup refusals](UPSTREAM_608_CAST_REFUSALS.md#action-bar-cast-resolution---5-november-2026)
+complete the public ordinary/position stale-slot feedback boundary. Eight
+corrected baseline failures are fixed;21 new/all116 affected cases and both
+reviews pass with clean scoped builds. Existing success/combo/downstream reply
+ownership is preserved. Continuous/no-token, malformed metadata, broader
+threshold/repress/transactional and native/runtime gates remain separate.
+Preserve concurrent PvP/prerequisite/group/native work; continue the wider queue.
+
 [Pet-flair Character MySQL qualification](PET_FLAIR_PROGRESSION.md#character-mysql-qualification)
 passes all16 original cases against fresh49-migration schemas with configured
 retries, plus16 SQLite controls and both review axes. The first stale migration

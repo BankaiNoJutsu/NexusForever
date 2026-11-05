@@ -1,0 +1,496 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-05T21:20:54.552315+00:00",
+  "baseCommit": "0580bdeb7429b941998504ca78034bf7738093ff",
+  "milestone": "Parsed ordinary/position action-bar cast lookup refusals",
+  "sources": [
+    {
+      "path": "Source/NexusForever.WorldServer/Network/Message/Handler/Spell/ClientCastSpellHandler.cs",
+      "sha256": "fa7f9aa642e6a443d9f9c02923a4d6aa0d69c6f72f499757640e5dd166490aa1",
+      "gitBlob": "70089e0f8285f696fb17507135fd6afd74eae779"
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/Network/Message/Handler/Spell/ClientCastSpellPositionHandler.cs",
+      "sha256": "ec24896c6dd8f3cdc3af6aa268bb2dfb14841a0ad5bd1653922543e86014f81e",
+      "gitBlob": "22579144f91399b35ab5ac7e5c78e32ef3829c82"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Spell/ActionBarCastResolutionTests.cs",
+      "sha256": "a76d334ba85d7f137091929b6919a7dea82bf527cd12cf71d8a593ba7b79654e",
+      "gitBlob": "5e6f7b5cda97372ea4e3abd7089488b2ba3e828e"
+    }
+  ],
+  "assemblies": [
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Abstract/bin/Debug/net10.0/NexusForever.Game.Abstract.dll",
+      "sha256": "319cd85afe18a2d696a14c540d1ee5299ccfae9fe25220de26412955573bb562"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Abstract.dll",
+      "sha256": "319cd85afe18a2d696a14c540d1ee5299ccfae9fe25220de26412955573bb562"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game/bin/Debug/net10.0/NexusForever.Game.dll",
+      "sha256": "b5830b46324acb64afc914adbfd0f840ca9741e12f4eb2d1fb5025a15b125546"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.dll",
+      "sha256": "b5830b46324acb64afc914adbfd0f840ca9741e12f4eb2d1fb5025a15b125546"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.WorldServer/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+      "sha256": "94636fe8f81e99915512717e1880533386bafe67d21b93857d46f7ac3a7dac77"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+      "sha256": "94636fe8f81e99915512717e1880533386bafe67d21b93857d46f7ac3a7dac77"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+      "sha256": "f900d1862ab8ca26e4dedb8279a8a534582b0040f5f016936c119ca5cd395db6"
+    }
+  ],
+  "sourceBoundary": {
+    "trackedInputs": 6269,
+    "expectedTrackedChanges": [
+      "Source/NexusForever.WorldServer/Network/Message/Handler/Spell/ClientCastSpellHandler.cs",
+      "Source/NexusForever.WorldServer/Network/Message/Handler/Spell/ClientCastSpellPositionHandler.cs"
+    ],
+    "newTestFile": "Source/NexusForever.Game.Tests/Spell/ActionBarCastResolutionTests.cs",
+    "historicalLiteralCleanFilterMatches": [
+      {
+        "path": "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+        "storedBlob": "9b4e604e08391bf229552fa04081ecf9c74fec4d",
+        "cleanFilteredBlob": "7de92fafe0c2474ba8428ca9ceee883d39138b46"
+      },
+      {
+        "path": "Source/NexusForever.ClientConnector/packages.config",
+        "storedBlob": "fa4b77dc45783358023c1cd38e6ff9bad122aea4",
+        "cleanFilteredBlob": "8ab13a9023dec3cf548ee61ba183013bd098a297"
+      },
+      {
+        "path": "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+        "storedBlob": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "cleanFilteredBlob": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+        "storedBlob": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "cleanFilteredBlob": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+        "storedBlob": "64769a2266f7feab861fcc61cd2b00a0a05da8c4",
+        "cleanFilteredBlob": "74272fd6bf29afac14c5d62cb172e81b4edee19a"
+      },
+      {
+        "path": "Source/NexusForever.Database/NexusForever.Database.csproj",
+        "storedBlob": "61f9d5326c59ec7018164eba605a01f4081dfded",
+        "cleanFilteredBlob": "163c4f01e198e71066afcd9089a367c78b4c3de6"
+      },
+      {
+        "path": "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj",
+        "storedBlob": "74f0ec9ebbf4894dd7ef64f379a773a9e4ce1295",
+        "cleanFilteredBlob": "ecd970da6d0d220f3caaf6780656c1809e18a9af"
+      }
+    ],
+    "explicitCheckoutEncodingVariants": [
+      {
+        "path": "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+        "storedSha256": "9e04e912062c4b7a30a30a3e79dcaf15339ba72e44ca9b9675a0cb4d2e66f41b",
+        "observedSha256": "a6da337f337407b162ba7fcf8d608882b2a71f7fd41d06ef25a4cd43fa20d1a4",
+        "boundary": "Explicit BOM/newline checkout difference; normalized text equal; no source rewrite"
+      }
+    ],
+    "allOtherSourceContentMatchesPublishedBase": true,
+    "foreignWorkExcluded": true
+  },
+  "baseline": {
+    "path": "artifacts/continuation-20261105/actionbar-cast-resolution/corrected-baseline.trx",
+    "sha256": "8b7eedd6b1b4cb0fb9cc70b280763da3e6263dcc6093aead64d5d26aea56ad0f",
+    "counters": {
+      "total": 8,
+      "executed": 8,
+      "passed": 0,
+      "failed": 8,
+      "error": 0,
+      "timeout": 0,
+      "aborted": 0,
+      "inconclusive": 0,
+      "passedButRunAborted": 0,
+      "notRunnable": 0,
+      "notExecuted": 0,
+      "disconnected": 0,
+      "warning": 0,
+      "completed": 0,
+      "inProgress": 0,
+      "pending": 0
+    },
+    "groups": {
+      "ActionBarCastResolutionTests": {
+        "Failed": 8
+      }
+    },
+    "nonPassing": [
+      {
+        "name": "NexusForever.Game.Tests.Spell.ActionBarCastResolutionTests.StaleActionBarRequestReceivesItsCorrelatedRefusal(position: False, missingSpellbookEntry: False, token: 0)",
+        "outcome": "Failed",
+        "message": "Assert.Null() Failure: Value is not null\r\nExpected: null\r\nActual:   NexusForever.Network.InvalidPacketValueException: Exception of type 'NexusForever.Network.InvalidPacketValueException' was thrown.\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellHandler.GetCharacterSpell(IWorldSession session, UInt16 bagIndex)\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellHandler.HandleMessage(IWorldSession session, ClientCastSpell castSpell)\r\n   at NexusForever.G"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Spell.ActionBarCastResolutionTests.StaleActionBarRequestReceivesItsCorrelatedRefusal(position: False, missingSpellbookEntry: False, token: 305419896)",
+        "outcome": "Failed",
+        "message": "Assert.Null() Failure: Value is not null\r\nExpected: null\r\nActual:   NexusForever.Network.InvalidPacketValueException: Exception of type 'NexusForever.Network.InvalidPacketValueException' was thrown.\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellHandler.GetCharacterSpell(IWorldSession session, UInt16 bagIndex)\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellHandler.HandleMessage(IWorldSession session, ClientCastSpell castSpell)\r\n   at NexusForever.G"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Spell.ActionBarCastResolutionTests.StaleActionBarRequestReceivesItsCorrelatedRefusal(position: True, missingSpellbookEntry: False, token: 305419896)",
+        "outcome": "Failed",
+        "message": "Assert.Null() Failure: Value is not null\r\nExpected: null\r\nActual:   NexusForever.Network.InvalidPacketValueException: Exception of type 'NexusForever.Network.InvalidPacketValueException' was thrown.\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellHandler.GetCharacterSpell(IWorldSession session, UInt16 bagIndex)\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellPositionHandler.HandleMessage(IWorldSession session, ClientCastSpellPosition castSpell)\r\n   a"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Spell.ActionBarCastResolutionTests.StaleActionBarRequestReceivesItsCorrelatedRefusal(position: True, missingSpellbookEntry: True, token: 305419896)",
+        "outcome": "Failed",
+        "message": "Assert.Null() Failure: Value is not null\r\nExpected: null\r\nActual:   NexusForever.Network.InvalidPacketValueException: Exception of type 'NexusForever.Network.InvalidPacketValueException' was thrown.\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellHandler.GetCharacterSpell(IWorldSession session, UInt16 bagIndex)\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellPositionHandler.HandleMessage(IWorldSession session, ClientCastSpellPosition castSpell)\r\n   a"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Spell.ActionBarCastResolutionTests.StaleActionBarRequestReceivesItsCorrelatedRefusal(position: True, missingSpellbookEntry: True, token: 0)",
+        "outcome": "Failed",
+        "message": "Assert.Null() Failure: Value is not null\r\nExpected: null\r\nActual:   NexusForever.Network.InvalidPacketValueException: Exception of type 'NexusForever.Network.InvalidPacketValueException' was thrown.\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellHandler.GetCharacterSpell(IWorldSession session, UInt16 bagIndex)\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellPositionHandler.HandleMessage(IWorldSession session, ClientCastSpellPosition castSpell)\r\n   a"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Spell.ActionBarCastResolutionTests.StaleActionBarRequestReceivesItsCorrelatedRefusal(position: False, missingSpellbookEntry: True, token: 305419896)",
+        "outcome": "Failed",
+        "message": "Assert.Null() Failure: Value is not null\r\nExpected: null\r\nActual:   NexusForever.Network.InvalidPacketValueException: Exception of type 'NexusForever.Network.InvalidPacketValueException' was thrown.\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellHandler.GetCharacterSpell(IWorldSession session, UInt16 bagIndex)\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellHandler.HandleMessage(IWorldSession session, ClientCastSpell castSpell)\r\n   at NexusForever.G"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Spell.ActionBarCastResolutionTests.StaleActionBarRequestReceivesItsCorrelatedRefusal(position: True, missingSpellbookEntry: False, token: 0)",
+        "outcome": "Failed",
+        "message": "Assert.Null() Failure: Value is not null\r\nExpected: null\r\nActual:   NexusForever.Network.InvalidPacketValueException: Exception of type 'NexusForever.Network.InvalidPacketValueException' was thrown.\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellHandler.GetCharacterSpell(IWorldSession session, UInt16 bagIndex)\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellPositionHandler.HandleMessage(IWorldSession session, ClientCastSpellPosition castSpell)\r\n   a"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Spell.ActionBarCastResolutionTests.StaleActionBarRequestReceivesItsCorrelatedRefusal(position: False, missingSpellbookEntry: True, token: 0)",
+        "outcome": "Failed",
+        "message": "Assert.Null() Failure: Value is not null\r\nExpected: null\r\nActual:   NexusForever.Network.InvalidPacketValueException: Exception of type 'NexusForever.Network.InvalidPacketValueException' was thrown.\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellHandler.GetCharacterSpell(IWorldSession session, UInt16 bagIndex)\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellHandler.HandleMessage(IWorldSession session, ClientCastSpell castSpell)\r\n   at NexusForever.G"
+      }
+    ]
+  },
+  "baselineProductionDll": {
+    "path": "artifacts/continuation-20261105/pet-flair-mysql/provider/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+    "sha256": "cab7b64aa9864fc7316566db048242315f6888eac8d728b760bf435f589597c6"
+  },
+  "baselineBoundary": "Corrected fixture used the previously qualified unchanged WorldServer DLL; current owning DLL was restored before candidate/final tests",
+  "fixtureDiagnostics": {
+    "initialBaseline": {
+      "path": "artifacts/continuation-20261105/actionbar-cast-resolution/baseline.trx",
+      "sha256": "d099ffc3c3f892d668990acdee65e640f3f060a2bfd7b792e872727f8ae3ab79",
+      "counters": {
+        "total": 8,
+        "executed": 8,
+        "passed": 0,
+        "failed": 8,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      },
+      "groups": {
+        "ActionBarCastResolutionTests": {
+          "Failed": 8
+        }
+      },
+      "nonPassing": [
+        {
+          "name": "NexusForever.Game.Tests.Spell.ActionBarCastResolutionTests.StaleActionBarRequestReceivesItsCorrelatedRefusal(position: True, missingSpellbookEntry: True, token: 305419896)",
+          "outcome": "Failed",
+          "message": "Assert.Null() Failure: Value is not null\r\nExpected: null\r\nActual:   System.InvalidCastException: Unable to cast object of type 'System.UInt64' to type 'System.UInt32'.\r\n   at generatedProxy_8.get_Id()\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellHandler.GetCharacterSpell(IWorldSession session, UInt16 bagIndex) in C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\incoming-chat-ownership\\candidate\\Source\\NexusForever.WorldServer\\Network\\Message\\Handler\\Spell\\Clie"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Spell.ActionBarCastResolutionTests.StaleActionBarRequestReceivesItsCorrelatedRefusal(position: False, missingSpellbookEntry: False, token: 305419896)",
+          "outcome": "Failed",
+          "message": "Assert.Null() Failure: Value is not null\r\nExpected: null\r\nActual:   NexusForever.Network.InvalidPacketValueException: Exception of type 'NexusForever.Network.InvalidPacketValueException' was thrown.\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellHandler.GetCharacterSpell(IWorldSession session, UInt16 bagIndex) in C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\incoming-chat-ownership\\candidate\\Source\\NexusForever.WorldServer\\Network\\Message\\Handler\\Spell\\Client"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Spell.ActionBarCastResolutionTests.StaleActionBarRequestReceivesItsCorrelatedRefusal(position: False, missingSpellbookEntry: True, token: 0)",
+          "outcome": "Failed",
+          "message": "Assert.Null() Failure: Value is not null\r\nExpected: null\r\nActual:   System.InvalidCastException: Unable to cast object of type 'System.UInt64' to type 'System.UInt32'.\r\n   at generatedProxy_8.get_Id()\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellHandler.GetCharacterSpell(IWorldSession session, UInt16 bagIndex) in C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\incoming-chat-ownership\\candidate\\Source\\NexusForever.WorldServer\\Network\\Message\\Handler\\Spell\\Clie"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Spell.ActionBarCastResolutionTests.StaleActionBarRequestReceivesItsCorrelatedRefusal(position: True, missingSpellbookEntry: False, token: 0)",
+          "outcome": "Failed",
+          "message": "Assert.Null() Failure: Value is not null\r\nExpected: null\r\nActual:   NexusForever.Network.InvalidPacketValueException: Exception of type 'NexusForever.Network.InvalidPacketValueException' was thrown.\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellHandler.GetCharacterSpell(IWorldSession session, UInt16 bagIndex) in C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\incoming-chat-ownership\\candidate\\Source\\NexusForever.WorldServer\\Network\\Message\\Handler\\Spell\\Client"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Spell.ActionBarCastResolutionTests.StaleActionBarRequestReceivesItsCorrelatedRefusal(position: False, missingSpellbookEntry: False, token: 0)",
+          "outcome": "Failed",
+          "message": "Assert.Null() Failure: Value is not null\r\nExpected: null\r\nActual:   NexusForever.Network.InvalidPacketValueException: Exception of type 'NexusForever.Network.InvalidPacketValueException' was thrown.\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellHandler.GetCharacterSpell(IWorldSession session, UInt16 bagIndex) in C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\incoming-chat-ownership\\candidate\\Source\\NexusForever.WorldServer\\Network\\Message\\Handler\\Spell\\Client"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Spell.ActionBarCastResolutionTests.StaleActionBarRequestReceivesItsCorrelatedRefusal(position: False, missingSpellbookEntry: True, token: 305419896)",
+          "outcome": "Failed",
+          "message": "Assert.Null() Failure: Value is not null\r\nExpected: null\r\nActual:   System.InvalidCastException: Unable to cast object of type 'System.UInt64' to type 'System.UInt32'.\r\n   at generatedProxy_8.get_Id()\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellHandler.GetCharacterSpell(IWorldSession session, UInt16 bagIndex) in C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\incoming-chat-ownership\\candidate\\Source\\NexusForever.WorldServer\\Network\\Message\\Handler\\Spell\\Clie"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Spell.ActionBarCastResolutionTests.StaleActionBarRequestReceivesItsCorrelatedRefusal(position: True, missingSpellbookEntry: True, token: 0)",
+          "outcome": "Failed",
+          "message": "Assert.Null() Failure: Value is not null\r\nExpected: null\r\nActual:   System.InvalidCastException: Unable to cast object of type 'System.UInt64' to type 'System.UInt32'.\r\n   at generatedProxy_8.get_Id()\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellHandler.GetCharacterSpell(IWorldSession session, UInt16 bagIndex) in C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\incoming-chat-ownership\\candidate\\Source\\NexusForever.WorldServer\\Network\\Message\\Handler\\Spell\\Clie"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Spell.ActionBarCastResolutionTests.StaleActionBarRequestReceivesItsCorrelatedRefusal(position: True, missingSpellbookEntry: False, token: 305419896)",
+          "outcome": "Failed",
+          "message": "Assert.Null() Failure: Value is not null\r\nExpected: null\r\nActual:   NexusForever.Network.InvalidPacketValueException: Exception of type 'NexusForever.Network.InvalidPacketValueException' was thrown.\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellHandler.GetCharacterSpell(IWorldSession session, UInt16 bagIndex) in C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\incoming-chat-ownership\\candidate\\Source\\NexusForever.WorldServer\\Network\\Message\\Handler\\Spell\\Client"
+        }
+      ]
+    },
+    "firstCandidate": {
+      "path": "artifacts/continuation-20261105/actionbar-cast-resolution/candidate.trx",
+      "sha256": "f4d2b921837023d6230786e56718c9390f433dfa42fb8efee68c096b937b830a",
+      "counters": {
+        "total": 8,
+        "executed": 8,
+        "passed": 4,
+        "failed": 4,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      },
+      "groups": {
+        "ActionBarCastResolutionTests": {
+          "Passed": 4,
+          "Failed": 4
+        }
+      },
+      "nonPassing": [
+        {
+          "name": "NexusForever.Game.Tests.Spell.ActionBarCastResolutionTests.StaleActionBarRequestReceivesItsCorrelatedRefusal(position: True, missingSpellbookEntry: True, token: 0)",
+          "outcome": "Failed",
+          "message": "Assert.Null() Failure: Value is not null\r\nExpected: null\r\nActual:   System.InvalidCastException: Unable to cast object of type 'System.UInt64' to type 'System.UInt32'.\r\n   at generatedProxy_8.get_Id()\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellHandler.GetCharacterSpell(IWorldSession session, UInt16 bagIndex, UInt32 contextToken) in C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\incoming-chat-ownership\\candidate\\Source\\NexusForever.WorldServer\\Network\\Messa"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Spell.ActionBarCastResolutionTests.StaleActionBarRequestReceivesItsCorrelatedRefusal(position: False, missingSpellbookEntry: True, token: 0)",
+          "outcome": "Failed",
+          "message": "Assert.Null() Failure: Value is not null\r\nExpected: null\r\nActual:   System.InvalidCastException: Unable to cast object of type 'System.UInt64' to type 'System.UInt32'.\r\n   at generatedProxy_8.get_Id()\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellHandler.GetCharacterSpell(IWorldSession session, UInt16 bagIndex, UInt32 contextToken) in C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\incoming-chat-ownership\\candidate\\Source\\NexusForever.WorldServer\\Network\\Messa"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Spell.ActionBarCastResolutionTests.StaleActionBarRequestReceivesItsCorrelatedRefusal(position: True, missingSpellbookEntry: True, token: 305419896)",
+          "outcome": "Failed",
+          "message": "Assert.Null() Failure: Value is not null\r\nExpected: null\r\nActual:   System.InvalidCastException: Unable to cast object of type 'System.UInt64' to type 'System.UInt32'.\r\n   at generatedProxy_8.get_Id()\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellHandler.GetCharacterSpell(IWorldSession session, UInt16 bagIndex, UInt32 contextToken) in C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\incoming-chat-ownership\\candidate\\Source\\NexusForever.WorldServer\\Network\\Messa"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Spell.ActionBarCastResolutionTests.StaleActionBarRequestReceivesItsCorrelatedRefusal(position: False, missingSpellbookEntry: True, token: 305419896)",
+          "outcome": "Failed",
+          "message": "Assert.Null() Failure: Value is not null\r\nExpected: null\r\nActual:   System.InvalidCastException: Unable to cast object of type 'System.UInt64' to type 'System.UInt32'.\r\n   at generatedProxy_8.get_Id()\r\n   at NexusForever.WorldServer.Network.Message.Handler.Spell.ClientCastSpellHandler.GetCharacterSpell(IWorldSession session, UInt16 bagIndex, UInt32 contextToken) in C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261105\\incoming-chat-ownership\\candidate\\Source\\NexusForever.WorldServer\\Network\\Messa"
+        }
+      ]
+    },
+    "explanation": "Initial IItem.Id fixture used UInt64 instead of its UInt32 contract. Four InvalidCast failures are fixture diagnostics; corrected-baseline contains eight genuine InvalidPacketValueException failures."
+  },
+  "correctedCandidate": {
+    "path": "artifacts/continuation-20261105/actionbar-cast-resolution/corrected-candidate.trx",
+    "sha256": "9532df4e0c00efcded78b8cce1fdfcb70f96fbf8b202e6d338b8876b5c7ece2b",
+    "counters": {
+      "total": 8,
+      "executed": 8,
+      "passed": 8,
+      "failed": 0,
+      "error": 0,
+      "timeout": 0,
+      "aborted": 0,
+      "inconclusive": 0,
+      "passedButRunAborted": 0,
+      "notRunnable": 0,
+      "notExecuted": 0,
+      "disconnected": 0,
+      "warning": 0,
+      "completed": 0,
+      "inProgress": 0,
+      "pending": 0
+    },
+    "groups": {
+      "ActionBarCastResolutionTests": {
+        "Passed": 8
+      }
+    },
+    "nonPassing": []
+  },
+  "expandedCandidate": {
+    "path": "artifacts/continuation-20261105/actionbar-cast-resolution/expanded.trx",
+    "sha256": "1068757ec1af8054818525b513c097123395c19263596b776f90e1e2fbdbb88d",
+    "counters": {
+      "total": 21,
+      "executed": 21,
+      "passed": 21,
+      "failed": 0,
+      "error": 0,
+      "timeout": 0,
+      "aborted": 0,
+      "inconclusive": 0,
+      "passedButRunAborted": 0,
+      "notRunnable": 0,
+      "notExecuted": 0,
+      "disconnected": 0,
+      "warning": 0,
+      "completed": 0,
+      "inProgress": 0,
+      "pending": 0
+    },
+    "groups": {
+      "ActionBarCastResolutionTests": {
+        "Passed": 21
+      }
+    },
+    "nonPassing": []
+  },
+  "finalAffected": {
+    "path": "artifacts/continuation-20261105/actionbar-cast-resolution/affected.trx",
+    "sha256": "88306b74fc913fbf395e3895e8a9b0269b179b296d379e33a5374d5af79ea52b",
+    "counters": {
+      "total": 106,
+      "executed": 106,
+      "passed": 106,
+      "failed": 0,
+      "error": 0,
+      "timeout": 0,
+      "aborted": 0,
+      "inconclusive": 0,
+      "passedButRunAborted": 0,
+      "notRunnable": 0,
+      "notExecuted": 0,
+      "disconnected": 0,
+      "warning": 0,
+      "completed": 0,
+      "inProgress": 0,
+      "pending": 0
+    },
+    "groups": {
+      "EarlyClientCastRefusalTests": {
+        "Passed": 16
+      },
+      "ClientItemUseHandlerTests": {
+        "Passed": 22
+      },
+      "ActionBarCastResolutionTests": {
+        "Passed": 21
+      },
+      "ClientCastSpellContinuousHandlerTests": {
+        "Passed": 3
+      },
+      "SpellCastConfirmationTests": {
+        "Passed": 12
+      },
+      "ClientItemUseLootBagHandlerTests": {
+        "Passed": 7
+      },
+      "CharacterSpellRapidTapComboTests": {
+        "Passed": 19
+      },
+      "ClientItemUseDecorHandlerTests": {
+        "Passed": 5
+      },
+      "SpellCastResultContextTokenTests": {
+        "Passed": 1
+      }
+    },
+    "nonPassing": []
+  },
+  "selectedAdapterControls": {
+    "path": "artifacts/continuation-20261105/actionbar-cast-resolution/selected-adapter-controls.trx",
+    "sha256": "8134f217cb6dd8ac8127a1cc7e938146215ff5599faed2f10177adbd496c7eec",
+    "counters": {
+      "total": 10,
+      "executed": 10,
+      "passed": 10,
+      "failed": 0,
+      "error": 0,
+      "timeout": 0,
+      "aborted": 0,
+      "inconclusive": 0,
+      "passedButRunAborted": 0,
+      "notRunnable": 0,
+      "notExecuted": 0,
+      "disconnected": 0,
+      "warning": 0,
+      "completed": 0,
+      "inProgress": 0,
+      "pending": 0
+    },
+    "groups": {
+      "FloatingActionBarSpellTests": {
+        "Passed": 10
+      }
+    },
+    "nonPassing": []
+  },
+  "uniqueAffectedTotal": 116,
+  "newCases": 21,
+  "coverageSelection": "106 affected cases plus10 disjoint FloatingActionBarSpellTests after locating the selected adapter controls; no repeated passing batch",
+  "builds": [
+    {
+      "path": "artifacts/continuation-20261105/actionbar-cast-resolution/candidate-owning-build.log",
+      "sha256": "f2915899ec671cb46a76b1fb2f97c4539a3b4b0b2cbe1b623280e51b8a05925d"
+    },
+    {
+      "path": "artifacts/continuation-20261105/actionbar-cast-resolution/final-test-build.log",
+      "sha256": "9149fe71ae99657e1a1ca8587811ba52fb5e291d27cd80f5c2dd242d43496fc7"
+    }
+  ],
+  "testFilter": "FullyQualifiedName~ActionBarCastResolutionTests|FullyQualifiedName~SpellCastConfirmationTests|FullyQualifiedName~EarlyClientCastRefusalTests|FullyQualifiedName~SpellCastResultContextTokenTests|FullyQualifiedName~CharacterSpellRapidTapComboTests|FullyQualifiedName~ClientCastSpellContinuousHandlerTests|FullyQualifiedName~ClientItemUseHandlerTests|FullyQualifiedName~ClientItemUseDecorHandlerTests|FullyQualifiedName~ClientItemUseLootBagHandlerTests|FullyQualifiedName~ClientCastSpellSelectedHandlerTests",
+  "review": {
+    "standards": {
+      "findings": 0,
+      "path": "artifacts/continuation-20261105/actionbar-cast-resolution/review-standards.txt",
+      "sha256": "187b2bdeef329607d6cdb69b1591ce780e8b1eb8464b099aef1a26824f3a51a1"
+    },
+    "spec": {
+      "findings": 0,
+      "path": "artifacts/continuation-20261105/actionbar-cast-resolution/review-spec.txt",
+      "sha256": "40d9a7d52ca63e75b62539ff6b76f2a742a6d094d39fcf2e4236b19b92360bc9"
+    }
+  },
+  "contractInputs": [
+    {
+      "path": "Decomp/Analysis/SPELL_CAST_CONFIRMATION_07FD.md",
+      "sha256": "20dcf55912e370293613d90437c24a1b24f03dac790c3bffa93a2810089492f9"
+    }
+  ],
+  "upstream": {
+    "path": "artifacts/continuation-20261105/actionbar-cast-resolution/upstream-refresh.json",
+    "sha256": "06d57d9e59b4422e49a25d6c0fbffb0fd0dc73c9617acd3575322da74f1a0927",
+    "latestAllStateCount": 20,
+    "changedRecords": 0,
+    "pr608": "open",
+    "pr609": "closed, unmerged"
+  },
+  "preserved": [
+    "Zero context tokens are parsed requests",
+    "Accepted resolved tier/target/position/combo completion",
+    "Downstream reply ownership and loading suppression",
+    "Continuous packet unchanged; no context token invented",
+    "Defaults15:1/17:1; no automatic44/seven grants",
+    "Concurrent PvP/prerequisite/group/native work"
+  ],
+  "remaining": [
+    "Malformed table/metadata failures",
+    "Broader threshold/repress/transactional casting",
+    "Post-acceptance item settlement",
+    "Provider/socket/deployment",
+    "Native cooldown/pending UI and retail qualification"
+  ],
+  "failureMessageBoundary": "512-character portable excerpts; full failing TRX files and hashes are retained locally"
+}

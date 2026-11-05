@@ -1,5 +1,11 @@
 # Client Binary Decompile Continuation Guide
 
+[Action-bar lookup refusals](UPSTREAM_608_CAST_REFUSALS.md#action-bar-cast-resolution---5-november-2026)
+now answer ordinary/position requests after stale item/book lookup, including
+token zero. Eight corrected baseline failures are fixed;21 new/all116 unique
+affected cases, clean scoped builds and both reviews pass. Preserve unchanged
+continuous/no-token and broader casting/metadata boundaries; native UI stays open.
+
 [Pet-flair Character MySQL](PET_FLAIR_PROGRESSION.md#character-mysql-qualification)
 passes all16 original cases with configured retries and exact49-migration
 identities, plus16 SQLite controls and both reviews. The initial stale guard

@@ -1,5 +1,11 @@
 # NexusForever Feature Restoration - Current Status
 
+[Action-bar cast lookup refusals](Decomp/Analysis/UPSTREAM_608_CAST_REFUSALS.md#action-bar-cast-resolution---5-november-2026)
+now answer parsed ordinary/position requests after their ability item or spell
+entry disappears, preserving token zero and original ownership. Eight corrected
+baseline failures are fixed;21 new/all116 affected cases, clean scoped builds
+and both reviews pass. Broader casting/metadata and native UI remain open.
+
 [Pet-flair MySQL qualification](Decomp/Analysis/PET_FLAIR_PROGRESSION.md#character-mysql-qualification)
 passes all16 original cases on fresh49-migration Character schemas;16 SQLite
 controls and both reviews pass. The stale migration guard failure is retained.

@@ -2,7 +2,6 @@
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Spell;
-using NexusForever.Network;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Message.Model;
@@ -17,19 +16,26 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
         /// </summary>
         public void HandleMessage(IWorldSession session, ClientCastSpell castSpell)
         {
-            ICharacterSpell characterSpell = GetCharacterSpell(session, castSpell.BagIndex);
+            ICharacterSpell characterSpell = GetCharacterSpell(session, castSpell.BagIndex, castSpell.ContextToken);
+            if (characterSpell == null)
+                return;
             CastCharacterSpell(session, characterSpell, castSpell.PrimaryTargetId, null, castSpell.ContextToken, nameof(ClientCastSpell));
         }
 
-        internal static ICharacterSpell GetCharacterSpell(IWorldSession session, ushort bagIndex)
+        internal static ICharacterSpell GetCharacterSpell(IWorldSession session, ushort bagIndex, uint contextToken)
         {
-            IItem item = session.Player.Inventory.GetItem(InventoryLocation.Ability, bagIndex);
-            if (item == null)
-                throw new InvalidPacketValueException();
+            IPlayer player = session.Player;
+            if (player == null)
+                return null;
+            IItem item = player.Inventory.GetItem(InventoryLocation.Ability, bagIndex);
+            ICharacterSpell characterSpell = item == null ? null : player.SpellManager.GetSpell(item.Id);
+            if (!ReferenceEquals(session.Player, player) || !ReferenceEquals(player.Session, session))
+                return null;
 
-            ICharacterSpell characterSpell = session.Player.SpellManager.GetSpell(item.Id);
+            // A parsed request can outlive its action-bar slot or learned entry.
+            // Its explicit request presence also owns a wrapped token of zero.
             if (characterSpell == null)
-                throw new InvalidPacketValueException();
+                ClientCastRequest.SendFailure(player, true, contextToken, 0, CastResult.SpellUnknown);
 
             return characterSpell;
         }

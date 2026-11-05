@@ -1,5 +1,12 @@
 # Continue on another machine
 
+Latest cast feedback: [action-bar lookup refusals](Decomp/Analysis/UPSTREAM_608_CAST_REFUSALS.md#action-bar-cast-resolution---5-november-2026)
+preserve parsed ordinary/position context tokens, including zero, after stale
+item/book lookups. Eight corrected baseline failures are fixed;21 new/all116
+unique scoped cases, clean owning/test builds and both reviews pass. Accepted
+and downstream reply paths stay owned. Continuous/no-token and malformed
+metadata, broader casting and native/runtime qualification remain open.
+
 Latest provider gate: [pet-flair Character MySQL](Decomp/Analysis/PET_FLAIR_PROGRESSION.md#character-mysql-qualification)
 passes all16 original cases on fresh49-migration MySQL8.4.13 schemas;16 SQLite
 controls and both reviews pass. The stale48-migration harness failure is retained;

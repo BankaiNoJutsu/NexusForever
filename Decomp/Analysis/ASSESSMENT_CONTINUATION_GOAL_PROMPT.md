@@ -76,6 +76,14 @@ Verified continuation status - 5 November 2026
   resumption as directed below; do not count unchanged PRs as new implementation.
 
 Next actionable outcomes and remaining gates
+- The later action-bar section of Decomp/Analysis/UPSTREAM_608_CAST_REFUSALS.md
+  completes parsed ordinary/position stale-item/book lookup feedback, preserving
+  token zero, original ownership and accepted/downstream reply behavior. Eight
+  corrected baseline failures are fixed;21 new/all116 unique affected cases,
+  clean scoped builds and both reviews pass. Do not repeat this completed Source
+  slice. Continuous/no-token, malformed metadata, broader threshold/repress/
+  transactional casting, post-acceptance settlement and native/runtime remain
+  open. Preserve concurrent PvP/prerequisite/group/native work; continue the queue.
 - The later Decomp/Analysis/INCOMING_CHAT_OWNERSHIP.md milestone completes the
   broker-to-World whisper/channel original-recipient boundary, including bubble
   lookup and automatic replies. Five baseline failures and two reviewed mutable
