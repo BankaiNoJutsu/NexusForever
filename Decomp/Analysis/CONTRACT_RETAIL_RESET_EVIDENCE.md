@@ -1,5 +1,12 @@
 # Contract cycle reset: retail evidence and implementation direction
 
+## 5 November source availability follow-up
+
+The [original 2017 discussion is directly readable again](CONTRACT_WEB_UNBLOCK_RESEARCH_2026_11_05.md).
+This supersedes the historical page-cache limitation below and adds the
+follow-up about holding active Contracts across days. It still supplies no
+earlier-unclaimed milestone or excess-point rule. Public `07CE` remains gated.
+
 ## Client progress replacement cross-check
 
 4 November 2026. REA identified the archived build 16042 executable at

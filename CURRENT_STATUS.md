@@ -1,5 +1,11 @@
 # NexusForever Feature Restoration - Current Status
 
+[All remaining blocker families audited](Decomp/Analysis/ALL_REMAINING_BLOCKERS_RESEARCH_2026_11_05.md)
+reconciles all 36 areas, the five producer rows and broader Source/data/provider/
+native requirements. Marketplace `06DF/07D5` and rotation `07CD` missing-consumer
+premises are retired. New LAS, guild-bank/token/recruitment and selected STS
+guard evidence is linked without claiming retail or deployment completion.
+
 [Tracked marker identity](Decomp/Analysis/TRACKED_MARKER_IDENTITY.md) now preserves
 the first32-bit TrackingSlot key and leaves the trailing15 bits neutral. The
 lookup no longer aliases high IDs to unrelated low rows. Four baseline failures
@@ -20338,8 +20344,8 @@ of truth for feature-area completion.
 | Metric | Value |
 |--------|-------|
 | Total feature areas | 36 (`F-001`..`F-036`; matrix rows `F-016`..`F-020` are five spell-runtime rows) |
-| Implementation-complete | 13 (sections marked **COMPLETE** below; not a retail-parity claim) |
-| Partial (real handlers/state exist; retail parity incomplete) | 21 (`F-016`..`F-020` count as five spell-runtime rows; includes F-031 retail-weight parity blocked) |
+| Implementation-complete | 11 (sections marked **COMPLETE** below; not a retail-parity claim) |
+| Partial (real handlers/state exist; retail parity incomplete) | 23 (`F-016`..`F-020` count as five spell-runtime rows; includes F-031 retail-weight parity blocked) |
 | Blocked / diagnostic / structural-only | 2 (`F-002` diagnostic, `F-003` structurally closed; `F-001` is partial with token-crypto blocked) |
 | Consolidated runtime gaps (emit/producer proof) | 5 rows in **Remaining Blocked Items** |
 | Related trackers | `Decomp/Analysis/MISSING_FEATURE_MATRIX.md`, `Decomp/Analysis/CONTENT_RETAIL_COMPLETENESS_TRACKER.md`, `GAMEPLAY_ECONOMY_SOCIAL_STATUS.md`, `MATCHING_IMPLEMENTATION_STATUS.md`, `ENTITY_AUX_DECODE_ROADMAP.md`, `BLOCKER_EVIDENCE_PLAN.md` |
@@ -20876,6 +20882,12 @@ cases; pass 119 housing/placeholder guard coverage passed 106/106 and keeps the
 row tail wire-named until producer/backing proof exists.
 
 ### F-005 - Marketplace / Auction / Commodity / CREDD - COMPLETE
+
+5 November ownership correction: `06DF` is the Primal Matrix snapshot and `07D5`
+is reward-track update. Older marketplace-aux entries below retain historical
+context and are superseded on ownership; do not count them as missing marketplace
+producers. Actual filter/partial-fill/CREDD and provider/native limits are in the
+[economy audit](Decomp/Analysis/ALL_BLOCKERS_ECONOMY_RESEARCH_2026_11_05.md).
 **All 15 client messages have complete handlers.** Auction post/search/buyout/bid,
 commodity post/cancel/buy/sell matching, CREDD exchange/history/redeem.
 DB persistence for auctions, commodity orders, CREDD orders, CREDD history.
@@ -21115,6 +21127,12 @@ non-zero `096A..096C` leading-field producers, type-1/type-2 offer-item purchase
 effects, and the native coupon sender for `0x0790`.
 
 ### F-007 - Reward Rotation - PARTIAL
+
+5 November ownership correction: `07CD/07D3` add/reload reward tracks; their
+consumer mapping is not an outstanding rotation `Flag` gate. The remaining
+rotation work concerns actual per-content rows/schedule/throttle semantics and
+grant delivery/recovery. See the [economy audit](Decomp/Analysis/ALL_BLOCKERS_ECONOMY_RESEARCH_2026_11_05.md)
+for the current Source/data distinction and original-source boundaries.
 Game-table refresh emits (`0x07CA` schedule, `0x07CD`/`0x07D3` content context),
 `AccountRewardRotationGrantManager` + `account_reward_rotation_grant` persistence,
 claim path via `ClientRewardUpdateRequest`, and non-empty `0x07C8` entry-state on
@@ -24777,6 +24795,14 @@ separately from the conservative request/choice handler path.
 
 ## Remaining Blocked Items
 
+5 November 2026: [REA and web follow-through](Decomp/Analysis/BLOCKER_UNBLOCK_RESEARCH_2026_11_05.md)
+recovers standalone decompilation and maps the STS RSA component envelope.
+Exact indexed housing/tracking routes and dated Fortune/community policy are
+recorded; producer and retail gates remain open. The older entity row below
+is superseded by the current handler/proxy mapping: all six apply cases are
+mapped, `08CC` Scientist naming is implemented, and the other five producers
+remain gated. The `0939` name/title and `093E` tag-owner models are now named.
+
 This table is the consolidated **runtime producer/emit** backlog. Broader partial
 features (guild bank, taxi routes, spell families, STS crypto, reward rotation,
 and others) stay in their `F-00x` sections and in
@@ -24797,11 +24823,11 @@ and others) stay in their `F-00x` sections and in
 
 | # | Feature | Gap | Evidence status (latest) | Blocker |
 |---|---------|-----|------------------------------|---------|
-| 1 | F-025 | Entity-stat aux: 0x0889, 0x08CC, 0x08F4, 0x0939, 0x093D, 0x093E | **Mapped** (wire + XML); no production emit; 2026-06-04 immediate scans added durable registration anchors for `0x0939`/`0x093D`/`0x093E` and still found registration/reader evidence only; 2026-06-04 source audit found no `ServerEntityStat*` aux constructors outside tests/models; 2026-06-09 cached-export/source recheck found no running Ghidra MCP instance, reconfirmed `140080bf0`, `1400980f0`, `140097620`, `140097ee0`, `140097690`, and `140097f70` as reader-only fragments, and again found no production source emitter outside models/tests/negative guards; stale candidate `FUN_140939650` rejected as viewport/grid global math rather than a packet consumer; focused aux/visual/tracking slice passed `28/28`; pass 117 placeholder guard keeps neutral aux field names until semantic proof and passed `91/91` | Per-opcode `vtable+0x58` apply handler, apply-table classification, or sniff order |
-| 2 | F-025 | Map-tracked-unit producer timing and TrackingSlot selection | **Mapped** consumer chain (`TrackingSlot.tbl`); **Implemented** lookup/selection guard tests; **Blocked** producer; Ghidra MCP recheck 2026-06-04 found client cache update/remove only and duplicate objective groups reject objective-only slot selection; 2026-06-09 cached-export/source recheck found no running Ghidra MCP instance, reconfirmed selected `WildStar64.exe` fragments as read/apply/Lua consumer-only, and found no production `ServerMapTrackedUnitUpdate` / `ServerMapTrackedUnitDisable` emitter in source; pass 118 guard coverage passed `97/97` | Native server send site or public-event marker sniff for `0x0849`/`0x0848`; `TrackingSlotHelper` remains one-way table lookup only |
-| 3 | F-004 | NeighborhoodEntry/List (0x0501/0x0506) | **Mapped** row fields (`NeighborhoodWireUInt*`); **Blocked** NF emit; Ghidra MCP recheck 2026-06-04 confirmed consumer-only cache apply and rejected adjacent community/visit senders; 2026-06-04 runtime cleanup removed the unrelated hardcoded `ServerHousingProperties.Residence.NeighbourhoodId` placeholder; 2026-06-09 cached-export/source recheck found no running Ghidra MCP instance, reconfirmed `14009cbe0` / `14009ebf0` reader shapes, `1404ba4f0` cache apply plus `HousingNeighborhoodRecieved`, and `140205900` table-loader-only evidence, and found no production source emitter; pass 119 rejects `HousingNeighborhoodInfo.tbl` column-name synthesis and focused guard coverage passed `106/106` | Live housing UI/realm-login sniff or native server-push path before `Housing_HandleNeighborhoodList` @ `1404ba4f0`; no `Housing_SendClient*` label for `0x0506` trigger yet |
-| 4 | F-008 | Discovery/station/complex-craft semantics and 0x084B/0x0855 emit intent | **Mapped** aux wire; 2026-06-04 Ghidra MCP recheck found registration/readers and finish/current-craft consumers only; 2026-06-09 cached-export/source recheck found no running Ghidra MCP instance, reconfirmed `0x084B` / `0x0855` reader-only evidence, `ServerCraftingCurrentCraft` client-state apply plus `CraftingUpdateCurrent` dispatch, and `0x056C` item microchip patch/apply evidence only; discovery mutations disabled; service keys `0x2C`/`0x4F`/`0x57` diagnostic; durable rune bridge implemented; distinct C2S microchip-install mutator rejected because client install is `0x085B` while `0x056C` is a server item patch | Native aux/current-craft producer path or live crafting capture for enqueue/timing, discovery unlock/hot-cold proof, non-success sigil rules, and `ServerItemMicrochips` (`0x056C`) producer timing |
-| 5 | F-031 | Per-item retail Madame Fay weights and active rotation | **Mapped** catalog transport; emulator `RewardRarity` tiers audited; 2026-06-04 Ghidra MCP recheck found no active-rotation source, renamed `ServerFortuneReset.ResetCode`, and payout grants now target the current character identity; 2026-06-09 cached-export/source recheck found no running Ghidra MCP instance, reconfirmed `140081f60`, `1407292a0`, `140766370`, `1404d60f0`, and `1400a0b10` as transport/consumer evidence only, and found current source still emitting `ServerFortuneRewards` from emulator rarity-tier `FortuneRewardPool` without a retail active-rotation or per-item weight source; F-007 `RewardRotation*` labels rejected as Fortune active-rotation evidence | Retail `ServerFortuneRewards` capture or storefront-server catalog dump (`FORTUNE_WEIGHT_AUDIT.md`) |
+| 1 | F-025 | Five entity-stat auxiliary producers | **Mapped consumers** for all six; `08CC` Scientist naming is **implemented**. `0939` name/title and `093E` tag-owner models are named. See [current handler/proxy evidence](Decomp/Analysis/F025_STATIC_HANDLER_PROXY_MAPPING.md). | Eligibility, recipients and send order for `0889/08F4/0939/093D/093E`; no extrapolation from the scanner producer. |
+| 2 | F-025 | Map-tracked-marker producer and row selection | First 32-bit word is the TrackingSlot row/UI key; final 15 bits remain neutral. [Full-width model/helper correction](Decomp/Analysis/TRACKED_MARKER_IDENTITY.md) is **implemented**; the rejected separate-ID/trailing-slot chain is superseded. | Trailing-field meaning, authoritative row selection, recipients, initial/update/disable/replay lifecycle and accepted producer evidence. |
+| 3 | F-004 | Legacy NeighborhoodEntry/List (`0501/0506`) | Name-text and list-replacement consumers are mapped. [Authored UI/version comparison](Decomp/Analysis/HOUSING_NEIGHBORHOOD_WEB_CORROBORATION_2026_11_05.md) separates newer Community requests from the legacy API. | Exact legacy trigger, backing fields and publication order; current Communities or a stale Lua event hook are not a `0506` producer witness. |
+| 4 | F-008 | Discovery/complex craft and `084B/0855` emission | Station keys `2C/4F/57` and observed candidate clear/replacement are mapped. `084B/0855` take the inspected dispatcher's default path; durable rune bridge exists. | Discovery/unlock/complex-craft policy, other aux owner, current/finish ordering, non-success sigil rules and `056C` item-patch cadence. |
+| 5 | F-031 | Exact Fortune item weights and active catalog | Emulator rarity-tier payout/catalog transport exist; publisher rotation/pity-quality records are historical and provide no numeric per-item weights. [Current audit](Decomp/Analysis/FORTUNE_WEIGHT_AUDIT.md). | Accepted retail rewards/catalog evidence with exact item/probability arrays and the final-build active rotation. |
 
 ---
 

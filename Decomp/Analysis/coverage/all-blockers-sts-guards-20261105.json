@@ -1,0 +1,242 @@
+{
+  "build": 16042,
+  "binary": "StsConnLib64.MT.dll",
+  "clientSha256": "aa0ef5888d17eb65da28b1cbef178d1650a837303c10a6fafc9f3c646c2f3fd1",
+  "reaEvidenceId": "ev_dba29958b64299b3a64c41214e66af69697b23182238084a321fdaace185b187",
+  "codeRanges": [
+    {
+      "name": "selected-token-sender-0",
+      "startVA": "0x18000a730",
+      "bytes": 84,
+      "fileOffset": 39728,
+      "sha256": "3baab12cd73effbd0f1961d72e2ed8961288143430ba6131e52d213c3ba49e01",
+      "boundary": "Selected PE x64 chained unwind range; separate callees are not included"
+    },
+    {
+      "name": "selected-token-sender-1",
+      "startVA": "0x18000a784",
+      "bytes": 509,
+      "fileOffset": 39812,
+      "sha256": "5dc091428f2e44eb73b5e4d27b9cce2a28f9b90546f756e75248ce602de7d777",
+      "boundary": "Selected PE x64 chained unwind range; separate callees are not included"
+    },
+    {
+      "name": "selected-token-sender-2",
+      "startVA": "0x18000a981",
+      "bytes": 371,
+      "fileOffset": 40321,
+      "sha256": "e06466d883e33372e3a21e42f5debd196307652011948707598ccd89522a91f9",
+      "boundary": "Selected PE x64 chained unwind range; separate callees are not included"
+    },
+    {
+      "name": "selected-token-sender-3",
+      "startVA": "0x18000aaf4",
+      "bytes": 285,
+      "fileOffset": 40692,
+      "sha256": "49694cee46d4f8381301d81becbffd5f5b4448d8ba8175db37b3c800080ae151",
+      "boundary": "Selected PE x64 chained unwind range; separate callees are not included"
+    },
+    {
+      "name": "selected-token-sender-4",
+      "startVA": "0x18000ac11",
+      "bytes": 26,
+      "fileOffset": 40977,
+      "sha256": "cda13e2ab7855cb0416d640bba7575d2f2a0c2b9de66800e51b70edb1db256a7",
+      "boundary": "Selected PE x64 chained unwind range; separate callees are not included"
+    },
+    {
+      "name": "generic-notification-guard-0",
+      "startVA": "0x180031570",
+      "bytes": 397,
+      "fileOffset": 199024,
+      "sha256": "fc870ae322b7e04e01e16587c883efa25d6ba8431b804f9195f0653047e50487",
+      "boundary": "Selected PE x64 chained unwind range; separate callees are not included"
+    },
+    {
+      "name": "selected-token-callback-0",
+      "startVA": "0x18000c340",
+      "bytes": 46,
+      "fileOffset": 46912,
+      "sha256": "f972edb34eca8173518c218634b1061ae08a3964de2ea9effc281f407f3b020d",
+      "boundary": "Selected PE x64 chained unwind range; separate callees are not included"
+    },
+    {
+      "name": "selected-filter-completion-0",
+      "startVA": "0x18000ac30",
+      "bytes": 400,
+      "fileOffset": 41008,
+      "sha256": "59f18cf2528e5e03fce5cfdaf39e47329e80ed2f48ce7424c9ef90a108783573",
+      "boundary": "Selected PE x64 chained unwind range; separate callees are not included"
+    },
+    {
+      "name": "message-xml-accessor-0",
+      "startVA": "0x1800248a0",
+      "bytes": 171,
+      "fileOffset": 146592,
+      "sha256": "0b3b65565ec13030c0e054c6c8122adacf05559485557d94ae8b98ff3eaa9914",
+      "boundary": "Selected PE x64 chained unwind range; separate callees are not included"
+    },
+    {
+      "name": "message-xml-accessor-1",
+      "startVA": "0x18002494b",
+      "bytes": 33,
+      "fileOffset": 146763,
+      "sha256": "69316eed1143471984ab2ecf56278b559298e8dafe4ea588443c5d9ccf39a8e7",
+      "boundary": "Selected PE x64 chained unwind range; separate callees are not included"
+    },
+    {
+      "name": "message-xml-accessor-2",
+      "startVA": "0x18002496c",
+      "bytes": 134,
+      "fileOffset": 146796,
+      "sha256": "859b803602ab5a21de43652981df815c71ac6700866430a9df62443e22dda1af",
+      "boundary": "Selected PE x64 chained unwind range; separate callees are not included"
+    },
+    {
+      "name": "message-xml-accessor-3",
+      "startVA": "0x1800249f2",
+      "bytes": 8,
+      "fileOffset": 146930,
+      "sha256": "6fbc06fb0434d19c48430d2fd1c1667401f0e0e08b9aadec3fbb9e517aef86f0",
+      "boundary": "Selected PE x64 chained unwind range; separate callees are not included"
+    },
+    {
+      "name": "message-xml-accessor-4",
+      "startVA": "0x1800249fa",
+      "bytes": 44,
+      "fileOffset": 146938,
+      "sha256": "9a41a1b76ef20a01bad502e99ca2606a9a1ba65531eb7b44e35295ea4a1df261",
+      "boundary": "Selected PE x64 chained unwind range; separate callees are not included"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "token-notify-flags-and-table",
+      "startVA": "0x18000aa5e",
+      "bytes": 23,
+      "fileOffset": 40542,
+      "sha256": "d3d0c3810840d71c2a20d0c871e6fad33e3b5a77e064bbc582b314ccd76c50cd",
+      "boundary": "Selected inspected code/data interval; no extra function extent inferred",
+      "hex": "c7401010000000488d05cc9f110048895f18488907e8e8"
+    },
+    {
+      "name": "token-notify-six-slot-table",
+      "startVA": "0x180124a38",
+      "bytes": 48,
+      "fileOffset": 1195576,
+      "sha256": "a948f38fcfeb334f4dee1ad66531348e4ae7e3662ce9447cf14cebf0b1cb00f2",
+      "boundary": "Selected inspected code/data interval; no extra function extent inferred",
+      "hex": "506d0080010000007015038001000000003d00800100000040c3008001000000503d008001000000103d008001000000"
+    },
+    {
+      "name": "message-predicate-30-38-slots",
+      "startVA": "0x18012b8a8",
+      "bytes": 16,
+      "fileOffset": 1223848,
+      "sha256": "7ded568c2bb0ccd847852d3ad93964f6cd99eca876080df2f7b81b51ebd1d8c2",
+      "boundary": "Selected inspected code/data interval; no extra function extent inferred",
+      "hex": "407f008001000000903e028001000000"
+    },
+    {
+      "name": "message-xml-accessor-slot",
+      "startVA": "0x18012b8d8",
+      "bytes": 8,
+      "fileOffset": 1223896,
+      "sha256": "dc3acfd4ccf13455976818f2d99377e7effb6d09cb4d4eda2a10838840397cce",
+      "boundary": "Selected inspected code/data interval; no extra function extent inferred",
+      "hex": "a048028001000000"
+    },
+    {
+      "name": "message-field60-getter",
+      "startVA": "0x180007f40",
+      "bytes": 16,
+      "fileOffset": 29504,
+      "sha256": "858493f3cce522b83a545a16c73f5df6fc07f341a2a50f7c115aa9a43cdfc4cd",
+      "boundary": "Selected inspected code/data interval; no extra function extent inferred",
+      "hex": "8b4160c3cccccccccccccccccccccccc"
+    },
+    {
+      "name": "message-flag-bit1-getter",
+      "startVA": "0x180023e90",
+      "bytes": 16,
+      "fileOffset": 144016,
+      "sha256": "ec855b3cd1e544a81ae514a9100791d97eb3f7042b2cc407dc221b89b12c37d7",
+      "boundary": "Selected inspected code/data interval; no extra function extent inferred",
+      "hex": "8b415cc1e01ec1f81fc3cccccccccccc"
+    },
+    {
+      "name": "selected-status-notify",
+      "startVA": "0x180003d50",
+      "bytes": 32,
+      "fileOffset": 12624,
+      "sha256": "97aba20880d97aa34faca33ac4a8b65997eee7ba33b85a13ffa61f8f55d07732",
+      "boundary": "Selected inspected code/data interval; no extra function extent inferred",
+      "hex": "4c8b41188b02498b4810418980d8000000498bd0488b0148ff20cccccccccccc"
+    },
+    {
+      "name": "guard-diagnostic-message-required-0",
+      "startVA": "0x18012d340",
+      "bytes": 17,
+      "fileOffset": 1230656,
+      "sha256": "a0a32cd6226e3121a5acd3b3d39f62ec9e6a7e4b81af1837d6193a86604c0244",
+      "boundary": "Exact NUL-terminated dispatcher diagnostic; not a wire specification",
+      "hex": "6d65737361676520726571756972656400"
+    },
+    {
+      "name": "guard-diagnostic-bad-set-of-replies-0",
+      "startVA": "0x18012d3a0",
+      "bytes": 19,
+      "fileOffset": 1230752,
+      "sha256": "e30705b91328b53e0b769e524a373645a345700eee64c2a605384d2f6c39e562",
+      "boundary": "Exact NUL-terminated dispatcher diagnostic; not a wire specification",
+      "hex": "62616420736574206f66207265706c69657300"
+    },
+    {
+      "name": "guard-diagnostic-invalid-one-many-reply-0",
+      "startVA": "0x18012d358",
+      "bytes": 23,
+      "fileOffset": 1230680,
+      "sha256": "96975586605a817b2992b0d94b9cffadf6bb371a80c95c00827993f2b53def82",
+      "boundary": "Exact NUL-terminated dispatcher diagnostic; not a wire specification",
+      "hex": "696e76616c6964206f6e652f6d616e79207265706c7900"
+    },
+    {
+      "name": "guard-diagnostic-has-many-replies-0",
+      "startVA": "0x18012d388",
+      "bytes": 17,
+      "fileOffset": 1230728,
+      "sha256": "3294b9d1250436847e54bd5462d09bda5c7fd102657a448821244ce0d993664b",
+      "boundary": "Exact NUL-terminated dispatcher diagnostic; not a wire specification",
+      "hex": "686173206d616e79207265706c69657300"
+    },
+    {
+      "name": "guard-diagnostic-pass-fail-required-0",
+      "startVA": "0x18012d370",
+      "bytes": 19,
+      "fileOffset": 1230704,
+      "sha256": "0d1977ac3f81acca6bb4801744e68edb5c3773c264f18ec171ec4cbac56b342b",
+      "boundary": "Exact NUL-terminated dispatcher diagnostic; not a wire specification",
+      "hex": "706173732f6661696c20726571756972656400"
+    }
+  ],
+  "sourceCrosscheck": {
+    "path": "Source/NexusForever.StsServer/Network/Packet/ServerStsPacket.cs",
+    "sha256": "fd53bd3b14f1f23f6fa8c0c274261b606d654d6d91e8335fbcd3d8409027a9fd",
+    "claim": "Current wrapper appends LF; no optional-route acceptance inferred"
+  },
+  "mapped": {
+    "notifyFlags": "0x10",
+    "genericDispatch": "Non-null message + zero status + nonzero virtual38 + zero virtual30 reaches notify18 for selected flags",
+    "baseMessagePredicates": {
+      "virtual30": "DWORD+60",
+      "virtual38": "bit1 ofDWORD+5C as0/minus1"
+    },
+    "xmlAccessor": "Requires nonzero body length and finalLF when attempting uncached parse"
+  },
+  "limits": [
+    "Static predicates and selected base-message slots only; no complete wire-header origin map.",
+    "No empty-reply acceptance, private-key/padding/trust or retail traffic claim.",
+    "Candidate RTTI windows beyond selected documented table extents are not used as slots.",
+    "No Source behavior changed by this research pass."
+  ]
+}

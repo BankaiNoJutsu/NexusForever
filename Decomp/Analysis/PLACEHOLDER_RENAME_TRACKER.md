@@ -3,6 +3,15 @@
 Tracks `Unknown*` / opaque `Data*` placeholders in `Source/**` (excluding EF migration history).
 Use the evidence ladder from `CONTINUATION_GUIDE.md`: Observed -> Correlated -> Mapped -> Verified -> Implemented.
 
+5 November 2026 [tracked-marker field correction](TRACKED_UNIT_AND_STATION_LIFECYCLE_2026_11_05.md)
+supersedes the older final-field `TrackingSlotId` naming assertion below. Exact
+global binding/getter and objective-cache paths identify the first 32-bit field
+as the TrackingSlot row key. The final 15 bits remain neutral. The
+[subsequent Source milestone](TRACKED_MARKER_IDENTITY.md) corrects the model,
+historical naming guard and helper mask. Older tests are not independent
+semantic proof of the rejected chain. Producer policy
+and runtime qualification remain separate gates.
+
 **Inventory (2026-05-23):** ~761 `Unknown*` token matches in 176 `Source/**/*.cs` files (ripgrep); ~147 distinct symbol names; ~205 enum members (64 in `PrerequisiteType` alone).
 
 ## Initiative status - ACTIVE (2026-06-07 placeholder enum guard)

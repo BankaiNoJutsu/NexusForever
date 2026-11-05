@@ -1,0 +1,123 @@
+{
+  "build": 16042,
+  "clientSha256": "231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5",
+  "reaEvidenceId": "ev_142ebc012c9fce11df9c67703c5d9e335b4810c52c1d752b63ed2828030231d4",
+  "anchors": [
+    {
+      "name": "0x5cf-slot",
+      "va": "0x1403f28fc",
+      "fileOffset": 4136188,
+      "bytes": "1bc73e00",
+      "destination": "0x1403ec71b"
+    },
+    {
+      "name": "0x600-slot",
+      "va": "0x1403f29c0",
+      "fileOffset": 4136384,
+      "bytes": "dafa3e00",
+      "destination": "0x1403efada"
+    },
+    {
+      "name": "0x718-slot",
+      "va": "0x1403f2e20",
+      "fileOffset": 4137504,
+      "bytes": "d2123f00",
+      "destination": "0x1403f12d2"
+    },
+    {
+      "name": "0x7cd-slot",
+      "va": "0x1403f30f4",
+      "fileOffset": 4138228,
+      "bytes": "15113f00",
+      "destination": "0x1403f1115"
+    },
+    {
+      "name": "0x7d3-slot",
+      "va": "0x1403f310c",
+      "fileOffset": 4138252,
+      "bytes": "06113f00",
+      "destination": "0x1403f1106"
+    },
+    {
+      "name": "0x6df-slot",
+      "va": "0x1403f2d3c",
+      "fileOffset": 4137276,
+      "bytes": "b00f3f00",
+      "destination": "0x1403f0fb0"
+    },
+    {
+      "name": "0x5a1-slot",
+      "va": "0x1403f2844",
+      "fileOffset": 4136004,
+      "bytes": "9a113f00",
+      "destination": "0x1403f119a"
+    },
+    {
+      "name": "0x80f-slot",
+      "va": "0x1403f31fc",
+      "fileOffset": 4138492,
+      "bytes": "3ae33e00",
+      "destination": "0x1403ee33a"
+    },
+    {
+      "name": "0x810-slot",
+      "va": "0x1403f3200",
+      "fileOffset": 4138496,
+      "bytes": "2be33e00",
+      "destination": "0x1403ee32b"
+    },
+    {
+      "name": "0x812-slot",
+      "va": "0x1403f3208",
+      "fileOffset": 4138504,
+      "bytes": "f6e23e00",
+      "destination": "0x1403ee2f6"
+    },
+    {
+      "name": "05cf-noop-case",
+      "va": "0x1403ec71b",
+      "fileOffset": 4111131,
+      "bytes": "33dbe9fe4b0000"
+    },
+    {
+      "name": "0600-consumer-call",
+      "va": "0x1403efada",
+      "fileOffset": 4124378,
+      "bytes": "488bd7e81e141d008bd8e937180000"
+    },
+    {
+      "name": "06df-consumer-call",
+      "va": "0x1403f0fb0",
+      "fileOffset": 4129712,
+      "bytes": "488bd7e8385b0e008bd8e961030000"
+    },
+    {
+      "name": "spell-0810-consumer-call",
+      "va": "0x1403ee32b",
+      "fileOffset": 4118315,
+      "bytes": "488bd7e84d761b008bd8e9e62f0000"
+    },
+    {
+      "name": "spell-080f-consumer-call",
+      "va": "0x1403ee33a",
+      "fileOffset": 4118330,
+      "bytes": "488bd7e8ce761b008bd8e9d72f0000"
+    },
+    {
+      "name": "spell-0812-wrapper-lookup",
+      "va": "0x1403ee2f6",
+      "fileOffset": 4118262,
+      "bytes": "8b17488b0d71788700e82c391700"
+    },
+    {
+      "name": "spell-0812-state-call",
+      "va": "0x1403ee319",
+      "fileOffset": 4118297,
+      "bytes": "488bd7488bcbe8fc121500"
+    }
+  ],
+  "limits": [
+    "One indexed dispatcher; other handlers and server timing remain separate.",
+    "Dataflow observations are static and are not retail execution."
+  ]
+}

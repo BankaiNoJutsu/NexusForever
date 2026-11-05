@@ -1,0 +1,70 @@
+{
+  "build": 16042,
+  "librarySha256": "aa0ef5888d17eb65da28b1cbef178d1650a837303c10a6fafc9f3c646c2f3fd1",
+  "reaEvidenceId": "ev_dba29958b64299b3a64c41214e66af69697b23182238084a321fdaace185b187",
+  "method": "Fresh standalone Ghidra12.0.4 import completed autoanalysis; read-only postpasses; selected LLVM instruction corroboration. No DLL execution.",
+  "anchors": [
+    {
+      "name": "rsa-vtable-five-slots",
+      "va": "0x18012dc98",
+      "fileOffset": 1233048,
+      "bytes": "c07e038001000000307d038001000000107c03800100000050f5038001000000f07c038001000000"
+    },
+    {
+      "name": "constructor-two-components",
+      "va": "0x180037c68",
+      "fileOffset": 225384,
+      "bytes": "4c8d442440488d542438488d4e08e8852a00004c8d442440488d542438488d4e28e8722a0000"
+    },
+    {
+      "name": "component-length-read-and-import",
+      "va": "0x18003a70f",
+      "fileOffset": 236303,
+      "bytes": "498b00498bf0488bfa8b188302fc498300044d8b008bd3e895a10b00291f48011e"
+    },
+    {
+      "name": "slot-zero-forwarder",
+      "va": "0x180037ec0",
+      "fileOffset": 225984,
+      "bytes": "4883ec3848c744242000000000e85efe"
+    },
+    {
+      "name": "transform-component-arguments",
+      "va": "0x180037dab",
+      "fileOffset": 225707,
+      "bytes": "488d5e084883c62866666666660f1f8400000000004c8d4c2420488d542440488d4c24404c8bc6e889df0b00488d542420488d4c24204c8bce4c8bc3e844e20b00"
+    },
+    {
+      "name": "transform-output-export",
+      "va": "0x180037e3c",
+      "fileOffset": 225852,
+      "bytes": "488d9424b8000000488d8c2480000000e8ffc70b008bbc24b80000004533c08bd7488bcd488bd8e818a0fcff488b4d004c8bc7488bd3e899d9fdff488d4c2420897d0c"
+    },
+    {
+      "name": "export-word-count",
+      "va": "0x1800f4650",
+      "fileOffset": 997968,
+      "bytes": "4885d274088b410cc1e0028902488b01c3"
+    },
+    {
+      "name": "rsa-validation-md5-compare",
+      "va": "0x180012de0",
+      "fileOffset": 74208,
+      "bytes": "405355565741544883ec60488b05261616004833c44889442458488bb424b800"
+    }
+  ],
+  "mappedKeyEnvelope": "uint32LE lengthA; little-endian integer A; uint32LE lengthB; little-endian integer B",
+  "mappedComponentStores": {
+    "A": "object+0x08",
+    "B": "object+0x28"
+  },
+  "inferredRoles": {
+    "A": "exponent input to modular-power routine1800f6030",
+    "B": "divisor/modulus input to division and modular-power routines"
+  },
+  "limits": [
+    "No accepted optional-route transcript or real server key sample was recovered.",
+    "Mapping is not a native execution or interoperability result.",
+    "Malformed-key validation, trust establishment, padding policy and server-side inverse remain unqualified."
+  ]
+}

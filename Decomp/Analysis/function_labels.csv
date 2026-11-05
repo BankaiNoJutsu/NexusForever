@@ -24,7 +24,7 @@ StsConnLib64.MT.dll,180003d70,StsConn_SendLoginTokenStart,Builds /Auth/LoginToke
 StsConnLib64.MT.dll,180004c40,StsConn_SendRequestToken,Builds /Auth/RequestToken request with UserId and AppId.
 StsConnLib64.MT.dll,18000a350,StsConn_OnKeyDataResponse,Parses SRP /Auth/KeyData reply KeyData and sends client KeyData or completes exchange.
 StsConnLib64.MT.dll,18000a730,StsConn_SendTokenKeyData,Builds /Auth/TokenKeyData request fields after server key material is parsed.
-StsConnLib64.MT.dll,180012de0,StsConn_ValidateTokenServerKeyMaterial,Validates ServerRand/ServerPublicKey/ServerSignature before TokenKeyData.
+StsConnLib64.MT.dll,180012de0,StsConn_ValidateTokenServerKeyMaterial,Transforms ServerSignature using the staged caller key and compares16 bytes against MD5 of ServerPublicKey; ServerRand is not a direct digest input. See STS_TOKEN_KEY_TRANSITION_EVIDENCE.md.
 StsConnLib64.MT.dll,180037cb0,StsCrypt_CreateRsaClient,Allocates CKeyRsa from caller-supplied key material for optional token-key crypto.
 StsConnLib64.MT.dll,180037c30,StsCrypt_InitialiseRsaClientFromKeyMaterial,Initialises both CKeyRsa key states from one length and byte-buffer pair.
 StsConnLib64.MT.dll,18003a670,StsCrypt_ComputeMd5,Computes a 16-byte MD5 digest for the supplied buffer.
@@ -150,7 +150,7 @@ WildStar64.exe,14050a270,Pet_SetStance_SendClientPetSetStance,Pet_SetStance scri
 WildStar64.exe,1403c08d0,Pet_ApplySpawnedPayload,Applies the ServerPetSpawned-shaped client payload by caching pet unit id with spell id valid-stance bits and current stance, then dispatching PetSpawned.
 WildStar64.exe,1403c09b0,Pet_ApplyDespawnedPayload,Applies the ServerPetDespawned-shaped uint32 payload by removing the cached pet unit id and dispatching PetDespawned when the pet was present.
 WildStar64.exe,1403c0a80,Pet_ApplyStanceChangedPayload,Applies the ServerPetStanceChanged-shaped uint32 plus 5-bit payload by updating cached pet stance at record+0x08 and dispatching PetStanceChanged; producer timing remains unmapped.
-WildStar64.exe,1400a6c10,ServerMapTrackedUnitUpdate_ReadPayload,Parses server opcode 0x0849 as tracked unit id, three 32-bit position components, and a 15-bit TrackingSlot id.
+WildStar64.exe,1400a6c10,ServerMapTrackedUnitUpdate_ReadPayload,Parses0849 as first uint32 TrackingSlot row/UI key then three position words and a neutral final15-bit value; older final-field slot naming is superseded by TRACKED_UNIT_AND_STATION_LIFECYCLE_2026_11_05.md.
 WildStar64.exe,14008ed20,ServerHazardAction_ReadPayload,Reads server opcode 0x0109 as a 14-bit Hazard.tbl id followed by a 3-bit HazardAction value.
 WildStar64.exe,1400aad70,HazardActiveRow_WritePayload,Serialises one 0x34-byte active hazard row: id type meter/max threshold/proc/unit/pulse and five boolean state fields.
 WildStar64.exe,1400aaff0,HazardActiveRow_ReadPayload,Reads one 0x34-byte active hazard row: 14-bit id 3-bit type two floats uint32 threshold 18-bit proc spell two uint32 fields and five booleans.
@@ -339,8 +339,8 @@ WildStar64.exe,1403dd1c0,Interaction_HandlePostActionTargetFeedback,Handles the 
 WildStar64.exe,1403e8000,SceneLifecycle_EnsureInitialisationStages,Staged lifecycle gate that validates prerequisite subsystems, seeds initial scene state, and emits ClientEnteredWorld opcode 0x00F2 before the broader update loop can complete.
 WildStar64.exe,1403e85d0,SceneLifecycle_UpdateAndReplayQueuedStates,Large virtual scene lifecycle update path that snapshots timing and transform state, flushes queued replay records via FUN_1405cc090, iterates active lifecycle lists, and advances broader scene maintenance each tick.
 WildStar64.exe,1403ebe80,Interaction_CheckEffectiveRange,Resolves the effective interaction family and lower or upper distance bounds for the supplied target, writes those bounds back when requested, and delegates the final adjusted 3D range check.
-WildStar64.exe,1403f4170,MapTrackedUnitUpdate_ApplyAndDispatch,Applies ServerMapTrackedUnitUpdate by caching tracked-unit position plus TrackingSlot id before dispatching MapTrackedUnitUpdate; producer timing remains blocked.
-WildStar64.exe,1403f4200,MapTrackedUnitDisable_ApplyAndDispatch,Applies ServerMapTrackedUnitDisable by removing cached tracked-unit state before dispatching MapTrackedUnitDisable; producer timing remains blocked.
+WildStar64.exe,1403f4170,MapTrackedUnitUpdate_ApplyAndDispatch,Caches neutral payload+10 under the first-word TrackingSlot row key in context+7F30 then updates objective marker position and emits that key plus XYZ; producer timing remains open.
+WildStar64.exe,1403f4200,MapTrackedUnitDisable_ApplyAndDispatch,Removes the first-word TrackingSlot/UI key from the context cache and objective marker map before dispatching MapTrackedUnitDisable; producer timing remains open.
 WildStar64.exe,1403f4900,Network_SendOpcodePayloadHelper,Generic opcode+payload send helper that dispatches through DAT_140c65808 virtual send callbacks.
 WildStar64.exe,14042e120,UnitEvent_HandleEnteredCombat,Dispatches UnitEnteredCombat and conditional EnteredCombat events for the local player or current target.
 WildStar64.exe,14042e1b0,UnitEvent_DispatchTargetUnitChanged,Dispatches TargetUnitChanged with the local player's current target id.
@@ -351,7 +351,7 @@ WildStar64.exe,14042e3b0,QuestLog_DispatchShowQuestLogEvent,Dispatches the ShowQ
 WildStar64.exe,14042e410,QuestLog_DispatchHideQuestLogEvent,Dispatches the HideQuestLog named event through the shared client event sink.
 WildStar64.exe,1404165e0,Lua_GameItemData_GetVirtualItems,Game.ItemData.GetVirtualItems Lua method that returns quest/path/challenge/public-event virtual item entries with owner metadata.
 WildStar64.exe,140426240,QuestRuntime_DispatchObjectiveUpdatedEvent,Dispatches the named QuestObjectiveUpdated client event from a quest-objective runtime node and completion-state flag.
-WildStar64.exe,140430f80,ClientEvent_MapTrackedUnitUpdate_Dispatch,Builds the MapTrackedUnitUpdate client event payload from tracked-unit id and position table; producer timing remains blocked.
+WildStar64.exe,140430f80,ClientEvent_MapTrackedUnitUpdate_Dispatch,Builds MapTrackedUnitUpdate from the first-word TrackingSlot/UI key and position table; final15-bit value is not an event argument.
 WildStar64.exe,140431a00,GalacticArchive_HandleLinkClick,Handles Link payloads with Archive:, Location:, or Schematic: prefixes, resolving the target and dispatching GalacticArchiveLinkClick or the linked location/work-order helper path.
 WildStar64.exe,14043bf30,Communicator_HandleQuestOrSpamMessage,Processes communicator message payloads, routing spam to Communicator_ShowSpamMsg and gated quest traffic to Communicator_ShowQuestMsg plus the follow-up local timer state.
 WildStar64.exe,140453d90,BuffRecord_Construct,Initializes a client buff-record object with a unique local record id, zeroed count or duration fields, and an empty wrapper-id list.
@@ -392,7 +392,7 @@ WildStar64.exe,1404d9450,CSIKey_HandlePress,Handles the context-sensitive intera
 WildStar64.exe,1404dafb0,ClientPlayerMovementSpeedUpdate_SendAndDispatch,Builds and sends opcode 0x063B ClientPlayerMovementSpeedUpdate with the supplied uint32 value, then dispatches the matching PlayerMovementSpeedUpdate named event through the scene event sink.
 WildStar64.exe,1404e7f60,Lua_RegisterAccountEntitlementEnums,Registers account currency/operation and entitlement Lua enums.
 WildStar64.exe,14050e830,Lua_BuildResurrectionInfoTable,Builds the resurrection Lua info table including wake-here flags and service-token cost.
-WildStar64.exe,140511c80,Lua_GameLib_GetMapTrackedUnitData,GameLib.GetMapTrackedUnitData looks up a TrackingSlot id and returns label and iconPath UI data.
+WildStar64.exe,140511c80,Lua_Global_GetMapTrackedUnitData,Legacy/global registration entry67 of68 binds this callback; argument1 goes directly to TrackingSlot_GetById for row+4 label and row+8 icon. No trailing-field cache lookup or15-bit mask observed.
 WildStar64.exe,140519a00,Marketplace_SendClientAuctionSellOrderSubmit,Sends opcode 0x06DC ClientAuctionSellOrderSubmit with item guid, minimum bid, and buyout price from the auction posting UI state.
 WildStar64.exe,14051ba60,Crafting_SendClientCraftingAbandon,Sends world opcode 0x084D ClientCraftingAbandon from the crafting UI path after checking active crafting state.
 WildStar64.exe,14051dc00,RuneCrafting_SendClientRuneSlotReroll,Sends world opcode 0x085C ClientCraftingRuneSlotReroll with item guid, rune slot index, and RuneType.
@@ -3093,3 +3093,24 @@ WildStar64.exe,14045b030,Entity_ApplyNameTextAndNotify,Copies/selects wide name 
 WildStar64.exe,140567af0,Spell4Effects_ValidateRow,Build16042 runtime builder validator; effect151 slot18 at140568133 checks flag2/duration200 and nonzero dataBits01 while bypassing the UnitProperty2 lookup used by effect11. See HEALING_PERSONAL_MODIFIER_EVIDENCE.md.
 WildStar64.exe,1403f0cc7,EntityMessageCase_ServerAuctionOutbid,Interior case of1403ec6a0; opcode0562 slot1403f2748 forwards its decoded object and ItemAuctionOutbid event name to1403ecfef.
 WildStar64.exe,1406a0270,Lua_ItemAuction_Equal,Game.ItemAuction __eq function pointer at140c5d488; compares +8 auction ID QWORDs of the two typed objects and excludes both-zero IDs.
+WildStar64.exe,14059b230,Lua_Crafting_IsAtMasterCraftsman,Exact named binding calls the cached service predicate with key0x57; see DEEPER_ROADMAP_CONTRACTS_2026_11_05.md.
+WildStar64.exe,14059b270,Lua_Crafting_IsAtCraftingStation,Exact named binding calls the cached service predicate with key0x2C; server eligibility remains separate.
+WildStar64.exe,14059b2b0,Lua_Crafting_IsAtEngravingStation,Exact named binding calls the cached service predicate with key0x4F; independent authored UI controls the engraving blocker.
+WildStar64.exe,1405a4850,Crafting_HasCachedStationForServiceKey,Searches the exact integer key in context+0x66C8 and tests the stored unit ID at tree-node+0x24 for nonzero.
+WildStar64.exe,1404824c0,Interaction_SetCachedServiceUnit,Inserts or finds an integer service key in context+0x66C8 and stores the supplied unit ID at node+0x24.
+WildStar64.exe,14045a640,Entity_UpdateNearbyServiceCandidates,Checks entity service flags and configured/default range before caching its unit ID for keys2C/57/4F and two other services; no server policy inferred.
+WildStar64.exe,1403a0d80,Crafting_OpenCachedStationWindow,Resolves cached service key0x2C and dispatches InvokeCraftingWindow plus interaction open/close after the observed entity checks.
+WildStar64.exe,14076acb0,Lua_RegisterMatchMakingLib,Registers MatchMakingLib including Roles ordinals Tank0 Healer1 DPS2; exact enum strings and body are pinned.
+WildStar64.exe,140769620,Lua_Matching_ConfirmRole,Named ConfirmRole binding converts valid ordinals0..2 with1<<role and ORs the mask before1405c36e0; arithmetic corroborated by LLVM because decompile omits it.
+WildStar64.exe,1407697a0,Lua_Matching_DeclineRoleCheck,Named DeclineRoleCheck binding sends05B2 with the current match type and zero roles/accepted.
+WildStar64.exe,1405c36e0,Matching_SendAcceptedRoleCheck,Intersects supplied roles with class eligibility masks5/6 or0 and sends05B2 with current match type and accepted1; no0600 notification policy inferred.
+WildStar64.exe,1404ba470,Housing_ApplyNeighborhoodEntryName,Observed0501 consumer replaces a context map string from payload+0x18 using a temporary zero-word key; other row fields and producer intent remain open.
+WildStar64.exe,140242900,TrackingSlot_GetById,TrackingSlot named lookup with override or registered DB fallback; used directly by the global marker-data getter.
+WildStar64.exe,1400e9c20,Lua_RegisterGlobalFunctionBlock,Creates named callback closures from the supplied block and count and inserts them into the common state environment table.
+WildStar64.exe,140497390,PublicEvent_BuildDefinitionAndTrackingSlotCaches,Builds public-event definition caches; selected TrackingSlot loop maps row IDs to nonzero PublicEventObjectiveId and appends row IDs to objective marker lists.
+WildStar64.exe,140008410,Tree_ClearAllocatedNodes,Frees tree nodes and resets sentinel/root/count; scene path calls this on context+66C0 before service candidate population.
+WildStar64.exe,140736500,Lua_Housing_RequestRandomCommunityList,Named binding applies local throttle/player guards then sends052C with selected zero first payload byte; no0506 association inferred.
+WildStar64.exe,140733960,Lua_Housing_GetRandomCommunityList,Exact named callback pair140b74920; newer authored Community browser consumes this list separately from legacy neighborhood APIs.
+StsConnLib64.MT.dll,180031570,StsTxn_DispatchGuardedNotification,Applies generic message/status predicates before notify18 or status20; selected TokenKeyData flags10 and guard limits are in ALL_BLOCKERS_NATIVE_RESEARCH_2026_11_05.md.
+StsConnLib64.MT.dll,1800248a0,StsMessage_GetParsedXmlRoot,Returns cached root or attempts LF-terminated body parsing; framing rejects return0 without caching an error while XML-parser failure caches an error string.
+StsConnLib64.MT.dll,180003d50,StsTokenAuth_NotifyStatus,Copies the supplied status word to retained auth-state+D8 and notifies its owner; this is separate from the filter-install completion rail.

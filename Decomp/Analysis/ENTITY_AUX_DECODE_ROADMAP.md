@@ -7,6 +7,15 @@ aliases high IDs to low rows. Four baseline failures are fixed and118 affected
 cases pass with clean owning build and both Source reviews. Producer timing,
 selection, recipient/initial/disable lifecycle and tail semantics remain open.
 
+5 November 2026 [tracked-marker identity correction](TRACKED_UNIT_AND_STATION_LIFECYCLE_2026_11_05.md)
+supersedes the older `TrackedUnitId -> trailing TrackingSlotId` assertion below.
+The first 32-bit word is the TrackingSlot row/UI key; the final 15-bit word is
+cached separately and remains neutral. The named global getter and independent
+objective-cache initialization corroborate the first-word identity. The
+[subsequent Source milestone](TRACKED_MARKER_IDENTITY.md) corrects the old
+field names and helper mask; producer timing,
+row selection and initial/disable lifecycle remain open. Forty byte checks match.
+
 Updated: 2026-06-05 (entity-create main Faction1/Faction2 offsets mapped; aux `Value*` names remain blocked pending consumer/apply evidence)
 
 Supplemental update: 2 November 2026 [Scientist scanner name publication](SCIENTIST_SCANBOT_NAME_PUBLICATION.md)

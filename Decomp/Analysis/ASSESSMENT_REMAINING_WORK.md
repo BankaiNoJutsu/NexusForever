@@ -1,5 +1,14 @@
 # Assessment follow-through goal
 
+[All remaining blocker-family audit](ALL_REMAINING_BLOCKERS_RESEARCH_2026_11_05.md)
+covers all 36 areas plus five emitter and cross-feature gates. It retires stale
+marketplace/reward-track ownership premises, distinguishes Source-owned probes
+from missing data/execution, and maps selected STS notification/parser guards.
+Twenty-five selected byte checks match. The tracked-marker Source correction
+has its separate milestone below; its118 cases are not tests of this audit.
+Unexecuted LAS/financial probes, complete delivery/recovery and native/provider/
+retail qualification remain open as specified in the linked per-family table.
+
 [Tracked marker identity correction](TRACKED_MARKER_IDENTITY.md) completes the
 supported full-width packet/lookup correction from the new native findings.
 Four executed baseline failures are fixed;118 affected cases, the owning Game
@@ -76,6 +85,46 @@ Validation policy updated 3 November at the user's direction: owning-project
 builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
+
+[REA and web blocker follow-through](BLOCKER_UNBLOCK_RESEARCH_2026_11_05.md)
+recovers standalone static decompilation, maps the STS RSA component envelope,
+and records primary Fortune/community policy evidence. The five consolidated
+runtime producer gates remain open. Contract unclaimed/excess and actual-table
+gates also remain; the linked report specifies the missing inputs. No production
+behavior or native-client stop changed in this research pass.
+
+[Further static unblock targets](NEXT_REA_UNBLOCK_TARGETS_2026_11_05.md)
+identify `06DF` as Primal Matrix state rather than auction auxiliary output,
+connect matching `0600` to its role-result consumer and spell `0810` to an
+absolute buff-count helper. The same indexed table narrows the old `05CF`
+candidate to an unproved association. These are mapped next-slice inputs,
+not new production emitters; finish their independent corroboration first.
+
+[Deeper Primal Matrix contracts](PRIMAL_MATRIX_NATIVE_CONTRACT_2026_11_05.md)
+now recover the missing `0072` request and corroborate the `06DF` saved snapshot:
+positive request increments differ from absolute snapshot counts, whose final
+word contributes Matrix AMP power. [Spell consumer corroboration](SPELL_AUX_CONSUMER_CORROBORATION_2026_11_05.md)
+maps wrapper/unit/count identities, repeated-count timer refresh and the `0812`
+non-effect-ID child key. Thirty code ranges and 13 further anchors match the
+pinned PE and Ghidra project. This unblocks bounded wire-model work; allocation
+transactions, production triggers/order and retail qualification remain open.
+
+[Deeper crafting and matching contracts](DEEPER_ROADMAP_CONTRACTS_2026_11_05.md)
+resolve F-008's three station-key names through exact named API bindings and
+independent completion/cache paths: `2C` crafting, `4F` engraving, `57` master
+craftsman. C2S role confirmation independently converts ordinals to bits before
+class filtering. Thirty-two ranges and 21 anchors match the pinned PE and
+Ghidra program. This closes the station-key naming gap only; crafting auxiliary
+producers, incoming role notification policy and housing triggers remain open.
+
+[Tracked identity and station lifecycle](TRACKED_UNIT_AND_STATION_LIFECYCLE_2026_11_05.md)
+correct the earlier map-marker interpretation: the first 32-bit word selects the
+TrackingSlot row; the trailing 15 bits remain neutral. The
+[subsequent Source milestone](TRACKED_MARKER_IDENTITY.md) now implements the
+model/helper correction rather than leaving it as pending research work.
+The observed scene path clears station candidates before population, while
+same-key setters overwrite without nearest-distance arbitration. Twenty-two
+ranges and 18 anchors match; actual marker producers and housing triggers remain open.
 
 [Public marketplace posting/cancellation rejection replies](NORMAL_AUCTION_BID_TRANSACTION.md#posting-and-cancellation-rejection-replies)
 now join the purchase rejection path. Four reproduced failures are fixed;

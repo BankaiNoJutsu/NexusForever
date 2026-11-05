@@ -1,5 +1,11 @@
 # Missing Feature and Opcode Decode Matrix
 
+5 November [complete family-level blocker audit](ALL_REMAINING_BLOCKERS_RESEARCH_2026_11_05.md)
+reconciles every F-001..F-036 area and the broader Source/data/provider/native
+requirements. It supersedes older `06DF/07D5` marketplace and `07CD` rotation
+missing-consumer premises. The current five producer rows remain open; tracked
+model/helper and Primal wire corrections have separate implemented milestones.
+
 Latest protocol result: [Primal Matrix request/snapshot contracts](PRIMAL_MATRIX_WIRE_CONTRACTS.md)
 corrects the old marketplace classification of06DF and registers0072 diagnostic
 dispatch. Sixteen new/143 scoped cases and both Source reviews pass; allocation

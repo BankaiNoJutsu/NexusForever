@@ -1,0 +1,148 @@
+{
+  "build": 16042,
+  "clientSha256": "231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5",
+  "reaEvidenceId": "ev_142ebc012c9fce11df9c67703c5d9e335b4810c52c1d752b63ed2828030231d4",
+  "llvmObjdumpSha256": "3ae6715601f2eb0c1d0839929c46089906ba0f1e5e032fe519656a40c936b863",
+  "method": "Read indexed DWORD RVA dispatch cells from pinned PE; inspect selected LLVM instructions and existing Ghidra12.0.4 project copy. No target execution.",
+  "anchors": [
+    {
+      "name": "0x889-dispatch-slot",
+      "va": "0x1403f33e4",
+      "fileOffset": 4138980,
+      "bytes": "04de3e00",
+      "destination": "0x1403ede04"
+    },
+    {
+      "name": "0x8cc-dispatch-slot",
+      "va": "0x1403f34f0",
+      "fileOffset": 4139248,
+      "bytes": "ddda3e00",
+      "destination": "0x1403edadd"
+    },
+    {
+      "name": "0x8f4-dispatch-slot",
+      "va": "0x1403f3590",
+      "fileOffset": 4139408,
+      "bytes": "a3d73e00",
+      "destination": "0x1403ed7a3"
+    },
+    {
+      "name": "0x939-dispatch-slot",
+      "va": "0x1403f36a4",
+      "fileOffset": 4139684,
+      "bytes": "ffd83e00",
+      "destination": "0x1403ed8ff"
+    },
+    {
+      "name": "0x93d-dispatch-slot",
+      "va": "0x1403f36b4",
+      "fileOffset": 4139700,
+      "bytes": "6ad53e00",
+      "destination": "0x1403ed56a"
+    },
+    {
+      "name": "0x93e-dispatch-slot",
+      "va": "0x1403f36b8",
+      "fileOffset": 4139704,
+      "bytes": "8fd93e00",
+      "destination": "0x1403ed98f"
+    },
+    {
+      "name": "0x848-dispatch-slot",
+      "va": "0x1403f32e0",
+      "fileOffset": 4138720,
+      "bytes": "b90b3f00",
+      "destination": "0x1403f0bb9"
+    },
+    {
+      "name": "0x849-dispatch-slot",
+      "va": "0x1403f32e4",
+      "fileOffset": 4138724,
+      "bytes": "a70b3f00",
+      "destination": "0x1403f0ba7"
+    },
+    {
+      "name": "0x84b-dispatch-slot",
+      "va": "0x1403f32ec",
+      "fileOffset": 4138732,
+      "bytes": "d2123f00",
+      "destination": "0x1403f12d2"
+    },
+    {
+      "name": "0x853-dispatch-slot",
+      "va": "0x1403f330c",
+      "fileOffset": 4138764,
+      "bytes": "faf23e00",
+      "destination": "0x1403ef2fa"
+    },
+    {
+      "name": "0x854-dispatch-slot",
+      "va": "0x1403f3310",
+      "fileOffset": 4138768,
+      "bytes": "10f33e00",
+      "destination": "0x1403ef310"
+    },
+    {
+      "name": "0x855-dispatch-slot",
+      "va": "0x1403f3314",
+      "fileOffset": 4138772,
+      "bytes": "d2123f00",
+      "destination": "0x1403f12d2"
+    },
+    {
+      "name": "0x501-dispatch-slot",
+      "va": "0x1403f25c4",
+      "fileOffset": 4135364,
+      "bytes": "75fe3e00",
+      "destination": "0x1403efe75"
+    },
+    {
+      "name": "0x506-dispatch-slot",
+      "va": "0x1403f25d8",
+      "fileOffset": 4135384,
+      "bytes": "84fe3e00",
+      "destination": "0x1403efe84"
+    },
+    {
+      "name": "dispatcher-bounds-and-table",
+      "va": "0x1403ec6eb",
+      "fileOffset": 4111083,
+      "bytes": "8d439f4c89b424d800000089914c7b00003d110900000f87cb4b00004c8d0df238c1ff418b8c8144133f004903c9ff"
+    },
+    {
+      "name": "crafting-aux-default-return-one",
+      "va": "0x1403f131b",
+      "fileOffset": 4130587,
+      "bytes": "bb010000004c8b"
+    },
+    {
+      "name": "0501-handler-call",
+      "va": "0x1403efe75",
+      "fileOffset": 4125301,
+      "bytes": "488bd7e8f3a50c008bd8e99c140000"
+    },
+    {
+      "name": "0506-handler-call",
+      "va": "0x1403efe84",
+      "fileOffset": 4125316,
+      "bytes": "488bd7e864a60c008bd8e98d140000"
+    },
+    {
+      "name": "0848-handler-call",
+      "va": "0x1403f0bb9",
+      "fileOffset": 4128697,
+      "bytes": "488bd7488bcee83c3600008bd8e955070000"
+    },
+    {
+      "name": "0849-handler-call",
+      "va": "0x1403f0ba7",
+      "fileOffset": 4128679,
+      "bytes": "488bd7488bcee8be3500008bd8e967070000"
+    }
+  ],
+  "limits": [
+    "The table routes one dispatcher only. Default return1 permits later handlers.",
+    "Client apply/reader paths do not establish retail server producer timing.",
+    "Ghidra12.0.4 is standalone; live REA native providers are unconfigured."
+  ]
+}

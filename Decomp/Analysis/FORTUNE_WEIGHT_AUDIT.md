@@ -2,6 +2,12 @@
 
 Status date: 2026-06-17 (Fortune retail weights blocked recheck; retail weights still blocked)
 
+Supplemental 5 November 2026 [primary-source web research](RUNTIME_WEB_UNBLOCK_RESEARCH_2026_11_05.md#f-031-catalog-specific-rotation)
+recovers dated publisher catalog rules: Medieval colors rotated sequentially,
+whereas Island Paradise colors were offered together. This rules out deriving
+one universal rotation policy. Exact per-item weights and the build-16042 active
+catalog remain blocked; the local-only audit below retains its original scope.
+
 ## Scope
 
 This audit covers the F-031 Madame Fay per-item retail-weight blocker using

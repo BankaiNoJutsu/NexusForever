@@ -2,6 +2,21 @@
 
 Status date: 2026-06-18 CEST
 
+Supplemental 5 November 2026 [indexed-dispatch follow-up](NEXT_REA_UNBLOCK_TARGETS_2026_11_05.md)
+supersedes the historical missing-consumer statement for `0600`: slot
+`1403f29c0` routes through `1403efada` to `1405c0f00`, whose identity lookup and
+trailing-word role bits feed chat presentation. `05CF` instead reaches this
+dispatcher's no-op result-zero branch, so its earlier tentative `1405c41c0`
+association remains unproved. These observations do not enable role/backfill
+emitters or establish other-handler behavior or retail send timing.
+
+[Deeper role corroboration](MATCHING_ROLE_WEB_CORROBORATION_2026_11_05.md)
+now pins `ConfirmRole`'s ordinal-to-bit conversion and class filtering for
+`05B2`, with separate accepted/declined bindings. This does not name `0600`'s
+numeric localization strings or close its notification producer gate. Whole
+analyzed-program immediate scans still found no direct `062A/0634` sender;
+computed/indirect rails remain outside that bounded negative result.
+
 This tracker closes matching work only when a surface is one of:
 
 - **Implemented + verified**: runtime behavior exists and has focused tests or a client smoke result.

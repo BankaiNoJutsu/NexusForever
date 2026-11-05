@@ -1,6 +1,26 @@
 # Evidence Plan To Close Remaining NexusForever Blockers
 
+5 November [all-family audit](ALL_REMAINING_BLOCKERS_RESEARCH_2026_11_05.md)
+is the current index for the 36-area roadmap and cross-feature gates. Historical
+F-005 `06DF/07D5` ownership and F-007 `07CD` missing-consumer statements below
+are superseded by Primal/reward-track routing. Source-owned LAS, guild-finance
+and Reward Rotation delivery probes are distinct from missing retail data;
+unexecuted probes and all provider/native qualifications remain explicit.
+
 Status date: 2026-06-19 CEST (aligned with F-022 Q5597 Chua Explosives indicator 17899 activation UI smoke review)
+
+Supplemental 5 November 2026 [REA/web evidence follow-through](BLOCKER_UNBLOCK_RESEARCH_2026_11_05.md)
+supersedes older reader-only and wholly-unknown RSA-component statements where
+specified. Static decompilation and the component envelope are now available;
+production producer rules and optional token/session qualification remain open.
+The historical live-client instructions below do not resume client launch or
+Computer Use, which remain stopped under the current continuation policy.
+
+The [deeper 5 November native follow-through](DEEPER_ROADMAP_CONTRACTS_2026_11_05.md)
+now resolves F-008 service-key names `2C/4F/57` as crafting station, engraving
+station and master craftsman. It also pins C2S ordinal-to-role-bit conversion.
+This supersedes the older unnamed-service-key gate below, while `084B/0855`
+producer ownership, gameplay rules and runtime/retail qualification remain open.
 
 Use `I:\WildStar` build 16042, GM accounts, Trace server logs, client screenshots/video, and existing evidence collectors to turn each blocker into one of three states: **implementable now**, **diagnostic-only**, or **still retail/native blocked**. Server logs are first-class evidence, but they only prove current emulator/client interaction; retail producer semantics still need native/decompile, packet captures, or old retail logs.
 

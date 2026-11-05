@@ -1,0 +1,365 @@
+{
+  "build": 16042,
+  "clientSha256": "231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5",
+  "reaEvidenceId": "ev_142ebc012c9fce11df9c67703c5d9e335b4810c52c1d752b63ed2828030231d4",
+  "codeRanges": [
+    {
+      "name": "matrix-snapshot-0",
+      "startVA": "0x1404d6af0",
+      "bytes": 321,
+      "fileOffset": 5070576,
+      "sha256": "f06e1e9cb8333c3f732c0d94f4a07955e4a23bf8e8db7aed41b3ed580863a5fc",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "matrix-cache-0",
+      "startVA": "0x1404d64d0",
+      "bytes": 1422,
+      "fileOffset": 5069008,
+      "sha256": "d0d5cc1da0dbcded8e9abefba31316ae80526db196aef33e87501a6b874291a1",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "matrix-lua-node-0",
+      "startVA": "0x1406e9330",
+      "bytes": 1652,
+      "fileOffset": 7243568,
+      "sha256": "7abd0601ad43baf47453ab6068a60cd97c1e650828318e8be360b332bf37d293",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "saved-count-getter-0",
+      "startVA": "0x1406eb160",
+      "bytes": 196,
+      "fileOffset": 7251296,
+      "sha256": "785af373de723b19864e3b440942533a5835c7bcc583e0a6d8ee94bdb08a8174",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "pending-count-getter-0",
+      "startVA": "0x1406eb230",
+      "bytes": 129,
+      "fileOffset": 7251504,
+      "sha256": "8aab7ae267d77bc86e454777d729a72b54f015d6a09cae6d4d0b87fd0c38cf6f",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "maximum-count-getter-0",
+      "startVA": "0x1406eb2c0",
+      "bytes": 198,
+      "fileOffset": 7251648,
+      "sha256": "e318a34d686e8a5cd8f7d6b968434ae062330d4b2b1e89ab80a8aa88538b2ba9",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "amp-total-calculation-0",
+      "startVA": "0x1403cdbf0",
+      "bytes": 271,
+      "fileOffset": 3985392,
+      "sha256": "a14e196fac38908b5729d199bbe9b2a2ea03a257561a3f767214beb6af8306bb",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "matrix-action-factory-0",
+      "startVA": "0x140526610",
+      "bytes": 2696,
+      "fileOffset": 5397008,
+      "sha256": "85334c5274b57557373ec7f4d469cca16f1a13e816e56dcf880eda7551b9b6a5",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "matrix-action-setup-0",
+      "startVA": "0x1405239b0",
+      "bytes": 173,
+      "fileOffset": 5385648,
+      "sha256": "2fd44975e3f4d75ee3ba2442821c97ca4364c4df8b74dd1ba6e221cd31c90341",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "matrix-action-confirm-0",
+      "startVA": "0x140523a60",
+      "bytes": 181,
+      "fileOffset": 5385824,
+      "sha256": "63f64ea81a1a5ee1193bc83626a73be7e1a705c19284815b2e2c40cae88e6f80",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "matrix-stage-positive-increments-0",
+      "startVA": "0x1406e6910",
+      "bytes": 441,
+      "fileOffset": 7232784,
+      "sha256": "bcb2f8bdca454b162249d1fdca7308ab0b395ede25759a8ad163c649447d4ab9",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "append-node-id-0",
+      "startVA": "0x140003460",
+      "bytes": 146,
+      "fileOffset": 10336,
+      "sha256": "173b46d456a1f8cdeda8f66eee5aab391daa013f8cd3a1e73b680376dd43dd97",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "0072-writer-0",
+      "startVA": "0x14008be20",
+      "bytes": 217,
+      "fileOffset": 569888,
+      "sha256": "d354916d6d3b4f8fbfb79d81d648712ec79b04c8f0c87a1a45762e898f6b6772",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "network-send-helper-0",
+      "startVA": "0x1403f4900",
+      "bytes": 457,
+      "fileOffset": 4144384,
+      "sha256": "6eec097175e040304ef0d045be137d6ee87cac8b62bf659325d203a39eb9c769",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "0810-apply-0",
+      "startVA": "0x1405a5980",
+      "bytes": 134,
+      "fileOffset": 5918080,
+      "sha256": "6893d70f7a9b6f9ba167d95a66da4762553c43b4baf93318cd16026d736a6c8c",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "080f-apply-0",
+      "startVA": "0x1405a5a10",
+      "bytes": 130,
+      "fileOffset": 5918224,
+      "sha256": "964c42f7d59a7f4c9e29ca922fc053a9f35c3e5cc588d6eaf8719d8ed506212b",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "0812-apply-0",
+      "startVA": "0x14053f620",
+      "bytes": 230,
+      "fileOffset": 5499424,
+      "sha256": "abf67f6f41c6ee69985d422598d99f3f64adc73b5bab9b6a243eb4aecec2e254",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "wrapper-id-lookup-0",
+      "startVA": "0x140561c30",
+      "bytes": 143,
+      "fileOffset": 5640240,
+      "sha256": "7c2fd9c99fc1dc8e44c0578dcf7677f7284d672a14fd0429ef8aa6af8fa693ba",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "wrapper-unit-node-create-0",
+      "startVA": "0x140717990",
+      "bytes": 1115,
+      "fileOffset": 7433616,
+      "sha256": "292fc8020131cb227450368d79ae41e1a120baafed3d68dd1a440be652d1fac9",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "wrapper-unit-apply-0",
+      "startVA": "0x14053d680",
+      "bytes": 458,
+      "fileOffset": 5491328,
+      "sha256": "fbaf9b65c7029e42c7d2a286c1444448f8f7f9913f90a80b5534724814493f5d",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "set-absolute-buff-count-0",
+      "startVA": "0x140717df0",
+      "bytes": 264,
+      "fileOffset": 7434736,
+      "sha256": "91f6e2afe7a13131cd747868c3d1b62c089e24b3b6838e4e18b5a6954b41314e",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "refresh-and-set-count-0",
+      "startVA": "0x1407188d0",
+      "bytes": 161,
+      "fileOffset": 7437520,
+      "sha256": "01c6b4d239fe8ecfc383f5d2cfdd0cb046850178e8664bd60dbb02e23f248a01",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "rebuild-wrapper-children-0",
+      "startVA": "0x140718980",
+      "bytes": 363,
+      "fileOffset": 7437696,
+      "sha256": "f23eb66a0832ac4f0752c586f05a158d8e431c48ca1e619f6a5309e4f4f39b21",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "variant-child-create-0",
+      "startVA": "0x1405d6880",
+      "bytes": 675,
+      "fileOffset": 6118528,
+      "sha256": "ecee0d71a9f006ea1a993400640a819bef2a27187ac124e8015fe13e7f4bd019",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "variant-entry-apply-0",
+      "startVA": "0x140718120",
+      "bytes": 1964,
+      "fileOffset": 7435552,
+      "sha256": "0b06f751cfa4a28327621269ca21ecd2e750ae09b32c8f44ad5efa700291668f",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "get-buffs-api-0",
+      "startVA": "0x1406538a0",
+      "bytes": 1054,
+      "fileOffset": 6630560,
+      "sha256": "5c6cd3b910cfd7b508ddf890e6f46288de11a1f9cee79c25fbc0d80d1162538a",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "buff-lua-fields-0",
+      "startVA": "0x1405bc680",
+      "bytes": 1474,
+      "fileOffset": 6011520,
+      "sha256": "dd3efc9edbe7577dbf725610068994087ec1ea7299a3aa1a1f6831dcab119cff",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "buff-window-remaining-0",
+      "startVA": "0x140453ee0",
+      "bytes": 166,
+      "fileOffset": 4535008,
+      "sha256": "b73732b7497ba9d49d31ef16680375d28c9941c5a73b8e129247ce30001898b3",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "refresh-child-timer-0",
+      "startVA": "0x1405d6b80",
+      "bytes": 129,
+      "fileOffset": 6119296,
+      "sha256": "68a7ff557c6efc186fd8da2a02385715b23883617be56c2f0bb98cae3cd12c46",
+      "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+    },
+    {
+      "name": "get-game-time-api-0",
+      "startVA": "0x1406f74f0",
+      "bytes": 128,
+      "fileOffset": 7301360,
+      "sha256": "f99ce1058ce554b6d16c54f271dbc287ab6840379a4ba5cc2347cfebce3ab91a",
+      "boundary": "Bounded128-byte context; no procedure extent claimed"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "get-total-power-leaf",
+      "startVA": "0x140748f00",
+      "bytes": 50,
+      "fileOffset": 7635712,
+      "hex": "4c8b4110488b058dc951000fbf90606e000041c7400803000000b801000000660f6ec2f30fe6c0f2410f11004883411010c3",
+      "sha256": "17dc8c5482deaaa15ce5783f279753bc1754a5fd416db0f23bf28ad047fe4c75"
+    },
+    {
+      "name": "save-primal-enum-41",
+      "startVA": "0x14070c21d",
+      "bytes": 21,
+      "fileOffset": 7386653,
+      "hex": "4c8d054c86430041b929000000488bcfe81e3d9eff",
+      "sha256": "24efd6ea810b21d57efb3a3c378b8caa5919fe13f351e773507e6299cb32f7a6"
+    },
+    {
+      "name": "0072-registration",
+      "startVA": "0x1400716b9",
+      "bytes": 45,
+      "fileOffset": 461497,
+      "hex": "488d0d60a70100ba72000000c7442430000000004c8d0d1ca7010048c74424280000000048894c2420448d42a6",
+      "sha256": "b72827beff6cb57d2aa962d3dd0970a07cf18af0b9c7e87be434d3d7d6ef5fec"
+    },
+    {
+      "name": "06df-dispatch",
+      "startVA": "0x1403f0fb0",
+      "bytes": 15,
+      "fileOffset": 4129712,
+      "hex": "488bd7e8385b0e008bd8e961030000",
+      "sha256": "52c3b2bd72b2eb3deac89045e3d01ac18a981f24e703137865a4a8d62d986084"
+    },
+    {
+      "name": "confirm-action-vtable",
+      "startVA": "0x140b6a9c0",
+      "bytes": 32,
+      "fileOffset": 11966912,
+      "hex": "a03f524001000000603a524001000000e0f8514001000000b039524001000000",
+      "sha256": "9d8aa3c68a26a9bc55d4e9550dc44ca4ab0800a589d42badfa123916d53dc12d"
+    },
+    {
+      "name": "get-total-power-binding",
+      "startVA": "0x140b75240",
+      "bytes": 16,
+      "fileOffset": 12010048,
+      "hex": "98a0b44001000000008f744001000000",
+      "sha256": "f765658141fd1f3e285995ee802396801c13a553405d8c074ec30395e60f9db8"
+    },
+    {
+      "name": "saved-count-binding",
+      "startVA": "0x140c5ea70",
+      "bytes": 16,
+      "fileOffset": 12963440,
+      "hex": "f8f1b3400100000060b16e4001000000",
+      "sha256": "97b872a5c33ac61b2fe77c70d076d29d1e8ff248185c044a811ee33e830e6a7e"
+    },
+    {
+      "name": "pending-count-binding",
+      "startVA": "0x140c5ea80",
+      "bytes": 16,
+      "fileOffset": 12963456,
+      "hex": "d8f1b3400100000030b26e4001000000",
+      "sha256": "c2ca3e6b2f5509d2104fd417eeca88237c7430d97085323c0247f012850cd632"
+    },
+    {
+      "name": "maximum-count-binding",
+      "startVA": "0x140c5ea90",
+      "bytes": 16,
+      "fileOffset": 12963472,
+      "hex": "c0f1b34001000000c0b26e4001000000",
+      "sha256": "542920ce00c8e0703837a4bc2dcae157425824a0adf21621c1c26460f3a37daf"
+    },
+    {
+      "name": "node-coordinate-binding",
+      "startVA": "0x140c5e970",
+      "bytes": 16,
+      "fileOffset": 12963184,
+      "hex": "d0f0b34001000000b0996e4001000000",
+      "sha256": "02fc019440fd16a63ab9b4f87c234e8d76a024e887eacc6a629a842ea26fa87f"
+    },
+    {
+      "name": "get-buffs-binding",
+      "startVA": "0x140c5b220",
+      "bytes": 16,
+      "fileOffset": 12949024,
+      "hex": "68aeb24001000000a038654001000000",
+      "sha256": "e848320ebbcb77296c2fe5a63ecd8a0b5466dc1dfae756aecc2eae719a891227"
+    },
+    {
+      "name": "get-game-time-binding",
+      "startVA": "0x140b72930",
+      "bytes": 16,
+      "fileOffset": 11999536,
+      "hex": "1825b44001000000f0746f4001000000",
+      "sha256": "ea8dec4697824376a3bb099127abeeb26c0c46ba9ad76387c527fbce4217deb9"
+    },
+    {
+      "name": "clock-to-ui-scale",
+      "startVA": "0x140b79e98",
+      "bytes": 8,
+      "fileOffset": 12029592,
+      "hex": "fca9f1d24d62503f",
+      "sha256": "cb529eddce2ef8826d77d57b8acb0f1b648ed6a4b1b5358696939aab6ee2b17c"
+    }
+  ],
+  "contracts": {
+    "0072": "Count32, NodeIds uint32[], AllocationIncrements uint8[]",
+    "06df": "Count32, NodeIds uint32[], SavedAllocationCounts uint8[], MatrixAmpPower uint32",
+    "0810": "SpellWrapperId uint32, UnitId uint32, AbsoluteNodeBuffCount uint32 per row",
+    "0812": "Keep child-key word neutral: it matches VariantEntry.Value0, not Spell4EffectId"
+  },
+  "limits": [
+    "Static field/producer mapping only; no native execution or retail interoperability.",
+    "Primal save purchases are positive increments; snapshot application clears absent saved nodes.",
+    "0810 equal counts still refresh timing; no arbitrary heartbeat/replay semantics.",
+    "Source and Tools behavior unchanged in this research pass."
+  ]
+}

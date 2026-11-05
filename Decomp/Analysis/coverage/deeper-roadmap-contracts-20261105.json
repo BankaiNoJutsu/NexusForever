@@ -1,0 +1,513 @@
+{
+  "build": 16042,
+  "clientSha256": "231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5",
+  "reaEvidenceId": "ev_142ebc012c9fce11df9c67703c5d9e335b4810c52c1d752b63ed2828030231d4",
+  "method": "Read-only standalone Ghidra and LLVM; byte hashes independently checked in pinned PE and copied program. No target execution.",
+  "codeRanges": [
+    {
+      "name": "crafting-station-api-0",
+      "startVA": "0x14059b270",
+      "bytes": 64,
+      "fileOffset": 5875312,
+      "sha256": "01b8a656656d8a6652f791cdd553d3bf39b07f91bc65c6260f678e5c0a5715c6",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "engraving-station-api-0",
+      "startVA": "0x14059b2b0",
+      "bytes": 64,
+      "fileOffset": 5875376,
+      "sha256": "2f2bb845edbc83ba2748278a8ce441497c8abb5027eb415124fcc9ab970f4506",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "master-craftsman-api-0",
+      "startVA": "0x14059b230",
+      "bytes": 64,
+      "fileOffset": 5875248,
+      "sha256": "10f5efa413d01a6d9d761ad716b28b95dd7aa320661b8d1a2aacf16cfe0cae14",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "open-crafting-window-0",
+      "startVA": "0x1403a0d80",
+      "bytes": 243,
+      "fileOffset": 3801472,
+      "sha256": "57b9873b479a60d8d6d0b55c295049ed9f0db8a27fd65138e1f19c72388ed40b",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "complete-craft-path-a-0",
+      "startVA": "0x1405a1df0",
+      "bytes": 94,
+      "fileOffset": 5902832,
+      "sha256": "00fa3ddfdc1d6f6a7142c72e343bac0647d74cde5b8e9b6c6366906afbf873fa",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "complete-craft-path-a-1",
+      "startVA": "0x1405a1e4e",
+      "bytes": 121,
+      "fileOffset": 5902926,
+      "sha256": "495da6117a219c7322f91cd13d09d812585ce173822501540a55a16e292123a8",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "complete-craft-path-a-2",
+      "startVA": "0x1405a1ec7",
+      "bytes": 16,
+      "fileOffset": 5903047,
+      "sha256": "444a34a95ede98f495f84cd8117882482931430f2790e8d2dcaed146e6c9feee",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "complete-craft-path-b-0",
+      "startVA": "0x1405a1ee0",
+      "bytes": 83,
+      "fileOffset": 5903072,
+      "sha256": "6e946d4ebe91c11748642c811f6d01c84cd4e2777dbe63a1a9d3f8d903a0b413",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "complete-craft-path-b-1",
+      "startVA": "0x1405a1f33",
+      "bytes": 377,
+      "fileOffset": 5903155,
+      "sha256": "4855a3fa8b18359d7a4e26918418bd113da9db96d6a45b5492beb6363a5b2103",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "complete-craft-path-b-2",
+      "startVA": "0x1405a20ac",
+      "bytes": 30,
+      "fileOffset": 5903532,
+      "sha256": "4a965db22aba96396ddc37480362aede07aaa7d9834898b79ebee3b511869422",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "service-cache-write-0",
+      "startVA": "0x1404824c0",
+      "bytes": 130,
+      "fileOffset": 4724928,
+      "sha256": "e595e0735ea58983f8b61331b019d9a3da1075f526179dd7204cb989ef981a91",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "entity-service-eligibility-0",
+      "startVA": "0x14045a640",
+      "bytes": 498,
+      "fileOffset": 4561472,
+      "sha256": "5732e9fc06292469f51a993b1cc91eaf76421603fc856f80bf66c0104e7b92c5",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "range-helper-0",
+      "startVA": "0x1403ad690",
+      "bytes": 55,
+      "fileOffset": 3852944,
+      "sha256": "ee6b681882930ecda8da090c515724bb338eb79dd595325fd4e737236e6e3c76",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "range-helper-1",
+      "startVA": "0x1403ad6c7",
+      "bytes": 264,
+      "fileOffset": 3852999,
+      "sha256": "dbd998edc046e07b482889dfbf1c341adcd65ec3ad7029d0b6270224fa3e95ae",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "range-helper-2",
+      "startVA": "0x1403ad7cf",
+      "bytes": 57,
+      "fileOffset": 3853263,
+      "sha256": "d39f1a51c2c096747038b8804d49366b59c24329f29ed1e99224f8355c172e0f",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "range-helper-3",
+      "startVA": "0x1403ad808",
+      "bytes": 28,
+      "fileOffset": 3853320,
+      "sha256": "98f0794af53fdd4f34f79300ae3feea331dedbe9da63947e9f6a37e20562c54d",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "range-helper-4",
+      "startVA": "0x1403ad824",
+      "bytes": 44,
+      "fileOffset": 3853348,
+      "sha256": "3792141c640004c113fed81f0b47383b6f25b642ca6ef4f1331672c6b9dc9a26",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "range-helper-5",
+      "startVA": "0x1403ad850",
+      "bytes": 4,
+      "fileOffset": 3853392,
+      "sha256": "ecff04baaada317a3440c75074ad90e2f00ee842be498892cd59d9959b6e7d09",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "complete-craft-api-0",
+      "startVA": "0x14059bb60",
+      "bytes": 148,
+      "fileOffset": 5877600,
+      "sha256": "9f831b256392185b1b0838f5876bdc2857d9a7e8e1c2a4938ff70643be9609bb",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "role-enum-registration-0",
+      "startVA": "0x14076acb0",
+      "bytes": 1283,
+      "fileOffset": 7774384,
+      "sha256": "9a3330659a808ce58b588e5539c8e2e2ed598cb98f60d925aa120bf52738ed7c",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "confirm-role-api-0",
+      "startVA": "0x140769620",
+      "bytes": 63,
+      "fileOffset": 7768608,
+      "sha256": "7525747a3114a482fc846decee5015f91e91e37e441bf8b0f3aeda58e03821db",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "confirm-role-api-1",
+      "startVA": "0x14076965f",
+      "bytes": 287,
+      "fileOffset": 7768671,
+      "sha256": "6bbffa03c154bbe5b0daa2dd5968688b479667b2cbab4d642f2258c8bd1663a4",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "confirm-role-api-2",
+      "startVA": "0x14076977e",
+      "bytes": 25,
+      "fileOffset": 7768958,
+      "sha256": "f74c950c9a40b097dc1eadb284ec6023efbc72519d2ff1f3eb6dc4be3ca42a51",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "decline-role-api-0",
+      "startVA": "0x1407697a0",
+      "bytes": 69,
+      "fileOffset": 7768992,
+      "sha256": "cba528e378a56b6aae8aebf24116f82c8981274a36defb0eb2ea4d3693e1f154",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "role-confirm-send-0",
+      "startVA": "0x1405c36e0",
+      "bytes": 172,
+      "fileOffset": 6040288,
+      "sha256": "df6b615a89b47c6c6260123f422b5982175bb456d693c55f742bb9f5b8fe89d5",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "0600-chat-consumer-0",
+      "startVA": "0x1405c0f00",
+      "bytes": 63,
+      "fileOffset": 6030080,
+      "sha256": "be11c089b422497ca15215b38229650339e0b6390aac3dc937301050867ddb65",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "0600-chat-consumer-1",
+      "startVA": "0x1405c0f3f",
+      "bytes": 591,
+      "fileOffset": 6030143,
+      "sha256": "9ba8c170798ed08b8c4414f21248d52b965e28f11862650ca5543058498ab9fa",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "0600-chat-consumer-2",
+      "startVA": "0x1405c118e",
+      "bytes": 39,
+      "fileOffset": 6030734,
+      "sha256": "8c4996e5a866a9f208ef981a21e1befa249078d644b56f84df786b5f6e300e5e",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "0501-name-consumer-0",
+      "startVA": "0x1404ba470",
+      "bytes": 121,
+      "fileOffset": 4954224,
+      "sha256": "f722b0940428bc540838fdeaaae6ee8092d7f632111ad881ec25fc62577ff846",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "0506-list-consumer-0",
+      "startVA": "0x1404ba4f0",
+      "bytes": 52,
+      "fileOffset": 4954352,
+      "sha256": "644fd3b5ffdbd8ded1d64dcdc89aaebb4f1fa798b914f6c28bd41c0f0174b452",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "0506-list-consumer-1",
+      "startVA": "0x1404ba524",
+      "bytes": 258,
+      "fileOffset": 4954404,
+      "sha256": "9f4850b30d9cd8a0c7f99e07a7b965c097668129871fea85d7c0c04ebfae8ffd",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    },
+    {
+      "name": "0506-list-consumer-2",
+      "startVA": "0x1404ba626",
+      "bytes": 45,
+      "fileOffset": 4954662,
+      "sha256": "8e20eea31beba9acc2d054ec1cca90a4dc1bc941306126c01b6be72f3d5c798f",
+      "boundary": "Selected PE x64 chained unwind range; tail callees remain separate"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "service-cache-predicate-leaf",
+      "startVA": "0x1405a4850",
+      "bytes": 112,
+      "fileOffset": 5913680,
+      "sha256": "42d199bd56c49fdf4b36d0ff88dabaaf93cea57626ef0b603f6656f844a4f06a",
+      "boundary": "Selected inspected address interval; not a standalone function-boundary claim",
+      "hex": "4c8b0d41106c0048894c24084d8b81c8660000498bc8498b40084885c07418903950207c09488bc8488b4010eb04488b40184885c075e9493bc8740a48894c24083b51207d054c89442408488d44240833c9488b00493bc0750a8bc185c90f95c18bc1c38b402485c00f95c18bc1c3cc"
+    },
+    {
+      "name": "service-cache-unit-lookup-leaf",
+      "startVA": "0x1403a0d20",
+      "bytes": 96,
+      "fileOffset": 3801376,
+      "sha256": "dd82584a4672091cd2c4211b2869dce9c9503efc60c231c4a9dee92a1b7203ba",
+      "boundary": "Selected inspected address interval; not a standalone function-boundary claim",
+      "hex": "4c8b89c86600004d8bc1498b41084885c074173950207c094c8bc0488b4010eb04488b40184885c075e94d3bc1740b4c89442408413b50207d054c894c2408488d442408488b00493bc1750333c0c38b4024c3cccccccccccccccccccccccccc"
+    },
+    {
+      "name": "schematic-service-selector-leaf",
+      "startVA": "0x1405926a0",
+      "bytes": 48,
+      "fileOffset": 5839520,
+      "sha256": "dc97d282c15c57cd7dfbc602a2cb599744cdbf758b207f69f2cd6abc59d587a3",
+      "boundary": "Selected inspected address interval; not a standalone function-boundary claim",
+      "hex": "4885c9741d837908167506b84f000000c3f6412004740b83791c00b8570000007405b82c000000f3c3cccccccccccccc"
+    },
+    {
+      "name": "confirm-role-shift-and-forward",
+      "startVA": "0x140769738",
+      "bytes": 30,
+      "fileOffset": 7768888,
+      "sha256": "67abd7dd28141c8c38d9f004a0fe3de147408c3f7a87aead70d991f91ce6368d",
+      "boundary": "Selected inspected address interval; not a standalone function-boundary claim",
+      "hex": "85c078d48b4d1883f90373ccb801000000d3e00bd8ebc18bd3e88a9fe5ff"
+    },
+    {
+      "name": "scene-service-update-call",
+      "startVA": "0x1403e8fa0",
+      "bytes": 12,
+      "fileOffset": 4096928,
+      "sha256": "72e97ccce2b149ad132476dce6aaa89a642519deadc5f321ff825c14ea65dc29",
+      "boundary": "Selected inspected address interval; not a standalone function-boundary claim",
+      "hex": "498b074a8b0cf0e894160700"
+    },
+    {
+      "name": "IsAtCraftingStation-name",
+      "startVA": "0x140b20c68",
+      "bytes": 20,
+      "fileOffset": 11664488,
+      "sha256": "721db40e7d8e81876500f4da39e274b545649857a181cacdf3f3526e3106a9fb",
+      "boundary": "Exact API name or adjacent name/function registration pair",
+      "hex": "497341744372616674696e6753746174696f6e00"
+    },
+    {
+      "name": "IsAtCraftingStation-binding",
+      "startVA": "0x140b6ce70",
+      "bytes": 16,
+      "fileOffset": 11976304,
+      "sha256": "1d9c140329397bec78e761f720fde841ad28db7d3c7497007af3b5c2099ee6db",
+      "boundary": "Exact API name or adjacent name/function registration pair",
+      "hex": "680cb2400100000070b2594001000000"
+    },
+    {
+      "name": "IsAtEngravingStation-name",
+      "startVA": "0x140b20c50",
+      "bytes": 21,
+      "fileOffset": 11664464,
+      "sha256": "10386d57712c168d66c3de5d2084154f48814a9655db2245126ddacd39e5c720",
+      "boundary": "Exact API name or adjacent name/function registration pair",
+      "hex": "49734174456e67726176696e6753746174696f6e00"
+    },
+    {
+      "name": "IsAtEngravingStation-binding",
+      "startVA": "0x140b6ce80",
+      "bytes": 16,
+      "fileOffset": 11976320,
+      "sha256": "d8417213f8870d010250f00629f6d83ab57d9a81c3b7509af90b782cbf67fffc",
+      "boundary": "Exact API name or adjacent name/function registration pair",
+      "hex": "500cb24001000000b0b2594001000000"
+    },
+    {
+      "name": "IsAtMasterCraftsman-name",
+      "startVA": "0x140b20a18",
+      "bytes": 20,
+      "fileOffset": 11663896,
+      "sha256": "d52db04bef47e551c92816e3a0548bc65b9a3b06d73f40a8a558f8c0b016f0eb",
+      "boundary": "Exact API name or adjacent name/function registration pair",
+      "hex": "497341744d61737465724372616674736d616e00"
+    },
+    {
+      "name": "IsAtMasterCraftsman-binding",
+      "startVA": "0x140b6ce60",
+      "bytes": 16,
+      "fileOffset": 11976288,
+      "sha256": "9e564e7a551d2736ef087d59e7d9f75e3e41ac51f8284b1294886b5bd63acbe5",
+      "boundary": "Exact API name or adjacent name/function registration pair",
+      "hex": "180ab2400100000030b2594001000000"
+    },
+    {
+      "name": "CompleteCraft-name",
+      "startVA": "0x140b20a70",
+      "bytes": 14,
+      "fileOffset": 11663984,
+      "sha256": "38516e34541f50a3b63301d303cfcc73aec1574186b1edd0df30c7db214b2a87",
+      "boundary": "Exact API name or adjacent name/function registration pair",
+      "hex": "436f6d706c657465437261667400"
+    },
+    {
+      "name": "CompleteCraft-binding",
+      "startVA": "0x140b6ce20",
+      "bytes": 16,
+      "fileOffset": 11976224,
+      "sha256": "57632efbd4843cb6d12e5387877ce56b5bd486a3e4208d61f2044c3ff72fa96c",
+      "boundary": "Exact API name or adjacent name/function registration pair",
+      "hex": "700ab2400100000060bb594001000000"
+    },
+    {
+      "name": "GetCurrentCraft-name",
+      "startVA": "0x140b20a50",
+      "bytes": 16,
+      "fileOffset": 11663952,
+      "sha256": "1bfa71c474a68723b0e50d2429393be5b8fcdb93e3c5a16a52f660c14828a655",
+      "boundary": "Exact API name or adjacent name/function registration pair",
+      "hex": "47657443757272656e74437261667400"
+    },
+    {
+      "name": "GetCurrentCraft-binding",
+      "startVA": "0x140b6ce00",
+      "bytes": 16,
+      "fileOffset": 11976192,
+      "sha256": "7fea58c786f247d0349e1bfb63a6dcfd7fde73177aa2d2470810be773058a8ce",
+      "boundary": "Exact API name or adjacent name/function registration pair",
+      "hex": "500ab24001000000f0b2594001000000"
+    },
+    {
+      "name": "ConfirmRole-name",
+      "startVA": "0x140b4e538",
+      "bytes": 12,
+      "fileOffset": 11851064,
+      "sha256": "1bea2091156e9227158bbfca230ea81cceb08412277be67e5ce7b382fcee6dd2",
+      "boundary": "Exact API name or adjacent name/function registration pair",
+      "hex": "436f6e6669726d526f6c6500"
+    },
+    {
+      "name": "ConfirmRole-binding",
+      "startVA": "0x140b76370",
+      "bytes": 16,
+      "fileOffset": 12014448,
+      "sha256": "a2cd70717783dced9265a5bc940a4bc7fabc26fa5a95f6b5c1fe4e662b4f7122",
+      "boundary": "Exact API name or adjacent name/function registration pair",
+      "hex": "38e5b440010000002096764001000000"
+    },
+    {
+      "name": "DeclineRoleCheck-name",
+      "startVA": "0x140b4e520",
+      "bytes": 17,
+      "fileOffset": 11851040,
+      "sha256": "45e5e7df65f72d3238313c6b9b4102e25aba2a548dadff932d2059f9db896a6e",
+      "boundary": "Exact API name or adjacent name/function registration pair",
+      "hex": "4465636c696e65526f6c65436865636b00"
+    },
+    {
+      "name": "DeclineRoleCheck-binding",
+      "startVA": "0x140b76380",
+      "bytes": 16,
+      "fileOffset": 12014464,
+      "sha256": "01c9e1a7a270473928c27e4a5b6e5c522cd7254f69f14f26e367b7847542317d",
+      "boundary": "Exact API name or adjacent name/function registration pair",
+      "hex": "20e5b44001000000a097764001000000"
+    },
+    {
+      "name": "role-enum-Tank-literal",
+      "startVA": "0x140b4e99c",
+      "bytes": 5,
+      "fileOffset": 11852188,
+      "sha256": "c524ec2ec13a969666186621770cf9c34dc373a217320163c158f08f80ef0b1a",
+      "boundary": "Exact ASCII enum key used by role registration",
+      "hex": "54616e6b00"
+    },
+    {
+      "name": "role-enum-DPS-literal",
+      "startVA": "0x1409f981c",
+      "bytes": 4,
+      "fileOffset": 10455068,
+      "sha256": "b8f600530dd08de771e37c2a13176f37064c556e7b1eba5b064bf0c35fa49931",
+      "boundary": "Exact ASCII enum key used by role registration",
+      "hex": "44505300"
+    }
+  ],
+  "bindings": [
+    {
+      "name": "IsAtCraftingStation",
+      "stringVA": "0x140b20c68",
+      "pairVA": "0x140b6ce70",
+      "callbackVA": "0x14059b270"
+    },
+    {
+      "name": "IsAtEngravingStation",
+      "stringVA": "0x140b20c50",
+      "pairVA": "0x140b6ce80",
+      "callbackVA": "0x14059b2b0"
+    },
+    {
+      "name": "IsAtMasterCraftsman",
+      "stringVA": "0x140b20a18",
+      "pairVA": "0x140b6ce60",
+      "callbackVA": "0x14059b230"
+    },
+    {
+      "name": "CompleteCraft",
+      "stringVA": "0x140b20a70",
+      "pairVA": "0x140b6ce20",
+      "callbackVA": "0x14059bb60"
+    },
+    {
+      "name": "GetCurrentCraft",
+      "stringVA": "0x140b20a50",
+      "pairVA": "0x140b6ce00",
+      "callbackVA": "0x14059b2f0"
+    },
+    {
+      "name": "ConfirmRole",
+      "stringVA": "0x140b4e538",
+      "pairVA": "0x140b76370",
+      "callbackVA": "0x140769620"
+    },
+    {
+      "name": "DeclineRoleCheck",
+      "stringVA": "0x140b4e520",
+      "pairVA": "0x140b76380",
+      "callbackVA": "0x1407697a0"
+    }
+  ],
+  "contracts": {
+    "craftingStationServiceKeys": {
+      "0x2c": "Crafting station",
+      "0x4f": "Engraving station",
+      "0x57": "Master craftsman"
+    },
+    "C2S05B2": "ConfirmRole converts role ordinals to bits, filters class eligibility and sends accepted=1; Decline sends roles=0, accepted=0"
+  },
+  "limits": [
+    "Static mapping only; production Source behavior unchanged.",
+    "0600 localization labels and notification producer remain separate from C2S role conversion.",
+    "084B/0855 producer ownership, discovery and settlement remain open.",
+    "Service predicates inspect local cached unit IDs; no server eligibility inferred."
+  ]
+}

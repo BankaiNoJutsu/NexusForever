@@ -1,5 +1,21 @@
 # Client64 Initial Reverse-Engineering Findings
 
+Latest broad audit: [all remaining blocker families](ALL_REMAINING_BLOCKERS_RESEARCH_2026_11_05.md)
+indexes all 36 areas and separates Source implementation, authoritative data,
+provider/deployment and native/retail requirements. Selected STS notification
+flags/predicates and XML-accessor framing are mapped with25 byte checks; full
+wire grammar/trust/accepted traffic remain gates. New authored LAS, guild-bank,
+recruitment/token and ICComm leads retain their source-version boundaries.
+
+Latest lifecycle mapping: [tracked marker identity and station candidates](TRACKED_UNIT_AND_STATION_LIFECYCLE_2026_11_05.md)
+bind the first 32-bit marker field to TrackingSlot through its exact global getter
+and independent objective cache. The final 15 bits remain neutral; the
+[subsequent Source milestone](TRACKED_MARKER_IDENTITY.md) now corrects the old
+field names and helper mask. The observed scene
+path clears the service tree before repopulation and overwrites same-key units
+without nearest-distance arbitration. Twenty-two ranges/18 anchors match the
+pinned PE and copied Ghidra program. Production emit timing and retail remain open.
+
 Latest protocol implementation: [Primal Matrix wire contracts](PRIMAL_MATRIX_WIRE_CONTRACTS.md)
 uses the pinned REA identity and independently named native save/getter paths to
 decode0072 increments and register06DF absolute snapshots. Twenty-four fresh PE
