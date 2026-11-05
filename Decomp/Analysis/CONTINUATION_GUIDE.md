@@ -1,5 +1,12 @@
 # Client Binary Decompile Continuation Guide
 
+[Community Service Token creation](COMMUNITY_TOKEN_CREATION.md) now completes
+the supported public alternate-cost Source route with durable Auth payment,
+complete Character graph decision, compensation and admission recovery.17 new/
+278 affected cases, clean owning/test builds and both reviews pass. Physical
+restart/autonomous/provider/actual-table/deployment/native/retail qualification
+and cross-owner achievement atomicity remain separate gates.
+
 [Community credit creation finance](COMMUNITY_CREATION_FINANCE.md) now couples
 the fee, guild/leader/affiliation and complete residence/plot graph through the
 original recoverable Character save.15 new Community/22 ordinary finance and278

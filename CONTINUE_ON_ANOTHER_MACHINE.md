@@ -1,5 +1,14 @@
 # Continue on another machine
 
+Latest Community implementation: [Service Token creation](Decomp/Analysis/COMMUNITY_TOKEN_CREATION.md)
+binds admitted durable Auth debit to the sealed full Character/guild/residence/
+plot graph, with compensation before retry and admission recovery.17 new token/
+278 affected cases, clean owning/test-only builds and both final reviews pass.
+The two executed route/SQL-owner negatives are fixed. Existing credit/free/admin
+and vendor/CREDD controls pass. Provider/physical/autonomous/actual-table/runtime/
+native/retail remain open. Continue LAS's public save/actor probe and broader
+roadmap work; no full suite/client/CUA ran and defaults are preserved.
+
 Latest Community implementation: [public credit creation finance](Decomp/Analysis/COMMUNITY_CREATION_FINANCE.md)
 settles the accepted fee, guild/ranks/leader affiliation and complete residence/
 plot graph in one recoverable Character transaction. Both registries stay private

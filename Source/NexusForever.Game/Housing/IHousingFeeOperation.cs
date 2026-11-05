@@ -11,6 +11,8 @@ namespace NexusForever.Game.Housing
         void Stage(CharacterContext context);
         void PrepareEffects();
         void ApplyCommittedEffects();
+        void BeforePrimarySave() { }
+        void AfterPrimaryRollback() { }
         void PrepareOrdinaryEffects() { }
         bool HasPendingOrdinaryEffects => false;
     }

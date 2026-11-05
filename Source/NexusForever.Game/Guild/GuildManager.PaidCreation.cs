@@ -11,13 +11,18 @@ namespace NexusForever.Game.Guild
 
         public GuildResult RegisterPaidGuild(ClientGuildRegister request, ulong cost)
         {
-            if (request.GuildType is not (GuildType.Guild or GuildType.Community) || request.GuildType == GuildType.Community && request.AlternateCost
-                || paidCreation != null || owner is not Player player
+            if (request.GuildType is not (GuildType.Guild or GuildType.Community) || paidCreation != null || owner is not Player player
                 || globalGuildManager is not GlobalGuildManager registry || !player.HousingNameCanBegin)
                 return GuildResult.UnableToProcess;
             var result = CanRegisterGuild(request);
             if (result.Result != GuildResult.Success) return result.Result;
-            if (!player.CurrencyManager.CanAfford(Static.Entity.CurrencyType.Credits, cost)) return GuildResult.NotEnoughCredits;
+            if (request.GuildType == GuildType.Community && request.AlternateCost)
+            {
+                if (cost != 0 && (player.Account.WorldSessionEpoch == 0 || player.Account.CurrencyManager is not Account.Currency.AccountCurrencyManager))
+                    return GuildResult.UnableToProcess;
+                if (!player.Account.CurrencyManager.CanAfford(Static.Account.AccountCurrencyType.ServiceToken, cost)) return GuildResult.NotEnoughCredits;
+            }
+            else if (!player.CurrencyManager.CanAfford(Static.Entity.CurrencyType.Credits, cost)) return GuildResult.NotEnoughCredits;
             return registry.QueuePaidCreation(player, this, request,
                 request.GuildType == GuildType.Guild ? new GuildStandard(request.GuildStandard, gameTableManager) : null, cost);
         }

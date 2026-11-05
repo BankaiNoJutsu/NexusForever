@@ -134,6 +134,7 @@ namespace NexusForever.Game.Entity
                     try
                     {
                         if (!Owns()) throw new InvalidOperationException("Paid name lost its original actor before Character enrollment.");
+                        if (primary) command.BeforePrimarySave();
                         enrolling = true;
                         try { characterSave = player.SaveCharacterUnit(snapshot); }
                         finally { enrolling = false; }
@@ -163,6 +164,7 @@ namespace NexusForever.Game.Entity
                             var proof = characterSave.Exception?.Flatten().InnerExceptions.OfType<CharacterReconciliationRolledBackException>().SingleOrDefault();
                             if (proof == null || !snapshot.RetryHousingRollback(proof))
                                 throw (Exception)characterSave.Exception ?? new InvalidOperationException("Paid name has no proven retryable save outcome.");
+                            if (primary) command.AfterPrimaryRollback();
                             // Keep the exact snapshot and all row owners. The
                             // manager may retry this persistence attempt next tick.
                             terminal.TrySetResult();

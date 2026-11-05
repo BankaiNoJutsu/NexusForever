@@ -161,6 +161,7 @@ namespace NexusForever.Database.Character
                     {
                         await using (transaction)
                         {
+                            if (receipt != null) await receipt.AuthorizeAsync(payload);
                             await context.SaveChangesAsync();
                             await transaction.CommitAsync();
                         }
@@ -178,6 +179,7 @@ namespace NexusForever.Database.Character
                     // A partial enrollment has no complete receipt payload. Any
                     // present receipt is a conflict, never evidence of success.
                     bool committed = await ProbeUntilKnown(contexts, characterId, database, receipt, payload);
+                    if (!committed) await receipt.ProvenRollbackAsync();
                     context.ResolveUncertainSettlement(recoveryOwner, committed);
                     if (!committed)
                     {

@@ -1,5 +1,11 @@
 # Public Community creation finance
 
+Later alternate-cost result: [Service Token creation](COMMUNITY_TOKEN_CREATION.md)
+now binds durable Auth debit/compensation to the complete Character creation
+receipt and admission recovery.17 new token/278 affected cases, clean owning/
+test builds and both final reviews pass. This supersedes the pending token
+Source integration below; physical/provider/deployment/native/retail gates remain.
+
 5 November 2026. The real public credit-paid Community creation route now
 settles the accepted Character fee, guild/ranks/leader membership, affiliation,
 residence root and every initial plot in one recoverable Character transaction.

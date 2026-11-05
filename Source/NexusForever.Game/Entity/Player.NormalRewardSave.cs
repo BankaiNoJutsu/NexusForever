@@ -223,6 +223,9 @@ namespace NexusForever.Game.Entity
         private void SaveFrozenAuth(AuthContext context, NormalRewardSave snapshot)
         {
             if (snapshot == null) { Save(context); return; }
+            if (snapshot.HousingReceipt is NexusForever.Database.Character.CommunityTokenCreationSaveReconciliation tokens
+                && NexusForever.Game.Account.Currency.AccountCurrencyOperationRepository.DatabaseKey(context) != tokens.AuthRoute)
+                throw new InvalidOperationException("Community creation changed its original Auth snapshot route.");
             snapshot.Validate(); CheckInventorySaveAllowed(frozen: true, housingSnapshot: snapshot); Account.Save(context);
             snapshot.CheckCraftingCreditCapacity(context);
         }

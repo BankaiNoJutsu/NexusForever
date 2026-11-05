@@ -1,0 +1,374 @@
+{
+  "date": "2026-11-05",
+  "milestone": "Public Community Service Token creation and durable Auth/Character payment decision",
+  "sourceBaselineCommit": "efc54229fc77abeff93a4e0bec6c5415e18b3b64",
+  "publicationParent": "efc54229fc77abeff93a4e0bec6c5415e18b3b64",
+  "sourceFiles": [
+    {
+      "path": "Source/NexusForever.Database.Character/CharacterAtomicSave.cs",
+      "sha256": "630961054225f4f04b5a8c67eb5f9b0e4aab65c8d52143dece97460f904c552a",
+      "gitBlob": "80b582496a9363be0f74793a46de8ac523de7f2a"
+    },
+    {
+      "path": "Source/NexusForever.Database.Character/CharacterSaveReconciliation.cs",
+      "sha256": "f683dc80311a6fa3d7b1b00f444cc8a0438ac51da24e6b02e3a6e5068409597c",
+      "gitBlob": "42bdd633a5059d680191092354f58bc8d3bca9a5"
+    },
+    {
+      "path": "Source/NexusForever.Database.Character/CommunityCreationSaveReconciliation.cs",
+      "sha256": "fc4e5bbade115bc34d58c2469c639a6fb9314d8c6f0e61f911a72a06fdb068f4",
+      "gitBlob": "b1fdfa1fc4f12a03958e6006e8f6d664430165ad"
+    },
+    {
+      "path": "Source/NexusForever.Database.Character/CommunityTokenCreationSaveReconciliation.cs",
+      "sha256": "5a81e407b81287b37c901f2f32a71473b1a862f9f2aa693821d108566f10461a",
+      "gitBlob": "768ba2e56010a84f971bf691955de34e52d28094"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Guild/CommunityTokenCreationTests.cs",
+      "sha256": "4342c9ad46973c89439ba5f848b4ede9ffd1dc52b75d17b3d762027c8379e117",
+      "gitBlob": "e7622c3ff9f9301f55ebc0bdeb73c0a6cce25340"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Guild/GuildCreationFinanceTests.cs",
+      "sha256": "be363f78c27851751883e7d56585290e74daebcb511dd326956cb8b70f4c624b",
+      "gitBlob": "cb6f11a5d542bcedb527065046f728fd17eee685"
+    },
+    {
+      "path": "Source/NexusForever.Game/Account/Currency/AccountCurrency.Refresh.cs",
+      "sha256": "4790cd378c3f94eda931d0f47fcc741f50d4ad3f2cfdd8d6a36017ce7b4ffaa1",
+      "gitBlob": "f3c70c5ff8f2e08965d2090d1efff9e57f828bd0"
+    },
+    {
+      "path": "Source/NexusForever.Game/Account/Currency/AccountCurrencyManager.VendorPurchase.cs",
+      "sha256": "6017982f01d8bb2bf2f022644f689c87d4445b25f0925b7117b5b8c2ae7e86af",
+      "gitBlob": "a047a7ab1f79c78aba483bcd38c4df8a6df965dd"
+    },
+    {
+      "path": "Source/NexusForever.Game/Account/Currency/VendorAccountPurchase.CommunityCreation.cs",
+      "sha256": "46dee678b440362660201a6430d509d0c24389bb250e67a66260c90cf65ae13d",
+      "gitBlob": "7ecaece77a8d228c3623ab7e9af12f8baa5d46a0"
+    },
+    {
+      "path": "Source/NexusForever.Game/Account/Currency/VendorAccountPurchase.cs",
+      "sha256": "320dd08c90feaf2f735a603e9e1da56b94246ede3c7af6b9d8fce76cc6b14b0a",
+      "gitBlob": "51cefc0f1efe5fc0545e2127811fdb0d74d94346"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/Player.HousingRename.cs",
+      "sha256": "8e46c62fb1919c2c7f161490d2f9ad219c0f28f6042c4726a3b21e2155724c13",
+      "gitBlob": "4d87b5ef0ff8ca155f149b1c6cfb0f1e860dab12"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/Player.NormalRewardSave.cs",
+      "sha256": "265dc0f5f5e1cda09dfbb5beb3bf4d41895bcc12f65a08b71afae68293e4b750",
+      "gitBlob": "ab2b51767290e19866352d9a53a2e4b6f68964ba"
+    },
+    {
+      "path": "Source/NexusForever.Game/Guild/CommunityTokenPayment.cs",
+      "sha256": "33f2f70dfd6466e63c8aedcc235708a96f1f0ad9f17d6ad96a91a908f6556455",
+      "gitBlob": "b2c7724fb64ff2c6505fafaf814c9c93143353f6"
+    },
+    {
+      "path": "Source/NexusForever.Game/Guild/GlobalGuildManager.PaidCreation.cs",
+      "sha256": "7887938e49aff8074220b953bd9914b0d1a18990321dd056d48e9d0d1e7fc419",
+      "gitBlob": "b6739acd05456f9ea7170d16ce14281e8ef94ff7"
+    },
+    {
+      "path": "Source/NexusForever.Game/Guild/GuildCreationSettlement.cs",
+      "sha256": "5fb077ba7a61dbcfec42beee2d33d18af6baf389757f24ffad9273292f4f0c07",
+      "gitBlob": "da41582979c3f09e614a20867b212fecd1385391"
+    },
+    {
+      "path": "Source/NexusForever.Game/Guild/GuildManager.PaidCreation.cs",
+      "sha256": "4626b5039a72a66124819e7f8dda11445e88a499008ba7b6fd68f7f06bbb4ee1",
+      "gitBlob": "ea85eb9ee088c8cd59083715a2b13424416fcc33"
+    },
+    {
+      "path": "Source/NexusForever.Game/Housing/IHousingFeeOperation.cs",
+      "sha256": "9b274a3cf871a0720b8777e87a5fddf1ae139e9ee663e59cdde92497c54b7c0d",
+      "gitBlob": "2cbec967e191c6345568a6878c137ce035603182"
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/Network/Message/Handler/Guild/ClientGuildRegisterHandler.cs",
+      "sha256": "7707f72092d1a85c8f2bf048caad352c56d50e5565af9fd2ac90a1297eeaf3bd",
+      "gitBlob": "3dba99d72b34efcbd656847fd35ddcf4ee3c82cb"
+    }
+  ],
+  "assemblies": {
+    "Source/NexusForever.Database.Character/bin/Debug/net10.0/NexusForever.Database.Character.dll": "985810869d21e8b44f7da360199f41d0b7d19a42ab6d018395530e2cea465a6d",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Database.Character.dll": "985810869d21e8b44f7da360199f41d0b7d19a42ab6d018395530e2cea465a6d",
+    "Source/NexusForever.Database.Auth/bin/Debug/net10.0/NexusForever.Database.Auth.dll": "a9a4c2ebc64a269543c03ace073dc8797d54b5d62b29891542d52781da3aa99e",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Database.Auth.dll": "a9a4c2ebc64a269543c03ace073dc8797d54b5d62b29891542d52781da3aa99e",
+    "Source/NexusForever.Game.Abstract/bin/Debug/net10.0/NexusForever.Game.Abstract.dll": "af641758bc73a3d3f9dd2b7c36d15e6ec7a4d1b26e2715b9000d61a85af636d5",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Abstract.dll": "af641758bc73a3d3f9dd2b7c36d15e6ec7a4d1b26e2715b9000d61a85af636d5",
+    "Source/NexusForever.Game/bin/Debug/net10.0/NexusForever.Game.dll": "2914b4bc026733b74f963b47e1ba00fb5f5f0d9abe51073c99afd4b3b091679a",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.dll": "2914b4bc026733b74f963b47e1ba00fb5f5f0d9abe51073c99afd4b3b091679a",
+    "Source/NexusForever.WorldServer/bin/Debug/net10.0/NexusForever.WorldServer.dll": "d1e7142078ff833150c157b9e033b424d09b074de9fbe5635c6b1df2898d286c",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.WorldServer.dll": "d1e7142078ff833150c157b9e033b424d09b074de9fbe5635c6b1df2898d286c",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll": "5b10ab42a6ce66b2bdddacd103b41aeb82ce5b4a4e006c25f1f53bbe4b92f01c"
+  },
+  "baselineRuntime": {
+    "artifacts/continuation-20261105/community-token-creation/baseline-runtime/NexusForever.Database.Character.dll": "d98512989891043678b69ed00374a5c098613ab2c653e3197f4fc4131c9ff67c",
+    "artifacts/continuation-20261105/community-token-creation/baseline-runtime/NexusForever.Game.dll": "300422feb4b3d74305cd9ddafb6476f66fe18e4b03be6a0676ae9453aae0b1fc",
+    "artifacts/continuation-20261105/community-token-creation/baseline-runtime/NexusForever.WorldServer.dll": "1be4c10c6fdf164fadac5d78d310895aba3295aba24426425f9b011e7b83a96d"
+  },
+  "baseline": {
+    "path": "artifacts/continuation-20261105/community-token-creation/baseline-public.trx",
+    "sha256": "ce6f11207dbc778b8fb3660b85212fe0d6900108fef5b7b51aec1c436111796e",
+    "counters": {
+      "total": "3",
+      "executed": "3",
+      "passed": "0",
+      "failed": "3",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "failedCases": [
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationSettlesTheDurableAuthDebitWithoutChargingCharacterCredits",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationRefundsARejectedCharacterGraphBeforeRetrying",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationDefersSuccessUntilThePayerAndCompleteGraphCommit"
+    ]
+  },
+  "initialCandidate": {
+    "path": "artifacts/continuation-20261105/community-token-creation/candidate.trx",
+    "sha256": "3bb8d394a46786120c2a7a61886ac26ea79da4c48c91b82e8260467b79f99971",
+    "counters": {
+      "total": "3",
+      "executed": "3",
+      "passed": "3",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    }
+  },
+  "reviewNegatives": {
+    "path": "artifacts/continuation-20261105/community-token-creation/review-negative.trx",
+    "sha256": "647e93c9fe1bd0668a9e9d3dbe3381e53fbb24889aaced2ab12efc8d1297b284",
+    "counters": {
+      "total": "2",
+      "executed": "2",
+      "passed": "0",
+      "failed": "2",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "failedCases": [
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationCannotChargeTheStalePayerOfAnotherAccountsCharacter",
+      "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationRejectsARecoveryRouteDifferentFromItsCompleteSealedGraph"
+    ]
+  },
+  "focused": {
+    "path": "artifacts/continuation-20261105/community-token-creation/focused.trx",
+    "sha256": "6dadafa49e5b534224efed19121158a81c9c1643bb9cbd4385e5e3026f9509ca",
+    "counters": {
+      "total": "17",
+      "executed": "17",
+      "passed": "17",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    }
+  },
+  "affected": {
+    "path": "artifacts/continuation-20261105/community-token-creation/affected.trx",
+    "sha256": "24340d4b046a26da6377261a053d14951c387acb5761bd96eb11cb5f37adf772",
+    "counters": {
+      "total": "278",
+      "executed": "278",
+      "passed": "278",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    }
+  },
+  "affectedGroups": {
+    "NexusForever.Game.Tests.Account.Currency.AccountCurrencyDurabilityTests": 96,
+    "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests": 55,
+    "NexusForever.Game.Tests.Database.BankReconciliationOwnershipTests": 5,
+    "NexusForever.Game.Tests.Database.CharacterAtomicSaveTests": 20,
+    "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests": 54,
+    "NexusForever.Game.Tests.Housing.HousingDecorPurchaseTests": 11,
+    "NexusForever.Game.Tests.Housing.HousingRenameFeeRecoveryTests": 31,
+    "NexusForever.Game.Tests.Vendor.ClientVendorPurchaseHandlerTests": 6
+  },
+  "newPublicTokenCases": 17,
+  "retainedCommunityCreditCases": 15,
+  "retainedOrdinaryGuildFinanceCases": 22,
+  "testFilter": "FullyQualifiedName~GuildCreationFinanceTests|FullyQualifiedName~HousingRenameFeeRecoveryTests|FullyQualifiedName~HousingDecorPurchaseTests|FullyQualifiedName~CharacterAtomicSaveTests|FullyQualifiedName~BankReconciliationOwnershipTests|FullyQualifiedName~RewardNormalSaveSnapshotTests|FullyQualifiedName~AccountCurrencyDurabilityTests|FullyQualifiedName~ClientVendorPurchaseHandlerTests",
+  "builds": {
+    "owning": "NexusForever.WorldServer",
+    "owningSeconds": 15.45,
+    "testOnlySeconds": 14.34,
+    "warnings": 0,
+    "errors": 0,
+    "focusedBodySecondsApproximate": 26,
+    "affectedBodySecondsApproximate": 87
+  },
+  "reviews": {
+    "standards": {
+      "initial": 0,
+      "finalRemaining": 0,
+      "agent": "/root/iccomm_standards"
+    },
+    "spec": {
+      "initial": 2,
+      "finalRemaining": 0,
+      "agent": "/root/iccomm_spec"
+    }
+  },
+  "interpretation": {
+    "fixtureErrors": "Initial import/session setup and later conditional-constructor compilation errors are retained, not counted as financial defect evidence.",
+    "baselineIdentity": "The three changed production dependencies were retained from the prior milestone, hash-checked, restored into the test runtime for the public baseline, then refreshed for candidate/final tests.",
+    "recovery": "Fresh protocol/SQL owners at admission in the test process; physical failure/restart is not qualified.",
+    "affectedScope": "278 is this wallet/fee/atomic scope, distinct from the preceding credit milestone 278 residence/guild scope."
+  },
+  "evidence": [
+    {
+      "path": "artifacts/continuation-20261105/community-token-creation/baseline-build.log",
+      "sha256": "51d8198bfe09b8848a9555b6e8bea67fd921fb4d916a0e698b05b64e45c3c803"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-token-creation/baseline-fixture-build.log",
+      "sha256": "c9e75d13240ed71eac4d3a4051d0f4b5fc43727395acc406e693c50d35f934b8"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-token-creation/baseline-session-build.log",
+      "sha256": "13226de9dfc045ec28d31b4ccda8310c7ebfb333fca44dba8bd48108a75c404b"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-token-creation/baseline.trx",
+      "sha256": "c30dc8507f68be2a034ba7fe39f5bec019ee196c72ffb3ca22b2bd73833498b7"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-token-creation/baseline-public-tests.log",
+      "sha256": "69a6844827f40b5cf110d47df38a60ce3557aca945c1e3b2183479e2ecc7a949"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-token-creation/owning-build.log",
+      "sha256": "0ba141f2e306f35ea2ab694a50bf6b8b7ae202fb9f2b8312c052ce8eb58f5ce1"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-token-creation/candidate-owning-build.log",
+      "sha256": "d3176128f74e2d9bb104256e1df61308d323fedb05ff59acd8459231135d844a"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-token-creation/candidate-test-build.log",
+      "sha256": "65c8d44e98d6c9f126eabaf69399d3569d00f16598b37852f1939fb714e1dcb8"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-token-creation/candidate-tests.log",
+      "sha256": "96afd07932b46ec2ffc0bd4eb8a454ed5494efe8a23b30e317261b115032e972"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-token-creation/expanded-test-build.log",
+      "sha256": "081656061aad6b5669fe8aec7c14c1f9e9bf373fb15e3df8afdd5a98b066f5d1"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-token-creation/review-negative-build.log",
+      "sha256": "8e329ae7a350b46a7ba9a2be07106dc0b2ae59b545b6beaca615fa1d84906855"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-token-creation/review-negative.log",
+      "sha256": "48788de8fc10ff6af15c4b3d3165c817f0a70b326d12e880f2e1b9bc8c60c475"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-token-creation/review-fix-owning-build.log",
+      "sha256": "620b0af439803c08196cd7053dcd5d00def3286baedf55520eab0600dc3c5bb4"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-token-creation/final-test-build.log",
+      "sha256": "5a13427c2b022db2fcb03389297e17e3e3f3c715a01a34dd2e94a62ac924a7be"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-token-creation/focused-tests.log",
+      "sha256": "a2b0662ce2c384049a33767d4d11e2a96c8d282c8a1ddd4e257fee5ee665c02b"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-token-creation/affected-tests.log",
+      "sha256": "4722c61afe09e50399c81a5fe1d4149d37f638222f514fd80a52cab91261b741"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-token-creation/affected-filter.txt",
+      "sha256": "b25fb48b1a5e00d863dafcbf5541ec4ec76016341b82c1539b9b8cc99a12f58e"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-token-creation/review.md",
+      "sha256": "f0c33206a1df07afe2190d5f629a94b3f977157a23c659fa205d332511d09e54"
+    },
+    {
+      "path": "artifacts/continuation-20261105/community-token-creation/upstream-refresh.json",
+      "sha256": "238667ed34f287e2fb5cd5881896e64812d1450e0fb76afdb47cf86f4db7663b"
+    }
+  ],
+  "upstream": {
+    "latestAllStatePulls": 20,
+    "changedReviewedHeadsBasesStatesOrMergeStates": 0,
+    "608": "open",
+    "609": "closed/unmerged"
+  },
+  "remaining": [
+    "Configured-provider/copied-upgrade",
+    "Actual-table and physical failure/process restart",
+    "Autonomous recovery without admission",
+    "Broker/socket/deployment and native/retail",
+    "Cross-owner Character/Guild achievement atomicity",
+    "Broader assessment/gameplay/progression roadmap"
+  ],
+  "constraints": [
+    "No full solution build/full suite",
+    "No native client or Computer Use",
+    "No schema/backfill, entitlement/default or configuration changes",
+    "No upstream PR mutations"
+  ]
+}

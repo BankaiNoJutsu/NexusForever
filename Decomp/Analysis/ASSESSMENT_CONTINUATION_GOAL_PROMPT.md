@@ -82,11 +82,17 @@ Next actionable outcomes and remaining gates
   under a dedicated Community receipt. Both registries stay private through
   ordinary followup.15 new Community/22 ordinary finance and278 affected cases,
   clean owning/test-only builds and both Source reviews pass. Do not repeat
-  the completed credit integration. Continue its Service Token option through
-  a complete durable Auth/Character handoff. The alternate-cost route remains
-  unfinished. Do not reuse an ordinary Guild receipt as authorization for
-  residence rows or an Auth debit; preserve direct/admin/free registration and
-  the completed ordinary Guild/Community credit guarantees.
+  the completed credit integration. Its later Service Token result is recorded
+  in Decomp/Analysis/COMMUNITY_TOKEN_CREATION.md: the public alternate route
+  now binds durable admitted Auth payment to the complete Character decision,
+  compensation before retry and admission recovery.17 new token/278 affected
+  cases, clean owning/test builds and both final reviews pass. Do not repeat
+  this completed Source integration. Physical restart/autonomous recovery,
+  fresh configured-provider/actual-table/deployment/native/retail and cross-owner
+  achievement gates remain. Do not reuse an ordinary Guild receipt as authority
+  for residence rows or an Auth debit; preserve all direct/admin/free and
+  ordinary Guild/Community creation guarantees. Continue the LAS public save/
+  actor-replacement probe and broader roadmap as their inputs allow.
 - Keep the full broader roadmap active: Contract public claim/reset requires
   remaining unclaimed/final-first/excess policy evidence and complete canonical
   delivery/recovery. Its726 choices are already recovered; retain the remaining

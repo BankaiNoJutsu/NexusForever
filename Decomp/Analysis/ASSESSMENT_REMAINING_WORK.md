@@ -1,5 +1,15 @@
 # Assessment follow-through goal
 
+[Public Community Service Token creation](COMMUNITY_TOKEN_CREATION.md) now
+couples a durable admitted Auth payment with the complete Character/guild/root/
+plot decision, compensation before retry and admission recovery.17 new token
+and all278 affected cases, clean owning/test builds and both final reviews pass.
+Token wallet adoption/publication retains the original World actor and cursors;
+credit/free/admin and vendor/CREDD controls remain covered. Fresh provider,
+physical restart/autonomous recovery, actual-table, deployment/native/retail and
+cross-owner achievement gates remain. Continue the LAS public durability probe
+and broader progression/gameplay queue without repeating either creation fix.
+
 [Public Community credit creation](COMMUNITY_CREATION_FINANCE.md) now couples
 the accepted Character fee, guild/ranks/leader membership/affiliation and full
 residence/plot graph through one recoverable save. Both drafts remain private

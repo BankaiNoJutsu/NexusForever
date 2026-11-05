@@ -72,6 +72,26 @@ namespace NexusForever.Game.Account.Currency
                 }
             }
 
+            internal IEnumerable<Func<IWritable>> CapturePublication()
+            {
+                foreach (var row in rows)
+                {
+                    var packet = BuildCurrencyGrant(row.Wallet, 0);
+                    byte currency = packet.AccountCurrency.AccountCurrencyType;
+                    ulong amount = packet.AccountCurrency.Amount, reason = packet.Reason, reserved = packet.Reserved;
+                    yield return () =>
+                    {
+                        if (!Current()) throw new InvalidOperationException("Wallet publication changed its original actor.");
+                        return new ServerAccountCurrencyGrant { AccountCurrency = new() { AccountCurrencyType = currency, Amount = amount }, Reason = reason, Reserved = reserved };
+                    };
+                    yield return () =>
+                    {
+                        if (!Current()) throw new InvalidOperationException("Wallet publication changed its original actor.");
+                        return new ServerWalletUpdate(currency);
+                    };
+                }
+            }
+
             internal void Quarantine()
             {
                 foreach (var row in rows) row.Refresh.Quarantine();

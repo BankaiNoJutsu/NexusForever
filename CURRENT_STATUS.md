@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[Community Service Token creation](Decomp/Analysis/COMMUNITY_TOKEN_CREATION.md)
+now uses a durable Auth payment bound to the complete Character creation receipt,
+with compensation/retry, admission recovery and original-actor wallet/success
+publication.17 new token/278 affected cases, clean owning/test builds and both
+final reviews pass. Provider/physical/autonomous/actual-table/deployment/native/
+retail and cross-owner achievement qualification remain open.
+
 [Public Community credit creation](Decomp/Analysis/COMMUNITY_CREATION_FINANCE.md)
 now settles fee, guild/leader membership/affiliation and the full residence/plot
 graph together, with private drafts, recovery and committed publication.15 new

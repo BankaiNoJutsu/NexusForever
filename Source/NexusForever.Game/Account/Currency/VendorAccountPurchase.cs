@@ -50,7 +50,8 @@ namespace NexusForever.Game.Account.Currency
             string route = AccountCurrencyOperationRepository.DatabaseKey(reader);
             var anchors = await reader.AccountCurrencyOperation.AsNoTracking()
                 .Where(row => row.AccountId == account.Id && row.Subtract && row.OperationKey.EndsWith(":0")
-                    && (row.OperationKey.StartsWith(DebitPrefix) || row.OperationKey.StartsWith(CreddDebitPrefix)))
+                    && (row.OperationKey.StartsWith(DebitPrefix) || row.OperationKey.StartsWith(CreddDebitPrefix)
+                        || row.OperationKey.StartsWith(CommunityDebitPrefix)))
                 .OrderBy(row => row.OperationKey).ToArrayAsync();
             var local = anchors.Select(row => (Debit: row, Intent: ReadIntent(row)))
                 .Where(entry => entry.Intent.Realm == realm).ToArray();
@@ -97,7 +98,8 @@ namespace NexusForever.Game.Account.Currency
         internal sealed record Intent(string Id, uint Account, ulong Character, ushort Realm, string CharacterRoute, string AuthRoute,
             uint Item, uint Quantity, string QuoteFingerprint, ImmutableArray<Cost> Costs,
             [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] ulong Epoch = 0,
-            [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] uint? CreddUsageLimit = null);
+            [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] uint? CreddUsageLimit = null,
+            [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] CommunityCreation Community = null);
 
         internal Intent Create(uint account, ulong character, uint item, uint quantity, string quoteFingerprint, IEnumerable<Cost> costs, ulong epoch)
         {
@@ -121,6 +123,8 @@ namespace NexusForever.Game.Account.Currency
             {
                 ArgumentNullException.ThrowIfNull(enrollDelivery);
                 Validate(intent);
+                if (intent.Community != null)
+                    throw new InvalidOperationException("Community tokens require their sealed creation receipt, not vendor delivery enrollment.");
                 if (intent.Epoch == 0) throw new InvalidOperationException("Vendor authorization requires an admitted session epoch.");
                 RequireRoute(context, intent);
                 var transaction = context.Database.CurrentTransaction;
@@ -192,7 +196,8 @@ namespace NexusForever.Game.Account.Currency
                     StageMarker(context, intent.Id, CancelledPrefix + payload);
                     await context.SaveChangesAsync();
                 }
-                else if (marker.Payload == DeliveredPrefix + payload) result = VendorAccountAuthorization.Delivered;
+                else if (intent.Community != null ? IsCommunityReceipt(marker.Payload, intent) : marker.Payload == DeliveredPrefix + payload)
+                    result = VendorAccountAuthorization.Delivered;
                 else if (marker.Payload != CancelledPrefix + payload)
                     throw new InvalidOperationException("Vendor recovery found a foreign Character marker.");
                 await transaction.CommitAsync();
@@ -296,7 +301,7 @@ namespace NexusForever.Game.Account.Currency
         private static AccountWalletOperation[] Operations(Intent intent, bool subtract)
         {
             string payload = JsonSerializer.Serialize(intent);
-            string prefix = intent.CreddUsageLimit.HasValue
+            string prefix = intent.Community != null ? (subtract ? CommunityDebitPrefix : "community-create-refund:") : intent.CreddUsageLimit.HasValue
                 ? (subtract ? CreddDebitPrefix : "credd-redeem-refund:")
                 : (subtract ? DebitPrefix : "vendor-refund:");
             // The first key anchors the entire quote, even if a conflicting
@@ -315,7 +320,7 @@ namespace NexusForever.Game.Account.Currency
                     || cost.Currency == AccountCurrencyType.None)
                 || !intent.Costs.Select(cost => cost.Currency).SequenceEqual(intent.Costs.Select(cost => cost.Currency).Distinct().Order()))
                 throw new InvalidOperationException("Vendor payment requires a canonical purchase and its original wallet owners.");
-            if (intent.CreddUsageLimit.HasValue ? !IsCreddRedemption(intent)
+            if (intent.Community != null ? !IsCommunityCreation(intent) : intent.CreddUsageLimit.HasValue ? !IsCreddRedemption(intent)
                 : intent.Item == 0 || intent.Quantity == 0 || intent.QuoteFingerprint?.Length != 64)
                 throw new InvalidOperationException("Account payment has an invalid delivery intent.");
         }

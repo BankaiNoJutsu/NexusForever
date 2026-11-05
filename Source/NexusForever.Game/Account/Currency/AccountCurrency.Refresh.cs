@@ -38,7 +38,7 @@ namespace NexusForever.Game.Account.Currency
                 ArgumentNullException.ThrowIfNull(contexts);
                 lock (owner.saveGate)
                 {
-                    if (!ReferenceEquals(owner.pendingRefresh, this) || observation != null)
+                    if (!ReferenceEquals(owner.pendingRefresh, this) || observation != null && !observation.IsFaulted && !observation.IsCanceled)
                         throw new InvalidOperationException("Wallet observation is no longer the retained read owner.");
                     return observation = Task.Run(async () =>
                     {

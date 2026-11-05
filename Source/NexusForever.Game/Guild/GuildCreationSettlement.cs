@@ -35,6 +35,7 @@ namespace NexusForever.Game.Guild
         private int guildEffectCursor;
         private bool preparingGuildEffects;
         private int effectThread;
+        private readonly CommunityTokenPayment tokenPayment;
         internal GuildBase Guild { get; }
         internal Residence CreationResidence { get; }
         private readonly byte[] creationPlots;
@@ -43,7 +44,7 @@ namespace NexusForever.Game.Guild
         internal ulong CharacterId { get; }
         internal bool Finished { get; private set; }
 
-        internal GuildCreationSettlement(GlobalGuildManager registry, GuildBase guild, Player player, GuildManager membership, ulong cost)
+        internal GuildCreationSettlement(GlobalGuildManager registry, GuildBase guild, Player player, GuildManager membership, ulong cost, ulong? tokenCost = null)
         {
             this.registry = registry; Guild = guild; this.player = player; Membership = membership; this.cost = cost;
             if (guild is Community community)
@@ -53,6 +54,8 @@ namespace NexusForever.Game.Guild
             }
             Name = guild.Name; CharacterId = player.CharacterId; session = player.Session; events = session.Events;
             account = player.Account; epoch = account.WorldSessionEpoch;
+            if (tokenCost > 0)
+                tokenPayment = new(player, Guild.Id, CreationResidence?.Id ?? throw new InvalidOperationException("Token creation requires its Community residence."), Name, tokenCost.Value, Owns);
         }
         private bool Owns() => Membership.OwnsPaidCreation(this) && player.CharacterId == CharacterId
             && ReferenceEquals(player.Session, session) && ReferenceEquals(session.Events, events)
@@ -66,7 +69,9 @@ namespace NexusForever.Game.Guild
             if (actor == null) { CancelBeforeAttempt(); return false; }
             return true;
         }
-        internal void CancelBeforeAttempt() { undoAffiliation?.Invoke(); undoAffiliation = null; }
+        internal void CancelBeforeAttempt() { undoAffiliation?.Invoke(); undoAffiliation = null; tokenPayment?.CancelBeforeAttempt(); }
+        void IHousingFeeOperation.BeforePrimarySave() => tokenPayment?.Prepare();
+        void IHousingFeeOperation.AfterPrimaryRollback() => tokenPayment?.AfterRollback();
 
         internal void RetainGuildEffect(Abstract.Entity.IPlayer source, Abstract.Achievement.IGuildAchievementManager manager, Action effect)
         {
@@ -144,6 +149,9 @@ namespace NexusForever.Game.Guild
             }
             bool ExactRow(EntityEntry entry) => primary && ReferenceEquals(entry.Context, enrollment) && enrolledRows?.Contains(entry.Entity) == true;
             string id = Guid.NewGuid().ToString("N");
+            if (tokenPayment != null)
+                return new CommunityTokenCreationSaveReconciliation(id, CharacterId, Guild.Id, CreationResidence.Id, Name,
+                    account.Id, epoch, tokenPayment.Fee, primary, tokenPayment.AuthRoute, Parent, Enrolled, ExactRow, tokenPayment.AuthorizeAsync, tokenPayment.RollbackAsync);
             return CreationResidence == null
                 ? new GuildCreationSaveReconciliation(id, CharacterId, Guild.Id, (byte)Guild.Type, Name, Parent, Enrolled, ExactRow)
                 : new CommunityCreationSaveReconciliation(id, CharacterId, Guild.Id, CreationResidence.Id, Name, Parent, Enrolled, ExactRow);
@@ -177,6 +185,7 @@ namespace NexusForever.Game.Guild
                 }
                 attempt = null;
             }
+            if (tokenPayment != null && !actor.Primary && !tokenPayment.ObserveCommitted()) return;
             if (notices == null) actor.RefreshPublicationReadiness();
             if (!actor.ReadyToPublish) { attempt = actor.Attempt(); return; }
             if (notices == null)
@@ -189,7 +198,7 @@ namespace NexusForever.Game.Guild
                     registry.AdoptPaidCreation(this); Guild.ReleasePaidCreation(this); CreationResidence?.ReleasePaidCreation(this); releasedGuild = true;
                 }
                 var prepared = new List<Func<Task>> { () => Guild.PublishMutationsAsync() };
-                foreach (var packet in actor.BeginPublication().Concat(Guild.CreationPackets(player)))
+                foreach (var packet in actor.BeginPublication().Concat(tokenPayment?.CapturePublication() ?? []).Concat(Guild.CreationPackets(player)))
                     prepared.Add(() =>
                     {
                         if (actor.CanPublish && Owns()) session.EnqueueMessageEncrypted(packet());

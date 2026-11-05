@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 
 namespace NexusForever.Database.Character
 {
@@ -11,6 +12,10 @@ namespace NexusForever.Database.Character
         internal abstract void Validate();
         internal abstract void ValidateParent(CharacterContext context);
         internal virtual void ValidateEnrolled(CharacterContext context) { }
+        // Enrollment remains synchronous. A specifically typed external payer
+        // may authorize only the already sealed graph while its SQL lock is held.
+        internal virtual Task AuthorizeAsync(string payload) => Task.CompletedTask;
+        internal virtual Task ProvenRollbackAsync() => Task.CompletedTask;
         internal abstract string ReadPayload(CharacterContext context, string id);
         internal abstract object AddReceipt(CharacterContext context, string payload, DateTime created);
         internal abstract CharacterReconciliationRolledBackException RolledBack(CharacterContext context, string database, Exception cause, bool completed);

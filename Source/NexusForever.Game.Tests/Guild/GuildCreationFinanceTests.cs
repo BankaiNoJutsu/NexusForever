@@ -348,7 +348,7 @@ public sealed partial class GuildCreationFinanceTests
             => CharacterAtomicSave.ExecuteCommunityCreationReconciliation(() => source.Context(interceptor), characterId, action, receipt);
     }
 
-    private static async Task<Fixture> Create(IInterceptor interceptor = null, bool matchingAchievements = false, bool completeGuildAchievement = false, bool community = false)
+    private static async Task<Fixture> Create(IInterceptor interceptor = null, bool matchingAchievements = false, bool completeGuildAchievement = false, bool community = false, bool tokens = false)
     {
         var source = new SourceFixture(null); source.Seed();
         var tables = source.Source.Tables;
@@ -402,6 +402,8 @@ public sealed partial class GuildCreationFinanceTests
         guilds = new GlobalGuildManager(factory, databases); guilds.Initialise();
         residences = new GlobalResidenceManager(characters, guilds, realm, databases, gameTableManager: tables); residences.Initialise();
         var account = (RecordingDispatchProxy<IAccount>)(object)source.Source.Player.Account; account.SetProperty(nameof(IAccount.Id), 12u);
+        TokenAuthStore tokenAuth = tokens ? new TokenAuthStore() : null;
+        if (tokenAuth != null) account.SetProperty(nameof(IAccount.WorldSessionEpoch), 1ul);
         if (community)
         {
             var permissions = RecordingDispatchProxy<IAccountRBACManager>.Create(out var permission);
@@ -412,7 +414,7 @@ public sealed partial class GuildCreationFinanceTests
         connection.SetProperty(nameof(IWorldSession.Events), events); connection.SetProperty(nameof(IWorldSession.CanProcessIncomingPackets), true);
         account.SetProperty(nameof(IAccount.Session), session);
         CharacterModel model = Assert.Single(await database.GetCharacters(12));
-        var actor = new Actor(source, actorModel: model, actorSession: session, actorEvents: events, characterDatabase: database,
+        var actor = new Actor(source, actorModel: model, actorSession: session, actorEvents: events, characterDatabase: database, authDatabase: tokenAuth?.Database,
             inventoryFactory: (owner, _) => BankDeferredCurrencyRecoveryTests.Inventory(owner, (IItemManager)(object)source.Source.ManagerProxy, tables,
                 new NexusForever.Game.RealmBank.RealmBankManager(databases)));
         actor.Set(nameof(Player.Name), "Leader"); actor.Set(nameof(Player.Guid), 4200u);
@@ -421,19 +423,26 @@ public sealed partial class GuildCreationFinanceTests
                 .Add(Stat.Level, new StatValue(Stat.Level, 50u));
         actor.Set(nameof(Player.ResidenceManager), new ResidenceManager(actor.Player, residences, characters));
         connection.SetProperty(nameof(IWorldSession.Player), actor.Player);
+        connection.SetProperty(nameof(IWorldSession.Account), actor.Player.Account);
         typeof(GridEntity).GetField("visibleEntities", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(actor.Player, new Dictionary<uint, IGridEntity>());
         typeof(WorldEntity).GetField("itemVisuals", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(actor.Player, new Dictionary<ItemSlot, IItemVisual>());
         var currency = new CurrencyManager(tables); currency.Initialise(actor.Player, model); actor.Set(nameof(Player.CurrencyManager), currency);
         var membership = new GuildManager(publisher, filter, guilds, realm, gameTableManager: tables);
         actor.Set(nameof(Player.GuildManager), membership); membership.Initialise(actor.Player, model);
         actor.Set(nameof(Player.AchievementManager), new CharacterAchievementManager(actor.Player, model, globalAchievementManager: achievements, gameTableManager: tables));
+        if (tokenAuth != null)
+        {
+            var wallets = new NexusForever.Game.Account.Currency.AccountCurrencyManager(actor.Player.Account, tokenAuth.Model, tables);
+            account.SetProperty(nameof(IAccount.CurrencyManager), wallets);
+            account.SetMethodHandler(nameof(IAccount.Save), args => { actor.OnAuth?.Invoke(); wallets.Save((NexusForever.Database.Auth.AuthContext)args[0]); return null; });
+        }
         await actor.Load();
-        return new(source, actor, currency, guilds, session, connection, tables, achievements, residences, community);
+        return new(source, actor, currency, guilds, session, connection, tables, achievements, residences, community, tokenAuth);
     }
 
     private sealed record Fixture(SourceFixture Source, Actor Actor, CurrencyManager Currency, GlobalGuildManager Guilds,
         IWorldSession Session, RecordingDispatchProxy<IWorldSession> Messages, IGameTableManager Tables, IGlobalAchievementManager Achievements,
-        GlobalResidenceManager Residences, bool Community) : IDisposable
+        GlobalResidenceManager Residences, bool Community, TokenAuthStore TokenAuth) : IDisposable
     {
         internal void Register()
         {
@@ -444,6 +453,7 @@ public sealed partial class GuildCreationFinanceTests
             request.GuildStandard.BackgroundIcon.GuildStandardPartId = 1;
             request.GuildStandard.ForegroundIcon.GuildStandardPartId = 2;
             request.GuildStandard.ScanLines.GuildStandardPartId = 3;
+            if (TokenAuth != null) typeof(ClientGuildRegister).GetProperty(nameof(request.AlternateCost))!.SetValue(request, true);
             new ClientGuildRegisterHandler(Tables).HandleMessage(Session, request);
         }
         internal IEnumerable<T> Packets<T>() => Messages.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Select(call => call.Arguments[0]).OfType<T>();
@@ -461,6 +471,6 @@ public sealed partial class GuildCreationFinanceTests
             }
             Assert.Empty(Actor.Errors);
         }
-        public void Dispose() { Actor.Dispose(); Source.Dispose(); }
+        public void Dispose() { Actor.Dispose(); Source.Dispose(); TokenAuth?.Dispose(); }
     }
 }

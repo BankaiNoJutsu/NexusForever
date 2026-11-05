@@ -8,7 +8,7 @@ namespace NexusForever.Database.Character
 {
     // A community owns a residence graph as well as its guild graph. Ordinary
     // Guild creation receipts deliberately do not authorize these shared rows.
-    public sealed record CommunityCreationSaveReconciliation(string Id, ulong Character, ulong Guild, ulong Residence, string Name)
+    public record CommunityCreationSaveReconciliation(string Id, ulong Character, ulong Guild, ulong Residence, string Name)
         : CharacterSaveReconciliation(Id)
     {
         private Action<CharacterContext> parent, enrolled;

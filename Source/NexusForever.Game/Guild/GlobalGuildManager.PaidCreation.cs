@@ -25,7 +25,8 @@ namespace NexusForever.Game.Guild
                     ?? throw new InvalidOperationException("Paid creation requires its concrete guild owner.");
                 if (guild.Type != request.GuildType) throw new InvalidOperationException("Paid creation changed its accepted guild type.");
                 using (var context = GetCharacterDatabase().CreateContext()) guild.BindCreationDatabase(context);
-                var command = new GuildCreationSettlement(this, guild, player, membership, cost);
+                bool tokens = request.GuildType == GuildType.Community && request.AlternateCost;
+                var command = new GuildCreationSettlement(this, guild, player, membership, tokens ? 0 : cost, tokens ? cost : null);
                 guildNameCache.Add(key, guild.Id);
                 try
                 {
