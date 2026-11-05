@@ -6,15 +6,15 @@ namespace NexusForever.Network.World.Message.Model.PublicEvent
     /// Removes a map-tracked unit marker (<c>0x0848</c>).
     /// Consumer: <c>MapTrackedUnitDisable_ApplyAndDispatch</c> @ <c>1403f4200</c>.
     /// </summary>
-    /// <remarks>Server disable timing and tracked-unit id allocation remain blocked.</remarks>
+    /// <remarks>Uses the same TrackingSlot row ID as the update. Server disable timing and slot selection remain blocked.</remarks>
     [Message(GameMessageOpcode.ServerMapTrackedUnitDisable)]
     public class ServerMapTrackedUnitDisable : IWritable
     {
-        public uint TrackedUnitId { get; set; }
+        public uint TrackingSlotId { get; set; }
 
         public void Write(GamePacketWriter writer)
         {
-            writer.Write(TrackedUnitId);
+            writer.Write(TrackingSlotId);
         }
     }
 }

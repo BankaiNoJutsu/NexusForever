@@ -1,5 +1,12 @@
 # Continue on another machine
 
+Latest tracked-marker implementation: [full-width identity correction](Decomp/Analysis/TRACKED_MARKER_IDENTITY.md)
+fixes the first32-bit slot key, neutral trailing15-bit field and erroneous
+lookup mask. Four rebuilt baseline failures are fixed;118 scoped cases, owning
+Game build and both Source reviews pass. No producer was added. Continue broader
+gameplay/economic work; marker timing/selection/lifetime and retail remain open.
+Separate research/label edits remain unstaged; native client/CUA stay stopped.
+
 Latest protocol implementation: [Primal Matrix wire contracts](Decomp/Analysis/PRIMAL_MATRIX_WIRE_CONTRACTS.md)
 passes16 new/143 scoped cases, clean owning WorldServer build and both Source
 reviews.0072 decodes allocation increments and reaches a non-mutating diagnostic

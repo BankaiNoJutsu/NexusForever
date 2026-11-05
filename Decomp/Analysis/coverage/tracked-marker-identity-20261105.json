@@ -1,0 +1,403 @@
+{
+  "version": 1,
+  "feature": "Tracked marker full-width slot identity and lookup",
+  "base_head": "a621990e27f9bdbe64899d981052820b7b6b7a50",
+  "recorded_utc": "2026-11-05T15:22:51.438597+00:00",
+  "disposition": "Source packet/lookup correction; no production emitter or retail completeness",
+  "source_sha256": {
+    "Source/NexusForever.Game.Tests/Entity/EntityAuxiliaryPacketShapeTests.cs": "08f989f3625cd88fe61ec1aa23e2d5c0c88809bab4f85758f7952cab01a6d9cd",
+    "Source/NexusForever.Game.Tests/Network/PacketPlaceholderNamingTests.cs": "8073e3fb586bea567da7b3b2771e7d49cb47483417999c84336b475b88284133",
+    "Source/NexusForever.Game.Tests/PublicEvents/TrackingSlotHelperTests.cs": "5a8fc5cef99c292b82b32d0094bb4b73138e7280bce77d9542bfe041c3663860",
+    "Source/NexusForever.Game/PublicEvent/TrackingSlotHelper.cs": "eacabaccbb12c45d9a0c938cbd6126012d037614bcff47709c312ce4ab2a279f",
+    "Source/NexusForever.Network.World/Message/Model/PublicEvent/ServerMapTrackedUnitDisable.cs": "569c21eb88129cf5f1f72e664132d0379482e928302d6ee46773e75273fb2dad",
+    "Source/NexusForever.Network.World/Message/Model/PublicEvent/ServerMapTrackedUnitUpdate.cs": "09e53e157feb43fc9f7e6a6da2b1b2bea42234191fa5eaca735a967d7214fdf7"
+  },
+  "source_blobs": {
+    "Source/NexusForever.Game.Tests/Entity/EntityAuxiliaryPacketShapeTests.cs": "27537ee87310de9bfe0cd5edf1b2d38d4704af44",
+    "Source/NexusForever.Game.Tests/Network/PacketPlaceholderNamingTests.cs": "6cdf0a69a0b67881d8270ecefbdfca585f9fe319",
+    "Source/NexusForever.Game.Tests/PublicEvents/TrackingSlotHelperTests.cs": "65b280d51ac7b1bc5909e5dda108be373cdbadbf",
+    "Source/NexusForever.Game/PublicEvent/TrackingSlotHelper.cs": "ea96ad3911f26ecbf5f3d2afd57ac9db4203e9a8",
+    "Source/NexusForever.Network.World/Message/Model/PublicEvent/ServerMapTrackedUnitDisable.cs": "d8ba5ccc1536474c5c216c1ddb06f3012c5be7aa",
+    "Source/NexusForever.Network.World/Message/Model/PublicEvent/ServerMapTrackedUnitUpdate.cs": "67ffbbff2056d8ed8bfa5734479b7c893f91da45"
+  },
+  "binary_sha256": {
+    "Source\\NexusForever.Game\\bin\\Debug\\net10.0\\NexusForever.Game.dll": "c34043d87c7a62692c694f336eadff20ed646afdabbd304d23836969fba5054f",
+    "Source\\NexusForever.Game.Tests\\bin\\Debug\\net10.0\\NexusForever.Game.dll": "c34043d87c7a62692c694f336eadff20ed646afdabbd304d23836969fba5054f",
+    "Source\\NexusForever.Network.World\\bin\\Debug\\net10.0\\NexusForever.Network.World.dll": "40f0100164b246fb07c988c45202488ce3f87e4d2d34971cec466b9dbdd85edc",
+    "Source\\NexusForever.Game.Tests\\bin\\Debug\\net10.0\\NexusForever.Network.World.dll": "40f0100164b246fb07c988c45202488ce3f87e4d2d34971cec466b9dbdd85edc",
+    "Source\\NexusForever.Game.Tests\\bin\\Debug\\net10.0\\NexusForever.Game.Tests.dll": "d7900d793442e3f7f947aca9b67c483885603ce1988ed4f91af97ffb5f7f84e2"
+  },
+  "tests": {
+    "baseline.trx": {
+      "sha256": "dd3a3cbaf35018d6c0e1cd3773299597328eb1963e60be2f78f2da2322fdf883",
+      "counters": {
+        "total": "7",
+        "executed": "7",
+        "passed": "3",
+        "failed": "4",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    },
+    "affected.trx": {
+      "sha256": "615e7b26be4e0e863801fd5f389cfa8164049a0854b9c4d28721c30dcba56686",
+      "counters": {
+        "total": "118",
+        "executed": "118",
+        "passed": "118",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    },
+    "stale-test-copy.trx": {
+      "sha256": "182e0280211f3052f69e12f2cea78b8c74406dbb2288675dc541bae763a0e875",
+      "counters": {
+        "total": "5",
+        "executed": "5",
+        "passed": "5",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    }
+  },
+  "invalid_evidence": {
+    "stale-test-copy.trx": "Executed before baseline build finished; old five-test copy, excluded"
+  },
+  "native_evidence": {
+    "client_sha256": "231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5",
+    "rea_evidence_id": "ev_142ebc012c9fce11df9c67703c5d9e335b4810c52c1d752b63ed2828030231d4",
+    "rea_operation": "inspect_pe_imports",
+    "rea_bundle_sha256": "d900a258756bfdec974ff1b901e22e7e72af469326fce8796cc1a65504d8fa6f",
+    "code_ranges": [
+      {
+        "name": "legacy-global-registration-0",
+        "startVA": "0x14050b520",
+        "bytes": 1631,
+        "fileOffset": 5286176,
+        "sha256": "9708e5ec64c7ffa0f9eecfc1a1c4f1a99a6674dc3262d23beffc7da18f8ca68e",
+        "boundary": "Selected PE x64 chained unwind range; unrelated tail callees remain separate"
+      },
+      {
+        "name": "register-global-block-0",
+        "startVA": "0x1400e9c20",
+        "bytes": 17,
+        "fileOffset": 954400,
+        "sha256": "e6740a7e93bddbe0ea0910992db50c8322fa6d6b8f500c015235c595b25975b3",
+        "boundary": "Selected PE x64 chained unwind range; unrelated tail callees remain separate"
+      },
+      {
+        "name": "register-global-block-1",
+        "startVA": "0x1400e9c31",
+        "bytes": 247,
+        "fileOffset": 954417,
+        "sha256": "ed6a263c06504bb7a244369ee049bb3b70774ea6b446427d0aac8e16ef13c7df",
+        "boundary": "Selected PE x64 chained unwind range; unrelated tail callees remain separate"
+      },
+      {
+        "name": "register-global-block-2",
+        "startVA": "0x1400e9d28",
+        "bytes": 2,
+        "fileOffset": 954664,
+        "sha256": "aa814164e201ade39d001dfa97f020ec12147ee8e200daaf9950824cf1318061",
+        "boundary": "Selected PE x64 chained unwind range; unrelated tail callees remain separate"
+      },
+      {
+        "name": "tracked-data-getter-0",
+        "startVA": "0x140511c80",
+        "bytes": 53,
+        "fileOffset": 5312640,
+        "sha256": "535acecf24699d367accb91fc17c980e1b625b4d457cf53a463fe2e365cbbdf4",
+        "boundary": "Selected PE x64 chained unwind range; unrelated tail callees remain separate"
+      },
+      {
+        "name": "tracked-data-getter-1",
+        "startVA": "0x140511cb5",
+        "bytes": 451,
+        "fileOffset": 5312693,
+        "sha256": "31e807d395d9c0e17a43995f8145ff759f181b508f9758668653c86384c959d9",
+        "boundary": "Selected PE x64 chained unwind range; unrelated tail callees remain separate"
+      },
+      {
+        "name": "tracked-data-getter-2",
+        "startVA": "0x140511e78",
+        "bytes": 52,
+        "fileOffset": 5313144,
+        "sha256": "c494c69032add4de080ca4d4d6b75745f3985f683585d326fe8d3b18df9fb76c",
+        "boundary": "Selected PE x64 chained unwind range; unrelated tail callees remain separate"
+      },
+      {
+        "name": "tracking-slot-loader-0",
+        "startVA": "0x1402426a0",
+        "bytes": 515,
+        "fileOffset": 2366112,
+        "sha256": "8f10576a50528f0062b2008ad4bf4630c7de0628c52dcae6b9c8c48358ffbbe1",
+        "boundary": "Selected PE x64 chained unwind range; unrelated tail callees remain separate"
+      },
+      {
+        "name": "tracked-update-0",
+        "startVA": "0x1403f4170",
+        "bytes": 143,
+        "fileOffset": 4142448,
+        "sha256": "c7f49cf93fa44f9a99093a90c2e00bb7eccd7681045cc07a81c5ffa7d31d9da0",
+        "boundary": "Selected PE x64 chained unwind range; unrelated tail callees remain separate"
+      },
+      {
+        "name": "tracked-disable-0",
+        "startVA": "0x1403f4200",
+        "bytes": 78,
+        "fileOffset": 4142592,
+        "sha256": "ca4c2e754abe849ef890695e8a33e38a10040bd2d325d8a94a8b2fd5ef645cf9",
+        "boundary": "Selected PE x64 chained unwind range; unrelated tail callees remain separate"
+      },
+      {
+        "name": "tracked-update-event-0",
+        "startVA": "0x140430f80",
+        "bytes": 768,
+        "fileOffset": 4391808,
+        "sha256": "417169e5b73ea4145821652a64df86bd00be5a238a8bc3b18c3a4208854e58bf",
+        "boundary": "Selected PE x64 chained unwind range; unrelated tail callees remain separate"
+      },
+      {
+        "name": "objective-marker-update-0",
+        "startVA": "0x140496ca0",
+        "bytes": 165,
+        "fileOffset": 4808864,
+        "sha256": "510ad9196b2bf3601333422e60c8837bd6fe563dabc3b3e0bb1adb2108d34694",
+        "boundary": "Selected PE x64 chained unwind range; unrelated tail callees remain separate"
+      },
+      {
+        "name": "objective-marker-update-1",
+        "startVA": "0x140496d45",
+        "bytes": 196,
+        "fileOffset": 4809029,
+        "sha256": "4c3ef9f17af849e8a46b539030491a7852988f781517b4e77e3bd9a1db69eed4",
+        "boundary": "Selected PE x64 chained unwind range; unrelated tail callees remain separate"
+      },
+      {
+        "name": "objective-marker-update-2",
+        "startVA": "0x140496e09",
+        "bytes": 21,
+        "fileOffset": 4809225,
+        "sha256": "b0110affb33e4235c3fbe8f594b864a50d2785b53ac225a1610e811a92817d22",
+        "boundary": "Selected PE x64 chained unwind range; unrelated tail callees remain separate"
+      },
+      {
+        "name": "objective-marker-remove-0",
+        "startVA": "0x140496e20",
+        "bytes": 160,
+        "fileOffset": 4809248,
+        "sha256": "7c0a5b2b4f759beff41424af70a5773c95365614d325f5046cc863cf420be28d",
+        "boundary": "Selected PE x64 chained unwind range; unrelated tail callees remain separate"
+      },
+      {
+        "name": "public-event-and-tracking-caches-0",
+        "startVA": "0x140497390",
+        "bytes": 3613,
+        "fileOffset": 4810640,
+        "sha256": "bdcd1ed1e9a25a6b25f580a37826b0f027608e02f676db0e01b472261e4757f5",
+        "boundary": "Selected PE x64 chained unwind range; unrelated tail callees remain separate"
+      }
+    ],
+    "anchors": [
+      {
+        "name": "tracking-slot-lookup-leaf",
+        "startVA": "0x140242900",
+        "bytes": 96,
+        "fileOffset": 2366720,
+        "sha256": "7285c53f136d8dc351a2356f6fbd1171977ff5392145ce8f9b5df3aa02350c5e",
+        "boundary": "Selected inspected code/data interval; not an additional function-boundary claim",
+        "hex": "40534883ec20488b05330fa2008bd94885c074184c8b053d0fa2008bd1488d0d94b182004883c4205b48ffe0833d2113a20000740833c04883c4205bc3e85efdffff85c078ef488b0d732aa2008bd3488b014883c4205b48ff6018cccccccccc"
+      },
+      {
+        "name": "legacy-global-table-count-and-call",
+        "startVA": "0x14050bb62",
+        "bytes": 29,
+        "fileOffset": 5287778,
+        "sha256": "f8b5ff18cff9e128f5a6acd6897d0b8d28db30f450b9a208d35d67f0f8b9d512",
+        "boundary": "Selected inspected code/data interval; not an additional function-boundary claim",
+        "hex": "488d1587df7400488b894073000041b8440000004883c428e9a1e0bdff"
+      },
+      {
+        "name": "getter-first-argument-lookup",
+        "startVA": "0x140511c8a",
+        "bytes": 20,
+        "fileOffset": 5312650,
+        "sha256": "e4569cdb3ded84dfc09d513f8d9be550fdd97cef6b9ef233df40e7ec5dcdf191",
+        "boundary": "Selected inspected code/data interval; not an additional function-boundary claim",
+        "hex": "ba01000000488bf9e8c950b4ff8bc8e8620cd3ff"
+      },
+      {
+        "name": "getter-label-from-row-word-one",
+        "startVA": "0x140511d44",
+        "bytes": 8,
+        "fileOffset": 5312836,
+        "sha256": "c50771865cf13a5e82a06a54ca8d6b11183bd598ec986369741fc1c30ef84741",
+        "boundary": "Selected inspected code/data interval; not an additional function-boundary claim",
+        "hex": "8b5604e884a0e3ff"
+      },
+      {
+        "name": "tracking-slot-objective-cache-block",
+        "startVA": "0x140497feb",
+        "bytes": 421,
+        "fileOffset": 4813803,
+        "sha256": "da019c5ecc0fb13a1c4a0c4ed05c56a75f4ee643ae705aa0057492b82ac34e0f",
+        "boundary": "Selected inspected code/data interval; not an additional function-boundary claim",
+        "hex": "4c8bf04885c00f84cd0000008b501085d20f84be0000004d8b4730498bc8498b40084885c074173950207209488bc8488b4010eb04488b40184885c075e9493bc8740f3b5120720a48894d7f488d457feb084c8945cf488d45cf488b00493bc07473488b7028418b3e41b804000000488b5e20488b4e184c8d6301498bd4e8925acfff4c8bf8893c98488b5618483bd074284c8b4620488bc849c1e002e803353400488b4e184885c9740b488b41f04883c1f0ff50084c897e184c8b7d674d8d4610498bd6498d8fa80000004c896620e8e053c2ff4c8b6d7741ffc54c896d77443b6d6f0f82cbfeffff33c04881c488000000415f415e415d415c5f5e5b5dc3905c7d4900e57d4900000101010101010101010101010101010101010101010101010101010000010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101000101010101010101010101010100010101010101010101010101010100000001010101010001010101010101010101010101010101010101010101010100"
+      },
+      {
+        "name": "legacy-global-function-block",
+        "startVA": "0x140c59af0",
+        "bytes": 1088,
+        "fileOffset": 12943088,
+        "sha256": "51bd6272df0914215caf175d65bdeab62d0b1c20c29dfefd25a6c70cbea0840f",
+        "boundary": "Selected inspected code/data interval; not an additional function-boundary claim",
+        "hex": "bc0eb140010000001020514001000000580eb14001000000401f514001000000500eb1400100000030c1504001000000880eb14001000000d0c1504001000000700eb1400100000010cd504001000000080eb1400100000050cd504001000000f00db14001000000b0cd504001000000380eb1400100000020ce504001000000200eb1400100000040ce504001000000b00db1400100000090ce504001000000980db1400100000000cf504001000000d80db1400100000070d0504001000000c00db1400100000090d0504001000000980fb1400100000010d3014001000000800fb14001000000b0d0504001000000c00fb14001000000404a044001000000b00fb1400100000060c2504001000000480fb1400100000010c35040010000005c139f40010000000092014001000000700fb140010000003092014001000000600fb14001000000e048044001000000240fb14001000000d0c3504001000000180fb14001000000f0c3504001000000400fb1400100000030c4504001000000300fb1400100000080c4504001000000e80eb14001000000b0c4504001000000d80eb1400100000090c7504001000000080fb1400100000000c5504001000000f80eb1400100000030c5504001000000e010b14001000000f0c7504001000000c810b1400100000020c85040010000001811b14001000000a01b0040010000000011b14001000000a01b0040010000008810b14001000000a01b0040010000007010b1400100000050c8504001000000b810b14001000000d0c8504001000000a010b1400100000010c95040010000004010b1400100000050c95040010000003010b1400100000060ca5040010000006410b14001000000c0ca5040010000005010b1400100000040cb504001000000e80fb1400100000000cb504001000000d00fb1400100000080cb5040010000002010b14001000000c0cb5040010000000010b14001000000f0cb5040010000006012b14001000000b0cc5040010000004812b14001000000e0cc5040010000008812b14001000000e0c45040010000007012b14001000000d0bc5040010000000812b14001000000d0bc504001000000f811b1400100000000be5040010000003812b1400100000050bd5040010000002012b140010000006092014001000000b011b1400100000080bb5040010000009811b14001000000f0bb504001000000e011b1400100000020d2504001000000c811b1400100000000da5040010000005011b1400100000050a35040010000003011b14001000000a01b0040010000008011b14001000000b0df5040010000006811b14001000000b0e45040010000006813b1400100000060e15040010000005013b1400100000030a05040010000009813b1400100000030a15040010000008813b1400100000070a25040010000001813b1400100000070bd5040010000000013b1400100000050a35040010000003813b14001000000801c514001000000"
+      },
+      {
+        "name": "GetMapTrackedUnitData-name",
+        "startVA": "0x140b11338",
+        "bytes": 22,
+        "fileOffset": 11600696,
+        "sha256": "5b582982aed3e5387bf55f5f0bb9d5c06ccc85ea8a8ad5d47223c399889359f8",
+        "boundary": "Exact API name or adjacent name/function registration pair",
+        "hex": "4765744d6170547261636b6564556e69744461746100"
+      },
+      {
+        "name": "GetMapTrackedUnitData-binding",
+        "startVA": "0x140c59f20",
+        "bytes": 16,
+        "fileOffset": 12944160,
+        "sha256": "d1fd7e1dcdd10f1401e69275210e7467ca394275724ecdc20eb85fd2fea20352",
+        "boundary": "Exact API name or adjacent name/function registration pair",
+        "hex": "3813b14001000000801c514001000000"
+      },
+      {
+        "name": "tracking-slot-table-path-0",
+        "startVA": "0x140aab510",
+        "bytes": 40,
+        "fileOffset": 11183376,
+        "sha256": "b74a3746ae74764704de3d9b4b9fbddec799408fd370a4369d2dd1a660d7b2f2",
+        "boundary": "Exact UTF16LE loader path; duplicated string pools retained separately",
+        "hex": "440042005c0054007200610063006b0069006e00670053006c006f0074002e00740062006c000000"
+      },
+      {
+        "name": "tracking-slot-table-path-1",
+        "startVA": "0x140aab538",
+        "bytes": 40,
+        "fileOffset": 11183416,
+        "sha256": "b74a3746ae74764704de3d9b4b9fbddec799408fd370a4369d2dd1a660d7b2f2",
+        "boundary": "Exact UTF16LE loader path; duplicated string pools retained separately",
+        "hex": "440042005c0054007200610063006b0069006e00670053006c006f0074002e00740062006c000000"
+      },
+      {
+        "name": "tracking-slot-table-path-2",
+        "startVA": "0x140aab568",
+        "bytes": 40,
+        "fileOffset": 11183464,
+        "sha256": "b74a3746ae74764704de3d9b4b9fbddec799408fd370a4369d2dd1a660d7b2f2",
+        "boundary": "Exact UTF16LE loader path; duplicated string pools retained separately",
+        "hex": "440042005c0054007200610063006b0069006e00670053006c006f0074002e00740062006c000000"
+      }
+    ],
+    "retained_inspector_sha256": {
+      "VerifyTrackedStationLifecycle.java": "506076df80cae0439f2ed9f2846b194af18c0999600a48637621db08110c7485",
+      "verify-lifecycle-console.log": "b0c41428fc951f12077fb6c06521ddc1cf584146cb0dbb710187ec0fa6ee0536",
+      "tracked-unit-consumers-console.log": "dc7750ece4bad9bfac545a73307f6b9fa263562ca55d2fac84eec51efa1c0601",
+      "tracked-getter-llvm.txt": "29c6a6e12cd9f489800866ee139a2f4fa019cf7dbbacdb827525d357d2198879",
+      "tracked-registration-initialization-console.log": "b3c1fae834a2e6e38bb4a6213422ae57738d12224bfd10fba3398a51abf831b8",
+      "global-registration-helper-console.log": "db6492dfcab9657c8e49e235aa15e0368b5c582e6276c39e5e1215808ebced5a"
+    },
+    "manifest_sha256": "a4e036b5eed0c76b570f1a55697f41b66580e5222d5b73c39e97f4bf7f40d826",
+    "boundary": "Fresh raw PE identity/offset/hash checks; reused REA identity and standalone read-only Ghidra/LLVM observations; no target execution"
+  },
+  "review": {
+    "spec_findings": 0,
+    "standards_findings": 0,
+    "material_source_edits_after_review": false
+  },
+  "upstream": {
+    "checked_rows": 100,
+    "compared_previously_reviewed": 20,
+    "changed_heads_bases_states": [],
+    "608": {
+      "Number": 608,
+      "State": "open",
+      "MergedAt": null,
+      "UpdatedAt": "2026-10-30T18:53:13Z",
+      "Head": "7db12d9a7c694bc5e66d9e0f4cdbc1b82155e69b",
+      "Base": "3588ca5f578387928e6593e3808bf15f6192b094"
+    },
+    "609": {
+      "Number": 609,
+      "State": "closed",
+      "MergedAt": null,
+      "UpdatedAt": "2026-11-01T02:58:37Z",
+      "Head": "f9b6f7356798a41beea0768ff1f6b5a758ffeca3",
+      "Base": "d8e43d2c3cc5a05f03e56dfc388288a4126c7ed9"
+    }
+  },
+  "validation_seconds": {
+    "baseline_test_build": 64.29,
+    "owning_game_build": 18.08,
+    "final_test_build": 25.98,
+    "affected_test_body": 0.294
+  },
+  "local_evidence_sha256": {
+    "baseline.trx": "dd3a3cbaf35018d6c0e1cd3773299597328eb1963e60be2f78f2da2322fdf883",
+    "affected.trx": "615e7b26be4e0e863801fd5f389cfa8164049a0854b9c4d28721c30dcba56686",
+    "stale-test-copy.trx": "182e0280211f3052f69e12f2cea78b8c74406dbb2288675dc541bae763a0e875",
+    "baseline-build.log": "1d53625f312867ef718a7a280bcd60b8777bf1485a3307f78362df3ffb3f1e94",
+    "owning-build.log": "514900f71117e1d47612e9322de6878f5f2f93f30f5233b00192c5dff94ef727",
+    "final-test-build.log": "095c624d5b521c43a1741a98611cc0b2fd030d3bf8624f1ffa165bbfaa55bab8",
+    "baseline-tests.log": "3bb3fc6b208d6c14eb3ee3f7de1d9fce4b5963497ec791f8a44ff06a987f446f",
+    "affected-tests.log": "80101d58afbb0ec33a5f0a72526318478918cbef8108794f8d6a1dcd8ca8d0ad",
+    "stale-test-copy.log": "86c3b11a965fc78fc0533c33ac9e9a6168599b946eb64507d1090f34f72bd44d",
+    "review-spec.md": "cc6838da5488038746b4a6c4b96eac751e63cd8ac86c8596df81ea307024589c",
+    "review-standards.md": "96ee364f690fa754ca552aeb0b95ec2e6726ade8488ba65021d695c8f089f5ae",
+    "native-verification.json": "81fa800297fc3255b66627bba194ed9765e1578221cc64e83d15247cd2c3cf11",
+    "upstream-refresh.json": "cd152d4e25c1480b2042546c604259f651e2133448bfcbac8860700db7e6774a",
+    "ui-corroboration.json": "9c22081a826f303a760a28b81903da65591b392b9b08328fab30fd5f1afa4d7c",
+    "verify-native.py": "236acbf11704f8d0cf4aaa08344ca6e71ea71b060cf53cb93df89bc6d9420f98",
+    "reused-lifecycle-manifest.json": "a4e036b5eed0c76b570f1a55697f41b66580e5222d5b73c39e97f4bf7f40d826"
+  },
+  "limits": [
+    "No production marker emitter/helper caller",
+    "No slot-selection/recipient/cadence/initial-replay/disable-lifetime policy",
+    "Trailing15-bit meaning unresolved",
+    "No actual-table/provider/deployment/socket/native/retail qualification",
+    "No full solution/full suite; historical handoff divergence reused",
+    "Unrelated research/label changes preserved unstaged"
+  ]
+}

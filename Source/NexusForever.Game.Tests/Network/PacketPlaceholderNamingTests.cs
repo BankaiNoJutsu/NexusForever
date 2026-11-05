@@ -1038,14 +1038,15 @@ public class PacketPlaceholderNamingTests
     }
 
     [Fact]
-    public void ServerMapTrackedUnitUpdate_UsesTrackingSlotIdUntilProducerSelectionIsProven()
+    public void ServerMapTrackedUnitUpdate_UsesSlotIdentityAndKeepsItsTrailingValueNeutral()
     {
         Assert.Equal((ushort)0x0849, (ushort)GameMessageOpcode.ServerMapTrackedUnitUpdate);
         Assert.Equal((ushort)0x0848, (ushort)GameMessageOpcode.ServerMapTrackedUnitDisable);
-        Assert.NotNull(typeof(ServerMapTrackedUnitUpdate).GetProperty(nameof(ServerMapTrackedUnitUpdate.TrackedUnitId)));
         Assert.NotNull(typeof(ServerMapTrackedUnitUpdate).GetProperty(nameof(ServerMapTrackedUnitUpdate.TrackingSlotId)));
+        Assert.NotNull(typeof(ServerMapTrackedUnitUpdate).GetProperty(nameof(ServerMapTrackedUnitUpdate.WireUInt15)));
+        Assert.Null(typeof(ServerMapTrackedUnitUpdate).GetProperty("TrackedUnitId"));
         Assert.Null(typeof(ServerMapTrackedUnitUpdate).GetProperty("PublicEventObjectiveId"));
-        Assert.NotNull(typeof(ServerMapTrackedUnitDisable).GetProperty(nameof(ServerMapTrackedUnitDisable.TrackedUnitId)));
+        Assert.NotNull(typeof(ServerMapTrackedUnitDisable).GetProperty(nameof(ServerMapTrackedUnitDisable.TrackingSlotId)));
     }
 
     [Fact]

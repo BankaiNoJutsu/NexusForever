@@ -358,9 +358,9 @@ public class EntityAuxiliaryPacketShapeTests
     {
         using (var reader = CreateReader(WritePacket(new ServerMapTrackedUnitUpdate
         {
-            TrackedUnitId = 0x10203040u,
+            TrackingSlotId = 0x10203040u,
             Position = new Vector3(1.25f, 2.5f, 3.75f),
-            TrackingSlotId = 0x1234u
+            WireUInt15 = 0x1234u
         })))
         {
             Assert.Equal(0x10203040u, reader.ReadUInt());
@@ -372,7 +372,7 @@ public class EntityAuxiliaryPacketShapeTests
 
         using (var reader = CreateReader(WritePacket(new ServerMapTrackedUnitDisable
         {
-            TrackedUnitId = 0x50607080u
+            TrackingSlotId = 0x50607080u
         })))
         {
             Assert.Equal(0x50607080u, reader.ReadUInt());
@@ -380,35 +380,65 @@ public class EntityAuxiliaryPacketShapeTests
     }
 
     [Fact]
-    public void MapTrackedUnitUpdateDisablePair_RoundTripDistinctTrackedUnitIds()
+    public void MapTrackedUnitUpdateDisablePair_RoundTripDistinctSlotIds()
     {
-        const uint activeTrackedUnitId = 0xA0B0C0D0u;
-        const uint retiredTrackedUnitId = 0xD0C0B0A0u;
-        const uint trackingSlotId = 0x3FFu;
+        const uint activeSlotId = 0xA0B0C0D0u;
+        const uint retiredSlotId = 0xD0C0B0A0u;
+        const uint trailingValue = 0x3FFu;
 
         byte[] updatePayload = WritePacket(new ServerMapTrackedUnitUpdate
         {
-            TrackedUnitId  = activeTrackedUnitId,
+            TrackingSlotId = activeSlotId,
             Position       = new Vector3(10f, 20f, 30f),
-            TrackingSlotId = trackingSlotId,
+            WireUInt15     = trailingValue,
         });
 
         byte[] disablePayload = WritePacket(new ServerMapTrackedUnitDisable
         {
-            TrackedUnitId = retiredTrackedUnitId,
+            TrackingSlotId = retiredSlotId,
         });
 
         using (var updateReader = CreateReader(updatePayload))
         {
-            Assert.Equal(activeTrackedUnitId, updateReader.ReadUInt());
+            Assert.Equal(activeSlotId, updateReader.ReadUInt());
             Assert.Equal(10f, updateReader.ReadSingle());
             Assert.Equal(20f, updateReader.ReadSingle());
             Assert.Equal(30f, updateReader.ReadSingle());
-            Assert.Equal(trackingSlotId, updateReader.ReadUInt(15u));
+            Assert.Equal(trailingValue, updateReader.ReadUInt(15u));
         }
 
         using (var disableReader = CreateReader(disablePayload))
-            Assert.Equal(retiredTrackedUnitId, disableReader.ReadUInt());
+            Assert.Equal(retiredSlotId, disableReader.ReadUInt());
+    }
+
+    [Theory]
+    [InlineData(0u)]
+    [InlineData(0x7FFFu)]
+    public void MapTrackedUnitUpdate_PreservesFullSlotIdAndTrailingWireBoundary(uint trailingValue)
+    {
+        byte[] payload = WritePacket(new ServerMapTrackedUnitUpdate
+        {
+            TrackingSlotId = uint.MaxValue,
+            WireUInt15 = trailingValue
+        });
+
+        Assert.Equal(18, payload.Length);
+        using var reader = CreateReader(payload);
+        Assert.Equal(uint.MaxValue, reader.ReadUInt());
+        Assert.Equal(0f, reader.ReadSingle());
+        Assert.Equal(0f, reader.ReadSingle());
+        Assert.Equal(0f, reader.ReadSingle());
+        Assert.Equal(trailingValue, reader.ReadUInt(15u));
+    }
+
+    [Fact]
+    public void MapTrackedUnitUpdate_RejectsOutOfRangeTrailingWireValue()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => WritePacket(new ServerMapTrackedUnitUpdate
+        {
+            TrackingSlotId = 0x19234u,
+            WireUInt15 = 0x8000u
+        }));
     }
 
     private static GamePacketReader CreateReader(byte[] data)

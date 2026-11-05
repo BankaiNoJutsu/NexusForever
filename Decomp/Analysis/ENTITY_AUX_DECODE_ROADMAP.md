@@ -1,5 +1,12 @@
 # Entity / Cluster Aux Opcode Decode Roadmap
 
+5 November2026 [tracked marker Source correction](TRACKED_MARKER_IDENTITY.md)
+supersedes older field/mask assertions below. Update/disable use a full-width
+TrackingSlotId; the update tail is neutral WireUInt15. Direct lookup no longer
+aliases high IDs to low rows. Four baseline failures are fixed and118 affected
+cases pass with clean owning build and both Source reviews. Producer timing,
+selection, recipient/initial/disable lifecycle and tail semantics remain open.
+
 Updated: 2026-06-05 (entity-create main Faction1/Faction2 offsets mapped; aux `Value*` names remain blocked pending consumer/apply evidence)
 
 Supplemental update: 2 November 2026 [Scientist scanner name publication](SCIENTIST_SCANBOT_NAME_PUBLICATION.md)

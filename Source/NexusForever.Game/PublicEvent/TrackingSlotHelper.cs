@@ -18,7 +18,7 @@ namespace NexusForever.Game.PublicEvent
             if (trackingSlot == null)
                 return null;
 
-            return trackingSlot.GetEntry(trackingSlotId & 0x7FFFu);
+            return trackingSlot.GetEntry(trackingSlotId);
         }
 
         public static uint TryGetPublicEventObjectiveId(IGameTableManager gameTableManager, uint trackingSlotId)

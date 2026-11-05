@@ -1,5 +1,11 @@
 # NexusForever Feature Restoration - Current Status
 
+[Tracked marker identity](Decomp/Analysis/TRACKED_MARKER_IDENTITY.md) now preserves
+the first32-bit TrackingSlot key and leaves the trailing15 bits neutral. The
+lookup no longer aliases high IDs to unrelated low rows. Four baseline failures
+are fixed;118 affected tests, clean owning Game build and both reviews pass.
+This corrects the packet/lookup boundary; no marker emitter or retail claim is added.
+
 [Primal Matrix wire contracts](Decomp/Analysis/PRIMAL_MATRIX_WIRE_CONTRACTS.md)
 register0072 bounded decoding/diagnostic dispatch and correct06DF ownership to
 absolute saved allocations plus Matrix AMP contribution. Sixteen new/143 scoped

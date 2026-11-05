@@ -1,5 +1,13 @@
 # Assessment follow-through goal
 
+[Tracked marker identity correction](TRACKED_MARKER_IDENTITY.md) completes the
+supported full-width packet/lookup correction from the new native findings.
+Four executed baseline failures are fixed;118 affected cases, the owning Game
+build and both Source reviews pass. First32 bits select TrackingSlot directly;
+the trailing15 remain neutral. Production slot selection, recipient/cadence,
+initial replay and disable lifetime stay open. Continue independent integrated
+gameplay/economic outcomes; this is no tracked-marker producer or retail gate.
+
 [Primal Matrix request/snapshot contracts](PRIMAL_MATRIX_WIRE_CONTRACTS.md)
 fix the missing0072 public decoder and incorrect auction registration of06DF.
 Increment bytes and absolute saved counts stay distinct; the former serializer
