@@ -212,6 +212,7 @@ public class SupportTicketHandlerTests
 
     private sealed class RecordingSubmissionStore(bool result) : ISupportSubmissionStore
     {
+        public Task<bool> AppendAsync(IWorldSession session, string type, object payload) => Task.FromResult(TryAppend(session, type, payload));
         public List<Submission> Submissions { get; } = [];
 
         public bool TryAppend(IWorldSession session, string type, object payload)

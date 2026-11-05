@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NexusForever.Game;
 using NexusForever.Game.Abstract.Housing;
@@ -6,16 +7,19 @@ using NexusForever.Game.Housing;
 using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Map;
 using NexusForever.Game.Static;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Spell;
 using NexusForever.Game.Static.Support;
 using NexusForever.Game.Support;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.Message;
+using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Support;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.WorldServer.Support;
+using NexusForever.Shared.Game.Events;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Support
 {
@@ -82,27 +86,69 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Support
                 return;
             }
 
-            bool stored = submissionStore.TryAppend(session, "ticket", new
+            var player = session.Player;
+            var account = session.Account;
+            var queue = session.Events;
+            var character = player?.CharacterId;
+            var accountId = account?.Id;
+            var playerGuid = player?.Guid;
+            var logger = log;
+            bool CurrentOwner() => ReferenceEquals(session.Player, player) && ReferenceEquals(session.Account, account)
+                && ReferenceEquals(session.Events, queue) && player?.CharacterId == character && account?.Id == accountId
+                && (player == null || ReferenceEquals(player.Session, session) && ReferenceEquals(player.Account, account))
+                && (account == null || ReferenceEquals(account.Session, session))
+                && session is not NetworkSession { IsDisconnecting: true }
+                && player?.LogoutManager?.State is not (LogoutState.Logout or LogoutState.Finished);
+            void Publish(bool success)
             {
-                supportTicket.TicketCategoryId,
-                supportTicket.TicketSubCategoryId,
-                Position = new
+                void Attempt()
                 {
-                    supportTicket.Position.X,
-                    supportTicket.Position.Y,
-                    supportTicket.Position.Z
-                },
-                supportTicket.Subject,
-                supportTicket.Body,
-                supportTicket.LanguageId
-            });
+                    if (!CurrentOwner()) return;
+                    try { SendResult(session, success); }
+                    catch (Exception error)
+                    {
+                        logger.LogWarning(error, "Support ticket result failed for player {PlayerGuid}.", playerGuid);
+                        if (queue == null) return;
+                        var delay = Task.Delay(TimeSpan.FromSeconds(1));
+                        queue.EnqueueThreadSafe(new PredicateEvent(() => !CurrentOwner() || delay.IsCompleted, Attempt));
+                    }
+                }
+                Attempt();
+            }
 
-            log.LogDebug("Stored support ticket from player {PlayerGuid}: category {Category}, subcategory {SubCategory}, position ({X}, {Y}, {Z}), subject length {SubjectLength}, body length {BodyLength}, language {Language}, stored {Stored}.",
-                session.Player?.Guid, supportTicket.TicketCategoryId, supportTicket.TicketSubCategoryId,
-                supportTicket.Position.X, supportTicket.Position.Y, supportTicket.Position.Z,
-                supportTicket.Subject?.Length ?? 0, supportTicket.Body?.Length ?? 0, supportTicket.LanguageId, stored);
-
-            SendResult(session, stored);
+            Task<bool> write;
+            try
+            {
+                write = submissionStore.AppendAsync(session, "ticket", new
+                {
+                    supportTicket.TicketCategoryId,
+                    supportTicket.TicketSubCategoryId,
+                    Position = new
+                    {
+                        supportTicket.Position.X,
+                        supportTicket.Position.Y,
+                        supportTicket.Position.Z
+                    },
+                    supportTicket.Subject,
+                    supportTicket.Body,
+                    supportTicket.LanguageId
+                }) ?? throw new InvalidOperationException("Support storage returned no completion.");
+            }
+            catch (Exception error)
+            {
+                logger.LogError(error, "Support ticket could not be queued for player {PlayerGuid}.", playerGuid);
+                Publish(false); return;
+            }
+            void Complete()
+            {
+                if (write.IsFaulted) logger.LogError(write.Exception, "Support ticket storage failed for player {PlayerGuid}.", playerGuid);
+                bool stored = write.IsCompletedSuccessfully && write.Result;
+                logger.LogDebug("Support ticket storage completed for player {PlayerGuid}: stored {Stored}.", playerGuid, stored);
+                Publish(stored);
+            }
+            if (write.IsCompleted) Complete();
+            else if (queue != null) queue.EnqueueEvent(new TaskEvent(write, Complete, Complete));
+            else Publish(false);
         }
 
         private static void SendResult(IWorldSession session, bool success)

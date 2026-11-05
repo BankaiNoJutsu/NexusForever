@@ -1,5 +1,12 @@
 # Assessment follow-through goal
 
+[Confirmed support ticket storage](SUPPORT_TICKET_PERSISTENCE.md) fixes an
+executed premature-success baseline. Twelve new/57 scoped cases and both final
+Source reviews pass. Completion follows append/flush/close; failures return false,
+partial tails recover or block further in-process acceptance, and result retry
+uses the original actor without another append. Database case workflow/readback,
+physical crash/restart and native/retail remain separate requirements.
+
 Started 2026-10-29 at the user's request. Original checkout:
 `I:\GIT\NexusForever-assessment`, `legacy-di-storefront-hardening`.
 Original assessment: `I:\GIT\NexusForever-assessment-report\ASSESSMENT.md`.

@@ -1,5 +1,10 @@
 # NexusForever Feature Restoration - Current Status
 
+[Confirmed support ticket writes](Decomp/Analysis/SUPPORT_TICKET_PERSISTENCE.md)
+now precede success acknowledgement, with original-owner reply retry and partial
+append recovery. Twelve new/57 scoped cases pass. Database case workflow,
+readback and physical crash/restart remain open.
+
 [Public marketplace rejection replies](Decomp/Analysis/NORMAL_AUCTION_BID_TRANSACTION.md#posting-and-cancellation-rejection-replies)
 now cover auction/commodity posting and cancellation alongside purchases.
 Four new/203 scoped cases pass; financial cleanup and successful publication

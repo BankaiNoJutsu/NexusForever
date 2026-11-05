@@ -1,5 +1,11 @@
 # Continue on another machine
 
+Latest Support implementation: [confirmed ticket storage](Decomp/Analysis/SUPPORT_TICKET_PERSISTENCE.md)
+acknowledges only after the file writer confirms completion;12 new/57 scoped
+cases and both Source reviews pass. Reply retry does not append another record.
+Database case workflow, readback and physical crash/restart remain open. Separate
+research artifacts retain their own evidence boundaries; client/CUA stay stopped.
+
 Latest grouped marketplace implementation: [posting/cancellation rejection replies](Decomp/Analysis/NORMAL_AUCTION_BID_TRANSACTION.md#posting-and-cancellation-rejection-replies)
 passes four new/203 scoped cases and both final reviews. Five public routes now
 retain original-actor rejection replies without restarting financial work.

@@ -92,6 +92,7 @@ public class CustomerSurveyProtocolTests
 
     private sealed class RecordingSubmissionStore : ISupportSubmissionStore
     {
+        public Task<bool> AppendAsync(IWorldSession session, string type, object payload) => Task.FromResult(TryAppend(session, type, payload));
         public List<Submission> Submissions { get; } = [];
 
         public bool TryAppend(IWorldSession session, string type, object payload)

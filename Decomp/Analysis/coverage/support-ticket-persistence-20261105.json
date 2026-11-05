@@ -1,0 +1,175 @@
+{
+  "version": 1,
+  "feature": "Confirmed support ticket storage and original-session acknowledgement",
+  "verified_utc": "2026-11-05T12:54:04.850713+00:00",
+  "base_head": "6240c78f257a78eeace8fc152028998845ec5f3e",
+  "behavior": [
+    "Ticket success waits for completed append, disk-flush request and stream disposal",
+    "Serialized submission data and owner identity are captured before the background worker",
+    "Queue/write failures return false; partial tails are restored or the damaged path is blocked within the process",
+    "Original Player/account/session/queue guards protect completion; result enqueue retry creates a fresh DTO without another append",
+    "Legacy unacknowledged reports retain their queue-admission API and existing record shape"
+  ],
+  "qualification": {
+    "baseline": {
+      "path": "artifacts/continuation-20261105/support-ticket-persistence/baseline.trx",
+      "sha256": "3c21475d72b9a5a4ca1d5b2956de5ab11f5e7f0f3c0004693f6ec1abf8bbacfa",
+      "counters": {
+        "total": "1",
+        "executed": "1",
+        "passed": "0",
+        "failed": "1",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "times": {
+        "creation": "2026-11-05T13:46:19.3476549+01:00",
+        "queuing": "2026-11-05T13:46:19.3476678+01:00",
+        "start": "2026-11-05T13:46:15.0355985+01:00",
+        "finish": "2026-11-05T13:46:19.3551187+01:00"
+      }
+    },
+    "focused": {
+      "path": "artifacts/continuation-20261105/support-ticket-persistence/candidate-persistence.trx",
+      "sha256": "830ea6fcd0d58cdee5b74e21f4018b1ac418beabf55a8e41ff6c0684c824c853",
+      "counters": {
+        "total": "12",
+        "executed": "12",
+        "passed": "12",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "times": {
+        "creation": "2026-11-05T13:50:54.9014772+01:00",
+        "queuing": "2026-11-05T13:50:54.9014938+01:00",
+        "start": "2026-11-05T13:50:49.7554765+01:00",
+        "finish": "2026-11-05T13:50:55.0474690+01:00"
+      }
+    },
+    "affected": {
+      "path": "artifacts/continuation-20261105/support-ticket-persistence/candidate-support.trx",
+      "sha256": "d5508be14ca0df3a1b938a184bc936420c11f50cccd60186a66c605e99d04c2a",
+      "counters": {
+        "total": "57",
+        "executed": "57",
+        "passed": "57",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "times": {
+        "creation": "2026-11-05T13:52:05.6204634+01:00",
+        "queuing": "2026-11-05T13:52:05.6204657+01:00",
+        "start": "2026-11-05T13:52:02.5422762+01:00",
+        "finish": "2026-11-05T13:52:08.6219871+01:00"
+      }
+    },
+    "new_cases": 12,
+    "baseline_boundary": "Concrete writer with an owned fixture directory; Success=true arrived before the deferred writer ran. Constructor path seam did not change acknowledgement behavior.",
+    "owning_build": "WorldServer project passed,10.59s,0warnings/errors",
+    "test_compile": "15.59s,0warnings/errors",
+    "configured_provider": "Not applicable to this file-backed writer; no SQL/model/migration change or new MySQL run",
+    "full_suite": "Not run; scoped-only user policy",
+    "native_client_computer_use": "Remain stopped; no runtime services started",
+    "entitlements": "15:1/17:1 unchanged; no automatic44 or seven baseline Character grants",
+    "boundary": "Owned temporary files, injected partial writes/repair failure and enqueue rejection before acceptance. Flush(true) is observed API behavior, not physical power-loss/device durability proof."
+  },
+  "source": {
+    "inputs": 6346,
+    "normalized_git_blob_manifest_sha256": "8bdc14237255c5ff118934059a3c3c3a7b4dca9d6ade5454235afd3575c76c51",
+    "manifest_algorithm": "sha256 of sorted path NUL normalized-Git-blob-SHA1 LF records",
+    "changed_files": [
+      {
+        "path": "Source/NexusForever.Game.Tests/Support/CustomerSurveyProtocolTests.cs",
+        "sha256": "26bd4eb5783600d0d45d570b900bdea94dee6c600974f02ef56d840e904181d1"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Support/SupportTicketHandlerTests.cs",
+        "sha256": "048deab2727eb2d20b4b4da3d4c03fca1875e200dea1af97d6e862ce3f5de94d"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Support/SupportTicketPersistenceTests.cs",
+        "sha256": "cb0f969d0eb42cf00803cd19bb48ed1c349223723be2482562153579b754ea32"
+      },
+      {
+        "path": "Source/NexusForever.WorldServer/Network/Message/Handler/Support/ClientSupportHandlers.cs",
+        "sha256": "a28ef1fa23302787f26e008459f2b8ecb112ae8c4ab2f61e79ef03c4b8f98077"
+      },
+      {
+        "path": "Source/NexusForever.WorldServer/Support/ISupportSubmissionStore.cs",
+        "sha256": "1cd6e7f1fd641229911dfb24ee06dc42fbed19bb1433d2fe39bdc5a701be9ca5"
+      },
+      {
+        "path": "Source/NexusForever.WorldServer/Support/SupportSubmissionStore.cs",
+        "sha256": "a857f643f53f6ada30b9dc1c53121f383c95f18dce5e9042cd2ee1222cb72d88"
+      }
+    ]
+  },
+  "binaries": [
+    {
+      "name": "NexusForever.Game.dll",
+      "sha256": "0175a9ac38c6fcc0158de6412eebaa6c39c14f40f87b280ab06cac86c92c0391",
+      "owner_test_match": true
+    },
+    {
+      "name": "NexusForever.WorldServer.dll",
+      "sha256": "efea4521a57578257fc9fd6ac3018f6dbe9de09884284c956a61e8b0756b5e79",
+      "owner_test_match": true
+    },
+    {
+      "name": "NexusForever.Game.Tests.dll",
+      "sha256": "0382de8211013c8fb9d68e9aa5edf5a3897bbccbae40219b23cd5eb6d9e6d4a5",
+      "owner_test_match": true
+    }
+  ],
+  "review": {
+    "standards_remaining": 0,
+    "spec_remaining": 0,
+    "raw_report_sha256": "9831bc94beb8069f8f5af819da4d1c6c2351d5f84c154b1c1a758e33c47eebd5"
+  },
+  "upstream": {
+    "observedUtc": "2026-11-05T12:51:40.027Z",
+    "query": "repo:NexusForever/NexusForever updated:>2026-11-05T12:35:28Z",
+    "issues": [],
+    "prior": "artifacts/continuation-20261105/marketplace-error-publication/upstream-refresh.json"
+  },
+  "historical_handoff_verification": "Previously retained expected Source divergence; not rerun or altered",
+  "concurrent_work": "Separate research artifacts and their tracker edits are excluded from this milestone",
+  "remaining": [
+    "Database support-case workflow, readback protocol/backend and moderation tooling",
+    "Physical crash/restart, cross-process acknowledgement replay, deployed/native/retail qualification",
+    "Damaged-path quarantine is process-local; disk-level repair/restart qualification remains open",
+    "Broader economic, Contract, progression/gameplay and reverse-engineering work in canonical roadmap"
+  ]
+}
