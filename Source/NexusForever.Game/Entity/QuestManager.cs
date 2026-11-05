@@ -992,7 +992,8 @@ namespace NexusForever.Game.Entity
 
         internal bool CanStartTutorialQuestCompletion(Player owner) => !QuestCompletionBusy(owner);
 
-        internal void SaveOrdinaryQuestMutation(Player owner, GameSession session, Func<bool> mutate, Action afterCommit)
+        internal void SaveOrdinaryQuestMutation(Player owner, GameSession session, Func<bool> mutate, Action afterCommit,
+            Func<bool> ownsMutation = null)
         {
             var account = owner.Account;
             var events = session.Events;
@@ -1001,7 +1002,8 @@ namespace NexusForever.Game.Entity
             bool OwnsSession() => ReferenceEquals(owner.Session, session) && ReferenceEquals(session.Events, events)
                 && ReferenceEquals(owner.Account, account) && account?.WorldSessionEpoch == epoch
                 && ReferenceEquals(owner.Inventory, inventory) && ReferenceEquals(owner.QuestManager, this)
-                && session is IPlayerSession bound && ReferenceEquals(bound.Player, owner);
+                && session is IPlayerSession bound && ReferenceEquals(bound.Player, owner)
+                && (ownsMutation?.Invoke() ?? true);
 
             if (!OwnsSession() || session.IsDisconnecting)
                 throw new InvalidOperationException("Quest mutation lost its original World session.");
@@ -1021,10 +1023,11 @@ namespace NexusForever.Game.Entity
                     publish();
                     foreach (Action publication in publications)
                     {
+                        if (!OwnsSession() || session.IsDisconnecting) return;
                         try { publication(); }
                         catch (Exception exception) { log.Error(exception, "Failed to publish a committed quest effect."); }
                     }
-                    afterCommit?.Invoke();
+                    if (OwnsSession() && !session.IsDisconnecting) afterCommit?.Invoke();
                 }
 
                 if (changed)

@@ -21108,6 +21108,42 @@ capture or dynamic breakpoint on the runtime apply dispatch.
 
 ### F-008 - Crafting / Tradeskill - PARTIAL (12/12 handlers functional)
 
+#### Committed Character crafting responses
+
+5 November 2026. Simple, complex, craft-item and auto-craft requests now run
+their existing recipe producer inside the original Player's ordinary Character
+save boundary. Inventory and satchel debits, direct items and generated Character
+item/cash output join that save. The original session's serialized packets wait
+for confirmed completion. Validation failures keep their existing immediate
+responses, and busy or quarantined actors cannot prepare another craft.
+
+The producer retains its Player instead of rereading the session's current
+Player through each step. Publication also retains inventory, satchel, wallet,
+Quest, achievement and account managers and the World queue/epoch. Replacing
+the Player during the save or a wallet after SQL commit suppresses the pending
+craft response and item add. The shared ordinary mutation boundary rechecks its
+owner between retained effects. Existing direct and generated loot producers
+remain available through all four requests.
+
+Eleven baseline cases reproduced prepared output and encrypted packets before
+the Character write. A separate review probe reproduced stale publication after
+wallet replacement. The final owning build took26 seconds with zero warnings or
+errors. All57 scoped crafting/rune and quest loopback controls passed in21 seconds.
+After packet-field and injected-fault assertions were added, all12 new crafting
+cases passed in11 seconds following a26-second test build. They inspect the real
+WorldSession's encrypted queue and stored Character rows. Item templates and loot
+selection are projected fixtures; other companion managers use adapters. Evidence
+is under `artifacts/continuation-20261105/crafting-settlement/`.
+The initial test enum-type compile error is corrected and retained in its log.
+
+This closes the Character response boundary in source. It does not close paired
+Auth/Character settlement for generated account awards: Auth still precedes the
+Character write. Durable award handoff/restart recovery and commit ownership of
+virtual-item shared map-event effects remain required. Configured-provider,
+actual-table, crafting socket and native qualification remain open. The separate
+quest loopback controls retain their own transport scope. No full solution build
+or full suite was run, and native client/CUA launch remain stopped.
+
 #### Committed rune crafting
 
 5 November 2026. Rune install, clear/recovery, socket add and reroll settle

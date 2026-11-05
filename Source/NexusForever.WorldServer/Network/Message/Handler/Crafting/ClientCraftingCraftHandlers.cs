@@ -15,6 +15,7 @@ using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network;
 using NexusForever.Network.Message;
+using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Crafting;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.WorldServer.Crafting;
@@ -50,7 +51,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             TradeskillSchematic2Entry schematic = CraftingCraftRequestHelper.GetSchematic(gameTableManager, craft.TradeskillSchematic2Id);
             CraftingCraftRequestHelper.LogBlockedStationServiceKeyDiagnostic(log, schematic, craft.CraftingStationUnitId);
 
-            if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, lootManager, craftingModifierSessionStore, schematic, 1u, craft.CraftingStationUnitId, out string reason))
+            if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, lootManager, craftingModifierSessionStore, schematic, 1u, craft.CraftingStationUnitId, out string reason, mutationLease: heldMutation))
             {
                 log.LogDebug("Completed simple craft request from player {PlayerGuid}: context {ContextToken}, station {StationUnitId}, schematic {SchematicId}.",
                     session.Player?.Guid, craft.ContextToken, craft.CraftingStationUnitId, craft.TradeskillSchematic2Id);
@@ -93,7 +94,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             CraftingCraftRequestHelper.LogBlockedStationServiceKeyDiagnostic(log, schematic, craft.CraftingStationUnitId);
             CraftingCraftRequestHelper.ValidateItem(gameTableManager, craft.PowerCoreItem2Id);
 
-            if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, lootManager, craftingModifierSessionStore, schematic, 1u, craft.CraftingStationUnitId, out string reason, craft.PowerCoreItem2Id))
+            if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, lootManager, craftingModifierSessionStore, schematic, 1u, craft.CraftingStationUnitId, out string reason, craft.PowerCoreItem2Id, mutationLease: heldMutation))
             {
                 log.LogDebug("Completed complex craft request from player {PlayerGuid}: context {ContextToken}, station {StationUnitId}, schematic {SchematicId}, powerCore {PowerCoreItem2Id}, charges {ChargeCount}.",
                     session.Player?.Guid, craft.ContextToken, craft.CraftingStationUnitId, craft.TradeskillSchematic2Id, craft.PowerCoreItem2Id, craft.ChargeCounts?.Length ?? 0);
@@ -136,7 +137,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             CraftingCraftRequestHelper.LogBlockedStationServiceKeyDiagnostic(log, schematic, craft.CraftingStationUnitId);
             CraftingCraftRequestHelper.ValidateItem(gameTableManager, craft.CatalystItem2Id);
 
-            if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, lootManager, craftingModifierSessionStore, schematic, craft.SchematicCount, craft.CraftingStationUnitId, out string reason, craft.CatalystItem2Id))
+            if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, lootManager, craftingModifierSessionStore, schematic, craft.SchematicCount, craft.CraftingStationUnitId, out string reason, craft.CatalystItem2Id, mutationLease: heldMutation))
             {
                 log.LogDebug("Completed craft-item request from player {PlayerGuid}: context {ContextToken}, station {StationUnitId}, schematic {SchematicId}, count {SchematicCount}.",
                     session.Player?.Guid, craft.ContextToken, craft.CraftingStationUnitId, craft.TradeskillSchematic2Id, craft.SchematicCount);
@@ -178,7 +179,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             TradeskillSchematic2Entry schematic = CraftingCraftRequestHelper.GetSchematic(gameTableManager, craft.TradeskillSchematic2Id);
             CraftingCraftRequestHelper.LogBlockedStationServiceKeyDiagnostic(log, schematic, craft.CraftingStationUnitId);
 
-            if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, lootManager, craftingModifierSessionStore, schematic, craft.SchematicCount, craft.CraftingStationUnitId, out string reason))
+            if (CraftingCraftRequestHelper.TryCompleteFixedRecipe(session, gameTableManager, itemManager, lootManager, craftingModifierSessionStore, schematic, craft.SchematicCount, craft.CraftingStationUnitId, out string reason, mutationLease: heldMutation))
             {
                 log.LogDebug("Completed auto-craft request from player {PlayerGuid}: context {ContextToken}, station {StationUnitId}, schematic {SchematicId}, count {SchematicCount}.",
                     session.Player?.Guid, craft.ContextToken, craft.CraftingStationUnitId, craft.TradeskillSchematic2Id, craft.SchematicCount);
@@ -260,7 +261,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             uint craftCount,
             uint craftingStationUnitId,
             out string reason,
-            uint extraConsumeItem2Id = 0u)
+            uint extraConsumeItem2Id = 0u, IDisposable mutationLease = null, bool admitted = false)
         {
             reason = string.Empty;
 
@@ -270,13 +271,29 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
                 return false;
             }
 
+            if (!admitted && session is GameSession network && session.Player is Player owner)
+            {
+                mutationLease?.Dispose();
+                string retainedReason = "crafting-busy";
+                bool crafted = owner.TrySaveCrafting(network, () => TryCompleteFixedRecipe(session,
+                    gameTableManager, itemManager, lootManager, craftingModifierSessionStore, schematic, craftCount,
+                    craftingStationUnitId, out retainedReason, extraConsumeItem2Id, admitted: true));
+                reason = retainedReason;
+                return crafted;
+            }
+
+            IPlayer player = session.Player;
+            var inventory = player.Inventory;
+            var satchel = player.SupplySatchelManager;
+            var account = player.Account;
+
             if (craftCount == 0u)
             {
                 reason = "zero-count";
                 return false;
             }
 
-            if (!TryValidateCraftingStation(session.Player, schematic, craftingStationUnitId, out reason))
+            if (!TryValidateCraftingStation(player, schematic, craftingStationUnitId, out reason))
                 return false;
 
             if (schematic.TradeSkillId != 0u)
@@ -288,7 +305,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
                     return false;
                 }
 
-                if (!session.Player.HasTradeskill(requiredTradeskill))
+                if (!player.HasTradeskill(requiredTradeskill))
                 {
                     reason = $"missing-tradeskill:{schematic.TradeSkillId}";
                     return false;
@@ -322,10 +339,10 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
                     return false;
                 }
 
-                if (!CanCreateInventoryItem(session.Player.Inventory, outputInfo, totalOutputCount))
+                if (!CanCreateInventoryItem(player.Inventory, outputInfo, totalOutputCount))
                 {
                     reason = "inventory-full";
-                    session.Player.SendGenericError(GenericError.ItemInventoryFull);
+                    player.SendGenericError(GenericError.ItemInventoryFull);
                     return false;
                 }
 
@@ -333,16 +350,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             }
             else
             {
-                if (!lootManager.TryGenerateLoot(schematic.LootId, session.Player, craftCount, out generatedLoot, out reason))
+                if (!lootManager.TryGenerateLoot(schematic.LootId, player, craftCount, out generatedLoot, out reason))
                 {
                     reason = $"loot-output:{reason}";
                     return false;
                 }
 
-                if (!lootManager.CanDeliverGeneratedLoot(session.Player, generatedLoot, out reason))
+                if (!lootManager.CanDeliverGeneratedLoot(player, generatedLoot, out reason))
                 {
                     if (reason == "inventory-full")
-                        session.Player.SendGenericError(GenericError.ItemInventoryFull);
+                        player.SendGenericError(GenericError.ItemInventoryFull);
 
                     reason = $"loot-delivery:{reason}";
                     return false;
@@ -356,7 +373,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             var debits = new List<MaterialDebit>();
             if (extraConsumeItem2Id != 0u)
             {
-                if (!TryBuildMaterialDebit(session.Player, gameTableManager, extraConsumeItem2Id, craftCount, out MaterialDebit extraDebit))
+                if (!TryBuildMaterialDebit(player, gameTableManager, extraConsumeItem2Id, craftCount, out MaterialDebit extraDebit))
                 {
                     reason = $"missing-extra-item:{extraConsumeItem2Id}:{craftCount}";
                     return false;
@@ -373,7 +390,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
                     return false;
                 }
 
-                if (!TryBuildMaterialDebit(session.Player, gameTableManager, requirement.Item2Id, totalMaterialCount, out MaterialDebit debit))
+                if (!TryBuildMaterialDebit(player, gameTableManager, requirement.Item2Id, totalMaterialCount, out MaterialDebit debit))
                 {
                     reason = $"missing-material:{requirement.Item2Id}:{totalMaterialCount}";
                     return false;
@@ -383,31 +400,38 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Crafting
             }
 
             var modifierDebits = new List<ItemDebit>();
-            if (!craftingModifierSessionStore.TryBuildModifierItemCounts(session.Player, gameTableManager, schematic, out IReadOnlyDictionary<uint, uint> modifierItemCounts, out reason))
+            if (!craftingModifierSessionStore.TryBuildModifierItemCounts(player, gameTableManager, schematic, out IReadOnlyDictionary<uint, uint> modifierItemCounts, out reason))
                 return false;
 
             foreach ((uint item2Id, uint count) in modifierItemCounts)
                 modifierDebits.Add(new ItemDebit(item2Id, count, ItemUpdateReason.TradeskillAdditiveCost));
 
+            if (!ReferenceEquals(session.Player, player) || !ReferenceEquals(player.Inventory, inventory)
+                || !ReferenceEquals(player.SupplySatchelManager, satchel) || !ReferenceEquals(player.Account, account))
+            {
+                reason = "changed-crafting-actor";
+                return false;
+            }
+
             foreach (MaterialDebit debit in debits)
-                ApplyMaterialDebit(session.Player, debit);
+                ApplyMaterialDebit(player, debit);
 
             foreach (ItemDebit debit in modifierDebits)
-                session.Player.Inventory.ItemDelete(debit.Item2Id, debit.Count, debit.Reason);
+                player.Inventory.ItemDelete(debit.Item2Id, debit.Count, debit.Reason);
 
             if (hasDirectOutput)
-                session.Player.Inventory.ItemCreate(InventoryLocation.Inventory, outputInfo, totalOutputCount, ItemUpdateReason.Crafting);
+                player.Inventory.ItemCreate(InventoryLocation.Inventory, outputInfo, totalOutputCount, ItemUpdateReason.Crafting);
             else
-                lootManager.GiveGeneratedLoot(session.Player, generatedLoot, session.Player.Guid, sendGrantedNotify: true, parentUnitId: craftingStationUnitId);
+                lootManager.GiveGeneratedLoot(player, generatedLoot, player.Guid, sendGrantedNotify: true, parentUnitId: craftingStationUnitId);
 
-            GrantCraftingAchievements(session.Player, hasDirectOutput
+            GrantCraftingAchievements(player, hasDirectOutput
                 ? [new GeneratedLootItem(LootItemType.StaticItem, outputInfo.Id, totalOutputCount)]
                 : generatedLoot);
 
-            uint earnedXp = GrantCraftingXp(session.Player, gameTableManager, schematic, craftCount);
-            CraftingQuestObjectiveUpdater.OnSchematicCrafted(session.Player, schematic.Id, craftCount);
+            uint earnedXp = GrantCraftingXp(player, gameTableManager, schematic, craftCount);
+            CraftingQuestObjectiveUpdater.OnSchematicCrafted(player, schematic.Id, craftCount);
             SendCraftSuccess(session, schematic, item2IdCrafted, earnedXp);
-            craftingModifierSessionStore.ClearModifiers(session.Player);
+            craftingModifierSessionStore.ClearModifiers(player);
             return true;
         }
 
