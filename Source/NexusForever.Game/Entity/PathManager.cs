@@ -21,7 +21,7 @@ using Path = NexusForever.Game.Static.PlayerPath.Path;
 
 namespace NexusForever.Game.Entity
 {
-    public class PathManager : IPathManager
+    public partial class PathManager : IPathManager
     {
         private const uint MaxPathCount = 4u;
         private const uint MaxPathLevel = PathRewardGrant.MaxPathLevel;
@@ -122,6 +122,8 @@ namespace NexusForever.Game.Entity
             LoadedPaths = model.Path.Select(ExperiencePersistence.FromModel).OrderBy(row => row.Id).ToArray();
             LoadedMissions = model.PathMission.Select(ExperiencePersistence.FromModel).OrderBy(row => row.Id).ToArray();
             LoadedPathDatabase = CharacterLoadOrigin.Get(model)?.Database;
+            if (player is Player)
+                InitialiseMissionCompletionPublication();
             foreach (CharacterPathModel pathModel in model.Path)
                 paths.Add((Path)pathModel.Path, new PathEntry(pathModel) { CharacterSaveOwner = TrySaveExperience });
 
@@ -814,14 +816,12 @@ namespace NexusForever.Game.Entity
             state.ProgressData = 0u;
             state.State = PathMissionState.Complete;
 
-            player.Session.EnqueueMessageEncrypted(new ServerPathMissionAdvanced
+            Mission completed = BuildMission(state);
+            if (player is not Player)
             {
-                PathMissionId = pathMissionId
-            });
-            player.Session.EnqueueMessageEncrypted(new ServerPathMissionUpdate
-            {
-                Mission = BuildMission(state)
-            });
+                player.Session.EnqueueMessageEncrypted(new ServerPathMissionAdvanced { PathMissionId = pathMissionId });
+                player.Session.EnqueueMessageEncrypted(new ServerPathMissionUpdate { Mission = completed });
+            }
 
             PathMissionEntry mission = gameTableManager.PathMission?.GetEntry(pathMissionId);
             if (mission != null)
@@ -841,6 +841,9 @@ namespace NexusForever.Game.Entity
             GrantMissionRewards(pathMissionId);
             GrantEpisodeRewardsIfComplete(state.EpisodeId);
             TryMarkScientistScanFromMission(pathMissionId);
+
+            if (player is Player)
+                RetainMissionCompletion(completed);
 
             return true;
         }

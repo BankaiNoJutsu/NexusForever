@@ -54,6 +54,7 @@ namespace NexusForever.Game.Entity
         private readonly Action<ExploredHexgroup[]> acknowledgeExploration;
         private readonly Action<ReputationState[], long> acknowledgeReputation;
         private readonly Action<ushort> acknowledgeAmpPower;
+        private readonly Action<Mission[]> acknowledgeMissionCompletions;
         private readonly Action publicationReady;
         private readonly RealmFirstPersistence realmFirst;
         private readonly bool ownsExperience, ownsPaths, ownsSpells, ownsPets, ownsAchievements, ownsDatacubes, ownsArchive, ownsMaps, ownsReputations;
@@ -67,7 +68,8 @@ namespace NexusForever.Game.Entity
             Action<Achievement[], Achievement[], RealmFirstPersistence.Claim[]> acknowledgeAchievements = null,
             RealmFirstPersistence realmFirst = null, Action<ArchiveState[]> acknowledgeArchive = null, Action publicationReady = null,
             Action<DatacubeState[]> acknowledgeDatacubes = null, Action<ExploredHexgroup[]> acknowledgeExploration = null,
-            Action<ReputationState[], long> acknowledgeReputation = null, Action<ushort> acknowledgeAmpPower = null)
+            Action<ReputationState[], long> acknowledgeReputation = null, Action<ushort> acknowledgeAmpPower = null,
+            Action<Mission[]> acknowledgeMissionCompletions = null)
         {
             this.character = character; this.baseline = baseline; this.current = current; this.database = database;
             this.acknowledgeAchievements = acknowledgeAchievements;
@@ -77,6 +79,7 @@ namespace NexusForever.Game.Entity
             this.acknowledgeExploration = acknowledgeExploration;
             this.acknowledgeReputation = acknowledgeReputation;
             this.acknowledgeAmpPower = acknowledgeAmpPower;
+            this.acknowledgeMissionCompletions = acknowledgeMissionCompletions;
             baselineIntent = baseline;
             ownsExperience = baseline.Experience != null; ownsPaths = baseline.Selection != null;
             ownsSpells = baseline.Spells != null; ownsPets = baseline.Pets != null; ownsAchievements = baseline.Achievements != null;
@@ -293,6 +296,7 @@ namespace NexusForever.Game.Entity
                         acknowledgeExploration?.Invoke(unit.Sql.MapHexgroups ?? []);
                         acknowledgeReputation?.Invoke(unit.Sql.Reputations ?? [], unit.FlushedIntent.ReputationSequence);
                         if (unit.Sql.Spells != null) acknowledgeAmpPower?.Invoke(unit.Sql.Spells.AmpPower);
+                        acknowledgeMissionCompletions?.Invoke(unit.Sql.Missions);
                         baseline = unit.Sql; baselineIntent = unit.FlushedIntent; uncertain = null;
                         ready = true;
                     }

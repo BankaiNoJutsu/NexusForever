@@ -22,6 +22,7 @@ using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Static;
 using NexusForever.Network.World.Message.Model.Abilities;
+using NexusForever.Network.World.Message.Model.PlayerPath;
 using NexusForever.Shared.Game.Events;
 using NexusForever.WorldServer.Network;
 using Actor = NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.Actor;
@@ -36,6 +37,66 @@ public sealed class PlayerExperiencePersistenceTests
     public PlayerExperiencePersistenceTests() { }
     internal PlayerExperiencePersistenceTests(DbContextOptions<CharacterContext> options) => this.options = options;
     private const BindingFlags Instance = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PathCompletionWaitsForCommitAndResumesOnlyOnTheOriginalSession(bool replaceSession)
+    {
+        using var f = new Fixture(options);
+        f.Seed();
+        Seed(f);
+        var session = RecordingDispatchProxy<IWorldSession>.Create(out var sessionProxy);
+        var events = new EventQueue();
+        sessionProxy.SetProperty(nameof(IWorldSession.Events), events);
+        using var actor = new Actor(f, actorSession: session, actorEvents: events);
+        sessionProxy.SetProperty(nameof(IWorldSession.Player), actor.Player);
+        await actor.Load();
+        var (_, path) = Configure(f, actor);
+        path.ActivateMissions(9, new Dictionary<ushort, uint> { [35] = 25 });
+        var saveRequested = typeof(Player).GetField("forceSave", Instance)!;
+        Assert.False((bool)saveRequested.GetValue(actor.Player)!);
+
+        List<ushort> advanced = [];
+        List<(uint Mission, bool Complete, uint Count, uint Data)> updates = [];
+        sessionProxy.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerPathMissionAdvanced start)
+                advanced.Add(start.PathMissionId);
+            else if (args[0] is ServerPathMissionUpdate update)
+            {
+                updates.Add((update.Mission.PathMissionId, update.Mission.Completed, update.Mission.ProgressCount, update.Mission.ProgressData));
+                if (updates.Count == 1)
+                {
+                    if (replaceSession)
+                        sessionProxy.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
+                    throw new IOException("Path mission update enqueue failed before delivery.");
+                }
+            }
+            return null;
+        });
+
+        Assert.True(path.CompleteActiveMission(35));
+        Assert.True((bool)saveRequested.GetValue(actor.Player)!);
+        Assert.Empty(advanced);
+        Assert.Empty(updates);
+        await Assert.ThrowsAsync<IOException>(() => Persist(f, actor, true));
+        await actor.Drain();
+        Assert.Empty(advanced);
+        Assert.Empty(updates);
+        using (var read = f.Context())
+            Assert.Empty(read.CharacterPathMission);
+
+        await Persist(f, actor, false);
+        await actor.Drain();
+        Assert.Equal((ushort)35, Assert.Single(advanced));
+        Assert.Equal(replaceSession ? 1 : 2, updates.Count);
+        Assert.All(updates, packet => Assert.Equal((35u, true, 1u, 0u), packet));
+        Assert.False(path.CompleteActiveMission(35));
+        using var stored = f.Context();
+        Assert.Equal(1, Assert.Single(stored.CharacterPathMission).Completed);
+        Assert.Equal(25u, stored.CharacterPath.Single(row => row.Path == (byte)GamePath.Soldier).TotalXp);
+    }
 
     [Fact]
     public async Task AmpPowerPacketsReflectTheCommittedFrozenValue()

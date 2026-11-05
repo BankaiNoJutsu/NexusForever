@@ -353,6 +353,25 @@ retry on the original live actor after SQL confirmation and reservation release.
 The retry rebuilds the accepted payload and checks the current order and session.
 The separate fill recovery is linked above. Restart replay remains open.
 
+### Committed Path mission notices
+
+5 November 2026. A live Player completing an active Path mission requests
+the ordinary save on the next eligible tick. The Experience save confirms
+the completed mission row before releasing its advancement and terminal
+progress packets to the original session. If the second enqueue fails,
+delivery resumes there without repeating the first packet or the mission
+award. A replaced session drops the retry.
+
+The baseline reproduced an enqueue exception escaping the mission producer
+before its XP grant. The scoped SQLite cases exercise rollback, a fresh save,
+and a second-packet failure with and without session replacement. The final
+owning build took 31 seconds with zero warnings or errors. All 196 scoped
+cases passed in 7 seconds. Evidence is under
+`artifacts/continuation-20261105/path-completion-publication/`.
+Path XP and item notifications have separate publication paths. Item overflow,
+configured-provider qualification, and native ordering relative to holdout
+results remain open.
+
 ### Committed reputation deltas
 
 4 November 2026. Four baseline cases reproduced early reputation deltas,

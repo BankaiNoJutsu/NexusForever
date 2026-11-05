@@ -66,13 +66,15 @@ namespace NexusForever.Game.Entity
                 maps?.NotifyPublicationReady();
                 reputation?.NotifyPublicationReady();
                 spells?.NotifyAmpPowerPublicationReady();
+                path?.NotifyMissionCompletionReady();
                 try { achievements?.NotifyPublicationReady(); }
                 finally { archive?.NotifyPublicationReady(); }
             }
             return experiencePersistence = new(owner, baseline, Current, database, achievements == null ? null : achievements.QueuePublication,
                 achievements?.RealmFirst, archive == null ? null : archive.AcknowledgePublication, PublicationReady,
                 cubes == null ? null : cubes.AcknowledgePublication, maps == null ? null : maps.AcknowledgePublication,
-                reputation == null ? null : reputation.AcknowledgePublication, spells == null ? null : spells.AcknowledgeAmpPowerPublication);
+                reputation == null ? null : reputation.AcknowledgePublication, spells == null ? null : spells.AcknowledgeAmpPowerPublication,
+                path == null ? null : path.AcknowledgeMissionCompletions);
         }
         internal bool OwnsDatacubePublication(DatacubeManager manager, Identity identity, IGameSession session)
             => Identity?.Id == identity.Id && Identity.RealmId == identity.RealmId
@@ -95,6 +97,12 @@ namespace NexusForever.Game.Entity
         internal bool OwnsAmpPowerPublication(SpellManager manager, Identity identity, IGameSession session)
             => Identity?.Id == identity.Id && Identity.RealmId == identity.RealmId
                 && ReferenceEquals(SpellManager, manager) && ReferenceEquals(Session, session)
+                && (playerManager == null || ReferenceEquals(playerManager.GetPlayer(identity), this))
+                && session is IPlayerSession current && ReferenceEquals(current.Player, this)
+                && session is not NetworkSession { IsDisconnecting: true };
+        internal bool OwnsPathCompletionPublication(PathManager manager, Identity identity, IGameSession session)
+            => Identity?.Id == identity.Id && Identity.RealmId == identity.RealmId
+                && ReferenceEquals(PathManager, manager) && ReferenceEquals(Session, session)
                 && (playerManager == null || ReferenceEquals(playerManager.GetPlayer(identity), this))
                 && session is IPlayerSession current && ReferenceEquals(current.Player, this)
                 && session is not NetworkSession { IsDisconnecting: true };
