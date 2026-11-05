@@ -22176,6 +22176,21 @@ and matching runtime/test assembly hashes are under
 `artifacts/continuation-20261105/public-event-finalization/`.
 Deployed socket and native client behavior remain open.
 
+#### Public event progress at finalization
+
+5 November 2026. Objective batches stop when a team or objective-status
+script finishes the event. The remaining objectives retain their progress
+as of that decision. A script callback cannot advance, reset or activate an
+objective or switch the phase during or after the end notice.
+
+Four baseline cases reproduced mutation across opposing teams, within the
+same team's batch and during or after terminal publication. The owning build
+passed with zero warnings and errors in 33 seconds. All 905 scoped event and
+instance cases passed in 26 seconds. Local evidence is under
+`artifacts/continuation-20261105/public-event-ending-progress/`.
+The Arcterra Zone track still needs a verified earning amount and payout
+transition before it can use these event completions.
+
 #### Public event Character save recovery
 
 5 November 2026. A real public-event objective advanced an enrolled Player's

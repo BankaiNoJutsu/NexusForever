@@ -91,6 +91,8 @@ individual member enqueue fails.
 [Event finalization and enrollment](../../CURRENT_STATUS.md#public-event-finalization-and-enrollment)
 keeps the match-finish callback from completing the same event twice and
 rejects map arrivals during and after event completion.
+[Progress at finalization](../../CURRENT_STATUS.md#public-event-progress-at-finalization)
+stops objective batches and script phase changes once the event ends.
 [Match cleanup and pending admissions](../../CURRENT_STATUS.md#match-cleanup-and-pending-admissions)
 allows a player to leave before admission, preserves other pending members and
 returns admitted players only from the match instance. Leaving cancels the

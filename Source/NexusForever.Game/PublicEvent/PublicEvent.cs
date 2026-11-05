@@ -42,6 +42,7 @@ namespace NexusForever.Game.PublicEvent
         private double elapsedTimer;
         private UpdateTimer liveStatsTimer;
         private bool isFinishing;
+        private bool CanChangeProgress => !IsFinalised && !isFinishing;
 
         #region Dependency Injection
 
@@ -78,7 +79,7 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public void Update(double lastTick)
         {
-            if (IsFinalised)
+            if (!CanChangeProgress)
                 return;
 
             if (liveStatsTimer != null)
@@ -91,13 +92,17 @@ namespace NexusForever.Game.PublicEvent
                 }
             }
 
-            if (IsBusy)
+            if (IsBusy || !CanChangeProgress)
                 return;
 
             elapsedTimer += lastTick;
 
             foreach (IPublicEventTeam publicEventTeam in teams.Values)
+            {
+                if (!CanChangeProgress)
+                    break;
                 publicEventTeam.Update(lastTick);
+            }
         }
 
         private ServerPublicEventStatsUpdate BuildStatsUpdate()
@@ -186,6 +191,9 @@ namespace NexusForever.Game.PublicEvent
         /// </remarks>
         public void SetPhase(uint phase)
         {
+            if (!CanChangeProgress)
+                return;
+
             Phase = phase;
 
             if (Map != null)
@@ -201,7 +209,7 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public void JoinEvent(IPlayer player, Static.PublicEvent.PublicEventTeam team)
         {
-            if (IsFinalised || isFinishing)
+            if (!CanChangeProgress)
                 return;
 
             /*if (player.Level < template.Entry.MinPlayerLevel)
@@ -320,6 +328,9 @@ namespace NexusForever.Game.PublicEvent
 
         private void UpdateObjective(IPublicEventTeam publicEventTeam, PublicEventObjectiveType type, uint objectId, int count)
         {
+            if (!CanChangeProgress)
+                return;
+
             publicEventTeam.UpdateObjective(type, objectId, count);
             if (publicEventTeam.IsFinialised)
                 Finish(publicEventTeam.Team);
@@ -338,7 +349,7 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public void UpdateObjective(uint objectiveId, int count)
         {
-            if (!template.Objectives.TryGetValue(objectiveId, out PublicEventObjectiveEntry entry))
+            if (!CanChangeProgress || !template.Objectives.TryGetValue(objectiveId, out PublicEventObjectiveEntry entry))
                 return;
 
             if (!teams.TryGetValue(entry.PublicEventTeamId, out IPublicEventTeam publicEventTeam))
@@ -368,7 +379,7 @@ namespace NexusForever.Game.PublicEvent
         /// </remarks>
         public void ActivateObjective(uint objectiveId, uint max = 0u)
         {
-            if (!template.Objectives.TryGetValue(objectiveId, out PublicEventObjectiveEntry entry))
+            if (!CanChangeProgress || !template.Objectives.TryGetValue(objectiveId, out PublicEventObjectiveEntry entry))
                 return;
 
             if (!teams.TryGetValue(entry.PublicEventTeamId, out IPublicEventTeam publicEventTeam))
@@ -390,7 +401,7 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public void ResetObjective(uint objectiveId)
         {
-            if (!template.Objectives.TryGetValue(objectiveId, out PublicEventObjectiveEntry entry))
+            if (!CanChangeProgress || !template.Objectives.TryGetValue(objectiveId, out PublicEventObjectiveEntry entry))
                 return;
 
             if (!teams.TryGetValue(entry.PublicEventTeamId, out IPublicEventTeam publicEventTeam))
@@ -473,7 +484,7 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public void Finish(Static.PublicEvent.PublicEventTeam? winnerTeam)
         {
-            if (IsFinalised || isFinishing)
+            if (!CanChangeProgress)
                 return;
 
             isFinishing = true;

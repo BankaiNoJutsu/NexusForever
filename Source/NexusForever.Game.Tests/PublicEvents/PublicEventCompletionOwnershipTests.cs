@@ -21,6 +21,8 @@ using NexusForever.Network.World.Message.Model.PublicEvent;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Script;
 using NexusForever.Script.Instance;
+using NexusForever.Script.Template;
+using NexusForever.Script.Template.Collection;
 using NexusForever.WorldServer.Network;
 using EventTeam = NexusForever.Game.Static.PublicEvent.PublicEventTeam;
 using RuntimeEvent = NexusForever.Game.PublicEvent.PublicEvent;
@@ -39,6 +41,106 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
         : this(output)
     {
         this.options = options;
+    }
+
+    [Fact]
+    public void MapWideObjectiveUpdateStopsWhenTheFirstTeamFinishesTheEvent()
+    {
+        const uint objectId = 501u;
+        var map = RecordingDispatchProxy<IBaseMap>.Create(out var mapProxy);
+        var red = new Actor(map, 42ul, 100u);
+        var blue = new Actor(map, 43ul, 200u);
+        var players = RecordingDispatchProxy<IPlayerManager>.Create(out var registry);
+        registry.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] == 42ul ? red.Player : blue.Player);
+        var publicEvent = CreateEvent(players, map,
+            CreateObjective(201u, objectId, EventTeam.RedTeam),
+            CreateObjective(202u, objectId, EventTeam.BlueTeam));
+        publicEvent.JoinEvent(red.Player, EventTeam.RedTeam);
+        publicEvent.JoinEvent(blue.Player, EventTeam.BlueTeam);
+        var losingObjective = publicEvent.GetTeams().Single(team => team.Team == EventTeam.BlueTeam).GetObjectives().Single();
+
+        publicEvent.UpdateObjective(PublicEventObjectiveType.Script, objectId, 1);
+
+        Assert.True(publicEvent.IsFinalised);
+        Assert.Equal(EventTeam.RedTeam, Assert.IsAssignableFrom<IPublicEventTeam>(
+            Assert.Single(mapProxy.GetInvocations(nameof(IBaseMap.OnPublicEventFinish))).Arguments[1]).Team);
+        AssertCredit(red, 201u);
+        Assert.Equal(PublicEventRemoveReason.Failure, Assert.Single(blue.Packets.OfType<ServerPublicEventEnd>()).Reason);
+        Assert.Equal(PublicEventStatus.Active, losingObjective.Status);
+        Assert.Equal(0u, losingObjective.Count);
+    }
+
+    [Fact]
+    public void ObjectiveBatchStopsWhenAnObjectiveStatusScriptFinishesItsEvent()
+    {
+        const uint objectId = 501u;
+        var map = RecordingDispatchProxy<IBaseMap>.Create(out var mapProxy);
+        var players = RecordingDispatchProxy<IPlayerManager>.Create(out _);
+        var scripts = RecordingDispatchProxy<IScriptManager>.Create(out var manager);
+        var collection = RecordingDispatchProxy<IScriptCollection>.Create(out var callbacks);
+        manager.SetMethodReturn(nameof(IScriptManager.InitialiseOwnedScripts), collection);
+        var script = new FinishOnObjectiveSuccess();
+        callbacks.SetMethodHandler(nameof(IScriptCollection.Invoke), args =>
+        {
+            if (args[0] is Action<IPublicEventScript> invoke)
+                invoke(script);
+            return null;
+        });
+        var publicEvent = CreateEvent(players, map, scripts,
+            CreateObjective(201u, objectId, EventTeam.PublicTeam),
+            CreateObjective(202u, objectId, EventTeam.PublicTeam));
+        var objectives = publicEvent.GetTeams().Single().GetObjectives().ToArray();
+
+        publicEvent.UpdateObjective(PublicEventObjectiveType.Script, objectId, 1);
+
+        Assert.True(publicEvent.IsFinalised);
+        Assert.Single(mapProxy.GetInvocations(nameof(IBaseMap.OnPublicEventFinish)));
+        Assert.Equal(PublicEventStatus.Succeeded, objectives[0].Status);
+        Assert.Equal(PublicEventStatus.Active, objectives[1].Status);
+        Assert.Equal(0u, objectives[1].Count);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void EndingEventRejectsScriptObjectiveAndPhaseChanges(bool duringNotice)
+    {
+        var map = RecordingDispatchProxy<IBaseMap>.Create(out _);
+        var actor = new Actor(map, 42ul, 100u);
+        var players = RecordingDispatchProxy<IPlayerManager>.Create(out var registry);
+        registry.SetMethodReturn(nameof(IPlayerManager.GetPlayer), actor.Player);
+        var publicEvent = CreateEvent(players, map, 201u, 501u);
+        publicEvent.SetPhase(7u);
+        publicEvent.JoinEvent(actor.Player, EventTeam.PublicTeam);
+        var objective = Assert.Single(Assert.Single(publicEvent.GetTeams()).GetObjectives());
+
+        void ApplyLateProgress()
+        {
+            publicEvent.UpdateObjective(201u, 1);
+            publicEvent.ResetObjective(201u);
+            publicEvent.ActivateObjective(201u, 3);
+            publicEvent.SetPhase(9u);
+        }
+
+        if (duringNotice)
+            actor.Session.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+            {
+                if (args[0] is ServerPublicEventEnd)
+                    ApplyLateProgress();
+                return null;
+            });
+        publicEvent.Finish(null);
+        if (!duringNotice)
+            ApplyLateProgress();
+
+        Assert.True(publicEvent.IsFinalised);
+        Assert.Equal(7u, publicEvent.Phase);
+        Assert.Equal(PublicEventStatus.Active, objective.Status);
+        Assert.Equal(0u, objective.Count);
+        Assert.Equal(0u, objective.DynamicMax);
+        Assert.Empty(actor.Achievements.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
+        Assert.Empty(actor.Quests.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
+        Assert.Single(actor.Packets.OfType<ServerPublicEventEnd>());
     }
 
     [Theory]
@@ -465,6 +567,15 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
         public override uint PublicEventId => eventId;
     }
 
+    private sealed class FinishOnObjectiveSuccess : IPublicEventScript
+    {
+        public void OnPublicEventObjectiveStatus(IPublicEventObjective objective)
+        {
+            if (objective.Status == PublicEventStatus.Succeeded)
+                objective.Team.PublicEvent.Finish(objective.Team.Team);
+        }
+    }
+
     private static (ContentEventScript, RuntimeEvent, Actor, RecordingDispatchProxy<IContentMapInstance>) CreateContentEvent()
     {
         var map = RecordingDispatchProxy<IContentMapInstance>.Create(out var mapProxy);
@@ -487,12 +598,30 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
     }
 
     private static RuntimeEvent CreateEvent(IPlayerManager players, IBaseMap map, uint objectiveId, uint objectId)
+        => CreateEvent(players, map, CreateObjective(objectiveId, objectId, EventTeam.PublicTeam));
+
+    private static PublicEventObjectiveEntry CreateObjective(uint objectiveId, uint objectId, EventTeam team) => new()
+    {
+        Id = objectiveId,
+        Count = 1,
+        ObjectId = objectId,
+        PublicEventTeamId = team,
+        PublicEventObjectiveCategoryEnum = PublicEventObjectiveCategory.Main,
+        PublicEventObjectiveTypeEnum = PublicEventObjectiveType.Script,
+        PublicEventObjectiveFlags = PublicEventObjectiveFlag.InitialObjective
+    };
+
+    private static RuntimeEvent CreateEvent(IPlayerManager players, IBaseMap map, params PublicEventObjectiveEntry[] objectives)
+        => CreateEvent(players, map, RecordingDispatchProxy<IScriptManager>.Create(out _), objectives);
+
+    private static RuntimeEvent CreateEvent(IPlayerManager players, IBaseMap map, IScriptManager scripts,
+        params PublicEventObjectiveEntry[] objectives)
     {
         var realm = RecordingDispatchProxy<IRealmContext>.Create(out var realmProxy);
         realmProxy.SetProperty(nameof(IRealmContext.RealmId), (ushort)1);
         var publicEvent = new RuntimeEvent(
             NullLogger<RuntimeEvent>.Instance,
-            RecordingDispatchProxy<IScriptManager>.Create(out _),
+            scripts,
             new PublicEventTestSupport.DelegateFactory<IPublicEventTeam>(() => new RuntimeTeam(
                 NullLogger<RuntimeTeam>.Instance,
                 new PublicEventTestSupport.DelegateFactory<IPublicEventObjective>(() => new PublicEventObjective()),
@@ -501,17 +630,14 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
                 new PublicEventTestSupport.ThrowingFactory<IPublicEventVote>(),
                 new PublicEventStats())),
             RecordingDispatchProxy<IPublicEventEntityFactory>.Create(out _));
-        publicEvent.Initialise(RecordingDispatchProxy<IPublicEventManager>.Create(out _),
-            new PublicEventTestSupport.TestPublicEventTemplate(new PublicEventObjectiveEntry
-            {
-                Id = objectiveId,
-                Count = 1,
-                ObjectId = objectId,
-                PublicEventTeamId = EventTeam.PublicTeam,
-                PublicEventObjectiveCategoryEnum = PublicEventObjectiveCategory.Main,
-                PublicEventObjectiveTypeEnum = PublicEventObjectiveType.Script,
-                PublicEventObjectiveFlags = PublicEventObjectiveFlag.InitialObjective
-            }), map);
+        var template = new PublicEventTestSupport.TestPublicEventTemplate(objectives[0]);
+        foreach (PublicEventObjectiveEntry objective in objectives.Skip(1))
+        {
+            template.Objectives.Add(objective.Id, objective);
+            if (template.Teams.All(team => team.Id != objective.PublicEventTeamId))
+                template.Teams.Add(new PublicEventTeamEntry { Id = objective.PublicEventTeamId });
+        }
+        publicEvent.Initialise(RecordingDispatchProxy<IPublicEventManager>.Create(out _), template, map);
         return publicEvent;
     }
 

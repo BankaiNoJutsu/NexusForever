@@ -90,7 +90,11 @@ namespace NexusForever.Game.PublicEvent
             }
 
             foreach (IPublicEventObjective objective in objectives.Values)
+            {
+                if (PublicEvent.IsFinalised)
+                    break;
                 objective.Update(lastTick);
+            }
         }
 
         /// <summary>
@@ -145,6 +149,8 @@ namespace NexusForever.Game.PublicEvent
         {
             foreach (IPublicEventObjective objective in objectives.Values)
             {
+                if (PublicEvent.IsFinalised)
+                    break;
                 if (objective.Status != PublicEventStatus.Active)
                     continue;
 
