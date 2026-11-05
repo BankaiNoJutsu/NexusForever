@@ -272,6 +272,45 @@ public sealed class ChallengeLiveProducerTests
         Assert.Equal(medals, read.CharacterChallengeMedalReceipt.Count()); Assert.Equal(1u, read.CharacterQuestObjective.Single().Progress); Assert.Empty(read.Item);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task TerminalChallengeClearsItsAreaGraceWithoutAFollowingFailure(bool completed)
+    {
+        using var f = New();
+        using var h = new Harness(f);
+        await h.Load();
+        h.Activate(16);
+        ushort challengeId = f.Source.Challenge(16);
+        var attempt = Runtime(h.Actor.Challenges, challengeId);
+        attempt.LeftArea = true;
+        attempt.AreaFailTimer = 1;
+        if (completed)
+            h.Complete(16);
+        else
+            attempt.ActiveTimer = 1;
+
+        h.Actor.Challenges.Update(2);
+        await h.Actor.Drain();
+
+        var packets = h.Session.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+            .Select(call => call.Arguments[0]).OfType<ServerChallengeResult>().ToArray();
+        Assert.DoesNotContain(packets, packet => packet.Result == ChallengeResult.LeftArea);
+        Assert.Single(packets, packet => packet.Result == (completed ? ChallengeResult.Completed : ChallengeResult.TimerExpired));
+        Assert.False(h.Actor.Challenges.RequiresAuthoritativeReload);
+        Assert.False(attempt.Activated);
+        Assert.False(attempt.LeftArea);
+        Assert.Equal(0d, attempt.AreaFailTimer);
+        using var read = f.Context();
+        var row = Assert.Single(read.CharacterChallenge);
+        Assert.False(row.LeftArea);
+        Assert.Equal(0d, row.AreaFailTimerSeconds);
+        Assert.Equal(completed ? 1u : 0u, row.CompletionCount);
+        Assert.True(Assert.Single(read.CharacterChallengeAttempt).Terminal);
+        Assert.Equal(completed ? 3 : 0, read.CharacterChallengeMedalReceipt.Count());
+        Assert.Equal(completed ? 2u : 1u, Assert.Single(read.CharacterQuestObjective).Progress);
+    }
+
     [Fact]
     public async Task ImmediateRestartsRetainTheirQueuedLineageAndThreeDistinctCompletionEvents()
     {

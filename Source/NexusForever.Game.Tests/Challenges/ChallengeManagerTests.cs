@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Options;
+using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Challenges;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Quest;
@@ -134,6 +135,30 @@ public class ChallengeManagerTests
 
         ServerChallengeUpdate update = GetMessages<ServerChallengeUpdate>(sessionProxy).Last();
         Assert.False(Assert.Single(update.ActiveChallenges).Activated);
+    }
+
+    [Fact]
+    public void ReloadedInactiveChallengeCannotAdvertiseOrExpireStaleAreaGrace()
+    {
+        var tables = CreateGameTables();
+        IPlayer player = CreatePlayer(RecipientGuid, out var session, tables);
+        var character = new CharacterModel();
+        character.Challenge.Add(new CharacterChallengeModel
+        {
+            ChallengeId = ChallengeId,
+            LeftArea = true,
+            AreaFailTimerSeconds = 1
+        });
+        var manager = new ChallengeManager(player, character, tables);
+
+        manager.SendInitialPackets();
+        manager.Update(2);
+
+        var state = Assert.Single(Assert.Single(GetMessages<ServerChallengeUpdate>(session)).ActiveChallenges);
+        Assert.False(state.Activated);
+        Assert.False(state.LeftArea);
+        Assert.Equal(0u, state.TimeAreaFailDt);
+        Assert.Empty(GetMessages<ServerChallengeResult>(session));
     }
 
     [Fact]

@@ -1,5 +1,21 @@
 # Live Character Challenge earning producers
 
+## Terminal Challenge area timers
+
+5 November 2026. Completing an attempt or reaching its active timeout
+clears area grace before the terminal transition is captured. An inactive
+attempt cannot emit a later LeftArea result. Older inactive rows that
+retain a grace value are shown as inactive without an area countdown.
+
+The baseline emitted LeftArea after successful gameplay completion and
+after TimerExpired. A reloaded inactive row also generated an extra
+status update on the old grace timeout. The owning build passed in
+27 seconds with zero warnings and errors. All 66 scoped Challenge and
+Contract companion tests passed in 32 seconds. Evidence is under
+`artifacts/continuation-20261105/challenge-terminal-timers/`.
+The area-grace regressions start from a prepared timer. Retail area entry,
+scoring rules and native presentation remain open.
+
 ## Legacy Challenge result ownership
 
 5 November 2026. Legacy Challenge attempts apply tier progression and terminal
