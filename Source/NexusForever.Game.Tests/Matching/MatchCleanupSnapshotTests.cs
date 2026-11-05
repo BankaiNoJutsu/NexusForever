@@ -5,11 +5,15 @@ using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Instance;
+using NexusForever.Game.Abstract.Map.Lock;
 using NexusForever.Game.Abstract.Matching;
 using NexusForever.Game.Abstract.Matching.Match;
+using NexusForever.Game.Abstract.PublicEvent;
+using NexusForever.Game.Map.Instance;
 using NexusForever.Game.Matching;
 using NexusForever.Game.Matching.Match;
 using NexusForever.Game.Static.Reputation;
+using NexusForever.Game.Static.Map;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -17,6 +21,8 @@ using NexusForever.Network.Internal;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Script;
+using NexusForever.Script.Template.Collection;
 using NexusForever.Shared;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Matching;
@@ -142,6 +148,54 @@ public class MatchCleanupSnapshotTests
         Assert.Equal(MatchStatus.Finalised, match.Status);
         Assert.Single(map.GetInvocations(nameof(IContentMapInstance.RemoveMatch)));
         Assert.Single(team.LeftIdentities);
+    }
+
+    [Theory]
+    [InlineData("cleanup")]
+    [InlineData("finish-failure")]
+    [InlineData("reattach")]
+    public void ContentUnloadCompletesItsOriginalMatchAndPublicEvents(string callback)
+    {
+        var team = new LiveRemovingMatchTeam(new Identity { RealmId = 1, Id = 1000ul });
+        Match match = CreateMatch(team, out _, out _, attachMap: false);
+        SetAutoProperty(match, nameof(Match.Status), MatchStatus.InProgress);
+        var publicEvents = RecordingDispatchProxy<IPublicEventManager>.Create(out var events);
+        var scriptManager = RecordingDispatchProxy<IScriptManager>.Create(out var scripts);
+        var scriptCollection = RecordingDispatchProxy<IScriptCollection>.Create(out var callbacks);
+        scripts.SetMethodReturn(nameof(IScriptManager.InitialiseOwnedScripts), scriptCollection);
+        var map = new ContentMapInstance(null, publicEvents, scriptManager,
+            mapIOManager: RecordingDispatchProxy<IMapIOManager>.Create(out _),
+            entityCacheManager: RecordingDispatchProxy<IEntityCacheManager>.Create(out _));
+        map.Initialise(new WorldEntry { Id = 77 }, RecordingDispatchProxy<IMapLock>.Create(out _));
+        map.SetMatch(match);
+
+        var replacement = RecordingDispatchProxy<IMatch>.Create(out var replacementMatch);
+        var finishFailure = new IOException("Match finish script failed.");
+        Exception replacementError = null;
+        callbacks.SetMethodHandler(nameof(IScriptCollection.Invoke), _ =>
+        {
+            if (callback == "finish-failure")
+                throw finishFailure;
+            if (callback == "cleanup")
+                match.MatchCleanup();
+            else
+            {
+                map.RemoveMatch();
+                replacementError = Record.Exception(() => map.SetMatch(replacement));
+            }
+            return null;
+        });
+
+        Assert.Same(callback == "finish-failure" ? finishFailure : null, Record.Exception(() => map.Unload()));
+        Assert.Equal(MapUnloadStatus.AwaitingGridActions, map.UnloadStatus);
+        Assert.Equal(MatchStatus.Finalised, match.Status);
+        Assert.Null(map.Match);
+        match.Update(301);
+        Assert.Single(team.LeftIdentities);
+        Assert.Single(events.GetInvocations(nameof(IPublicEventManager.Cleanup)));
+        if (callback == "reattach")
+            Assert.IsType<InvalidOperationException>(replacementError);
+        Assert.Empty(replacementMatch.GetInvocations(nameof(IMatch.SetMap)));
     }
 
     private static Match CreateMatch(LiveRemovingMatchTeam team) => CreateMatch(team, out _, out _);

@@ -22191,6 +22191,21 @@ instance cases passed in 26 seconds. Local evidence is under
 The Arcterra Zone track still needs a verified earning amount and payout
 transition before it can use these event completions.
 
+#### Content map unload and match cleanup
+
+5 November 2026. An unloading content map finishes and cleans up the match
+it owned when unload began. Finish callbacks can detach or clean up that
+match, and the map rejects a replacement attachment once unloading starts.
+Public Event cleanup runs even if match finish reports a script failure.
+
+The baseline reproduced a null dereference after nested cleanup and left the
+original match unfinished after a throwing or replacement callback. The
+regressions drive the real map unload and Match lifecycle. The owning build
+took 25 seconds with zero warnings or errors. All 69 scoped tests passed in
+14 seconds. Local evidence is under
+`artifacts/continuation-20261105/content-map-unload/`.
+Deployed travel and native presentation remain open.
+
 #### Public event Character save recovery
 
 5 November 2026. A real public-event objective advanced an enrolled Player's

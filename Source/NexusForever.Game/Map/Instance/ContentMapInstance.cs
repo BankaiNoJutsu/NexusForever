@@ -52,17 +52,26 @@ namespace NexusForever.Game.Map.Instance
 
         protected override void OnUnload()
         {
-            // the match and public events should already be cleaned up before unload
-            // this is just a safety check for manual unloads
-            if (Match != null)
+            // A finish callback can detach the match. Finish cleanup against
+            // the instance that owned the map when unload began.
+            IMatch match = Match;
+            try
             {
-                Match.MatchFinish();
-                // need to call cleanup right away since matches usually have a delay before they are cleaned up
-                Match.MatchCleanup();
-                Match = null;
+                match?.MatchFinish();
             }
-
-            PublicEventManager.Cleanup();
+            finally
+            {
+                try
+                {
+                    match?.MatchCleanup();
+                    if (ReferenceEquals(Match, match))
+                        Match = null;
+                }
+                finally
+                {
+                    PublicEventManager.Cleanup();
+                }
+            }
         }
 
         protected override IMapPosition GetPlayerReturnLocation(IPlayer player)
@@ -119,7 +128,7 @@ namespace NexusForever.Game.Map.Instance
         /// </summary>
         public void SetMatch(IMatch match)
         {
-            if (Match != null)
+            if (Match != null || UnloadStatus.HasValue)
                 throw new InvalidOperationException();
 
             Match = match;

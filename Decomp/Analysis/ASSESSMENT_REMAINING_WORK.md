@@ -100,6 +100,9 @@ member's queued match transfer and restores the source destination when source
 removal has already started. Once the match map is attached, leaving queues the
 return after that arrival's client acknowledgement. Deployment and native
 travel verification remain open.
+[Content map unload](../../CURRENT_STATUS.md#content-map-unload-and-match-cleanup)
+completes cleanup of the original match and its public events when a finish
+callback detaches the match or throws.
 The [Character rollback probe](../../CURRENT_STATUS.md#public-event-character-save-recovery)
 reproduced early quest updates and loss of unsaved credit on the World save
 failure path. [Committed quest notices](../../CURRENT_STATUS.md#committed-public-event-quest-notices)
