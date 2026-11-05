@@ -66,14 +66,15 @@ with mode4. The table at`180129b10` contains mode4 layout bytes`10 80 00`.
 The derivation routine requests48 bytes from its first helper call, then288
 bytes from its second call. It skips two16-byte prefixes and supplies two
 128-byte key outputs. The getter at`180012da0` returns128 **bytes**, not bits.
-Exact derivation internals are not fully validated by this pass.
+The follow-up below maps the selected derivation internals and filter paths.
 
 `18003a860` builds two key objects through`1800f73e0`. That factory reaches
 `1800f7320`, whose RTTI names `Crypt::CKeyRc4` and whose256-entry initialization,
 key-byte cycling and swap loop corroborate RC4 key scheduling. The factory's
 source-path literal names `CptRc4.cpp`. The filter stores the second derived
 key's object at`+0x10` and the first at`+0x18`; a virtual call on its first key
-also occurs. Cipher directions and that state operation remain unassigned.
+also occurs. The follow-up below resolves its selected behavior and maps which
+key each local filter path uses.
 
 After the expected sizes/pointers pass, the completion calls virtual slot`+0x50`
 on the third object with the filter and sets auth error0. Invalid derived
@@ -89,8 +90,9 @@ status, message/cardinality and transaction validation remain upstream.
 
 Required next evidence remains an accepted optional-route transcript plus the
 trusted key/provisioning, server inverse/private-key and padding behavior,
-complete derivation/direction/state-advance rules, exact reply grammar and
-startup ordering. Do not enable `LoginTokenStart`/`TokenKeyData` from this map.
+independent corroboration of the mapped derivation/filter rules, exact reply
+grammar and startup ordering. Do not enable `LoginTokenStart`/`TokenKeyData` from
+this map.
 The implemented password/SRP path is unchanged. No C# build or suite was run for
 this static-only pass. Client/CUA remain stopped; defaults15:1/17:1 and no
 automatic44/seven baseline Character grants are preserved.
@@ -98,7 +100,101 @@ automatic44/seven baseline Character grants are preserved.
 This read-only pass applies no labels and exports no new applied-label
 inventory. `function_labels.csv` and mapping CSVs retain their prior bindings:
 no opcode/layout correction, Source implementation or live evidence bundle is
-established. The internal filter offsets remain in this focused map with their
-direction/state semantics unassigned; they are not promoted as wire/server
-structure fields. The record carries the new observations until a suitable
-annotation/export pass is performed.
+established. The internal filter offsets remain in this focused map; they are
+not promoted as wire/server structure fields. The records carry these
+observations until a suitable annotation/export pass is performed.
+
+## Follow-up: selected mode4 expansion and filter paths
+
+5 November2026. The [follow-up record](coverage/sts-key-derivation-20261105.json)
+reuses the exact REA artifact identity above and the prior mode4/caller/factory
+ranges. Ten newly selected routines contribute12 code ranges;24 data anchors
+include both vtables, the selected prefix pointers/bytes, the constant-return
+leaf and the SHA-256 round table. All36 new range/anchor hashes match the pinned
+PE and the read-only Ghidra program. This remains **Mapped** static evidence.
+
+### Expansion inputs and digest output
+
+The expansion helper at`180012f90` concatenates a table-selected prefix, secret,
+first seed and second seed, then calls`180039bd0`. That wrapper passes one buffer
+to`180039a30`. Its eight initial words,64-byte compression at`180039450`, all64
+round constants at`18012dcf0`, padding/length handling and big-endian32-byte
+output at`180039880` identify SHA-256. The expansion then hashes secret followed
+by those32 bytes through the previously mapped MD5 wrapper`18003a670`.
+`18003a560` emits its four state words in little-endian byte order. Up to16 bytes
+from that digest become the next output block.
+
+For the selected48-byte and288-byte requests, let `||` mean byte concatenation
+and slices use zero-based, end-exclusive offsets. The bounded reconstruction is:
+
+```text
+prefix(i) = byte('A' + i) repeated i times, for i = 1..18
+block(i)  = MD5(secret || SHA256(prefix(i) || secret || seedA || seedB))
+Expand(secret, seedA, seedB, length) = concatenated block(i), truncated to length
+
+master   = Expand(premaster, ClientRand, ServerRand, 48)
+keyBlock = Expand(master, ServerRand, ClientRand, 288)
+firstKey = keyBlock[32:160]
+secondKey = keyBlock[160:288]
+```
+
+The observed copy at`180013079` indexes the pointer table`180171b30` with
+`(counter %26)+1`, and the copied length is that same index. Entry0 points at
+`A`, entry1 at `BB`, entry2 at `CCC`, etc. Consequently the actual first copied
+prefixes are **`B`, `CC`, `DDD`**, ending with18 `S` bytes in the selected288-byte
+request. Substituting an assumed TLS PRF or the usual `A`, `BB`, `CCC` sequence
+would change the mapped inputs. The first expansion uses indices1..3; the second
+uses1..18. No general table bound, wrap policy, zero-length behavior or arbitrary
+output-size support is asserted. Ghidra types the table start as a single
+pointer, not a declared array.
+
+The caller/deriver argument trace at`18000acd5`, `1800132bc` and`180013301`
+establishes the seed order above. Two16-byte prefixes are skipped; they are not
+assigned MAC or other protocol meaning by this pass. No native digest or session
+test vector was executed. The formula is an explanation of the selected code,
+not an independently verified server implementation.
+
+### Key ownership and the selected state call
+
+The factory`18003a860` receives the second derivation output as its first
+argument and the first output as its second argument. Its first constructed
+key object therefore contains **secondKey**. It calls that object's virtual
+slot`+0x10` at`18003a896`, stores it at filter`+0x10`, and stores the other object
+(**firstKey**) at filter`+0x18`.
+
+The `Crypt::CKeyRc4` vtable`18014ec78` has five observed slots. Slot`+0x10`
+points at`180100a00`, whose six bytes are `b8 01 00 00 00 c3`: return1, with no
+memory write or further call. The recovered shared-case name is not a semantic
+method name. **That selected invocation does not discard keystream or advance
+RC4 state.** This does not claim that no other part of a full session can do so.
+
+The filter vtable`18012ddf8` has nine observed slots:
+
+| Local path | Key object | Observed contract |
+| --- | --- | --- |
+| Slot`+0x28`, `18003aa40` | filter`+0x18`, **firstKey** | Walks16-byte length/pointer descriptors, transforms each through key slot`+8`, gathers bytes, then forwards length/buffer through downstream slot`+0x38`. |
+| Slot`+0x38`, `18003a8f0` | filter`+0x10`, **secondKey** | Transforms input through key slot0 into its retained buffer, calls downstream slot`+0x28` with the accumulated bytes and a consumed-count output, then retains the unconsumed tail. |
+
+Key slot0 at`1800f74f0` forwards to slot`+8`'s implementation`1800f7420`.
+That implementation advances persistent RC4 indices/permutation and XORs each
+input byte. The vector-write and buffered-parser contracts support **inferred
+client outbound=firstKey, inbound=secondKey**. This is local dataflow evidence;
+socket traffic, a working server inverse and accepted transition timing remain
+unobserved. The existing password/SRP route is not evaluated or changed here.
+
+### Follow-up verification and limits
+
+Raw scripts, decompilation, bounded LLVM output and hash checks are retained in
+`artifacts/continuation-20261105/sts-key-derivation/`. The first prefix-inspection
+helper attempted index26 and failed to read mapped memory before decompilation;
+its failed log is retained. The corrected inspection completed; the portable
+record deliberately limits the formula to the selected requests and indices.
+That helper error is not target execution or a runtime failure observation.
+
+Source/Tools remain unchanged, so no C# build or tests were run. The historical
+handoff Source-divergence result is reused. No native client/DLL execution,
+Computer Use, provider/configuration installation or production behavior change
+occurred. Trust provisioning, RSA inverse/padding/malformed-input policy,
+generic reply grammar, accepted optional-route traffic and startup ordering
+remain the next authentication gates. Continue independent roadmap behavior
+while those external inputs remain missing.

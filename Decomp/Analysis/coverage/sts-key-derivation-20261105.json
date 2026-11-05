@@ -1,0 +1,676 @@
+{
+  "version": 1,
+  "feature": "STS selected mode4 derivation and local filter paths",
+  "recorded_utc": "2026-11-05T13:40:13.600857+00:00",
+  "base_head": "9a103e149f8e56eb0b4a795f5e1d016dff495a41",
+  "disposition": "Mapped static client behavior; no server optional-auth implementation",
+  "input": {
+    "binary": "StsConnLib64.MT.dll",
+    "sha256": "aa0ef5888d17eb65da28b1cbef178d1650a837303c10a6fafc9f3c646c2f3fd1",
+    "bytes": 1899520,
+    "image_base": "0x180000000"
+  },
+  "rea": {
+    "reuse_from": "sts-token-key-transition-20261105.json",
+    "evidence_id": "ev_dba29958b64299b3a64c41214e66af69697b23182238084a321fdaace185b187",
+    "version": "6.8.0",
+    "boundary": "Existing exact-artifact identity/import Evidence reused; no new REA decompile result"
+  },
+  "inspectors": {
+    "ghidra": "Existing standalone12.0.4/JDK21, owned project copy, read-only and analysis disabled",
+    "llvm": "22.1.6",
+    "llvm_sha256": "3ae6715601f2eb0c1d0839929c46089906ba0f1e5e032fe519656a40c936b863",
+    "target_execution": false,
+    "computer_use": false,
+    "original_artifact_modified": false,
+    "configuration_changed": false
+  },
+  "mapped": {
+    "expansion_helper": "0x180012f90",
+    "scope": "Selected positive 48-byte and 288-byte requests only",
+    "block_formula": "MD5(secret || SHA256(prefix(i) || secret || seedA || seedB))",
+    "prefix_formula": "For i=1..18: byte(0x41+i) repeated i times; actual first prefixes B, CC, DDD",
+    "master": "Expand(premaster, ClientRand, ServerRand, 48)",
+    "key_block": "Expand(master, ServerRand, ClientRand, 288)",
+    "first_key_slice": [
+      32,
+      160
+    ],
+    "second_key_slice": [
+      160,
+      288
+    ],
+    "slice_convention": "zero based, end exclusive",
+    "sha256": {
+      "one_buffer_wrapper": "0x180039bd0",
+      "initializer": "0x180039a30",
+      "compression": "0x180039450",
+      "round_table": "0x18012dcf0",
+      "finalizer": "0x180039880",
+      "output": "32 bytes, state DWORDs emitted big endian"
+    },
+    "md5": {
+      "wrapper": "0x18003a670",
+      "finalizer": "0x18003a560",
+      "output": "16 bytes, state DWORDs emitted little endian"
+    },
+    "factory": {
+      "address": "0x18003a860",
+      "first_argument": "second derived key",
+      "second_argument": "first derived key",
+      "state_call": "0x18003a896"
+    },
+    "state_slot": {
+      "vtable": "0x18014ec78",
+      "offset": 16,
+      "target": "0x180100a00",
+      "bytes_hex": "b801000000c3",
+      "behavior": "return1; no memory write or call in selected six-byte leaf"
+    },
+    "filter_paths": [
+      {
+        "slot": 40,
+        "function": "0x18003aa40",
+        "object_offset": 24,
+        "derived_key": "first",
+        "contract": "vector length/pointer descriptors transformed then gathered into downstream slot0x38"
+      },
+      {
+        "slot": 56,
+        "function": "0x18003a8f0",
+        "object_offset": 16,
+        "derived_key": "second",
+        "contract": "buffered input transformed before downstream slot0x28 parser/consumed-count callback"
+      }
+    ],
+    "directions": "Client outbound first / inbound second inferred from local vector-write and buffered-parser contracts; no socket/runtime observation",
+    "native_vectors_executed": false
+  },
+  "new_functions": [
+    {
+      "requested": "0x1800f74f0",
+      "has_unwind_entry": true,
+      "parts": [
+        {
+          "start": "0x1800f74f0",
+          "end_exclusive": "0x1800f7507",
+          "bytes": 23,
+          "sha256": "a4077ab4d3a577061c86b1a8852c58db7631b6eb00bdd9b102457b47a7f70d75",
+          "disassembly": "1800f74f0-0.asm",
+          "disassembly_sha256": "b27f93aadea1f3b17bbd412531ca41bf7736fb741173aaa436b430e55e82fc70"
+        }
+      ],
+      "scope": "observed chained exception group"
+    },
+    {
+      "requested": "0x1800f7420",
+      "has_unwind_entry": true,
+      "parts": [
+        {
+          "start": "0x1800f7420",
+          "end_exclusive": "0x1800f74e1",
+          "bytes": 193,
+          "sha256": "3451bd66ad4416384de240d0d4adcbafd7102f825a5d83a223298d019d0ba142",
+          "disassembly": "1800f7420-0.asm",
+          "disassembly_sha256": "7a0fd6088a2033504a28529d803e6a35d62901a4bec4b5a9b69762ee4f91537b"
+        }
+      ],
+      "scope": "observed chained exception group"
+    },
+    {
+      "requested": "0x180100a00",
+      "has_unwind_entry": false,
+      "parts": [
+        {
+          "start": "0x180100a00",
+          "end_exclusive": "0x180100a06",
+          "bytes": 6,
+          "sha256": "2db31f4e09597946e56e859813bfdad7046d457c32332c3a882654d1e3ffdf67",
+          "disassembly": "180100a00-0.asm",
+          "disassembly_sha256": "271bd040273b0ba4d92cb715e97fbd9287362b1802094bb2ddae101e904ed952"
+        }
+      ],
+      "scope": "six-byte constant-return leaf window; no unwind entry"
+    },
+    {
+      "requested": "0x18003aa40",
+      "has_unwind_entry": true,
+      "parts": [
+        {
+          "start": "0x18003aa40",
+          "end_exclusive": "0x18003abad",
+          "bytes": 365,
+          "sha256": "97b9fbc3f7d0d218d89325a7b088af1869cd32d8d5c29e6eb5f38607f274d677",
+          "disassembly": "18003aa40-0.asm",
+          "disassembly_sha256": "f0c29a28a9c5663475e0a15272e18b42e162852575911a2a8e61e77446772376"
+        }
+      ],
+      "scope": "observed chained exception group"
+    },
+    {
+      "requested": "0x18003a8f0",
+      "has_unwind_entry": true,
+      "parts": [
+        {
+          "start": "0x18003a8f0",
+          "end_exclusive": "0x18003aa33",
+          "bytes": 323,
+          "sha256": "ccb24d02aa61d1be0702584240d4fa999efe45b81840430b2698a2a41b1d0524",
+          "disassembly": "18003a8f0-0.asm",
+          "disassembly_sha256": "1b02cb211f2a33483d3a7920b5c39787b580192d73d1fa79efbdf7c804cb22ed"
+        }
+      ],
+      "scope": "observed chained exception group"
+    },
+    {
+      "requested": "0x180039bd0",
+      "has_unwind_entry": true,
+      "parts": [
+        {
+          "start": "0x180039bd0",
+          "end_exclusive": "0x180039bf6",
+          "bytes": 38,
+          "sha256": "ab14d26ecc17b9adc9541bfe7636869e4c6eab617d6e1716cd1ab11c88fab8fb",
+          "disassembly": "180039bd0-0.asm",
+          "disassembly_sha256": "c463a495f733801943797b365cf2fd4402747d17671227631be0c4bbf12d9e8e"
+        }
+      ],
+      "scope": "observed chained exception group"
+    },
+    {
+      "requested": "0x180039a30",
+      "has_unwind_entry": true,
+      "parts": [
+        {
+          "start": "0x180039a30",
+          "end_exclusive": "0x180039aae",
+          "bytes": 126,
+          "sha256": "e824721f07cff1d1de951db9d4288411bbaa23026cd7a4481c806aa72cf42544",
+          "disassembly": "180039a30-0.asm",
+          "disassembly_sha256": "437645344422481143db0886fb8b7f111a3a4b440deec8e3c30d4096e0703745"
+        },
+        {
+          "start": "0x180039aae",
+          "end_exclusive": "0x180039b9a",
+          "bytes": 236,
+          "sha256": "48ca5448bafa802f6fbd0efa28d2d842938f4d4aae29d5becb18fdc9d13e910c",
+          "disassembly": "180039a30-1.asm",
+          "disassembly_sha256": "9d56471fce567cb6e29739602ab1e81e074d2a459fb72a8e35a1a1d0fd2bbeaa"
+        },
+        {
+          "start": "0x180039b9a",
+          "end_exclusive": "0x180039bc5",
+          "bytes": 43,
+          "sha256": "a6a2a63136015727eca58b6ae90de210e6f4dc3a0a6951944b9bd38271969080",
+          "disassembly": "180039a30-2.asm",
+          "disassembly_sha256": "4d7c5c6144f62a3911c9077d84281bca5b7af0a4c8eaf215c0b50663439635ab"
+        }
+      ],
+      "scope": "observed chained exception group"
+    },
+    {
+      "requested": "0x180039450",
+      "has_unwind_entry": true,
+      "parts": [
+        {
+          "start": "0x180039450",
+          "end_exclusive": "0x18003987d",
+          "bytes": 1069,
+          "sha256": "8036fd738d46e76f05624948ac1d8ca66bc6c155a9756efdf66cd29140d15bdf",
+          "disassembly": "180039450-0.asm",
+          "disassembly_sha256": "815aee831a5c2aa4e5c4da73fd998f7f47fbc506635fc0da445410688490e6d5"
+        }
+      ],
+      "scope": "observed chained exception group"
+    },
+    {
+      "requested": "0x180039880",
+      "has_unwind_entry": true,
+      "parts": [
+        {
+          "start": "0x180039880",
+          "end_exclusive": "0x180039a30",
+          "bytes": 432,
+          "sha256": "ca35662292dc7ba5cfa1f24f91c9b7fcee4c0da8c36a8141c3b9953b7aa2dc47",
+          "disassembly": "180039880-0.asm",
+          "disassembly_sha256": "5f15ae0c9bb3af05eb5966380135985c5df32c20b190f73823b1e81ac0101c48"
+        }
+      ],
+      "scope": "observed chained exception group"
+    },
+    {
+      "requested": "0x18003a560",
+      "has_unwind_entry": true,
+      "parts": [
+        {
+          "start": "0x18003a560",
+          "end_exclusive": "0x18003a664",
+          "bytes": 260,
+          "sha256": "678883049f09297f103ee8082197aad71a6eff2ef044e9203bf405b7945a7267",
+          "disassembly": "18003a560-0.asm",
+          "disassembly_sha256": "982499b996eedf2d0d8aefa4f8ae09184f522d248583d2aa777696249e514212"
+        }
+      ],
+      "scope": "observed chained exception group"
+    }
+  ],
+  "data_anchors": [
+    {
+      "name": "rc4-vtable-five-slots",
+      "address": "0x18014ec78",
+      "bytes": 40,
+      "bytes_hex": "f0740f800100000020740f8001000000000a10800100000050f5038001000000506d008001000000",
+      "sha256": "f4998da132527ebc9c67bbc7261b6bbd87ed360d14179414e4cca4ccd9cd6e4a"
+    },
+    {
+      "name": "filter-vtable-nine-slots",
+      "address": "0x18012ddf8",
+      "bytes": 72,
+      "bytes_hex": "00f5008001000000d0d0018001000000d00906800100000070a703800100000080f802800100000040aa03800100000080f8028001000000f0a803800100000040a7038001000000",
+      "sha256": "64d2ece6d0e8c034c2a7cf868b5e70c2396a524415e7ac8062e52a86222c6590"
+    },
+    {
+      "name": "selected-prefix-pointer-entries-zero-through-eighteen",
+      "address": "0x180171b30",
+      "bytes": 152,
+      "bytes_hex": "089b128001000000049b128001000000009b128001000000f89a128001000000f09a128001000000e89a128001000000e09a128001000000d09a128001000000c09a128001000000b09a128001000000a09a128001000000909a128001000000809a128001000000709a128001000000609a128001000000489a128001000000309a128001000000189a128001000000009a128001000000",
+      "sha256": "18795d31c476d35931a37f2e4979178697f1f89ea4fb5602d489d0b69f5b932a"
+    },
+    {
+      "name": "prefix-index-0",
+      "address": "0x180129b08",
+      "bytes": 1,
+      "bytes_hex": "41",
+      "sha256": "559aead08264d5795d3909718cdd05abd49572e84fe55590eef31a88a08fdffd"
+    },
+    {
+      "name": "prefix-index-1",
+      "address": "0x180129b04",
+      "bytes": 1,
+      "bytes_hex": "42",
+      "sha256": "df7e70e5021544f4834bbee64a9e3789febc4be81470df629cad6ddb03320a5c"
+    },
+    {
+      "name": "prefix-index-2",
+      "address": "0x180129b00",
+      "bytes": 2,
+      "bytes_hex": "4343",
+      "sha256": "a56362a10c816abf206d72cb914e2d5ca454eb9c7e744f88b1a1422c379e9942"
+    },
+    {
+      "name": "prefix-index-3",
+      "address": "0x180129af8",
+      "bytes": 3,
+      "bytes_hex": "444444",
+      "sha256": "4c5f91d8424f9529acf7118d133a93d2a6cab19141c35c3064837e6dd57b99a3"
+    },
+    {
+      "name": "prefix-index-4",
+      "address": "0x180129af0",
+      "bytes": 4,
+      "bytes_hex": "45454545",
+      "sha256": "ae92980f4fe253e4f4e8a8c6058830cf2588bd09d5ca05c48b3bca54e6f3e181"
+    },
+    {
+      "name": "prefix-index-5",
+      "address": "0x180129ae8",
+      "bytes": 5,
+      "bytes_hex": "4646464646",
+      "sha256": "ca292b0aaa785189560fb8d6c7ed76614cd1671dd4cc1369579279b8627aedfa"
+    },
+    {
+      "name": "prefix-index-6",
+      "address": "0x180129ae0",
+      "bytes": 6,
+      "bytes_hex": "474747474747",
+      "sha256": "4c09b626e5524a2dfa386689d8046ff8e85d1612258ffa1627e5004463ca5a29"
+    },
+    {
+      "name": "prefix-index-7",
+      "address": "0x180129ad0",
+      "bytes": 7,
+      "bytes_hex": "48484848484848",
+      "sha256": "7b84809dfda35aef05a7b49844390f9cdfc4064bc2eb2dbbbfbf1ea42a088b83"
+    },
+    {
+      "name": "prefix-index-8",
+      "address": "0x180129ac0",
+      "bytes": 8,
+      "bytes_hex": "4949494949494949",
+      "sha256": "eba08bec57f1605d288f10fc6404a2a5be73b0de6a4a720a71b12ef1e740a3e9"
+    },
+    {
+      "name": "prefix-index-9",
+      "address": "0x180129ab0",
+      "bytes": 9,
+      "bytes_hex": "4a4a4a4a4a4a4a4a4a",
+      "sha256": "579a5c33fe146946cd6b6873e85f0806bb17cb3ca6111b2fe447422c3739b387"
+    },
+    {
+      "name": "prefix-index-10",
+      "address": "0x180129aa0",
+      "bytes": 10,
+      "bytes_hex": "4b4b4b4b4b4b4b4b4b4b",
+      "sha256": "ddcf5c9c8cbb58a21aaf91ac9fcff156176676f5285470fc0bf34d2184a0fb73"
+    },
+    {
+      "name": "prefix-index-11",
+      "address": "0x180129a90",
+      "bytes": 11,
+      "bytes_hex": "4c4c4c4c4c4c4c4c4c4c4c",
+      "sha256": "94eca58952c76148327cccced4dfd95a2ba5271aa4d0da40f16b8f597bbc83df"
+    },
+    {
+      "name": "prefix-index-12",
+      "address": "0x180129a80",
+      "bytes": 12,
+      "bytes_hex": "4d4d4d4d4d4d4d4d4d4d4d4d",
+      "sha256": "417ad5a753a97de6d19d0bd01bf8f97aa26726f9bf6db3d1d3c24820222e8345"
+    },
+    {
+      "name": "prefix-index-13",
+      "address": "0x180129a70",
+      "bytes": 13,
+      "bytes_hex": "4e4e4e4e4e4e4e4e4e4e4e4e4e",
+      "sha256": "ff8f207f56dbbb83e4336c6b14ee28f901224cd83b639c57df04fd5d44c1950c"
+    },
+    {
+      "name": "prefix-index-14",
+      "address": "0x180129a60",
+      "bytes": 14,
+      "bytes_hex": "4f4f4f4f4f4f4f4f4f4f4f4f4f4f",
+      "sha256": "fd5afb675b4d31434a0ecde36589fd8b1b5761a79405e6ab86d084730172cc81"
+    },
+    {
+      "name": "prefix-index-15",
+      "address": "0x180129a48",
+      "bytes": 15,
+      "bytes_hex": "505050505050505050505050505050",
+      "sha256": "b25ec91e6bccbc299be75116a60d50c80cce12c9ffb0df8d1cf11749469e362d"
+    },
+    {
+      "name": "prefix-index-16",
+      "address": "0x180129a30",
+      "bytes": 16,
+      "bytes_hex": "51515151515151515151515151515151",
+      "sha256": "e69bbe113521a140d5a5cb83f97f97d7a8f35c848bf782a56774b4c17cf35a7e"
+    },
+    {
+      "name": "prefix-index-17",
+      "address": "0x180129a18",
+      "bytes": 17,
+      "bytes_hex": "5252525252525252525252525252525252",
+      "sha256": "ccaf42ff4c1293a92b5caceb3c91224049522a98c03927802ea7e3aa9f688c64"
+    },
+    {
+      "name": "prefix-index-18",
+      "address": "0x180129a00",
+      "bytes": 18,
+      "bytes_hex": "535353535353535353535353535353535353",
+      "sha256": "6cd9041c7d77bc09927cd059a56d90b1e1a253017741698df5bf630af73b674b"
+    },
+    {
+      "name": "constant-success-key-slot",
+      "address": "0x180100a00",
+      "bytes": 6,
+      "bytes_hex": "b801000000c3",
+      "sha256": "2db31f4e09597946e56e859813bfdad7046d457c32332c3a882654d1e3ffdf67"
+    },
+    {
+      "name": "sha256-round-constants",
+      "address": "0x18012dcf0",
+      "bytes": 256,
+      "bytes_hex": "982f8a4291443771cffbc0b5a5dbb5e95bc25639f111f159a4823f92d55e1cab98aa07d8015b8312be853124c37d0c55745dbe72feb1de80a706dc9b74f19bc1c1699be48647beefc69dc10fcca10c246f2ce92daa84744adca9b05cda88f97652513e986dc631a8c82703b0c77f59bff30be0c64791a7d55163ca0667292914850ab72738211b2efc6d2c4d130d385354730a65bb0a6a762ec9c281852c7292a1e8bfa24b661aa8708b4bc2a3516cc719e892d1240699d685350ef470a06a1016c1a419086c371e4c774827b5bcb034b30c1c394aaad84e4fca9c5bf36f2e68ee828f746f63a5781478c8840802c78cfaffbe90eb6c50a4f7a3f9bef27871c6",
+      "sha256": "74ef7306e7452d6859b6463ce496b8df30925f69e1b2969e1f3f34bbc9c6af04"
+    }
+  ],
+  "selected_prefixes": [
+    {
+      "index": 0,
+      "address": "0x180129b08",
+      "copied_bytes": 0,
+      "observed_hex": "41"
+    },
+    {
+      "index": 1,
+      "address": "0x180129b04",
+      "copied_bytes": 1,
+      "observed_hex": "42"
+    },
+    {
+      "index": 2,
+      "address": "0x180129b00",
+      "copied_bytes": 2,
+      "observed_hex": "4343"
+    },
+    {
+      "index": 3,
+      "address": "0x180129af8",
+      "copied_bytes": 3,
+      "observed_hex": "444444"
+    },
+    {
+      "index": 4,
+      "address": "0x180129af0",
+      "copied_bytes": 4,
+      "observed_hex": "45454545"
+    },
+    {
+      "index": 5,
+      "address": "0x180129ae8",
+      "copied_bytes": 5,
+      "observed_hex": "4646464646"
+    },
+    {
+      "index": 6,
+      "address": "0x180129ae0",
+      "copied_bytes": 6,
+      "observed_hex": "474747474747"
+    },
+    {
+      "index": 7,
+      "address": "0x180129ad0",
+      "copied_bytes": 7,
+      "observed_hex": "48484848484848"
+    },
+    {
+      "index": 8,
+      "address": "0x180129ac0",
+      "copied_bytes": 8,
+      "observed_hex": "4949494949494949"
+    },
+    {
+      "index": 9,
+      "address": "0x180129ab0",
+      "copied_bytes": 9,
+      "observed_hex": "4a4a4a4a4a4a4a4a4a"
+    },
+    {
+      "index": 10,
+      "address": "0x180129aa0",
+      "copied_bytes": 10,
+      "observed_hex": "4b4b4b4b4b4b4b4b4b4b"
+    },
+    {
+      "index": 11,
+      "address": "0x180129a90",
+      "copied_bytes": 11,
+      "observed_hex": "4c4c4c4c4c4c4c4c4c4c4c"
+    },
+    {
+      "index": 12,
+      "address": "0x180129a80",
+      "copied_bytes": 12,
+      "observed_hex": "4d4d4d4d4d4d4d4d4d4d4d4d"
+    },
+    {
+      "index": 13,
+      "address": "0x180129a70",
+      "copied_bytes": 13,
+      "observed_hex": "4e4e4e4e4e4e4e4e4e4e4e4e4e"
+    },
+    {
+      "index": 14,
+      "address": "0x180129a60",
+      "copied_bytes": 14,
+      "observed_hex": "4f4f4f4f4f4f4f4f4f4f4f4f4f4f"
+    },
+    {
+      "index": 15,
+      "address": "0x180129a48",
+      "copied_bytes": 15,
+      "observed_hex": "505050505050505050505050505050"
+    },
+    {
+      "index": 16,
+      "address": "0x180129a30",
+      "copied_bytes": 16,
+      "observed_hex": "51515151515151515151515151515151"
+    },
+    {
+      "index": 17,
+      "address": "0x180129a18",
+      "copied_bytes": 17,
+      "observed_hex": "5252525252525252525252525252525252"
+    },
+    {
+      "index": 18,
+      "address": "0x180129a00",
+      "copied_bytes": 18,
+      "observed_hex": "535353535353535353535353535353535353"
+    }
+  ],
+  "reused_functions": [
+    {
+      "requested": "0x18000ac30",
+      "primary": "0x18000ac30",
+      "has_unwind_entry": true,
+      "scope": "observed chained exception group",
+      "parts": [
+        {
+          "start": "0x18000ac30",
+          "end_exclusive": "0x18000adc0",
+          "file_offset": 41008,
+          "bytes": 400,
+          "sha256": "59f18cf2528e5e03fce5cfdaf39e47329e80ed2f48ce7424c9ef90a108783573",
+          "disassembly": "18000ac30-0.asm",
+          "disassembly_sha256": "0adf67ae0969f3d85e749e917a8fd50a2cb2e8c807e25f07c825fed079939e9f"
+        }
+      ]
+    },
+    {
+      "requested": "0x1800131f0",
+      "primary": "0x1800131f0",
+      "has_unwind_entry": true,
+      "scope": "observed chained exception group",
+      "parts": [
+        {
+          "start": "0x1800131f0",
+          "end_exclusive": "0x180013426",
+          "file_offset": 75248,
+          "bytes": 566,
+          "sha256": "566804398eece2639b47a8f6291f3805b57f9bdb506569c9526ee351c7d3cb00",
+          "disassembly": "1800131f0-0.asm",
+          "disassembly_sha256": "397df09ded077517a77ddb871a16f777afe771e652bde58cbbf57998c62e16f7"
+        }
+      ]
+    },
+    {
+      "requested": "0x18003a860",
+      "primary": "0x18003a860",
+      "has_unwind_entry": true,
+      "scope": "observed chained exception group",
+      "parts": [
+        {
+          "start": "0x18003a860",
+          "end_exclusive": "0x18003a8ed",
+          "file_offset": 236640,
+          "bytes": 141,
+          "sha256": "7c4b0398cddb249f0caa50e54a221ab4686f6e837ba1bbf0b44dd67d84c3e034",
+          "disassembly": "18003a860-0.asm",
+          "disassembly_sha256": "9cd0d5d5cefb92cf97f1dc28cc7b09dd8b4f1e905124fa8d85a3f7cb4f989b8d"
+        }
+      ]
+    },
+    {
+      "requested": "0x180012f90",
+      "primary": "0x180012f90",
+      "has_unwind_entry": true,
+      "scope": "observed chained exception group",
+      "parts": [
+        {
+          "start": "0x180012f90",
+          "end_exclusive": "0x1800131e4",
+          "file_offset": 74640,
+          "bytes": 596,
+          "sha256": "cee1b32fa0b613e6ae7a1b110a6094546e41cf14248cd664b36cce894a58ab9a",
+          "disassembly": "180012f90-0.asm",
+          "disassembly_sha256": "8609e380b810638a49a4e15d7c39359744a938979c77e60071933d4a63e8991e"
+        }
+      ]
+    },
+    {
+      "requested": "0x18003a670",
+      "primary": "0x18003a670",
+      "has_unwind_entry": true,
+      "scope": "observed chained exception group",
+      "parts": [
+        {
+          "start": "0x18003a670",
+          "end_exclusive": "0x18003a6f1",
+          "file_offset": 236144,
+          "bytes": 129,
+          "sha256": "830d0e7e4ca2146cbf6979ffcf3407e1e2906a46a4260bdbf1c626e6e92b317f",
+          "disassembly": "18003a670-0.asm",
+          "disassembly_sha256": "1186ca19242e0b61c5a5ce014a212c1a0bd9972d2b481bfc940cbcb01b3d8e22"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "new_code_ranges": 12,
+    "new_data_anchors": 24,
+    "ghidra_pe_hash_matches": 36,
+    "source_tools_changed": false,
+    "csharp_build_or_tests_run": false,
+    "historical_handoff": "Prior expected Source-divergence result retained; unchanged historical failure not rerun",
+    "review": {
+      "spec_findings": 0,
+      "standards_documented_violations": 0,
+      "standards_actionable_smells": 0,
+      "standards_correctness_findings": 0,
+      "scope": "Six staged documents/portable evidence files against base_head",
+      "spec_report": "review-spec.md",
+      "standards_report": "review-standards.md"
+    }
+  },
+  "failed_analysis_helper": {
+    "artifact": "trace-console-alphabet-failed.log",
+    "reason": "Prefix inspection attempted index26, not readable mapped memory; corrected helper completed",
+    "boundary": "Inspector overreach, not target execution or runtime failure; no array bound/wrap policy inferred"
+  },
+  "remaining": [
+    "Trusted key value/provisioning",
+    "Server RSA inverse/private key, padding and malformed-input policy",
+    "Independent accepted derivation/transition corroboration",
+    "Generic reply grammar and startup ordering",
+    "Accepted optional-route transcript and native/retail qualification"
+  ],
+  "local_artifacts": {
+    "directory": "artifacts/continuation-20261105/sts-key-derivation",
+    "sha256": {
+      "collect-evidence.py": "e4cde5322155cf03b62a0a7b30f86dcb110119465b09caee7cede7048e27700a",
+      "TraceStsCipher.java": "655d743283ac2674dfef9ecc52b00927411b4adab0f1928c9e870c18d798048f",
+      "InspectCodeAddresses.java": "74a36c8db4d6c3fe68c6ef08c2d92abfd7edd697822f575e7297478b9cb26d1c",
+      "VerifyStsDerivation.java": "c84f060d899725c528d516daad722166d099aa47f93195945b79f3cfb0fe041b",
+      "trace-console.log": "9615552c317ad660435040e91fd713d345b3ec192676a5181dacd87a1a654bc4",
+      "trace-console-alphabet-failed.log": "6d8d1102cf08a31b9b767962aabb4acb94d1bef39c34b71eee1d9e6b7cc9c9a5",
+      "digest-console.log": "c15e05bc046b6e1d1c66db8b75cd190db628ca6f69f1f81cc003ffa9bd682d26",
+      "finalizers-console.log": "2f05e69713d677c76103ab7cd795f04e3a3fd52dd0ff43945995c007587d1ef4",
+      "verify-console.log": "afdcc54cdee153aeb488ff9ccd6c439566d3488e0223463b4da52699b02d7e57",
+      "pe-observations.json": "b7ee4c07825e3c87e62c7fffda96c85c059d9fe766cb5661a96c0c36ce6bc4c6",
+      "upstream-refresh.json": "1b4e08e3764adbe02e03bce4da44fbe8387292e6ffd724b32dea7247b7d55b88"
+    }
+  },
+  "boundary": "No label/export refresh, packet-layout correction, production behavior or default change. Client/CUA remain stopped."
+}

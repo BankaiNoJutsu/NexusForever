@@ -1,5 +1,14 @@
 # Assessment follow-through goal
 
+[STS selected mode4 derivation and filter paths](STS_TOKEN_KEY_TRANSITION_EVIDENCE.md#follow-up-selected-mode4-expansion-and-filter-paths)
+maps SHA-256/MD5 expansion with B/CC/DDD prefixes, seed order, key slices and
+local vector-write/buffered-parser ownership. The selected state call is a
+constant success, not a keystream discard. Thirty-six new Ghidra/PE hash checks
+match; Source/Tools remain unchanged. This remains Mapped, with no native vector
+or accepted traffic. Trust/RSA inverse/padding, generic grammar and startup
+remain gates. Move to independent actionable roadmap behavior rather than
+repeating this completed static slice.
+
 [STS token-key validation and local cipher transition](STS_TOKEN_KEY_TRANSITION_EVIDENCE.md)
 narrows the signature-input and notification unknowns using fresh REA identity
 and separate read-only Ghidra/LLVM evidence. Twenty anchors/12 ranges match, both

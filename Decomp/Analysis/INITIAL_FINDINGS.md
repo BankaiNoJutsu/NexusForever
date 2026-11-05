@@ -1,11 +1,12 @@
 # Client64 Initial Reverse-Engineering Findings
 
-Latest static result: [STS token-key validation and local cipher transition](STS_TOKEN_KEY_TRANSITION_EVIDENCE.md)
-maps the actual signature inputs, premaster shape, TokenKeyData notification and
-local RC4 filter construction. REA identifies the pinned DLL; standalone Ghidra
-and LLVM agree on selected bytes. This is Mapped, with no server behavior change:
-trust provisioning, complete derivation/direction, wire grammar and an accepted
-optional-route transcript still gate implementation. The historical source
+Latest static result: [STS mode4 derivation and filter paths](STS_TOKEN_KEY_TRANSITION_EVIDENCE.md#follow-up-selected-mode4-expansion-and-filter-paths)
+maps the selected SHA-256/MD5 expansion, seed order, key slices and local filter
+key ownership. The selected state slot returns1 without changing RC4 state.
+The prior REA identity is reused;36 new Ghidra/PE hash checks match. This is
+Mapped, with no server behavior change: trust provisioning, RSA inverse/padding,
+wire grammar and accepted optional-route traffic still gate implementation.
+The historical source
 checkpoint below retains its original scope; use the canonical roadmap for
 later completed foundations and current work.
 

@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[STS selected mode4 derivation](Decomp/Analysis/STS_TOKEN_KEY_TRANSITION_EVIDENCE.md#follow-up-selected-mode4-expansion-and-filter-paths)
+now maps the actual expansion prefixes/digests, seed order, key slices and local
+filter ownership. The selected state call returns success without state writes;
+36 new Ghidra/PE hash checks match. Source/Tools are unchanged. This is Mapped;
+trust, RSA server contracts, generic grammar and accepted traffic still gate
+optional authentication. Continue independent roadmap behavior.
+
 [STS token-key static transition](Decomp/Analysis/STS_TOKEN_KEY_TRANSITION_EVIDENCE.md)
 maps direct signature inputs, premaster format, notification dispatch and local
 RC4 filter construction. Twenty byte anchors/12 ranges and both reviews pass.

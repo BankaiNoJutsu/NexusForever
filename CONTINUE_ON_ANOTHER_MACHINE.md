@@ -1,11 +1,13 @@
 # Continue on another machine
 
-Latest static result: [STS token-key transition](Decomp/Analysis/STS_TOKEN_KEY_TRANSITION_EVIDENCE.md)
-maps signature inputs, premaster shape, the selected notification and local RC4
-filter construction. REA identity plus standalone Ghidra/LLVM byte checks pass;
-both reviews are clear. This is Mapped, with Source unchanged. Continue static
-derivation/filter direction and grammar work; accepted traffic/trust/server-side
-contracts still gate optional authentication. Native client/CUA stay stopped.
+Latest static result: [STS mode4 derivation and filter paths](Decomp/Analysis/STS_TOKEN_KEY_TRANSITION_EVIDENCE.md#follow-up-selected-mode4-expansion-and-filter-paths)
+maps SHA-256/MD5 expansion with actual B/CC/DDD prefixes, seed order, key slices,
+and the selected constant-success state call. Local vector-write/buffered-parser
+paths use first/second keys respectively; network direction is inferred, not
+captured. Prior REA identity is reused;36 new Ghidra/PE hash checks match. Source
+is unchanged. Trust/RSA inverse/padding, generic grammar and accepted traffic
+still gate optional authentication. Continue independent actionable roadmap
+behavior rather than repeating this static slice. Native client/CUA stay stopped.
 
 Latest Support implementation: [confirmed ticket storage](Decomp/Analysis/SUPPORT_TICKET_PERSISTENCE.md)
 acknowledges only after the file writer confirms completion;12 new/57 scoped
