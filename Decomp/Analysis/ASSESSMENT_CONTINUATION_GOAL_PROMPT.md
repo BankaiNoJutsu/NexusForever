@@ -91,8 +91,16 @@ Next actionable outcomes and remaining gates
   fresh configured-provider/actual-table/deployment/native/retail and cross-owner
   achievement gates remain. Do not reuse an ordinary Guild receipt as authority
   for residence rows or an Auth debit; preserve all direct/admin/free and
-  ordinary Guild/Community creation guarantees. Continue the LAS public save/
-  actor-replacement probe and broader roadmap as their inputs allow.
+  ordinary Guild/Community creation guarantees. The later
+  Decomp/Analysis/ACTION_SET_PUBLICATION.md milestone completes the executed LAS
+  public save/retry/actor probe for supported replies:16 focused/all252 affected
+  cases, clean scoped builds and both final reviews pass. Replies
+  use the frozen confirmed book, original actor/account/session/epoch and fresh
+  retained packet cursors; no-op and later edits remain owned. Do not repeat
+  that completed reply slice. Broader initialized AMP/combat mutation timing,
+  native asynchronous ordering and provider/socket/retail stay open. Continue
+  the remaining public guild-bank financial owner/recovery probe or independent
+  progression/gameplay work as inputs allow.
 - Keep the full broader roadmap active: Contract public claim/reset requires
   remaining unclaimed/final-first/excess policy evidence and complete canonical
   delivery/recovery. Its726 choices are already recovered; retain the remaining

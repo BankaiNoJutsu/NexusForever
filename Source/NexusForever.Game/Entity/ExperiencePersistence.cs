@@ -28,7 +28,7 @@ namespace NexusForever.Game.Entity
         internal sealed record Snapshot(Experience Experience, Selection Selection, PathState[] Paths, Mission[] Missions,
             Spellbook Spells = null, Pet[] Pets = null, Achievement[] Achievements = null,
             DatacubeState[] Datacubes = null, ArchiveState[] Articles = null,
-            ExploredHexgroup[] MapHexgroups = null, ReputationState[] Reputations = null, long ReputationSequence = 0);
+            ExploredHexgroup[] MapHexgroups = null, ReputationState[] Reputations = null, long ReputationSequence = 0, long ActionSetSequence = 0);
         private sealed record Frozen(object Token, string Database, Snapshot State);
         private sealed class Unit(CharacterContext context, string database, object token)
         {
@@ -55,6 +55,7 @@ namespace NexusForever.Game.Entity
         private readonly Action<ReputationState[], long> acknowledgeReputation;
         private readonly Action<ushort> acknowledgeAmpPower;
         private readonly Action<PathState[], Mission[]> acknowledgePath;
+        private readonly Action<Spellbook, long> acknowledgeActionSets;
         private readonly Action publicationReady;
         private readonly RealmFirstPersistence realmFirst;
         private readonly bool ownsExperience, ownsPaths, ownsSpells, ownsPets, ownsAchievements, ownsDatacubes, ownsArchive, ownsMaps, ownsReputations;
@@ -69,7 +70,7 @@ namespace NexusForever.Game.Entity
             RealmFirstPersistence realmFirst = null, Action<ArchiveState[]> acknowledgeArchive = null, Action publicationReady = null,
             Action<DatacubeState[]> acknowledgeDatacubes = null, Action<ExploredHexgroup[]> acknowledgeExploration = null,
             Action<ReputationState[], long> acknowledgeReputation = null, Action<ushort> acknowledgeAmpPower = null,
-            Action<PathState[], Mission[]> acknowledgePath = null)
+            Action<PathState[], Mission[]> acknowledgePath = null, Action<Spellbook, long> acknowledgeActionSets = null)
         {
             this.character = character; this.baseline = baseline; this.current = current; this.database = database;
             this.acknowledgeAchievements = acknowledgeAchievements;
@@ -80,6 +81,7 @@ namespace NexusForever.Game.Entity
             this.acknowledgeReputation = acknowledgeReputation;
             this.acknowledgeAmpPower = acknowledgeAmpPower;
             this.acknowledgePath = acknowledgePath;
+            this.acknowledgeActionSets = acknowledgeActionSets;
             baselineIntent = baseline;
             ownsExperience = baseline.Experience != null; ownsPaths = baseline.Selection != null;
             ownsSpells = baseline.Spells != null; ownsPets = baseline.Pets != null; ownsAchievements = baseline.Achievements != null;
@@ -137,6 +139,7 @@ namespace NexusForever.Game.Entity
                         throw new InvalidOperationException("Experience belongs to an unfinished save unit.");
                     if (active == null && uncertain == null && Equal(target, baseline)
                         && intent.ReputationSequence == baselineIntent.ReputationSequence
+                        && intent.ActionSetSequence == baselineIntent.ActionSetSequence
                         && realmFirst?.HasPendingFor((target.Achievements ?? []).Where(row => row.Completed != null).Select(row => row.Id)) != true) return;
                     Unit unit = active;
                     if (unit == null)
@@ -296,6 +299,7 @@ namespace NexusForever.Game.Entity
                         acknowledgeExploration?.Invoke(unit.Sql.MapHexgroups ?? []);
                         acknowledgeReputation?.Invoke(unit.Sql.Reputations ?? [], unit.FlushedIntent.ReputationSequence);
                         if (unit.Sql.Spells != null) acknowledgeAmpPower?.Invoke(unit.Sql.Spells.AmpPower);
+                        if (unit.Sql.Spells != null) acknowledgeActionSets?.Invoke(unit.Sql.Spells, unit.FlushedIntent.ActionSetSequence);
                         acknowledgePath?.Invoke(unit.Sql.Paths, unit.Sql.Missions);
                         baseline = unit.Sql; baselineIntent = unit.FlushedIntent; uncertain = null;
                         ready = true;

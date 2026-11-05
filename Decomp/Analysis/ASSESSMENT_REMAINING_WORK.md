@@ -1,5 +1,14 @@
 # Assessment follow-through goal
 
+[Confirmed public LAS replies](ACTION_SET_PUBLICATION.md) now follow the frozen
+Character spellbook acknowledgement on the original World owner. The executed
+save/retry/replacement probe and candidate no-op defect are fixed;16 focused
+cases/all252 affected, clean scoped builds and both final reviews
+pass. Packet retry retains its cursor and fresh objects. Broader AMP/combat
+mutation timing, native async ordering and provider/socket/retail remain open.
+Continue the remaining public guild-bank financial owner/recovery probe or
+independent progression/gameplay work; do not repeat this completed reply slice.
+
 [Public Community Service Token creation](COMMUNITY_TOKEN_CREATION.md) now
 couples a durable admitted Auth payment with the complete Character/guild/root/
 plot decision, compensation before retry and admission recovery.17 new token
@@ -7,8 +16,9 @@ and all278 affected cases, clean owning/test builds and both final reviews pass.
 Token wallet adoption/publication retains the original World actor and cursors;
 credit/free/admin and vendor/CREDD controls remain covered. Fresh provider,
 physical restart/autonomous recovery, actual-table, deployment/native/retail and
-cross-owner achievement gates remain. Continue the LAS public durability probe
-and broader progression/gameplay queue without repeating either creation fix.
+cross-owner achievement gates remain. The later LAS result above supersedes
+that public durability probe; continue the broader queue without repeating
+either creation fix.
 
 [Public Community credit creation](COMMUNITY_CREATION_FINANCE.md) now couples
 the accepted Character fee, guild/ranks/leader membership/affiliation and full
@@ -43,8 +53,9 @@ marketplace/reward-track ownership premises, distinguishes Source-owned probes
 from missing data/execution, and maps selected STS notification/parser guards.
 Twenty-five selected byte checks match. The tracked-marker Source correction
 has its separate milestone below; its118 cases are not tests of this audit.
-Unexecuted LAS/financial probes, complete delivery/recovery and native/provider/
-retail qualification remain open as specified in the linked per-family table.
+The later LAS result above completes its public reply probe. Remaining financial
+probes, complete delivery/recovery and native/provider/retail qualification stay
+open as specified in the linked per-family table.
 
 [Tracked marker identity correction](TRACKED_MARKER_IDENTITY.md) completes the
 supported full-width packet/lookup correction from the new native findings.

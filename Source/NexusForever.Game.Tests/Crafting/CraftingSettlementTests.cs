@@ -74,7 +74,8 @@ public sealed class CraftingSettlementTests
         {
             var options = new DbContextOptionsBuilder<CharacterContext>()
                 .UseSqlite($"Data Source={Path.Combine(directory, "character.sqlite")};Pooling=False")
-                .ReplaceService<IExecutionStrategyFactory, RetryFactory>().Options;
+                .ReplaceService<IExecutionStrategyFactory, RetryFactory>()
+                .ConfigureWarnings(warnings => warnings.Log(CoreEventId.ManyServiceProvidersCreatedWarning)).Options;
             await new CraftingSettlementTests(options, null) { retryingSqlite = true }
                 .CraftingPublishesItsFrozenInventoryAndResultAfterTheCharacterSave("simple", "account", outcome);
         }
@@ -660,6 +661,7 @@ public sealed class CraftingSettlementTests
         {
             using var configured = base.CreateContext();
             var options = new DbContextOptionsBuilder<AuthContext>();
+            options.ConfigureWarnings(warnings => warnings.Log(CoreEventId.ManyServiceProvidersCreatedWarning));
             options.UseConfiguration(new DatabaseConnectionString { Provider = configured.Database.IsSqlite() ? DatabaseProvider.Sqlite : DatabaseProvider.MySql,
                 ConnectionString = configured.Database.GetDbConnection().ConnectionString });
             if (retrying) options.ReplaceService<IExecutionStrategyFactory, RetryFactory>();

@@ -1,5 +1,3 @@
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using NexusForever.Database.Character;
@@ -47,15 +45,10 @@ public class SpellAbilityPointTests
         playerProxy.SetProperty(nameof(IPlayer.CharacterId), 42ul);
         playerProxy.SetProperty(nameof(IPlayer.Session), session);
 
+        var manager = new global::NexusForever.Game.Entity.SpellManager(player, new CharacterModel { Id = 42ul });
         IActionSet[] actionSets = Enumerable.Range(0, ActionSet.MaxActionSets)
-            .Select(index => (IActionSet)new ActionSet((byte)index, player))
+            .Select(index => manager.GetActionSet((byte)index))
             .ToArray();
-
-        var manager = (global::NexusForever.Game.Entity.SpellManager)RuntimeHelpers.GetUninitializedObject(
-            typeof(global::NexusForever.Game.Entity.SpellManager));
-        SetPrivateField(manager, "player", player);
-        SetPrivateField(manager, "actionSets", actionSets);
-        SetPrivateField(manager, "spells", new Dictionary<uint, ICharacterSpell>());
 
         manager.AddAbilityTierPoints(1);
         manager.AddAbilityTierPoints(1);
@@ -90,9 +83,4 @@ public class SpellAbilityPointTests
         return new CharacterContext(options);
     }
 
-    private static void SetPrivateField<T>(T instance, string fieldName, object value)
-    {
-        typeof(T).GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic)
-            ?.SetValue(instance, value);
-    }
 }

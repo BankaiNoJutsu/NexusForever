@@ -13,6 +13,11 @@ database layouts, native-evidence contracts and dependency-injection ownership.
 The merge records upstream ancestry without replacing those implementations
 with incompatible parallel systems. There is no rebase or history rewrite.
 
+While this work was isolated, the original branch advanced to `3e5a0a9b`
+(public LAS reply publication). That commit was merged cleanly into the final
+integration tree as well, preserving the concurrent work. The original checkout
+is updated only after the combined tree is qualified.
+
 ## Resolution decisions
 
 | Upstream commits | Resolution |
@@ -65,23 +70,62 @@ one MSBuild worker and shared compilation disabled after an unrestricted initial
 build exhausted worker resources. No SDK installation or global setting change
 was needed.
 
-The unchanged branch and candidate use separate worktrees. The original
-checkout's independent ActionSet/experience publication work is excluded from
-both qualification trees and is preserved in that checkout.
+The unchanged baseline and candidate use separate worktrees. The original
+checkout's initial ActionSet/experience publication work was excluded from the
+baseline and first candidate; its subsequent `3e5a0a9b` commit is included in
+the final combined qualification.
 
 New focused coverage exercises registration through the production message
 registry, packet field alignment, the public WebSocket JSON receive/queue flow,
 deferred character resolution and permissions, TextTable stream/file equivalence
 with supplementary Unicode, and action/function synchronization compatibility.
 
-Final build/test results are recorded here after qualification.
+| Gate | Result |
+| --- | --- |
+| Unchanged `8ab6ce34` baseline | 12,716 passed, 20 failed, zero skipped. The failures were historical-schema fixtures and EF's process-wide provider-count diagnostic. |
+| Final combined solution build | Passed with zero errors and one ASPIRE010 warning for the existing `AspireUseCliBundle=false` setting. No bundle/default change was made. |
+| Focused integration and fixture checks | 57 passed; the additional real-constructor ability-point fixture check passed all three cases. |
+| Complete suite in isolated batches | **12,777 passed, zero failed, zero skipped/aborted/unexecuted**, across 146 batches and all 602 discovered classes. No batch needed a provider-count retry. |
+| Index/whitespace | No unresolved entries; `git diff --check` passed. |
+
+The qualified Git Source tree is
+`fdd5f15fe707dd8a49bc3982559c9c034b213705`. The test Game/WorldServer DLL copies
+match their owning build outputs. Assembly hashes, the exact class partition,
+per-batch TRX results, baseline failures and intermediate attempts are retained
+locally under `artifacts/upstream-merge-20261105/`. The changed-path inventory
+is `changed-paths.json` there. The primary checkout's separate uncommitted guild
+work is outside this qualification and is preserved.
+
+The build used the equivalent of:
+
+```powershell
+dotnet build Source\NexusForever.slnx --no-restore -v minimal --nologo -m:1 -nr:false -p:BuildInParallel=false -p:UseSharedCompilation=false
+```
+
+The retained `merge-run-isolated-tests.py` runs `dotnet test --no-build
+--no-restore` against an exact partition of the discovered classes, with four
+fresh-process workers and two logical processors per worker. All successful
+leaf batches are counted once; source-tree and test-assembly hashes must stay
+unchanged for the run to qualify.
+
+The combined run also exposed an old ability-point fixture that allocated
+SpellManager without its constructor. The newly preserved LAS publication lock
+was therefore null. That fixture now uses the real constructor and public
+action-set lookup; its existing packet, save and budget assertions pass.
+
+EF's process-wide twenty-provider diagnostic remains sensitive to test ordering
+when every unrelated fixture shares one host. Full coverage is therefore
+qualified in bounded fresh-process batches, with an exact discovered-class
+partition, per-batch TRX results and source-tree/assembly hashes. A batch that
+hits only that diagnostic is retried as isolated classes, preserving both
+attempts. This does not claim that the monolithic test harness is green.
 
 The unchanged full-suite baseline exposed test-harness defects separately from
-the merge: the presence-upgrade fixture tried to insert today's Account model
-into a historical schema, and the crafting-outbox/group-job fixtures threw EF's
+the merge: the presence/wallet-upgrade fixtures tried to insert today's Account model
+into historical schemas, and the crafting-outbox/settlement/group-job fixtures threw EF's
 global twenty-provider warning when run after other isolated-provider tests.
-The upgrade fixture now seeds historical columns directly and checks the new
-inventory-id default after migration. The two intentionally isolated-provider
+The upgrade fixtures now seed historical columns directly and check the new
+inventory-id default after migration. The intentionally isolated-provider
 fixtures log that diagnostic rather than throwing it. Production EF options,
 migrations, persistence behavior and the test assertions are preserved.
 

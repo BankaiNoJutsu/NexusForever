@@ -54,7 +54,7 @@ namespace NexusForever.Game.Entity
                 var standing = reputation?.CaptureReputations();
                 return new(xp?.CaptureExperience(), paths?.Selection, paths?.Paths ?? [], paths?.Missions ?? [],
                     spells?.CaptureSpellbook(), pets?.CaptureExperiencePets(), achievements?.CaptureExperienceAchievements(), cubes?.CaptureCollection(), archive?.CaptureArchive(),
-                    maps?.CaptureExploration(), standing?.Rows, standing?.Sequence ?? 0);
+                    maps?.CaptureExploration(), standing?.Rows, standing?.Sequence ?? 0, spells?.ActionSetSequence ?? 0);
             }
             experienceXpOwner = xp; experiencePathOwner = path;
             experienceSpellOwner = spells; experiencePetOwner = pets; experienceAchievementOwner = achievements;
@@ -66,6 +66,7 @@ namespace NexusForever.Game.Entity
                 maps?.NotifyPublicationReady();
                 reputation?.NotifyPublicationReady();
                 spells?.NotifyAmpPowerPublicationReady();
+                spells?.NotifyActionSetPublicationReady();
                 path?.NotifyPathPublicationReady();
                 try { achievements?.NotifyPublicationReady(); }
                 finally { archive?.NotifyPublicationReady(); }
@@ -74,7 +75,7 @@ namespace NexusForever.Game.Entity
                 achievements?.RealmFirst, archive == null ? null : archive.AcknowledgePublication, PublicationReady,
                 cubes == null ? null : cubes.AcknowledgePublication, maps == null ? null : maps.AcknowledgePublication,
                 reputation == null ? null : reputation.AcknowledgePublication, spells == null ? null : spells.AcknowledgeAmpPowerPublication,
-                path == null ? null : path.AcknowledgePathPublication);
+                path == null ? null : path.AcknowledgePathPublication, spells == null ? null : spells.AcknowledgeActionSetPublication);
         }
         internal bool OwnsDatacubePublication(DatacubeManager manager, Identity identity, IGameSession session)
             => Identity?.Id == identity.Id && Identity.RealmId == identity.RealmId

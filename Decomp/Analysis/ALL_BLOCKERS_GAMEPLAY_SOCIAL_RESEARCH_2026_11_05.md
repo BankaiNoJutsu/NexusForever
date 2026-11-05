@@ -232,7 +232,7 @@ error path, not merely an inference from event names. Exiting also clears
 cached LAS and AMP edits.
 [AbilitiesBuilder.lua:51-53,252-267,285-301,813-823](https://github.com/Zod-/Wildstar-Carbine-Addons/blob/aa608d0b837ff8037eb8509123d8e3ed4efcb9e4/Live/Abilities/AbilitiesBuilder.lua#L813-L823)
 
-The current
+At this audit's parent checkpoint, the
 [request handler](../../Source/NexusForever.WorldServer/Network/Message/Handler/Spell/ClientRequestActionSetChangesHandler.cs)
 validates, mutates shortcuts/tiers/AMPs, then queues spell, cache, item, action-set
 and point notices. This method has no explicit save/commit receipt boundary.
@@ -242,6 +242,12 @@ actor-replacement exercise can establish whether durable state and public
 notices remain coherent. This source-owned question can progress before any
 new retail capture. Native `UpdateSpellInProgress` set/clear and failure/result
 writers remain necessary for exact retail asynchronous behavior.
+
+Later implementation: [confirmed public LAS replies](ACTION_SET_PUBLICATION.md)
+executes the rejected-save/retry/actor probe and fixes its three reproduced
+reply failures plus a reviewed no-op acknowledgement defect. Sixteen focused
+cases and shared controls pass. This supersedes the proposed public reply probe;
+broader initialized AMP/combat timing and the native async/retail gates remain.
 
 ## Matching: separate current-match state from queue rows and diagnostics
 

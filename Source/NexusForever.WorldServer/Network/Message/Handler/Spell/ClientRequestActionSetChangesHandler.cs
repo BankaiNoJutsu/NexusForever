@@ -63,8 +63,31 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
             }
 
             IActionSet actionSet = session.Player.SpellManager.GetActionSet(requestActionSetChanges.ActionSetIndex);
-            byte previousTierPoints = actionSet.TierPoints;
+            if (session.Player is NexusForever.Game.Entity.Player && session.Player.SpellManager is NexusForever.Game.Entity.SpellManager manager)
+            {
+                manager.QueueActionSetChanges(requestActionSetChanges.ActionSetIndex,
+                    () => ApplyChanges(session, requestActionSetChanges, requestedSpell4BaseIds, newAmpEntries, actionSet),
+                    requestedSpell4BaseIds, newAmpEntries.Count != 0);
+                return;
+            }
 
+            byte previousTierPoints = actionSet.TierPoints;
+            ApplyChanges(session, requestActionSetChanges, requestedSpell4BaseIds, newAmpEntries, actionSet);
+
+            session.Player.SpellManager.SendServerSpellList();
+            session.EnqueueMessageEncrypted(new ServerActionSetClearCache());
+            SendSelectedAbilityItems(session, requestedSpell4BaseIds);
+            session.EnqueueMessageEncrypted(actionSet.BuildServerActionSet());
+            if (actionSet.TierPoints != previousTierPoints)
+                session.Player.SpellManager.SendServerAbilityPoints();
+
+            if (newAmpEntries.Count > 0)
+                session.EnqueueMessageEncrypted(actionSet.BuildServerAmpList());
+        }
+
+        private void ApplyChanges(IWorldSession session, ClientRequestActionSetChanges requestActionSetChanges,
+            List<uint> requestedSpell4BaseIds, List<EldanAugmentationEntry> newAmpEntries, IActionSet actionSet)
+        {
             List<IActionSetShortcut> spellShortcuts = actionSet.Actions
                 .Where(shortcut => shortcut.ShortcutType == ShortcutType.SpellbookItem)
                 .ToList();
@@ -96,17 +119,6 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
                     actionSet.AddAmp(entry);
             }
 
-            session.Player.SpellManager.SendServerSpellList();
-            session.EnqueueMessageEncrypted(new ServerActionSetClearCache());
-            SendSelectedAbilityItems(session, requestedSpell4BaseIds);
-            session.EnqueueMessageEncrypted(actionSet.BuildServerActionSet());
-            if (actionSet.TierPoints != previousTierPoints)
-                session.Player.SpellManager.SendServerAbilityPoints();
-
-            if (newAmpEntries.Count > 0)
-            {
-                session.EnqueueMessageEncrypted(actionSet.BuildServerAmpList());
-            }
         }
 
         private static void SendSelectedAbilityItems(IWorldSession session, IEnumerable<uint> spell4BaseIds)

@@ -1,5 +1,12 @@
 # Client Binary Decompile Continuation Guide
 
+[Public LAS committed replies](ACTION_SET_PUBLICATION.md) complete the executed
+save/retry/actor probe through the original frozen Character/World owner.
+Sixteen focused/all252 affected cases, clean owning/test-only
+builds and both final reviews pass. Supported reply timing/cursors are fixed;
+broader initialized AMP/combat state, native async ordering and provider/socket/
+retail remain unqualified. Continue the broader roadmap rather than this probe.
+
 [Community Service Token creation](COMMUNITY_TOKEN_CREATION.md) now completes
 the supported public alternate-cost Source route with durable Auth payment,
 complete Character graph decision, compensation and admission recovery.17 new/
