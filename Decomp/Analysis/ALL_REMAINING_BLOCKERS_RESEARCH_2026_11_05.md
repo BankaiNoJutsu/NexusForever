@@ -13,6 +13,7 @@ row-by-row completion of the generated quest/instance inventory.
 | [36-area inventory](ALL_BLOCKERS_INVENTORY_2026_11_05.md) | Every F-001..F-036 area, the five emitter gates and cross-feature requirements, with current local evidence |
 | [Economy/progression research](ALL_BLOCKERS_ECONOMY_RESEARCH_2026_11_05.md) | Contracts, Fortune, reward rotation/tracks, marketplace, Primal allocation and guild financial/bank work |
 | [Gameplay/social research](ALL_BLOCKERS_GAMEPLAY_SOCIAL_RESEARCH_2026_11_05.md) | Crafting, transport, recruitment/perks/warparty tokens, ICComm, duels, LAS and matching |
+| [ICComm native lifecycle](ICCOMM_NATIVE_LIFECYCLE_2026_11_05.md) and [authored corroboration](ICCOMM_WEB_CORROBORATION_2026_11_05.md) | Typed join owner/indirect0546 sender, pending type/name key, ready/join/left callbacks, queue budgets and concrete Source response-name work; entitlement and server policy remain open |
 | [Native/authentication/combat research](ALL_BLOCKERS_NATIVE_RESEARCH_2026_11_05.md) | STS notification/parser guards, all16 diagnostic client surfaces, Server0015, five spell-runtime areas, content and host qualification |
 
 Each family remains answered, partially answered or unresolved at its recorded

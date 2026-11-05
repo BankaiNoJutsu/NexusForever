@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[ICComm admission lifecycle](Decomp/Analysis/ICCOMM_NATIVE_LIFECYCLE_2026_11_05.md)
+now maps the typed join owner/0546 sender, exact pending type/name key and
+0547/0548/054A readiness/callback transitions.92 native byte checks plus authored
+API/addon corroboration make response-name correlation and scoped channel names
+concrete Source work. Entitlement identity, quota, active formula values,
+server throttle/reconnect and runtime/retail qualification remain open.
+
 [All remaining blocker families audited](Decomp/Analysis/ALL_REMAINING_BLOCKERS_RESEARCH_2026_11_05.md)
 reconciles all 36 areas, the five producer rows and broader Source/data/provider/
 native requirements. Marketplace `06DF/07D5` and rotation `07CD` missing-consumer

@@ -64,8 +64,8 @@ WildStar64.exe,1400875e0,ClientICCommMessage_WritePayload,Serialises world opcod
 WildStar64.exe,1400877a0,ClientICCommChannelJoin_WritePayload,Serialises world opcode 0x0546 ClientICCommChannelJoin as 3-bit channel type, 64-bit guild id, and wide channel name; TraceFunctionCallers (iccomm_join_1400877a0) shows registration-only refs.
 WildStar64.exe,140087750,ClientICCommChannelJoin_ReadPayload,Reads ClientICCommChannelJoin payload registered beside writer 1400877a0 for opcode 0x0546.
 WildStar64.exe,140087550,ClientICCommMessage_ReadPayload,Reads ClientICCommMessage payload registered beside writer 1400875e0 for opcode 0x054B.
-WildStar64.exe,1406a4a00,Lua_ICComm_RegisterCallbackFromBinding,ICComm Lua binding helper that forwards into Lua_ICComm_CallbackHub 1406a4280 when registering received-message callbacks.
-WildStar64.exe,1406a4c10,Lua_ICComm_RegisterCallbackFromBinding2,ICComm Lua binding helper that forwards into Lua_ICComm_CallbackHub 1406a4280 (parallel slot to 1406a4a00).
+WildStar64.exe,1406a4a00,Lua_ICComm_SetJoinResultFunction,Exact named pair140c5d750; registers join-result callback state at wrapper+08 via1406a4280. Earlier received-message description rejected; see ICCOMM_NATIVE_LIFECYCLE_2026_11_05.md.
+WildStar64.exe,1406a4c10,Lua_ICComm_SetThrottledFunction,Exact named pair140c5d780; registers throttled callback state at wrapper+50 via1406a4280; no entitlement or server quota inferred.
 WildStar64.exe,140088270,ClientCommitAmpSpec_AdvancePayload,Advances world opcode 0x01A2 ClientCommitAmpSpec as a 7-bit count plus count 16-bit AMP ids.
 WildStar64.exe,140088290,ClientCommitAmpSpec_WritePayload,Serialises world opcode 0x01A2 ClientCommitAmpSpec as a 7-bit count followed by count 16-bit AMP ids.
 WildStar64.exe,140088e60,Marketplace_AuctionSellOrderSubmit_WritePayload,Serialises world opcode 0x06DC ClientAuctionSellOrderSubmit as 64-bit item guid, 64-bit minimum bid, and 64-bit buyout price.
@@ -531,6 +531,13 @@ WildStar64.exe,1406a3ba0,Lua_GameContract_Complete,Game.Contract Lua method that
 WildStar64.exe,1406a4ab0,Lua_ICComm_SetReceivedMessageFunction,ICComm callback registration method for SetReceivedMessageFunction.
 WildStar64.exe,1406a4280,Lua_ICComm_CallbackHub,Shared ICComm callback dispatch hub invoked by SetReceivedMessageFunction and SetSendMessageResultFunction Lua bindings.
 WildStar64.exe,1406a4b60,Lua_ICComm_SetSendMessageResultFunction,ICComm callback registration method for SetSendMessageResultFunction.
+WildStar64.exe,140764050,Lua_ICCommLib_JoinChannel,ICCommLib registration140763df0 and exact pair140b76210; passes type wide requested name and guild context to140631010; distinct from ordinary-chat140730c30.
+WildStar64.exe,140631010,ICComm_JoinOrReusePendingChannel,Looks up exact type/name key and creates pending channel then sends0546; existing object sends again only on changed guild context. Client path only.
+WildStar64.exe,140631e70,ICComm_FindPendingChannelByTypeAndName,Compares channel type then exact raw unsigned16 name units; used by join service and0547/0548 consumers. Not proof of server case policy.
+WildStar64.exe,140630930,ICComm_ApplyChannelJoined,Exact0548 slot1403f26e0 case1403efe2a; looks up pending type/name then stores channelID sets ready and emits Join5 callbacks.
+WildStar64.exe,140630cd0,ICComm_ApplyChannelJoinResult,Exact0547 slot1403f26dc case1403efe48; looks up pending type/name sets ready iff result5 and forwards result to join callback; installs no ID here.
+WildStar64.exe,140630b70,ICComm_ApplyChannelLeft,Exact054A slot1403f26e8 case1403efe39; looks up ID clears readiness emits Left6 then removes ID and type/name indexes.
+WildStar64.exe,1406a4770,Lua_ICComm_IsReady,Exact pair140c5d720; reads channel+2C also written by0547/0548/054A consumers.
 WildStar64.exe,14066a490,Lua_GalacticArchiveArticle___eq,Game.GalacticArchiveArticle.__eq Lua metamethod that compares two article userdata values by resolved underlying article id.
 WildStar64.exe,14066a6b0,Lua_GalacticArchiveArticle___gc,Game.GalacticArchiveArticle.__gc Lua metamethod that releases the wrapped article userdata reference.
 WildStar64.exe,14066a730,Lua_GalacticArchiveEntry___eq,Game.GalacticArchiveEntry.__eq Lua metamethod that compares two entry userdata values by resolved underlying entry id.

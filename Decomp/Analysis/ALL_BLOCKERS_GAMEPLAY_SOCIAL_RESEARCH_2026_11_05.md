@@ -176,6 +176,14 @@ none of those transaction rules and supplies no warplot reward policy.
 
 ## ICComm and chat: entitlement identity and restoration remain distinct
 
+Subsequent [native lifecycle mapping](ICCOMM_NATIVE_LIFECYCLE_2026_11_05.md)
+resolves the typed JoinChannel owner,0546 sender, exact pending type/name key,
+callback roles and selected0547/0548/054A transitions. The
+[authored-source follow-through](ICCOMM_WEB_CORROBORATION_2026_11_05.md) also
+separates API eras and concrete addon callers. Earlier candidate/next-work
+statements below are the research checkpoint; entitlement and server policy
+remain unresolved, while response-name correlation is now concrete Source work.
+
 The original API help lists `ICCommJoinResult.MissingEntitlement`, along with
 `NoGuild`, `NoGroup`, `TooManyChannels`, `BadName`, `Join` and `Left`. It gives an
 old `JoinChannel(strChannel,strFunction,nLuaEventHandler)` signature and

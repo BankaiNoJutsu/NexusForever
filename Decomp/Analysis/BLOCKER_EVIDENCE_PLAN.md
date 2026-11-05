@@ -1,5 +1,10 @@
 # Evidence Plan To Close Remaining NexusForever Blockers
 
+The [ICComm lifecycle follow-through](ICCOMM_NATIVE_LIFECYCLE_2026_11_05.md)
+now resolves the typed join/sender and selected readiness/callback consumers.
+Pending type/name correlation exposes bounded Source compatibility work;
+the entitlement ID, server quota and reconnect qualification remain gates.
+
 5 November [all-family audit](ALL_REMAINING_BLOCKERS_RESEARCH_2026_11_05.md)
 is the current index for the 36-area roadmap and cross-feature gates. Historical
 F-005 `06DF/07D5` ownership and F-007 `07CD` missing-consumer statements below

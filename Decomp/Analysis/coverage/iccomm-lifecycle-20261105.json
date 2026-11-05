@@ -1,0 +1,882 @@
+{
+  "build": 16042,
+  "binary": "WildStar64.exe",
+  "clientSha256": "231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5",
+  "reaEvidenceId": "ev_142ebc012c9fce11df9c67703c5d9e335b4810c52c1d752b63ed2828030231d4",
+  "method": "REA stable-file PE identity; standalone Ghidra12.0.4 and LLVM static inspection. No client execution.",
+  "codeRanges": [
+    {
+      "name": "ordinary-chat-JoinChannel-0",
+      "startVA": "0x140730c30",
+      "bytes": 394,
+      "fileOffset": 7536688,
+      "sha256": "ae440959917a7f20ac39dacc0052b50ffe05b7ecf8dda86ec4b1283b47fc6e51",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICCommLib-registration-0",
+      "startVA": "0x140763df0",
+      "bytes": 599,
+      "fileOffset": 7746032,
+      "sha256": "7d8df65f199c002b1fc8b7d2dfa227b45d301ffe16093b12d22a6ddb0dda9571",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICCommLib-JoinChannel-0",
+      "startVA": "0x140764050",
+      "bytes": 13,
+      "fileOffset": 7746640,
+      "sha256": "79f4c999280276e31c4d5a65ba6fd20fddbc04ddc7bc55840b4b4e67771ab980",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICCommLib-JoinChannel-1",
+      "startVA": "0x14076405d",
+      "bytes": 62,
+      "fileOffset": 7746653,
+      "sha256": "7c97a563bdb4200639b64ceeab6c04c7c6d3d44a2946594fae4039165f7d942d",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICCommLib-JoinChannel-2",
+      "startVA": "0x14076409b",
+      "bytes": 5,
+      "fileOffset": 7746715,
+      "sha256": "12ddb17e5e50607bd120fc3eb0db5e5d0299871a5c788bc4707501f5ce099457",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICCommLib-JoinChannel-3",
+      "startVA": "0x1407640a0",
+      "bytes": 280,
+      "fileOffset": 7746720,
+      "sha256": "1d8a253fc8d3d3f908cef4dce22a428a13a156c346cd4d73678a8db934366998",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICCommLib-JoinChannel-4",
+      "startVA": "0x1407641b8",
+      "bytes": 14,
+      "fileOffset": 7747000,
+      "sha256": "ef6eced713a3aaca87ba827a182643817db94016528ed207da4e42a1bba461cc",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICCommLib-JoinChannel-5",
+      "startVA": "0x1407641c6",
+      "bytes": 10,
+      "fileOffset": 7747014,
+      "sha256": "151b64a2e93d46f5191e5a0f6f26cdba6639503d574c35c53d374d6652c89b47",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICCommLib-JoinChannel-6",
+      "startVA": "0x1407641d0",
+      "bytes": 23,
+      "fileOffset": 7747024,
+      "sha256": "2d351fb795f54a60cd26ceff53cc014d726446b0e4f84674fe10eec43aec2c0e",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-join-or-reuse-0",
+      "startVA": "0x140631010",
+      "bytes": 14,
+      "fileOffset": 6489104,
+      "sha256": "1c41ed745eb09a8d2b4942138bb70ccd60e2c8beb5638397f832a7d35d54f5ac",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-join-or-reuse-1",
+      "startVA": "0x14063101e",
+      "bytes": 8,
+      "fileOffset": 6489118,
+      "sha256": "4de5d50ccc367725b9f0b0b12ba54165c934a4a5ce5ff721de196ed9c9fa6552",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-join-or-reuse-2",
+      "startVA": "0x140631026",
+      "bytes": 283,
+      "fileOffset": 6489126,
+      "sha256": "4636b2032f04d91dfb18bf4709e446d284201cd7a3de23f5e0371ee5ed1dd5b4",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-join-or-reuse-3",
+      "startVA": "0x140631141",
+      "bytes": 233,
+      "fileOffset": 6489409,
+      "sha256": "c96e0f97723378ab8092234404bb2a8679863b5249a6e8a88ce3617634124abb",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-join-or-reuse-4",
+      "startVA": "0x14063122a",
+      "bytes": 22,
+      "fileOffset": 6489642,
+      "sha256": "a0ff532daeb90d45fe478af3d9f72ae34dac2938fdf7239d305036b9a4f4ef7d",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-type-name-key-lookup-0",
+      "startVA": "0x140631e70",
+      "bytes": 39,
+      "fileOffset": 6492784,
+      "sha256": "ba015d15997c0f49d4314c675679dcb912fbe0ee0c422f1f67faf65dece0578d",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-type-name-key-lookup-1",
+      "startVA": "0x140631e97",
+      "bytes": 101,
+      "fileOffset": 6492823,
+      "sha256": "3a20a56b0a019ccfa639f93a00eb972170582759a45171dc80c83af9f35e220e",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-type-name-key-lookup-2",
+      "startVA": "0x140631efc",
+      "bytes": 113,
+      "fileOffset": 6492924,
+      "sha256": "485e3cc1c34df77171e9cbca6be5e4ad450a588719ba078124de7086ca1cd2f0",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-channel-constructor-0",
+      "startVA": "0x14062fb50",
+      "bytes": 69,
+      "fileOffset": 6483792,
+      "sha256": "853c07f23e3036fdc9da51fae0f3032f47fff4fce65dd598951aea3aa4ffa35e",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-channel-constructor-1",
+      "startVA": "0x14062fb95",
+      "bytes": 117,
+      "fileOffset": 6483861,
+      "sha256": "160176605b5278f63719c4ccbb70128fee08c5e1b868662149e7136be4086c5c",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-channel-constructor-2",
+      "startVA": "0x14062fc0a",
+      "bytes": 47,
+      "fileOffset": 6483978,
+      "sha256": "0bc91dfe56b40805de4bd5d1e8f21b9b4be25fd8d822d469c78bfccb73a94e4a",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-wrapper-constructor-0",
+      "startVA": "0x1406a4060",
+      "bytes": 166,
+      "fileOffset": 6960224,
+      "sha256": "5e6e376596f4247d20f7ff8bea9b664430f9307f23068d20389da7672dfa406d",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-join-result-consumer-0",
+      "startVA": "0x140630cd0",
+      "bytes": 16,
+      "fileOffset": 6488272,
+      "sha256": "bff8e1ffc5203a14c4e546a5f8a0704cbd2a6fa5a2dedcb3324b8eed9f1385e3",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-join-result-consumer-1",
+      "startVA": "0x140630ce0",
+      "bytes": 8,
+      "fileOffset": 6488288,
+      "sha256": "ba637b41c9bc810f4fec391b49d000a32f703df63ac568eb5ebbb9433dd6b7be",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-join-result-consumer-2",
+      "startVA": "0x140630ce8",
+      "bytes": 232,
+      "fileOffset": 6488296,
+      "sha256": "a2deded7c9deb3755472182b1f8c05bce7fe27f59594d771141a76b6100e6c48",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-join-result-consumer-3",
+      "startVA": "0x140630dd0",
+      "bytes": 21,
+      "fileOffset": 6488528,
+      "sha256": "bd1ace5c1debf465934da0156b04921fff71e26b0167cc51d521286ea4b67c22",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-join-result-consumer-4",
+      "startVA": "0x140630de5",
+      "bytes": 27,
+      "fileOffset": 6488549,
+      "sha256": "5ee1316f55b096062fe7e31a3fe21a94a6c80446a00bd6968aeb1391c123f744",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-join-result-consumer-5",
+      "startVA": "0x140630e00",
+      "bytes": 79,
+      "fileOffset": 6488576,
+      "sha256": "7bfbb8ebf3b1c8b988203a488a0e4c394ceeb968a90160ce2f442245dae47c8b",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-joined-consumer-0",
+      "startVA": "0x140630930",
+      "bytes": 563,
+      "fileOffset": 6487344,
+      "sha256": "90dba5a1076ea587464df95535b318dc276cdc0490c0f09e7a551dc37af1d860",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-left-consumer-0",
+      "startVA": "0x140630b70",
+      "bytes": 109,
+      "fileOffset": 6487920,
+      "sha256": "f712cfff0bf16e16713c87e1c10164df211e4e345292b606234536e179d49d92",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-left-consumer-1",
+      "startVA": "0x140630bdd",
+      "bytes": 215,
+      "fileOffset": 6488029,
+      "sha256": "09aca9d03ea2581651fbb41205db108dc0142fa515b743d9de8b05bd51b42e4d",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-left-consumer-2",
+      "startVA": "0x140630cb4",
+      "bytes": 27,
+      "fileOffset": 6488244,
+      "sha256": "cf4d9f6d7c1b9e9c037499f931aed4826a9cc89972ce64f509338f2802a6f655",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-IsReady-0",
+      "startVA": "0x1406a4770",
+      "bytes": 83,
+      "fileOffset": 6962032,
+      "sha256": "5d3df5cb7dcd45fb27a5d7d0acd60d2e15f426165114d8ec20f1f776acdececd",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-set-join-callback-0",
+      "startVA": "0x1406a4a00",
+      "bytes": 176,
+      "fileOffset": 6962688,
+      "sha256": "bfdce6962f28658d27fd46611648e22ef23aaa2f7c3d5a5a4d152f6bd2ae53f7",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-set-throttled-callback-0",
+      "startVA": "0x1406a4c10",
+      "bytes": 176,
+      "fileOffset": 6963216,
+      "sha256": "ce565e88a11bbd89dafc3bfc965b482e5eb8fe0431aba4ac32cb987ec6fc1762",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-callback-dispatch-0",
+      "startVA": "0x1406a4360",
+      "bytes": 68,
+      "fileOffset": 6960992,
+      "sha256": "850aec95428d002cfce4d5b58257d6b6744b004498eb85029845a2eab62a20f2",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-callback-dispatch-1",
+      "startVA": "0x1406a43a4",
+      "bytes": 15,
+      "fileOffset": 6961060,
+      "sha256": "19ce309a8ae75f6e2052c53f6ed604664eb00e60d9ead3479b505caea6fb8061",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-callback-dispatch-2",
+      "startVA": "0x1406a43b3",
+      "bytes": 132,
+      "fileOffset": 6961075,
+      "sha256": "6eb0d2ba1e107782e408bda5534164fe619d2c2fa66b4cee6a4e8b07a9bfff45",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-callback-dispatch-3",
+      "startVA": "0x1406a4437",
+      "bytes": 177,
+      "fileOffset": 6961207,
+      "sha256": "dc02d6895797d168c47551402a04e28975feeab81e613cc4b727eef74c07c4cc",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-callback-dispatch-4",
+      "startVA": "0x1406a44e8",
+      "bytes": 15,
+      "fileOffset": 6961384,
+      "sha256": "6b2c94a62c9eb3fdcfb65b49054db6943ad7d1d728ea770cd3a43037d707df3f",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-callback-dispatch-5",
+      "startVA": "0x1406a44f7",
+      "bytes": 9,
+      "fileOffset": 6961399,
+      "sha256": "20641b0e6c0cffaaa7d98c482f6fbb8b9072f4f203d87603c83db3506e10b486",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-service-constructor-0",
+      "startVA": "0x14062fdc0",
+      "bytes": 826,
+      "fileOffset": 6484416,
+      "sha256": "5991d2c7b5aad2ce42d3cefbbba333b0255a58e9706d75e8bb9860a24d3d0371",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-send-queue-drain-0",
+      "startVA": "0x140630580",
+      "bytes": 41,
+      "fileOffset": 6486400,
+      "sha256": "f39b1178ceab1788d090c35c2ed2e294557c02edde1a4b57a18b8b9f6a6207d7",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-send-queue-drain-1",
+      "startVA": "0x1406305a9",
+      "bytes": 664,
+      "fileOffset": 6486441,
+      "sha256": "ded277600ef7f824e9f7cf1d4b22ded7702dc6ffab004764f2410e793b663531",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-send-queue-drain-2",
+      "startVA": "0x140630841",
+      "bytes": 8,
+      "fileOffset": 6487105,
+      "sha256": "9c84ad479eccd18108d1f741c30041327be2abd7f6df5a17d267d1369886b446",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-send-enqueue-0",
+      "startVA": "0x140631240",
+      "bytes": 336,
+      "fileOffset": 6489664,
+      "sha256": "bd66e69f6fcbbb4ad2f05ed2fc3815ffd2dd347b5a9f3f13c10d06f137fdd47a",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-upload-getter-0",
+      "startVA": "0x1406304a0",
+      "bytes": 112,
+      "fileOffset": 6486176,
+      "sha256": "4b92df6285224d92f16bea874332a6f8ffbf854edd40918e008665c18cf8b061",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-download-getter-0",
+      "startVA": "0x140630510",
+      "bytes": 112,
+      "fileOffset": 6486288,
+      "sha256": "f0f67fd178249f0e9bde200e4fe888a8a809e8105f784837da36a40f5d95ccdf",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-upload-api-0",
+      "startVA": "0x1407641f0",
+      "bytes": 103,
+      "fileOffset": 7747056,
+      "sha256": "cd1f3fd18ae6370c2a2df7153468a9edb29aef9eaea0389676c7389dc6d0193c",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-download-api-0",
+      "startVA": "0x140764260",
+      "bytes": 133,
+      "fileOffset": 7747168,
+      "sha256": "6ed5084fed843ff06cab5be0365466b39cc6dff661da53f5378edceff5353ee3",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-clear-channels-0",
+      "startVA": "0x140630340",
+      "bytes": 35,
+      "fileOffset": 6485824,
+      "sha256": "9bc9546ec055fbd504275594208241e07f763cb5effc140c07201b8bb9d21429",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-clear-channels-1",
+      "startVA": "0x140630363",
+      "bytes": 293,
+      "fileOffset": 6485859,
+      "sha256": "3baafe850f44b4549989f2146d00a582f18afd53aa4bf4c3eb4e453144bf05cd",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-clear-channels-2",
+      "startVA": "0x140630488",
+      "bytes": 14,
+      "fileOffset": 6486152,
+      "sha256": "dad230523a6b9b90ecbc6e690b44b9e49cd085860f9b022ee2d12607dbb2f14c",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-directed-consumer-0",
+      "startVA": "0x140630850",
+      "bytes": 219,
+      "fileOffset": 6487120,
+      "sha256": "3de54fb0e70d72d2bee6a6e8b3183aa317cd1d5d923be0c04e6dfe8844f9beaa",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "ICComm-send-result-consumer-0",
+      "startVA": "0x140630e50",
+      "bytes": 217,
+      "fileOffset": 6488656,
+      "sha256": "84709bd6b3d735191d8c58655f02808740e9c9aea764902bf5f82248643e7be3",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "narrow-to-wide-buffer-0",
+      "startVA": "0x14018f2d0",
+      "bytes": 40,
+      "fileOffset": 1631952,
+      "sha256": "452124a711f5a07b0717dd1030fd89ce78384aa158ee9af8104ac4f01959529d",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "narrow-to-wide-buffer-1",
+      "startVA": "0x14018f2f8",
+      "bytes": 280,
+      "fileOffset": 1631992,
+      "sha256": "d10bdf3588465db911c28a387332cc6c33383703cb14f16c3eae328d05fea269",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "narrow-to-wide-buffer-2",
+      "startVA": "0x14018f410",
+      "bytes": 28,
+      "fileOffset": 1632272,
+      "sha256": "9e682d618893729365c4fb41c473e825c3986f5f2c80fa581e590c7839c675e9",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "narrow-to-wide-buffer-3",
+      "startVA": "0x14018f42c",
+      "bytes": 258,
+      "fileOffset": 1632300,
+      "sha256": "7ef3d3d24089dd6040df2ac9022294ce69f2fd98de51ce88a71a9d69ac34e2e2",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    },
+    {
+      "name": "narrow-to-wide-buffer-4",
+      "startVA": "0x14018f52e",
+      "bytes": 63,
+      "fileOffset": 1632558,
+      "sha256": "b748443789e593d24a4dff58a49f6c4ca503d9b00b9c7c3580fa9ffdcb248a63",
+      "boundary": "Selected PE x64 chained unwind range; separate callees remain separate"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "JoinChannel-pair",
+      "startVA": "0x140b76210",
+      "bytes": 16,
+      "fileOffset": 12014096,
+      "sha256": "cef19d14fbcd674f114a8e2ba86839700af484520c377a15faad4565760e8609",
+      "boundary": "Exact adjacent name/function pair",
+      "hex": "78dcb440010000005040764001000000"
+    },
+    {
+      "name": "JoinChannel-name",
+      "startVA": "0x140b4dc78",
+      "bytes": 12,
+      "fileOffset": 11848824,
+      "sha256": "f702cf020d548e976160dc8c0c2dfc82d10dfbd995256326cd0ac84fb748f88b",
+      "boundary": "Exact NUL-terminated API name",
+      "hex": "4a6f696e4368616e6e656c00"
+    },
+    {
+      "name": "GetUploadCapacityByType-pair",
+      "startVA": "0x140b76220",
+      "bytes": 16,
+      "fileOffset": 12014112,
+      "sha256": "b1b7c5c00e1b8fb839a016a77e15bea53d72fcc21c8ab85cc415ac31118c4c18",
+      "boundary": "Exact adjacent name/function pair",
+      "hex": "60dcb44001000000f041764001000000"
+    },
+    {
+      "name": "GetUploadCapacityByType-name",
+      "startVA": "0x140b4dc60",
+      "bytes": 24,
+      "fileOffset": 11848800,
+      "sha256": "41c2ec4248555023bac58f501485b8f9ba1186012812803a40edc8a6a37c405f",
+      "boundary": "Exact NUL-terminated API name",
+      "hex": "47657455706c6f6164436170616369747942795479706500"
+    },
+    {
+      "name": "GetDownloadCapacityByType-pair",
+      "startVA": "0x140b76230",
+      "bytes": 16,
+      "fileOffset": 12014128,
+      "sha256": "3cd4ccc7bffad41f1a70bb3a0c011c62df2ad9fd46a15ad70b99da3d03bd86a8",
+      "boundary": "Exact adjacent name/function pair",
+      "hex": "40dcb440010000006042764001000000"
+    },
+    {
+      "name": "GetDownloadCapacityByType-name",
+      "startVA": "0x140b4dc40",
+      "bytes": 26,
+      "fileOffset": 11848768,
+      "sha256": "29a48bd45d27f189038747e728744953baa7b60060acdcb0cdf59448fca41818",
+      "boundary": "Exact NUL-terminated API name",
+      "hex": "476574446f776e6c6f6164436170616369747942795479706500"
+    },
+    {
+      "name": "IsReady-pair",
+      "startVA": "0x140c5d720",
+      "bytes": 16,
+      "fileOffset": 12958496,
+      "sha256": "cf2eac3627e22544ebb91aedf15a800c5efa052b1b9c0431850d3c63ed185239",
+      "boundary": "Exact adjacent name/function pair",
+      "hex": "1058b3400100000070476a4001000000"
+    },
+    {
+      "name": "IsReady-name",
+      "startVA": "0x140b35810",
+      "bytes": 8,
+      "fileOffset": 11749392,
+      "sha256": "1ef1dec55e334a454417458308490cc0242cd6a3ec17e8faa80912654f61a95f",
+      "boundary": "Exact NUL-terminated API name",
+      "hex": "4973526561647900"
+    },
+    {
+      "name": "SetJoinResultFunction-pair",
+      "startVA": "0x140c5d750",
+      "bytes": 16,
+      "fileOffset": 12958544,
+      "sha256": "2372c5b3145728f8f34909c80caeffd3419a00a2937377092045e4335ee7312d",
+      "boundary": "Exact adjacent name/function pair",
+      "hex": "f857b34001000000004a6a4001000000"
+    },
+    {
+      "name": "SetJoinResultFunction-name",
+      "startVA": "0x140b357f8",
+      "bytes": 22,
+      "fileOffset": 11749368,
+      "sha256": "c40f66c88af07faa2e2b62226b2bb398c24ee14d01bad9eab28a3893f03b022a",
+      "boundary": "Exact NUL-terminated API name",
+      "hex": "5365744a6f696e526573756c7446756e6374696f6e00"
+    },
+    {
+      "name": "SetReceivedMessageFunction-pair",
+      "startVA": "0x140c5d760",
+      "bytes": 16,
+      "fileOffset": 12958560,
+      "sha256": "dda0aa4a0f86c3f97d42b5b47dcf71fd3784ea89b865c3dfb4d8298a833b3539",
+      "boundary": "Exact adjacent name/function pair",
+      "hex": "a057b34001000000b04a6a4001000000"
+    },
+    {
+      "name": "SetReceivedMessageFunction-name",
+      "startVA": "0x140b357a0",
+      "bytes": 27,
+      "fileOffset": 11749280,
+      "sha256": "a0568164106769cece2575fc09144d56645de107455129973e83f096fcc2d305",
+      "boundary": "Exact NUL-terminated API name",
+      "hex": "53657452656365697665644d65737361676546756e6374696f6e00"
+    },
+    {
+      "name": "SetSendMessageResultFunction-pair",
+      "startVA": "0x140c5d770",
+      "bytes": 16,
+      "fileOffset": 12958576,
+      "sha256": "ce2adaa868b68030f91a9105c1df01f4d1f2b2e83f1bf73aad5c3189c46f3312",
+      "boundary": "Exact adjacent name/function pair",
+      "hex": "c057b34001000000604b6a4001000000"
+    },
+    {
+      "name": "SetSendMessageResultFunction-name",
+      "startVA": "0x140b357c0",
+      "bytes": 29,
+      "fileOffset": 11749312,
+      "sha256": "2641e0c459fea071d84a9c86fc174a5499e0405027d5296fb17d09e1e7de9f05",
+      "boundary": "Exact NUL-terminated API name",
+      "hex": "53657453656e644d657373616765526573756c7446756e6374696f6e00"
+    },
+    {
+      "name": "SetThrottledFunction-pair",
+      "startVA": "0x140c5d780",
+      "bytes": 16,
+      "fileOffset": 12958592,
+      "sha256": "19801f7ad8929f22a36abb135e3472db3062ed350810910903005f14a225fa46",
+      "boundary": "Exact adjacent name/function pair",
+      "hex": "8857b34001000000104c6a4001000000"
+    },
+    {
+      "name": "SetThrottledFunction-name",
+      "startVA": "0x140b35788",
+      "bytes": 21,
+      "fileOffset": 11749256,
+      "sha256": "086a808e2955ee9a666d2aa557187dc988aa23800ed599a5909b756b8a9138c8",
+      "boundary": "Exact NUL-terminated API name",
+      "hex": "5365745468726f74746c656446756e6374696f6e00"
+    },
+    {
+      "name": "0547-cell",
+      "startVA": "0x1403f26dc",
+      "bytes": 4,
+      "fileOffset": 4135644,
+      "sha256": "81c07358f68f10b5db6e16202b7531302d8f59975a1dd3b66be9111780dd0465",
+      "boundary": "Indexed DWORD RVA slot in the existing world dispatcher",
+      "hex": "48fe3e00"
+    },
+    {
+      "name": "0547-call",
+      "startVA": "0x1403efe48",
+      "bytes": 15,
+      "fileOffset": 4125256,
+      "sha256": "11113e8eb27b63dd98c91a0ff2da74a1d0b6279e8141d5a08d509c90bf678ebd",
+      "boundary": "Exact selected case and rel32 consumer call; not a standalone function",
+      "hex": "488bd7e8800e24008bd8e9c9140000"
+    },
+    {
+      "name": "0548-cell",
+      "startVA": "0x1403f26e0",
+      "bytes": 4,
+      "fileOffset": 4135648,
+      "sha256": "12c97d14ad0a2966837e4421abfbbe8afd4efd06708b1631011430f5c255aec6",
+      "boundary": "Indexed DWORD RVA slot in the existing world dispatcher",
+      "hex": "2afe3e00"
+    },
+    {
+      "name": "0548-call",
+      "startVA": "0x1403efe2a",
+      "bytes": 15,
+      "fileOffset": 4125226,
+      "sha256": "c5d159df5cac86b616b84727153a490d7cff7e34dcdd1130e1bf9cf660d9ad6b",
+      "boundary": "Exact selected case and rel32 consumer call; not a standalone function",
+      "hex": "488bd7e8fe0a24008bd8e9e7140000"
+    },
+    {
+      "name": "054a-cell",
+      "startVA": "0x1403f26e8",
+      "bytes": 4,
+      "fileOffset": 4135656,
+      "sha256": "d7c3a56561352ba2d37a6af7a8352fc172628e355744f1f0d586e3c99288dcd2",
+      "boundary": "Indexed DWORD RVA slot in the existing world dispatcher",
+      "hex": "39fe3e00"
+    },
+    {
+      "name": "054a-call",
+      "startVA": "0x1403efe39",
+      "bytes": 15,
+      "fileOffset": 4125241,
+      "sha256": "a7b43f62674c91f9b644b15703c5a41ff8d6f4be0949af9326838733509141dd",
+      "boundary": "Exact selected case and rel32 consumer call; not a standalone function",
+      "hex": "488bd7e82f0d24008bd8e9d8140000"
+    },
+    {
+      "name": "054c-cell",
+      "startVA": "0x1403f26f0",
+      "bytes": 4,
+      "fileOffset": 4135664,
+      "sha256": "39eccdf68f6b683bd6658fad197264873cb721e51a2bdc896c75afaf36727f4d",
+      "boundary": "Indexed DWORD RVA slot in the existing world dispatcher",
+      "hex": "57fe3e00"
+    },
+    {
+      "name": "054c-call",
+      "startVA": "0x1403efe57",
+      "bytes": 15,
+      "fileOffset": 4125271,
+      "sha256": "71bef72c6bb2309b53d87496f2898f11edd253ee249044b06b6642227b921ffb",
+      "boundary": "Exact selected case and rel32 consumer call; not a standalone function",
+      "hex": "488bd7e8f10f24008bd8e9ba140000"
+    },
+    {
+      "name": "054e-cell",
+      "startVA": "0x1403f26f8",
+      "bytes": 4,
+      "fileOffset": 4135672,
+      "sha256": "a08c71a0df5da9864fceeed53aad5532c1f28e41451a1b4d069bb55ced034b14",
+      "boundary": "Indexed DWORD RVA slot in the existing world dispatcher",
+      "hex": "1bfe3e00"
+    },
+    {
+      "name": "054e-call",
+      "startVA": "0x1403efe1b",
+      "bytes": 15,
+      "fileOffset": 4125211,
+      "sha256": "a53804d95448a827980ff4d8fbb5a7d8a3a8b5dafb6e3cdb99bf4d93da81b3f1",
+      "boundary": "Exact selected case and rel32 consumer call; not a standalone function",
+      "hex": "488bd7e82d0a24008bd8e9f6140000"
+    },
+    {
+      "name": "reset-capacity-inspected-leaf",
+      "startVA": "0x140630250",
+      "bytes": 240,
+      "fileOffset": 6485584,
+      "sha256": "407b4f0669bbc508d1cc3485f62a08d5fd08267cca669abe730fffd2f658dfe6",
+      "boundary": "Selected instruction interval corroborating arguments or callback slot",
+      "hex": "488b15c1596300448b054a346300488b4a58488b4110483bc174600f1f4400008b48344489403c894838488b48184885c9741b488bc1488b49104885c9743690488bc1488b49104885c975f4eb27488b4808483b411875150f1f840000000000488bc1488b4908483b411874f348394818480f45c1483b425875a5488b4a78488b4110483bc174630f1f8400000000008b48344489403c894838488b48184885c9741b488bc1488b49104885c9743690488bc1488b49104885c975f4eb27488b4808483b411875150f1f840000000000488bc1488b4908483b411874f348394818480f45c1483b427875a533c0c3cccc"
+    },
+    {
+      "name": "shared-budget-refill-inspected-leaf",
+      "startVA": "0x1407a00f0",
+      "bytes": 208,
+      "fileOffset": 7992560,
+      "sha256": "c2cde65dff4ba168e887c5560ba935844e67b351fa6b54329c467abc8708c609",
+      "boundary": "Selected instruction interval corroborating arguments or callback slot",
+      "hex": "448b05b1354c008b510c448b49100f57d2458bd0442b5114f3490f2ad2f30f5915ef9b3d00413bd17c5d4585d278588bc2660f6eca412bc1660f6ec00f5bc90f5bc0f30f5ec10f2fc2723cf30f1005a5a03d00f30f59ca33d20f2fc87216f30f5cc80f2fc8730d48b80000000000000080488bd0f3480f2cc1448941144803c24103c1894110c389511044894114c3cc48837958007507488379600074258b515085d27413ffca751a488b4160488b5168488b495848ffe0488b4160488b495848ffe0f3c3cccccccccccccccccccccc"
+    },
+    {
+      "name": "join-Lua-register-arguments",
+      "startVA": "0x140764102",
+      "bytes": 13,
+      "fileOffset": 7746818,
+      "sha256": "cfaa1d08ec4dad0b57158f83842a7146e0e01395f99c4e81ee2923e1f96a592d",
+      "boundary": "Selected instruction interval corroborating arguments or callback slot",
+      "hex": "4d8bce4c8bc58bd3e801cfecff"
+    },
+    {
+      "name": "join-callback-storage-08",
+      "startVA": "0x1406a4a8b",
+      "bytes": 19,
+      "fileOffset": 6962827,
+      "sha256": "6fde56ed844d7faac1fce2a6322d9bae5d086274166528b2194367602a3f6685",
+      "boundary": "Selected instruction interval corroborating arguments or callback slot",
+      "hex": "4c8d47084c8bce488bd389442420e8e2f7ffff"
+    },
+    {
+      "name": "received-callback-storage-20",
+      "startVA": "0x1406a4b3b",
+      "bytes": 19,
+      "fileOffset": 6963003,
+      "sha256": "02e6c34ef3c5cbf736b925ec1ee1c1ce49e4cbe0d19d8d1dda4e9c24097b3fe8",
+      "boundary": "Selected instruction interval corroborating arguments or callback slot",
+      "hex": "4c8d47204c8bce488bd389442420e832f7ffff"
+    },
+    {
+      "name": "send-result-callback-storage-38",
+      "startVA": "0x1406a4beb",
+      "bytes": 19,
+      "fileOffset": 6963179,
+      "sha256": "9d5785326bf36b746266a7bccbd2a6ff6cf304839ed5319f39107bb6fd273ee5",
+      "boundary": "Selected instruction interval corroborating arguments or callback slot",
+      "hex": "4c8d47384c8bce488bd389442420e882f6ffff"
+    },
+    {
+      "name": "throttled-callback-storage-50",
+      "startVA": "0x1406a4c9b",
+      "bytes": 19,
+      "fileOffset": 6963355,
+      "sha256": "4c73fc46b1bf2b379e09a3dbb9e47001dd152cbadfcdb776870515cdd9815b75",
+      "boundary": "Selected instruction interval corroborating arguments or callback slot",
+      "hex": "4c8d47504c8bce488bd389442420e8d2f5ffff"
+    }
+  ],
+  "bindings": [
+    {
+      "name": "JoinChannel",
+      "pairVA": "0x140b76210",
+      "stringVA": "0x140b4dc78",
+      "callbackVA": "0x140764050"
+    },
+    {
+      "name": "GetUploadCapacityByType",
+      "pairVA": "0x140b76220",
+      "stringVA": "0x140b4dc60",
+      "callbackVA": "0x1407641f0"
+    },
+    {
+      "name": "GetDownloadCapacityByType",
+      "pairVA": "0x140b76230",
+      "stringVA": "0x140b4dc40",
+      "callbackVA": "0x140764260"
+    },
+    {
+      "name": "IsReady",
+      "pairVA": "0x140c5d720",
+      "stringVA": "0x140b35810",
+      "callbackVA": "0x1406a4770"
+    },
+    {
+      "name": "SetJoinResultFunction",
+      "pairVA": "0x140c5d750",
+      "stringVA": "0x140b357f8",
+      "callbackVA": "0x1406a4a00"
+    },
+    {
+      "name": "SetReceivedMessageFunction",
+      "pairVA": "0x140c5d760",
+      "stringVA": "0x140b357a0",
+      "callbackVA": "0x1406a4ab0"
+    },
+    {
+      "name": "SetSendMessageResultFunction",
+      "pairVA": "0x140c5d770",
+      "stringVA": "0x140b357c0",
+      "callbackVA": "0x1406a4b60"
+    },
+    {
+      "name": "SetThrottledFunction",
+      "pairVA": "0x140c5d780",
+      "stringVA": "0x140b35788",
+      "callbackVA": "0x1406a4c10"
+    }
+  ],
+  "dispatch": [
+    {
+      "opcode": "0x547",
+      "cellVA": "0x1403f26dc",
+      "caseVA": "0x1403efe48",
+      "consumerVA": "0x140630cd0"
+    },
+    {
+      "opcode": "0x548",
+      "cellVA": "0x1403f26e0",
+      "caseVA": "0x1403efe2a",
+      "consumerVA": "0x140630930"
+    },
+    {
+      "opcode": "0x54a",
+      "cellVA": "0x1403f26e8",
+      "caseVA": "0x1403efe39",
+      "consumerVA": "0x140630b70"
+    },
+    {
+      "opcode": "0x54c",
+      "cellVA": "0x1403f26f0",
+      "caseVA": "0x1403efe57",
+      "consumerVA": "0x140630e50"
+    },
+    {
+      "opcode": "0x54e",
+      "cellVA": "0x1403f26f8",
+      "caseVA": "0x1403efe1b",
+      "consumerVA": "0x140630850"
+    }
+  ],
+  "mapped": {
+    "pendingKey": "channel type plus exact raw wide channel name; guild context stored separately",
+    "0548": "lookup requested type/name before setting ID and ready then Join5 callback",
+    "0547": "lookup requested type/name; ready equals result5; forwards result to join callback",
+    "054A": "lookup channelID; ready0 then Left6 callback then remove ID/name indexes",
+    "send": "Lua enqueues; shared message-count and per-type text-length budgets gate054B queue drain",
+    "formulas": {
+      "0x422": "Global upload Dataint0, download Dataint01; fallbacks100/1000",
+      "0x4BB": "Group upload numerator Dataint0; fallback4000; drain divides by nonzero context6C50 field60",
+      "0x4BC": "Guild upload Dataint0, download Dataint01; fallbacks1000/1000",
+      "0x4BD": "Per-budget limit scalar Dataint0 at budget+8; fallback500000; drain compares per-type limit against text length",
+      "0x4C2": "Shared outgoing message refill amount Dataint0; fallback25"
+    }
+  },
+  "limits": [
+    "No server entitlement ID, numeric max-channel count or active GameFormula corpus qualified.",
+    "Native client budgets and historical authored documentation do not prove server throttle or reconnect policy.",
+    "Source response-name incompatibilities are static predictions; no client/runtime reproduction attempted.",
+    "No Source behavior, wire model, configuration or original binary changed."
+  ]
+}
