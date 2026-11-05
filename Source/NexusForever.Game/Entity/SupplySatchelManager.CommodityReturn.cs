@@ -50,14 +50,28 @@ namespace NexusForever.Game.Entity
         internal CommodityReturnReservation ReserveCommodityReturn(IItemInfo info, uint count, string database)
         {
             if (!TryGetAutoStoreCapacity(info, out uint capacity) || capacity == 0) return null;
+            if (!TryGetMaterialEntry(info, out var entry))
+                throw new InvalidOperationException("Commodity return lost its material definition.");
+            return ReserveMaterialIncrease((ushort)entry.Id, Math.Min(count, capacity), database);
+        }
+
+        internal CommodityReturnReservation ReserveManualDeposit(IItem item, uint count, string database)
+        {
+            if (!TryGetMaterialEntry(item, out var entry)) return null;
+            ushort id = (ushort)entry.Id;
+            uint current = tradeskillMaterials.TryGetValue(id, out var existing) ? existing.Amount : 0u;
+            uint accepted = Math.Min(count, maximumStackAmount - Math.Min(current, maximumStackAmount));
+            return accepted == 0 ? null : ReserveMaterialIncrease(id, accepted, database);
+        }
+
+        private CommodityReturnReservation ReserveMaterialIncrease(ushort key, uint count, string database)
+        {
             if (commodityReturn != null || loadedOrigin == null || loadedOrigin.Database != database
-                || loadedOrigin.CharacterId != player.CharacterId || loadedOrigin.AccountId != player.Account.Id
-                || !TryGetMaterialEntry(info, out var entry))
-                throw new InvalidOperationException("Commodity return lost its loaded satchel owner.");
-            ushort key = (ushort)entry.Id;
+                || loadedOrigin.CharacterId != player.CharacterId || loadedOrigin.AccountId != player.Account.Id)
+                throw new InvalidOperationException("Material increase lost its loaded satchel owner.");
             tradeskillMaterials.TryGetValue(key, out var existing);
-            if (existing != null && existing is not TradeskillMaterial) throw new InvalidOperationException("Commodity return requires its concrete material.");
-            var reservation = new CommodityReturnReservation(this, key, existing as TradeskillMaterial, Math.Min(count, capacity));
+            if (existing != null && existing is not TradeskillMaterial) throw new InvalidOperationException("Material increase requires its concrete material.");
+            var reservation = new CommodityReturnReservation(this, key, existing as TradeskillMaterial, count);
             (existing as TradeskillMaterial)?.ReserveCommodityReturn(reservation);
             return commodityReturn = reservation;
         }

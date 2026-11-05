@@ -60,7 +60,7 @@ namespace NexusForever.Game.Entity
                             batch.AttachAccountSettlement(account);
                             batch.Add(() => account.Publish(batch.CurrentActor, batch.Send));
                         }
-                        var purchase = new VendorPurchaseSettlement(characterId, database,
+                        var purchase = new BankMaterialSettlement(characterId, database, "vendor-character-purchase",
                             satchel?.ReserveCommodityReturn(item, count, database));
                         batch.Attach(purchase);
                         var payment = wallet.CaptureBankCurrency(owner, currencyCosts.Where(cost => cost.Value != 0).Select(cost =>
@@ -121,27 +121,27 @@ namespace NexusForever.Game.Entity
             }
         }
 
-        private sealed class VendorPurchaseSettlement(ulong character, string database,
-            SupplySatchelManager.CommodityReturnReservation material) : IBankSaveCompanion
+        private sealed class BankMaterialSettlement(ulong character, string database, string operation,
+            SupplySatchelManager.CommodityReturnReservation material, bool allowItemless = true) : IBankSaveCompanion
         {
             private readonly string receipt = Guid.NewGuid().ToString("N");
             private readonly DateTime created = DateTimeOffset.FromUnixTimeSeconds(DateTimeOffset.UtcNow.ToUnixTimeSeconds()).UtcDateTime;
-            private string Payload => $"vendor-character-purchase:{character}";
+            private string Payload => $"{operation}:{character}";
             internal uint MaterialCount => material == null ? 0u : (uint)(material.Write.After - material.Write.Before);
-            public bool CanExecuteWithoutItems => true;
+            public bool CanExecuteWithoutItems => allowItemless;
 
             public void Stage(CharacterContext context)
             {
                 CharacterDatabaseIdentity.Require(context, database);
                 var prior = ReadReceipt();
                 if (prior != null && !Matches(prior))
-                    throw new InvalidOperationException("Vendor purchase receipt changed its owner.");
+                    throw new InvalidOperationException("Bank material settlement receipt changed its owner.");
                 if (prior == null)
                     context.BankReconciliationReceipt.Add(new BankReconciliationReceiptModel { Id = receipt, Payload = Payload, CreatedUtc = created });
                 context.OnSaveValidation(phase =>
                 {
                     if (phase != CharacterSaveValidationPhase.BeforeFlush && !Matches(ReadReceipt()))
-                        throw new InvalidOperationException("Vendor purchase receipt differs from its captured operation.");
+                        throw new InvalidOperationException("Bank material settlement receipt differs from its captured operation.");
                 });
                 if (material == null) return;
 
@@ -149,7 +149,7 @@ namespace NexusForever.Game.Entity
                 var row = context.CharacterTradeskillMaterial.SingleOrDefault(value => value.Id == character && value.MaterialId == write.Id);
                 ushort? expected = prior != null ? write.After : write.Exists ? write.Before : null;
                 if (row?.Amount != expected)
-                    throw new InvalidOperationException("Vendor purchase material changed after capture.");
+                    throw new InvalidOperationException("Bank material settlement changed after capture.");
                 if (prior == null)
                 {
                     if (row == null)
@@ -161,7 +161,7 @@ namespace NexusForever.Game.Entity
                 {
                     var stored = context.CharacterTradeskillMaterial.AsNoTracking().SingleOrDefault(value => value.Id == character && value.MaterialId == write.Id);
                     if (stored?.Amount != (phase == CharacterSaveValidationPhase.BeforeFlush ? expected : write.After))
-                        throw new InvalidOperationException("Vendor purchase material differs from its captured amount.");
+                        throw new InvalidOperationException("Bank material settlement differs from its captured amount.");
                 });
 
                 BankReconciliationReceiptModel ReadReceipt() => context.BankReconciliationReceipt.AsNoTracking().SingleOrDefault(row => row.Id == receipt);

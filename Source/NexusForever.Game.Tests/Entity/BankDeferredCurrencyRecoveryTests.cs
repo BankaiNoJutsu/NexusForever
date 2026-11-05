@@ -11,6 +11,7 @@ using NexusForever.Database.Character.Model;
 using NexusForever.Database.Configuration.Model;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
+using NexusForever.Game.Abstract.Account.Entitlement;
 using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Account.Currency;
 using NexusForever.Game.Account.Reward;
@@ -33,6 +34,7 @@ using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Shared.Game.Events;
 using NexusForever.WorldServer.Network;
+using NexusForever.WorldServer.Network.Message.Handler.Item;
 using NexusForever.WorldServer.Network.Message.Handler.Vendor;
 using NexusForever.Database.World.Model;
 using NexusForever.Game.Tests.Vendor;
@@ -272,6 +274,146 @@ public sealed class BankDeferredCurrencyRecoveryTests
             definition.SetMethodReturn(nameof(IItemInfo.IsStackable), true);
             return info;
         }
+    }
+
+    [Theory]
+    [InlineData(false, "partial")]
+    [InlineData(false, "full")]
+    [InlineData(true, "lost")]
+    [InlineData(true, "rollback")]
+    [InlineData(true, "stale")]
+    public async Task ManualSatchelDepositSettlesItemAndMaterialTogether(bool shared, string outcome)
+    {
+        const ulong itemId = 904;
+        const ushort materialId = 10;
+        const uint definitionId = 7001;
+        bool limited = outcome is "partial" or "lost";
+        bool rollback = outcome == "rollback";
+        bool stale = outcome == "stale";
+        var location = shared ? InventoryLocation.RealmBank : InventoryLocation.Inventory;
+        using var f = new Fixture(options);
+        f.Seed();
+        var database = new CharacterDatabase();
+        using (var seed = f.Context())
+        {
+            database.Initialise(new DatabaseConnectionString
+            {
+                Provider = seed.Database.IsSqlite() ? DatabaseProvider.Sqlite : DatabaseProvider.MySql,
+                ConnectionString = seed.Database.GetDbConnection().ConnectionString
+            });
+            seed.Character.Single().AccountId = 12;
+            seed.CharacterCurrency.Add(new() { Id = 42, CurrencyId = 1, Amount = 100 });
+            if (shared)
+                seed.RealmBankItem.Add(new() { Id = itemId, AccountId = 12, RealmId = 1, ItemId = definitionId, StackCount = 5 });
+            else
+                seed.Item.Add(new() { Id = itemId, OwnerId = 42, ItemId = definitionId, Location = (ushort)location, StackCount = 5 });
+            if (limited) seed.CharacterTradeskillMaterial.Add(new() { Id = 42, MaterialId = materialId, Amount = 98 });
+            await seed.SaveChangesAsync();
+        }
+        var tables = (RecordingDispatchProxy<IGameTableManager>)(object)f.Source.Tables;
+        tables.SetProperty(nameof(IGameTableManager.CurrencyType), PlayerBindPointTests.Table(new CurrencyTypeEntry { Id = 1, CapAmount = 1000 }));
+        tables.SetProperty(nameof(IGameTableManager.TradeskillMaterial),
+            PlayerBindPointTests.Table(new TradeskillMaterialEntry { Id = materialId, Item2IdStatRevolution = definitionId }));
+        var info = RecordingDispatchProxy<IItemInfo>.Create(out var definition);
+        definition.SetProperty(nameof(IItemInfo.Id), definitionId);
+        definition.SetProperty(nameof(IItemInfo.Entry), new Item2Entry { Id = definitionId, MaxStackCount = 20 });
+        definition.SetMethodReturn(nameof(IItemInfo.IsStackable), true);
+        var items = RecordingDispatchProxy<IItemManager>.Create(out var itemManager);
+        itemManager.SetMethodReturn(nameof(IItemManager.GetItemInfo), info);
+        var account = (RecordingDispatchProxy<IAccount>)(object)f.Source.Player.Account;
+        account.SetProperty(nameof(IAccount.Id), 12u);
+        var entitlement = RecordingDispatchProxy<IAccountEntitlement>.Create(out var unlock);
+        unlock.SetProperty(nameof(IAccountEntitlement.Amount), 1u);
+        var entitlements = RecordingDispatchProxy<IAccountEntitlementManager>.Create(out var permissions);
+        permissions.SetMethodHandler(nameof(IAccountEntitlementManager.GetEntitlement),
+            args => (EntitlementType)args[0] == EntitlementType.SharedRealmBankUnlock ? entitlement : null);
+        account.SetProperty(nameof(IAccount.EntitlementManager), entitlements);
+        var events = new EventQueue();
+        var session = RecordingDispatchProxy<IWorldSession>.Create(out var network);
+        network.SetProperty(nameof(IWorldSession.Events), events);
+        account.SetProperty(nameof(IAccount.Session), session);
+        var databases = RecordingDispatchProxy<IDatabaseManager>.Create(out var dbs);
+        dbs.SetMethodReturn(nameof(IDatabaseManager.GetDatabase), database);
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var bank = new RealmBankManager(databases, items, async command =>
+        {
+            entered.SetResult();
+            await release.Task;
+            if (outcome is "lost" or "rollback")
+            {
+                var fault = new CommitFault(after: !rollback);
+                typeof(RealmBankManager.BankSaveCommand).GetField("contexts", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .SetValue(command, (Func<CharacterContext>)(() => f.Context(fault)));
+            }
+            await command.ExecuteAsync();
+        });
+        var model = Assert.Single(await database.GetCharacters(12));
+        var ordinary = new OrdinaryDatabase(f, outcome);
+        using var actor = new RewardNormalSaveSnapshotTests.Actor(f, actorModel: model, actorSession: session, actorEvents: events,
+            characterDatabase: ordinary, inventoryFactory: (owner, _) => Inventory(owner, items, f.Source.Tables, bank));
+        network.SetProperty(nameof(IWorldSession.Player), actor.Player);
+        var wallet = new CurrencyManager(f.Source.Tables);
+        wallet.Initialise(actor.Player, model);
+        actor.Set(nameof(Player.CurrencyManager), wallet);
+        var satchel = new SupplySatchelManager(actor.Player, model, f.Source.Tables);
+        actor.Set(nameof(Player.SupplySatchelManager), satchel);
+        await actor.Load();
+        var inventory = Assert.IsType<Inventory>(actor.Player.Inventory);
+        if (shared) bank.EnsureLoaded(actor.Player);
+        else inventory.LoadItem(new NexusForever.Game.Entity.Item(Assert.Single(model.Item), items, f.Source.Tables), location, 0);
+        if (!shared && limited) satchel.RemoveAmount(materialId, 1);
+        ushort initialAmount = limited ? (ushort)(shared ? 98 : 97) : (ushort)0;
+        var notices = new List<object>();
+        network.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerSupplySatchelUpdate or ServerItemDelete or ServerItemStackCountUpdate or ServerItemError)
+                notices.Add(args[0]);
+            return null;
+        });
+        var request = new ClientItemMoveToSupplySatchel();
+        typeof(ClientItemMoveToSupplySatchel).GetProperty(nameof(request.ItemGuid))!.SetValue(request, itemId);
+        typeof(ClientItemMoveToSupplySatchel).GetProperty(nameof(request.Amount))!.SetValue(request, 5u);
+        new ClientItemMoveToSupplySatchelHandler().HandleMessage(session, request);
+        try
+        {
+            Assert.Empty(notices);
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            while (!entered.Task.IsCompleted) { events.Update(.01); await Task.Delay(5, timeout.Token); }
+            Assert.Empty(notices);
+            using var before = f.Context();
+            Assert.Equal(5u, StoredStack(before));
+            Assert.Equal(initialAmount, StoredMaterial(before));
+            if (stale)
+                await before.RealmBankItem.Where(row => row.Id == itemId).ExecuteUpdateAsync(set => set.SetProperty(row => row.StackCount, 4u));
+        }
+        finally { release.TrySetResult(); }
+        await actor.Drain();
+
+        using var after = f.Context();
+        if (stale)
+        {
+            Assert.Equal(4u, StoredStack(after));
+            Assert.Equal(0, StoredMaterial(after));
+            Assert.True(inventory.RequiresAuthoritativeReload);
+            Assert.IsType<ServerItemError>(Assert.Single(notices));
+            return;
+        }
+        uint remainder = rollback ? 5u : limited ? (uint)(5 - (100 - initialAmount)) : 0u;
+        Assert.Equal(remainder, StoredStack(after));
+        Assert.Equal(rollback ? 0 : limited ? 100 : 5, StoredMaterial(after));
+        Assert.Null(ordinary.LastFailure);
+        Assert.Equal(rollback ? 0 : 1, notices.OfType<ServerSupplySatchelUpdate>().Count());
+        Assert.Equal(rollback || limited ? 0 : 1, notices.OfType<ServerItemDelete>().Count());
+        Assert.Equal(rollback || !limited ? 0 : 1, notices.OfType<ServerItemStackCountUpdate>().Count());
+        Assert.Equal(rollback ? 1 : 0, notices.OfType<ServerItemError>().Count());
+        if (!rollback) Assert.Equal(StoredMaterial(after), Assert.Single(notices.OfType<ServerSupplySatchelUpdate>()).StackCount);
+
+        uint StoredStack(CharacterContext context) => shared
+            ? context.RealmBankItem.Where(row => row.Id == itemId).Select(row => row.StackCount).SingleOrDefault()
+            : context.Item.Where(row => row.Id == itemId).Select(row => row.StackCount).SingleOrDefault();
+        ushort StoredMaterial(CharacterContext context) => context.CharacterTradeskillMaterial.Where(row => row.Id == 42 && row.MaterialId == materialId)
+            .Select(row => row.Amount).SingleOrDefault();
     }
 
     private sealed class VendorAuthFixture : IDisposable

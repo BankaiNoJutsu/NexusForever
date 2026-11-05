@@ -1882,6 +1882,12 @@ namespace NexusForever.Game.Entity
 
         public void ItemMoveToSupplySatchel(IItem item, uint amount)
         {
+            if (player is Player owner)
+            {
+                SettleSatchelDeposit(owner, item, amount);
+                return;
+            }
+
             lock (MutationGate)
             {
                 using var mutation = new InventoryMutationOperation(this);

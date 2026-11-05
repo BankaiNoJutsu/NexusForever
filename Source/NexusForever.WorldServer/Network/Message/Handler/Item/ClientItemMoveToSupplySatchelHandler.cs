@@ -1,5 +1,6 @@
 ﻿using NexusForever.Game.Abstract.Entity;
 using NexusForever.Network;
+using NexusForever.Game.Entity;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 
@@ -9,6 +10,9 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Item
     {
         public void HandleMessage(IWorldSession session, ClientItemMoveToSupplySatchel moveToSupplySatchel)
         {
+            if (session.Player is Player owner && !ReferenceEquals(owner.Session, session))
+                return;
+
             IItem item = session.Player.Inventory.GetItem(moveToSupplySatchel.ItemGuid);
             if (item == null)
                 throw new InvalidPacketValueException();

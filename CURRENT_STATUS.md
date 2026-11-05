@@ -23436,8 +23436,26 @@ or errors in 38 seconds. All 184 scoped tests passed in 71 seconds, including
 encrypted loopback cases for commit, retry after proven rollback, lost commit
 acknowledgement and rollback after an unsuccessful retry. Results are under
 `artifacts/continuation-20261105/satchel-withdrawal/`.
-Manual deposits, fresh configured-provider coverage and native client behavior
-remain open.
+Fresh configured-provider coverage and native client behavior remain open.
+
+#### Committed satchel deposits
+
+5 November 2026. Manual deposits enroll the source stack and satchel material
+in one reconciled Character transaction. Partial deposits keep the rest in
+the source slot. Full deposits remove the source row. The shared-bank path
+checks entitlement and verifies the stored stack before crediting the satchel.
+The server sends the satchel balance and item notice after settlement to the
+original session.
+
+Four baseline cases reproduced early satchel notices for backpack and
+shared-bank deposits. The first fault run's repeated acknowledgement
+injection prevented recovery. After correcting the fixture to inject the
+fault once, the owning build passed in 31 seconds with no warnings or errors.
+All 66 scoped tests passed in 26 seconds, including partial and full deposits,
+shared-bank rollback, lost commit acknowledgement and stale-stack rejection.
+Local evidence is under
+`artifacts/continuation-20261105/satchel-deposit/`.
+Fresh configured-provider, deployed socket and native client behavior remain open.
 
 #### Existing item and unlock behavior
 
