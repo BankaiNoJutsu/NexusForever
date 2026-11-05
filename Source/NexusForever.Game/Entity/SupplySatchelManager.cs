@@ -7,6 +7,7 @@ using NexusForever.Game.Static.Reward;
 using NexusForever.Game.Static.Quest;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
+using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Static;
 
@@ -225,16 +226,28 @@ namespace NexusForever.Game.Entity
         /// Moves the given amount of the given material to the player's <see cref="IInventory"/>
         /// </summary>
         public void MoveToInventory(ushort materialId, uint amount)
+            => WithdrawToInventory(materialId, amount);
+
+        public void MoveToInventoryFromClient(GameSession session, ushort materialId, uint amount)
+        {
+            if (player.Inventory is Inventory inventory && ReferenceEquals(player.SupplySatchelManager, this))
+                inventory.TrySaveResourceConversion(session, () => WithdrawToInventory(materialId, amount));
+        }
+
+        private bool WithdrawToInventory(ushort materialId, uint amount)
         {
             if (amount == 0u || !tradeskillMaterials.TryGetValue(materialId, out ITradeskillMaterial material))
-                return;
+                return false;
 
-            if (material.Entry == null || amount > material.Amount)
-                return;
+            if (material.Entry == null || material.Entry.Item2IdStatRevolution == 0u || amount > material.Amount)
+                return false;
 
-            // Remove the amount first. The Inventory will replace what it couldn't create items for.
+            if (player.Inventory is Inventory inventory)
+                return inventory.WithdrawSupplySatchelItem(this, material, amount);
+
             RemoveAmount(materialId, amount);
             player.Inventory.ItemCreate(InventoryLocation.Inventory, material.Entry.Item2IdStatRevolution, amount, ItemUpdateReason.ResourceConversion);
+            return true;
         }
 
         /// <summary>

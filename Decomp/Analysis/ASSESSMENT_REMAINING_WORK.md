@@ -52,6 +52,10 @@ retries failed recipient route checks for already committed mail on behalf of
 the original session, with no replay of settlement. A mismatched route or a
 replaced recipient still suppresses live publication.
 
+[Committed satchel withdrawal](../../CURRENT_STATUS.md#committed-satchel-withdrawal)
+debits only what fits in the backpack and commits the material and item rows
+together before sending the original session's notices.
+
 [Build 16042 account-inventory CREDD wire evidence](CREDD_ACCOUNT_REDEEM_WIRE_EVIDENCE.md)
 maps empty `0x0770` and separates the local confirmation event from a server
 result. Publisher evidence establishes historical Signature redemption, and

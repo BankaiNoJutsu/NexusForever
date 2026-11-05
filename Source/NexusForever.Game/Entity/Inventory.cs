@@ -366,10 +366,12 @@ namespace NexusForever.Game.Entity
                 return false;
 
             var account = owner.Account;
+            var satchel = owner.SupplySatchelManager;
             ulong? epoch = account?.WorldSessionEpoch;
             var events = session.Events;
             bool OwnsActor() => ReferenceEquals(owner.Session, session) && ReferenceEquals(session.Events, events)
                 && ReferenceEquals(owner.Inventory, this) && owner.CharacterId == characterId
+                && ReferenceEquals(owner.SupplySatchelManager, satchel)
                 && ReferenceEquals(owner.Account, account) && account?.WorldSessionEpoch == epoch
                 && session is IPlayerSession bound && ReferenceEquals(bound.Player, owner)
                 && !session.IsDisconnecting && owner.LogoutManager?.State is not (LogoutState.Logout or LogoutState.Finished);
@@ -481,30 +483,65 @@ namespace NexusForever.Game.Entity
             if (count == 0u)
                 return 0;
 
-            if (info.IsStackable())
+            if (!info.IsStackable())
+                return count;
+
+            uint maxStackCount = Math.Max(1u, info.Entry.MaxStackCount);
+            count = CountRemainingAfterStacking(bag, info, count, maxStackCount, afterReclaim);
+            return (count + maxStackCount - 1) / maxStackCount;
+        }
+
+        private static ulong CountRemainingAfterStacking(IBag bag, IItemInfo info, ulong count, uint maxStackCount,
+            IReadOnlyDictionary<IItem, uint> afterReclaim = null)
+        {
+            uint expirationTimeLeft = GetInitialExpirationTimeLeft(info);
+            foreach (IItem item in bag.Where(i => !bag.IsSlotReserved(i.BagIndex) && i.Info.Id == info.Id && i.ExpirationTimeLeft == expirationTimeLeft))
             {
-                uint expirationTimeLeft = GetInitialExpirationTimeLeft(info);
-                uint maxStackCount = Math.Max(1u, info.Entry.MaxStackCount);
-                foreach (IItem item in bag.Where(i => !bag.IsSlotReserved(i.BagIndex) && i.Info.Id == info.Id && i.ExpirationTimeLeft == expirationTimeLeft))
+                if (count == 0u)
+                    break;
+
+                uint stackCount = item.StackCount;
+                if (afterReclaim != null && afterReclaim.TryGetValue(item, out uint after))
                 {
-                    if (count == 0u)
-                        break;
-
-                    uint stackCount = item.StackCount;
-                    if (afterReclaim != null && afterReclaim.TryGetValue(item, out uint after))
-                    {
-                        if (after == 0) continue;
-                        stackCount = after;
-                    }
-
-                    if (stackCount >= maxStackCount)
-                        continue;
-
-                    count -= Math.Min(count, maxStackCount - stackCount);
+                    if (after == 0) continue;
+                    stackCount = after;
                 }
-                return (count + maxStackCount - 1) / maxStackCount;
+
+                if (stackCount < maxStackCount)
+                    count -= Math.Min(count, maxStackCount - stackCount);
             }
             return count;
+        }
+
+        internal bool WithdrawSupplySatchelItem(SupplySatchelManager satchel, ITradeskillMaterial material, uint count)
+        {
+            lock (MutationGate)
+            {
+                using var mutation = new InventoryMutationOperation(this);
+                if (!ReferenceEquals(player?.SupplySatchelManager, satchel) || RequiresAuthoritativeReload
+                    || IsRealmBankPersistenceBlocked || rewardOwnerInvalidated || commodityDelivery != null)
+                    return false;
+
+                IItemInfo info = itemManager?.GetItemInfo(material.Entry.Item2IdStatRevolution);
+                IBag bag = GetBag(InventoryLocation.Inventory);
+                if (info?.Entry == null || bag == null)
+                    return false;
+
+                bool stackable = info.IsStackable();
+                uint perSlot = stackable ? info.Entry.MaxStackCount : 1u;
+                if (perSlot == 0u)
+                    return false;
+
+                ulong remaining = stackable ? CountRemainingAfterStacking(bag, info, count, perSlot) : count;
+                ulong unplaced = remaining - Math.Min(remaining, (ulong)bag.AvailableSlots * perSlot);
+                uint withdrawn = count - (uint)unplaced;
+                if (withdrawn == 0u)
+                    return false;
+
+                satchel.RemoveAmount(material.MaterialId, withdrawn);
+                ItemCreate(InventoryLocation.Inventory, info, withdrawn, ItemUpdateReason.ResourceConversion);
+                return true;
+            }
         }
 
         /// <inheritdoc />
@@ -721,7 +758,7 @@ namespace NexusForever.Game.Entity
                         if (count == 0u)
                             break;
 
-                        if (item.StackCount == info.Entry.MaxStackCount)
+                        if (item.StackCount >= info.Entry.MaxStackCount)
                             continue;
 
                         uint newStackCount = Math.Min(item.StackCount + count, info.Entry.MaxStackCount);

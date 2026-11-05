@@ -23421,6 +23421,24 @@ resumption. The owning build and 136 scoped conversion and persistence
 tests passed, including the original retry cases. Local evidence is under
 `artifacts/continuation-20261105/resource-conversion-save-owner/`.
 
+#### Committed satchel withdrawal
+
+5 November 2026. Manual satchel withdrawal now debits the amount the backpack can accept.
+Missing item data or a full backpack leaves the material in the satchel.
+Partial withdrawals send a single final balance. The World request saves the
+material and the item together and releases their packets after the Character
+commit for the original session.
+
+Baseline cases exposed a debit followed by an exception for missing item data,
+interim balances for full and partially full bags, and a premature balance
+packet on the encrypted socket. The owning build passed with zero warnings
+or errors in 38 seconds. All 184 scoped tests passed in 71 seconds, including
+encrypted loopback cases for commit, retry after proven rollback, lost commit
+acknowledgement and rollback after an unsuccessful retry. Results are under
+`artifacts/continuation-20261105/satchel-withdrawal/`.
+Manual deposits, fresh configured-provider coverage and native client behavior
+remain open.
+
 #### Existing item and unlock behavior
 
 Inventory, title, pet, costume, unlock surfaces exist. Generic unlock

@@ -50,6 +50,7 @@ using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Script;
 using NexusForever.WorldServer;
 using NexusForever.WorldServer.Network;
+using NexusForever.WorldServer.Network.Message.Handler.Item;
 using NexusForever.WorldServer.Network.Message.Handler.Misc;
 using NexusForever.WorldServer.Network.Message.Handler.Quest;
 using Xunit.Abstractions;
@@ -120,6 +121,14 @@ public sealed partial class Q5597RewardPersistenceTests
         => RunQuestLoopback(false, itemConversion: outcome);
 
     [Theory]
+    [InlineData("success")]
+    [InlineData("retry")]
+    [InlineData("lost-ack")]
+    [InlineData("rollback")]
+    public Task LoopbackSatchelWithdrawalCommitsMaterialAndItemBeforePublication(string outcome)
+        => RunQuestLoopback(false, satchelWithdrawal: outcome);
+
+    [Theory]
     [InlineData(1u, "success")]
     [InlineData(2u, "retry")]
     [InlineData(3u, "lost-ack")]
@@ -132,7 +141,7 @@ public sealed partial class Q5597RewardPersistenceTests
     private async Task RunQuestLoopback(bool rejectFirstSave, bool tutorialRecovery = false, bool levelReward = false,
         bool replaceMapAdmission = false, bool autoAccept = false, bool acceptOnly = false, bool itemStarter = false,
         bool share = false, bool replaceSharer = false, string itemConversion = null, uint conversionType = 0,
-        GameMessageOpcode? questLifecycle = null)
+        GameMessageOpcode? questLifecycle = null, string satchelWithdrawal = null)
     {
         const uint accountId = 12;
         const uint sharerGuid = 99;
@@ -143,6 +152,7 @@ public sealed partial class Q5597RewardPersistenceTests
         const ulong starterId = 50;
         const uint conversionPrice = 1;
         const uint reputationReward = 5;
+        const ushort materialId = 12;
         const Faction reputationFaction = Faction.Exile;
         bool reputationConversion = conversionType != 0;
         bool spendsCurrency = conversionType == 3;
@@ -155,7 +165,7 @@ public sealed partial class Q5597RewardPersistenceTests
         RecordingDispatchProxy<IWorldSession> retiredObserver = null;
         RecordingDispatchProxy<IWorldSession> lateObserverSession = null;
         RecordingDispatchProxy<IAccount> retiredObserverAccount = null;
-        using var f = new Fixture(itemConversion != null || questLifecycle.HasValue ? characterOptions : null);
+        using var f = new Fixture(itemConversion != null || satchelWithdrawal != null || questLifecycle.HasValue ? characterOptions : null);
         using var authConnection = new SqliteConnection(new SqliteConnectionStringBuilder
         {
             DataSource = $"q5597-{Guid.NewGuid():N}", Mode = SqliteOpenMode.Memory,
@@ -189,6 +199,8 @@ public sealed partial class Q5597RewardPersistenceTests
                     Location = (ushort)InventoryLocation.Inventory, StackCount = 1 });
             if (spendsCurrency)
                 seed.CharacterCurrency.Add(new() { Id = 42, CurrencyId = (byte)CurrencyType.Credits, Amount = 40 });
+            if (satchelWithdrawal != null)
+                seed.CharacterTradeskillMaterial.Add(new() { Id = 42, MaterialId = materialId, Amount = 20 });
             await seed.SaveChangesAsync();
         }
         ConfigureQuest(f, reclaim: autoAccept || acceptOnly || retryQuest, questId);
@@ -225,8 +237,12 @@ public sealed partial class Q5597RewardPersistenceTests
             starter.Quest2IdActivation = questId;
             starter.MaxStackCount = 10;
         }
-        var conversionDatabase = itemConversion == null ? null : new ConversionSaveDatabase(f, itemConversion);
-        if (conversionDatabase != null)
+        var conversionOutcome = itemConversion ?? satchelWithdrawal;
+        var conversionDatabase = conversionOutcome == null ? null : new ConversionSaveDatabase(f, conversionOutcome);
+        if (satchelWithdrawal != null)
+            ((RecordingDispatchProxy<IGameTableManager>)(object)f.Source.Tables).SetProperty(nameof(IGameTableManager.TradeskillMaterial),
+                PlayerBindPointTests.Table(new TradeskillMaterialEntry { Id = materialId, Item2IdStatRevolution = PushedItem }));
+        if (itemConversion != null)
         {
             var tables = (RecordingDispatchProxy<IGameTableManager>)(object)f.Source.Tables;
             tables.SetProperty(nameof(IGameTableManager.Item), PlayerBindPointTests.Table(items.GetItemInfo(PushedItem).Entry));
@@ -250,6 +266,7 @@ public sealed partial class Q5597RewardPersistenceTests
         messages.RegisterMessageHandler(typeof(ClientQuestRetryHandler));
         messages.RegisterMessageHandler(typeof(ClientQuestShareResultHandler));
         messages.RegisterMessageHandler(typeof(ClientConvertResourceHandler));
+        messages.RegisterMessageHandler(typeof(ClientItemMoveFromSupplySatchelHandler));
         using var services = new ServiceCollection()
             .AddKeyedTransient<IReadable, ClientEncrypted>(GameMessageOpcode.ClientEncrypted)
             .AddKeyedTransient<IReadable, ClientQuestComplete>(GameMessageOpcode.ClientQuestComplete)
@@ -258,12 +275,58 @@ public sealed partial class Q5597RewardPersistenceTests
             .AddKeyedTransient<IReadable, ClientQuestRetry>(GameMessageOpcode.ClientQuestRetry)
             .AddKeyedTransient<IReadable, ClientQuestShareResult>(GameMessageOpcode.ClientQuestShareResult)
             .AddKeyedTransient<IReadable, ClientConvertResource>(GameMessageOpcode.ClientConvertResource)
+            .AddKeyedTransient<IReadable, ClientItemMoveFromSupplySatchel>(GameMessageOpcode.ClientItemMoveFromSupplySatchel)
             .AddSingleton(f.Source.Tables)
             .AddSingleton<ILogger<ClientConvertResourceHandler>>(NullLogger<ClientConvertResourceHandler>.Instance)
             .AddTransient<ClientEncryptedHandler>().AddTransient<ClientQuestCompleteHandler>()
             .AddTransient<ClientQuestAcceptHandler>().AddTransient<ClientQuestShareResultHandler>()
             .AddTransient<ClientQuestAbandonHandler>().AddTransient<ClientQuestRetryHandler>()
-            .AddTransient<ClientConvertResourceHandler>().BuildServiceProvider();
+            .AddTransient<ClientConvertResourceHandler>().AddTransient<ClientItemMoveFromSupplySatchelHandler>().BuildServiceProvider();
+
+        if (satchelWithdrawal != null)
+        {
+            await RunSession(async (world, client, actor) =>
+            {
+                await client.SendEncrypted(GameMessageOpcode.ClientItemMoveFromSupplySatchel, writer =>
+                {
+                    writer.Write(materialId, 14u);
+                    writer.Write(1u);
+                    writer.Write((ushort)0, 9u);
+                    writer.Write(0u);
+                });
+                await PumpUntil(world, () => actor.Player.Inventory.GetItemCount(PushedItem) == 1 || world.IsDisconnecting);
+                Assert.False(world.IsDisconnecting);
+                using (var before = f.Context())
+                {
+                    Assert.Equal(20, Assert.Single(before.CharacterTradeskillMaterial).Amount);
+                    Assert.Empty(before.Item);
+                }
+                await AssertQuestPacketsWithheld(world, client, GameMessageOpcode.ServerSupplySatchelUpdate);
+                Assert.True(actor.Player.IsNormalSaveInProgress);
+                Assert.False(world.CanProcessIncomingPackets);
+
+                bool rolledBack = satchelWithdrawal == "rollback";
+                await PumpUntil(world, () => world.CanProcessIncomingPackets || world.IsDisconnecting);
+                Assert.Equal(rolledBack, world.IsDisconnecting);
+                Assert.Equal(satchelWithdrawal is "retry" or "rollback" ? 2 : 1, conversionDatabase.Attempts);
+                using var after = f.Context();
+                Assert.Equal(rolledBack ? 20 : 19, Assert.Single(after.CharacterTradeskillMaterial).Amount);
+                if (rolledBack)
+                {
+                    Assert.Empty(after.Item);
+                    Assert.Empty(after.BankReconciliationReceipt);
+                    return;
+                }
+                Assert.Single(after.BankReconciliationReceipt);
+                var storedItem = Assert.Single(after.Item);
+                using var balance = await ReadPacket(client, GameMessageOpcode.ServerSupplySatchelUpdate);
+                Assert.Equal(materialId, balance.ReadUShort(14));
+                Assert.Equal(19, balance.ReadUShort());
+                using var item = await ReadPacket(client, GameMessageOpcode.ServerItemAdd);
+                Assert.Equal((storedItem.Id, PushedItem, 1u), ReadFixtureInventoryItem(item));
+            });
+            return;
+        }
 
         if (questLifecycle is { } request)
         {
@@ -764,6 +827,8 @@ public sealed partial class Q5597RewardPersistenceTests
             typeof(WorldSession).GetProperty(nameof(WorldSession.Account))!.SetValue(world, account);
             var model = Assert.Single(await database.GetCharacters(accountId));
             using var actor = LoadActor(f, items, 2, model, world, account, auth, questId, conversionDatabase);
+            if (satchelWithdrawal != null)
+                actor.Set(nameof(Player.SupplySatchelManager), new SupplySatchelManager(actor.Player, model, f.Source.Tables));
             if (reputationConversion)
             {
                 var factions = RecordingDispatchProxy<IFactionManager>.Create(out var factionManager);
@@ -978,7 +1043,7 @@ public sealed partial class Q5597RewardPersistenceTests
         => typeof(WorldEntity).GetMethod("FlushPropertyUpdates", BindingFlags.Instance | BindingFlags.NonPublic)!
             .Invoke(actor.Player, null);
 
-    private async Task AssertQuestPacketsWithheld(WorldSession world, GameProtocolClient client)
+    private async Task AssertQuestPacketsWithheld(WorldSession world, GameProtocolClient client, GameMessageOpcode? additionalOpcode = null)
     {
         // The marker delimits a flush on this private socket while the save is held.
         world.EnqueueMessageEncrypted(new ServerPlayerEnteredWorld());
@@ -994,7 +1059,7 @@ public sealed partial class Q5597RewardPersistenceTests
                 or GameMessageOpcode.ServerAchievementUpdate or GameMessageOpcode.ServerDialogEnd
                 or GameMessageOpcode.ServerExperienceGained or GameMessageOpcode.ServerEntityStatUpdateInteger
                 or GameMessageOpcode.ServerSpellStart or GameMessageOpcode.ServerEntityPropertiesUpdate
-                or GameMessageOpcode.ServerEntityHealthUpdate, $"Premature {frame.Opcode}");
+                or GameMessageOpcode.ServerEntityHealthUpdate || frame.Opcode == additionalOpcode, $"Premature {frame.Opcode}");
         }
         output.WriteLine("No item, quest-state, achievement or dialog-end packets while the quest save was held.");
     }

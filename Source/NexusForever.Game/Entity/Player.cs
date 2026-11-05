@@ -863,7 +863,8 @@ namespace NexusForever.Game.Entity
         }
 
         private sealed record RecoverableSaveActor(ulong Character, IGameSession Session, EventQueue Events,
-            IAccount Account, ulong? Epoch, IInventory Inventory, IQuestManager Quests, IChallengeManager Challenges);
+            IAccount Account, ulong? Epoch, IInventory Inventory, IQuestManager Quests, IChallengeManager Challenges,
+            ISupplySatchelManager Satchel);
         private RecoverableSaveActor pendingConversionSave;
 
         internal void SaveResourceConversion(Action callback)
@@ -873,13 +874,14 @@ namespace NexusForever.Game.Entity
         }
 
         private RecoverableSaveActor CaptureRecoverableSaveActor()
-            => new(CharacterId, Session, Session.Events, Account, Account?.WorldSessionEpoch, Inventory, QuestManager, ChallengeManager);
+            => new(CharacterId, Session, Session.Events, Account, Account?.WorldSessionEpoch, Inventory, QuestManager, ChallengeManager, SupplySatchelManager);
 
         private bool OwnsRecoverableSaveActor(RecoverableSaveActor actor)
             => CharacterId == actor.Character && ReferenceEquals(Session, actor.Session) && ReferenceEquals(actor.Session.Events, actor.Events)
                 && ReferenceEquals(Account, actor.Account) && Account?.WorldSessionEpoch == actor.Epoch
                 && ReferenceEquals(Inventory, actor.Inventory) && ReferenceEquals(QuestManager, actor.Quests)
                 && ReferenceEquals(ChallengeManager, actor.Challenges)
+                && ReferenceEquals(SupplySatchelManager, actor.Satchel)
                 && (actor.Session is not IPlayerSession bound || ReferenceEquals(bound.Player, this))
                 && actor.Session is not NetworkSession { IsDisconnecting: true }
                 && LogoutManager?.State is not (LogoutState.Logout or LogoutState.Finished);

@@ -283,6 +283,24 @@ public class InventoryAutoSatchelTests
         Assert.Equal(existingAmount == 0 ? 20u : 19u, f.Stored);
         Assert.Equal(10u, Assert.Single(f.Bag).StackCount);
         Assert.Empty(f.Messages.OfType<ServerItemError>());
+        var balances = f.Messages.OfType<ServerSupplySatchelUpdate>().ToArray();
+        if (existingAmount == 0)
+            Assert.Empty(balances);
+        else
+            Assert.Equal(19, Assert.Single(balances).StackCount);
+    }
+
+    [Fact]
+    public void MissingWithdrawalItemLeavesSatchelAndBagUntouched()
+    {
+        var f = new Fixture(slots: 1, stored: 20);
+        f.ItemManagerProxy.SetMethodReturn(nameof(IItemManager.GetItemInfo), null);
+
+        f.Satchel.MoveToInventory(MaterialId, 5);
+
+        Assert.Equal(20u, f.Stored);
+        Assert.Empty(f.Bag);
+        Assert.Empty(f.Messages);
     }
 
     [Fact]
