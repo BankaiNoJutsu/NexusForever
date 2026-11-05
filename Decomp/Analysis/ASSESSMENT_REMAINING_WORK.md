@@ -58,8 +58,9 @@ the original account. The [cross-database save probe](../../CURRENT_STATUS.md#cr
 reproduces an Auth debit and usage increment with no Character credit when
 the Character save fails. The [CREDD settlement protocol](../../CURRENT_STATUS.md#credd-settlement-and-realm-recovery)
 pairs the wallet and usage changes in Auth and resolves outstanding receipts
-at Realm admission. Connect the compatibility packet handler to the protocol
-and publish the result after the original actor adopts the committed balances.
+at Realm admission. [Committed compatibility redemption](../../CURRENT_STATUS.md#committed-credd-compatibility-redemption)
+connects the `0x0268` handler and publishes after the original actor adopts
+the committed balances. Configured-provider and deployed delivery remain open.
 
 [Public event contribution ownership](../../CURRENT_STATUS.md#public-event-contribution-ownership)
 checks the enrolled actor for player-driven progress, stats, votes, scoreboards,

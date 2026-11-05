@@ -20972,9 +20972,22 @@ cap rejection, and a rejected usage write. They verified one compensation
 after repeated admission and preserved the existing `15:1` and `17:1` rows.
 Local results are under `artifacts/continuation-20261105/credd-redemption-settlement/`.
 
-The `0x0268` handler still needs live enrollment and committed publication.
-The existing 1000:1 ratio applies to this compatibility path. Retail
-`0x0770` grant rules remain open.
+#### Committed CREDD compatibility redemption
+
+5 November 2026. The `0x0268` handler sends the existing 1000:1 exchange
+through the Character settlement queue. The original session receives the
+wallet, entitlement, Character credit, and success notices after commit and
+adoption. A confirmed Character rollback compensates the Auth debit and
+usage increment before the failure reply. A replaced session cannot receive
+the old redemption's results.
+
+The owning build and 40 scoped SQLite tests passed. The three live handler
+cases then passed again with unchanged production binaries and assertions
+on stored and adopted balances at result enqueue. They cover success,
+Character write rejection with compensation, and player replacement.
+Local evidence is under `artifacts/continuation-20261105/credd-live-settlement/`.
+
+Configured MySQL, deployed delivery and retail `0x0770` grant rules remain open.
 
 #### Storefront and account inventory coverage
 

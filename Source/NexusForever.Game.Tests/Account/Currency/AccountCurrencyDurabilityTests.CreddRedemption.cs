@@ -6,14 +6,17 @@ using NexusForever.Database.Auth.Model;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Database.Configuration.Model;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Account.Currency;
 using NexusForever.Game.Account.Entitlement;
 using NexusForever.Game.Entity;
+using NexusForever.Game.RealmBank;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.Game.Tests.Entity;
 using NexusForever.Game.Tests.Transport;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -136,10 +139,13 @@ public sealed partial class AccountCurrencyDurabilityTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task CreddRedemptionWorldSaveStoresWalletAndUsageOnTheAuthSide(bool rejectCharacter)
+    [InlineData("commit")]
+    [InlineData("rollback")]
+    [InlineData("replacement")]
+    public async Task CreddRedemptionHandlerPublishesOnlyAfterSettlement(string outcome)
     {
+        bool rejectCharacter = outcome == "rollback";
+        bool replace = outcome == "replacement";
         using var auth = new Fixture(null, AccountCurrencyType.Credd);
         using var character = new CharacterFixture(null);
         character.Seed();
@@ -153,6 +159,7 @@ public sealed partial class AccountCurrencyDurabilityTests
         network.SetProperty(nameof(IWorldSession.Account), auth.Account);
         network.SetProperty(nameof(IWorldSession.Events), events);
         auth.AccountProxy.SetProperty(nameof(IAccount.Session), session);
+        auth.AccountProxy.SetProperty(nameof(IAccount.WorldSessionEpoch), 1ul);
 
         AccountModel account;
         var authDatabase = new AuthDatabase();
@@ -164,6 +171,7 @@ public sealed partial class AccountCurrencyDurabilityTests
             });
             context.AccountEntitlement.Add(new AccountEntitlementModel
                 { Id = auth.Account.Id, EntitlementId = (byte)EntitlementType.CREDDUsage, Amount = 1 });
+            context.AccountWorldSession.Add(new() { AccountId = auth.Account.Id, Epoch = 1 });
             await context.SaveChangesAsync();
             account = context.Account.AsNoTracking().Include(row => row.AccountCurrency)
                 .Include(row => row.AccountEntitlement).Single();
@@ -173,12 +181,13 @@ public sealed partial class AccountCurrencyDurabilityTests
         auth.AccountProxy.SetProperty(nameof(IAccount.CurrencyManager), wallet);
         auth.AccountProxy.SetProperty(nameof(IAccount.EntitlementManager), entitlements);
 
-        var model = new CharacterModel { Id = 42, AccountId = auth.Account.Id };
-        model.Currency.Add(new CharacterCurrencyModel { Id = 42, CurrencyId = (byte)CurrencyType.Credits, Amount = 500 });
+        var characterDatabase = new CharacterDatabase();
         using (var context = character.Context())
         {
+            characterDatabase.Initialise(new DatabaseConnectionString
+                { Provider = DatabaseProvider.Sqlite, ConnectionString = context.Database.GetDbConnection().ConnectionString });
             context.Character.Single().AccountId = auth.Account.Id;
-            context.CharacterCurrency.AddRange(model.Currency);
+            context.CharacterCurrency.Add(new CharacterCurrencyModel { Id = 42, CurrencyId = (byte)CurrencyType.Credits, Amount = 500 });
             await context.SaveChangesAsync();
             if (rejectCharacter)
                 await context.Database.ExecuteSqlRawAsync("""
@@ -187,8 +196,21 @@ public sealed partial class AccountCurrencyDurabilityTests
                     """);
         }
 
+        var databases = RecordingDispatchProxy<IDatabaseManager>.Create(out var databaseProxy);
+        databaseProxy.SetMethodReturn(nameof(IDatabaseManager.GetDatabase), characterDatabase);
+        var items = RecordingDispatchProxy<IItemManager>.Create(out _);
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var bank = new RealmBankManager(databases, items, async command =>
+        {
+            started.TrySetResult();
+            await release.Task;
+            await command.ExecuteAsync();
+        });
+        var model = Assert.Single(await characterDatabase.GetCharacters(auth.Account.Id));
         using var actor = new SaveActor(character, actorAccount: auth.Account, actorSession: session,
-            actorEvents: events, authDatabase: authDatabase);
+            actorEvents: events, authDatabase: authDatabase, characterDatabase: characterDatabase, actorModel: model,
+            inventoryFactory: (owner, _) => BankDeferredCurrencyRecoveryTests.Inventory(owner, items, auth.Tables, bank));
         network.SetProperty(nameof(IWorldSession.Player), actor.Player);
         var credits = new CurrencyManager(auth.Tables);
         credits.Initialise(actor.Player, model);
@@ -202,32 +224,77 @@ public sealed partial class AccountCurrencyDurabilityTests
         });
         await actor.Load();
 
+        int observedResults = 0;
+        network.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is not ServerCREDDRedeemResult)
+                return null;
+            observedResults++;
+            using var storedAuth = auth.Context();
+            using var storedCharacter = character.Context();
+            ulong storedWallet = storedAuth.AccountCurrency.Single().Amount;
+            uint storedUsage = storedAuth.AccountEntitlement.Single().Amount;
+            ulong storedCredits = storedCharacter.CharacterCurrency.Single().Amount;
+            Assert.Equal(rejectCharacter ? 100ul : 98ul, storedWallet);
+            Assert.Equal(rejectCharacter ? 1u : 2u, storedUsage);
+            Assert.Equal(rejectCharacter ? 500ul : 2500ul, storedCredits);
+            Assert.Equal(storedWallet, wallet.GetCurrencyAmount(AccountCurrencyType.Credd));
+            Assert.Equal(storedUsage, entitlements.GetEntitlement(EntitlementType.CREDDUsage).Amount);
+            Assert.Equal(storedCredits, Assert.Single(credits).Amount);
+            return null;
+        });
+
         var request = new ClientCREDDRedeem();
         typeof(ClientCREDDRedeem).GetProperty(nameof(ClientCREDDRedeem.CreddAmount))!.SetValue(request, 2ul);
         new ClientCREDDRedeemHandler(NullLogger<ClientCREDDRedeemHandler>.Instance).HandleMessage(session, request);
         IEnumerable<object> Packets() => network.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted))
             .Select(invocation => invocation.Arguments[0]);
 
-        Assert.Equal(2500ul, Assert.Single(credits).Amount);
-        using (var beforeAuth = auth.Context())
+        try
         {
-            Assert.Equal(100ul, beforeAuth.AccountCurrency.Single().Amount);
-            Assert.Equal(1u, beforeAuth.AccountEntitlement.Single().Amount);
+            Assert.Empty(Packets().OfType<ServerCREDDRedeemResult>());
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            while (!started.Task.IsCompleted)
+            {
+                events.Update(.01);
+                await Task.Delay(5, timeout.Token);
+            }
+            Assert.Equal(500ul, Assert.Single(credits).Amount);
+            Assert.Empty(Packets().OfType<ServerCREDDRedeemResult>());
+            using (var beforeAuth = auth.Context())
+            {
+                Assert.Equal(100ul, beforeAuth.AccountCurrency.Single().Amount);
+                Assert.Equal(1u, beforeAuth.AccountEntitlement.Single().Amount);
+            }
+            using (var beforeCharacter = character.Context())
+                Assert.Equal(500ul, beforeCharacter.CharacterCurrency.Single().Amount);
+            if (replace)
+                network.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
         }
-        using (var beforeCharacter = character.Context())
-            Assert.Equal(500ul, beforeCharacter.CharacterCurrency.Single().Amount);
-        // Capture the legacy ordering separately from the save's persisted outcome.
-        bool sentBeforeSave = Packets().OfType<ServerCREDDRedeemResult>().Any();
+        finally { release.TrySetResult(); }
 
-        actor.StartSave();
         await actor.Drain();
         using var settledAuth = auth.Context();
         using var settledCharacter = character.Context();
-        Assert.Equal(98ul, settledAuth.AccountCurrency.Single().Amount);
-        Assert.Equal(2u, settledAuth.AccountEntitlement.Single().Amount);
+        Assert.Equal(rejectCharacter ? 100ul : 98ul, settledAuth.AccountCurrency.Single().Amount);
+        Assert.Equal(rejectCharacter ? 1u : 2u, settledAuth.AccountEntitlement.Single().Amount);
+        Assert.Equal(rejectCharacter ? 2 : 1, settledAuth.AccountCurrencyOperation.Count());
         Assert.Equal(rejectCharacter ? 500ul : 2500ul, settledCharacter.CharacterCurrency.Single().Amount);
-        Assert.Equal(rejectCharacter ? 1 : 0, network.GetInvocations(nameof(IWorldSession.ForceDisconnect)).Count);
-        Assert.Equal(CREDDRedeemResultType.Ok, (CREDDRedeemResultType)Assert.Single(Packets().OfType<ServerCREDDRedeemResult>()).Value);
-        Assert.True(sentBeforeSave, "The legacy success packet already precedes both database saves.");
+        Assert.Equal(replace ? 0 : 1, observedResults);
+        if (replace)
+        {
+            Assert.Empty(Packets().OfType<ServerCREDDRedeemResult>());
+            Assert.Empty(Packets().OfType<ServerAccountOperationResult>());
+            return;
+        }
+        Assert.Equal(rejectCharacter ? 100ul : 98ul, wallet.GetCurrencyAmount(AccountCurrencyType.Credd));
+        Assert.Equal(rejectCharacter ? 1u : 2u, entitlements.GetEntitlement(EntitlementType.CREDDUsage).Amount);
+        Assert.Equal(rejectCharacter ? 500ul : 2500ul, Assert.Single(credits).Amount);
+        Assert.Equal(rejectCharacter ? CREDDRedeemResultType.GenericFail : CREDDRedeemResultType.Ok,
+            (CREDDRedeemResultType)Assert.Single(Packets().OfType<ServerCREDDRedeemResult>()).Value);
+        var result = Assert.Single(Packets().OfType<ServerAccountOperationResult>());
+        Assert.Equal(AccountOperation.CREDDRedeem, result.Operation);
+        Assert.Equal(rejectCharacter ? AccountOperationResult.GenericFail : AccountOperationResult.Ok, result.Result);
+        Assert.Empty(network.GetInvocations(nameof(IWorldSession.ForceDisconnect)));
     }
 }

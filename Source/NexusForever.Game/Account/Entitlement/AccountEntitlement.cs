@@ -22,6 +22,12 @@ namespace NexusForever.Game.Account.Entitlement
             lock (saveStateLock) return (committedAmount, committedRevision);
         }
 
+        internal bool CanAdoptCreddUsage()
+        {
+            lock (saveStateLock)
+                return pendingSave == null && saveMask == SaveMask.None;
+        }
+
         /// <summary>
         /// Create a new <see cref="IAccountEntitlement"/> from an existing database model.
         /// </summary>

@@ -6,6 +6,7 @@ using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Account.Currency;
+using NexusForever.Game.Account.Entitlement;
 using NexusForever.Game.RealmBank;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Account;
@@ -81,8 +82,10 @@ namespace NexusForever.Game.Entity
         }
 
         private sealed class VendorAccountSettlement(VendorAccountPurchase protocol, VendorAccountPurchase.Intent intent,
-            Func<AuthContext> auth, AccountCurrencyManager.VendorWallets wallets) : IBankSaveCompanion
+            Func<AuthContext> auth, AccountCurrencyManager.VendorWallets wallets,
+            AccountEntitlementManager.CreddUsageReservation usage = null) : IBankSaveCompanion
         {
+            public bool CanExecuteWithoutItems => usage != null;
             internal string ReceiptId => intent.Id;
             internal Func<CharacterContext, Action<CharacterContext>, Task<bool>> Authorization => async (context, enroll) =>
                 await protocol.AuthorizeAsync(context, intent, enroll) == VendorAccountAuthorization.Authorized;
@@ -92,16 +95,30 @@ namespace NexusForever.Game.Entity
                 var resolved = await outcome;
                 await protocol.ResolveWalletAsync(intent, resolved.Committed);
                 await wallets.ReadAsync(auth);
+                if (usage != null) await usage.ReadAsync(auth);
             }
 
             public void Stage(CharacterContext context) { }
-            internal void AdoptWallets() => wallets.Adopt();
+            internal void AdoptWallets()
+            {
+                wallets.Adopt();
+                usage?.Adopt();
+            }
             public void Adopt() { }
             public bool ReleaseForOrdinarySave() => true;
-            public void Complete() => wallets.Dispose();
-            public void Abort() => wallets.Dispose();
-            public void Quarantine() => wallets.Quarantine();
-            internal void Publish(Func<bool> currentActor, Action<IWritable> send) => wallets.Publish(currentActor, send);
+            public void Complete() { wallets.Dispose(); usage?.Dispose(); }
+            public void Abort() => Complete();
+            public void Quarantine() { wallets.Quarantine(); usage?.Dispose(); }
+            internal void Publish(Func<bool> currentActor, Action<IWritable> send)
+            {
+                wallets.Publish(currentActor, send);
+                if (usage != null)
+                {
+                    if (!currentActor())
+                        throw new InvalidOperationException("CREDD usage publication lost its original actor.");
+                    usage.Publish(send);
+                }
+            }
         }
 
         private sealed class VendorPurchaseSettlement(ulong character, string database,

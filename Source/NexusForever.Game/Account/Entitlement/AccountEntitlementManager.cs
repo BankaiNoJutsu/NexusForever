@@ -9,6 +9,8 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Reward;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
+using Microsoft.EntityFrameworkCore;
+using NexusForever.Network.Message;
 
 namespace NexusForever.Game.Account.Entitlement
 {
@@ -16,6 +18,8 @@ namespace NexusForever.Game.Account.Entitlement
     {
         private readonly IAccount account;
         private readonly IAssetManager assetManager;
+        private readonly IGameTableManager gameTableManager;
+        private CreddUsageReservation creddUsage;
 
         /// <summary>
         /// Create a new <see cref="IAccountEntitlementManager"/> from existing database model.
@@ -25,6 +29,7 @@ namespace NexusForever.Game.Account.Entitlement
         {
             this.account       = account;
             this.assetManager = assetManager;
+            this.gameTableManager = gameTableManager;
 
             foreach (AccountEntitlementModel entitlementModel in model.AccountEntitlement)
             {
@@ -47,7 +52,8 @@ namespace NexusForever.Game.Account.Entitlement
         {
             // only handle account entitlements in AccountEntitlementManager
             EntitlementFlags entitlementFlags = (EntitlementFlags)entry.Flags;
-            if (entitlementFlags.HasFlag(EntitlementFlags.Character))
+            if (entitlementFlags.HasFlag(EntitlementFlags.Character)
+                || entry.Id == (uint)EntitlementType.CREDDUsage && creddUsage != null)
                 return false;
 
             return base.CanUpdateEntitlement(entry, value);
@@ -56,7 +62,11 @@ namespace NexusForever.Game.Account.Entitlement
         protected override void UpdateEntitlement(EntitlementEntry entry, int value)
         {
             base.UpdateEntitlement(entry, value);
+            UpdateRewardProperties(entry, value);
+        }
 
+        private void UpdateRewardProperties(EntitlementEntry entry, int value)
+        {
             // some reward property premium modifier entries use an existing entitlement values rather than static values
             // make sure we update these when the entitlement changes
             foreach (RewardPropertyPremiumModifierEntry modifierEntry in (assetManager?.GetRewardPropertiesForTier(account.AccountTier) ?? Enumerable.Empty<RewardPropertyPremiumModifierEntry>())
@@ -74,6 +84,71 @@ namespace NexusForever.Game.Account.Entitlement
         protected override void SendEntitlement(IAccountEntitlement entitlement)
         {
             account.Session.EnqueueMessageEncrypted(entitlement.Build());
+        }
+
+        internal CreddUsageReservation CaptureCreddUsage()
+        {
+            var entry = gameTableManager.Entitlement?.GetEntry((uint)EntitlementType.CREDDUsage);
+            var original = GetEntitlement(EntitlementType.CREDDUsage) as AccountEntitlement;
+            if (entry == null || !CanIncreaseEntitlement(EntitlementType.CREDDUsage, 1)
+                || original?.CanAdoptCreddUsage() == false || account.WorldSessionEpoch == 0)
+                throw new InvalidOperationException("CREDD redemption requires an available usage entitlement.");
+            return creddUsage = new(this, entry, original, account.WorldSessionEpoch);
+        }
+
+        internal sealed class CreddUsageReservation(AccountEntitlementManager manager, EntitlementEntry entry,
+            AccountEntitlement original, ulong epoch) : IDisposable
+        {
+            internal uint Limit => entry.MaxCount;
+            private AccountEntitlementModel stored;
+            private AccountEntitlement adopted;
+            private bool observed;
+
+            internal async Task ReadAsync(Func<AuthContext> contexts)
+            {
+                uint accountId = manager.account.Id;
+                await using var context = contexts();
+                var owner = await context.Account.AsNoTracking()
+                    .Where(row => row.Id == accountId && context.AccountWorldSession.Any(session => session.AccountId == row.Id && session.Epoch == epoch))
+                    .Select(row => new { Usage = row.AccountEntitlement
+                        .Where(value => value.EntitlementId == (byte)EntitlementType.CREDDUsage).ToArray() })
+                    .SingleOrDefaultAsync();
+                if (owner == null)
+                    throw new InvalidOperationException("CREDD usage observation lost its admitted account.");
+                stored = owner.Usage.SingleOrDefault();
+                observed = true;
+            }
+
+            internal void Adopt()
+            {
+                if (!observed || !IsCurrent() || original?.CanAdoptCreddUsage() == false
+                    || !ReferenceEquals(manager.GetEntitlement(EntitlementType.CREDDUsage), original))
+                    throw new InvalidOperationException("CREDD usage lost its retained entitlement owner.");
+                if (stored != null)
+                {
+                    adopted = new AccountEntitlement(manager.account, stored, entry);
+                    manager.entitlements[EntitlementType.CREDDUsage] = adopted;
+                }
+                else if (original != null)
+                    throw new InvalidOperationException("CREDD usage observation lost its stored row.");
+            }
+
+            internal void Publish(Action<IWritable> send)
+            {
+                if (!IsCurrent() || adopted == null)
+                    throw new InvalidOperationException("CREDD usage lost its publication owner.");
+                manager.UpdateRewardProperties(entry, 1);
+                send(((IAccountEntitlement)adopted).Build());
+            }
+
+            private bool IsCurrent() => ReferenceEquals(manager.creddUsage, this)
+                && ReferenceEquals(manager.account.EntitlementManager, manager) && manager.account.WorldSessionEpoch == epoch;
+
+            public void Dispose()
+            {
+                if (ReferenceEquals(manager.creddUsage, this))
+                    manager.creddUsage = null;
+            }
         }
     }
 }
