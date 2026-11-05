@@ -52,7 +52,8 @@ party snapshot and checks each player's current map. A new arrival can join
 through the map callback while a departing player is skipped. Public Event
 start notices use the enrolled member's guarded send path, so a rejected
 enqueue for one player leaves the rest of the party's enrollment intact. The
-failed notice is logged and has no retry in this slice.
+failed notice is logged. The later [start recovery](../../CURRENT_STATUS.md#public-event-start-recovery-and-objective-updates)
+adds an original-queue retry with pending-notice ordering.
 
 All three regressions failed on the baseline. The owning build took 43 seconds
 with zero warnings or errors. All 312 scoped Hycrest, Public Event, content-map

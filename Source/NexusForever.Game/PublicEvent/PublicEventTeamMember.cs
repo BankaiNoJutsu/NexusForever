@@ -6,7 +6,9 @@ using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
+using NexusForever.Network.World.Message.Model.PublicEvent;
 using NexusForever.Network.World.Message.Model.Shared;
+using NexusForever.Shared.Game.Events;
 using NetworkIdentity = NexusForever.Network.World.Message.Model.Shared.Identity;
 
 namespace NexusForever.Game.PublicEvent
@@ -23,6 +25,8 @@ namespace NexusForever.Game.PublicEvent
         private Static.PlayerPath.Path path;
 
         private readonly IPublicEventStats stats = new PublicEventStats();
+        private bool awaitingStart;
+        private Queue<IWritable> pendingStartNotices;
 
         #region Dependency Injection
 
@@ -97,18 +101,81 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public void Send(IWritable message)
         {
+            if (message is ServerPublicEventEnd or ServerPublicEventLeave)
+                ClearPendingStart();
+            else if (awaitingStart)
+            {
+                if (GetCurrentPlayer() != null)
+                    pendingStartNotices?.Enqueue(message);
+                return;
+            }
+
             if (GetCurrentPlayer() == null)
                 return;
 
+            TryEnqueue(message);
+        }
+
+        public void SendStart(ServerPublicEventStart message, Func<bool> ownsMembership)
+        {
+            if (GetCurrentPlayer() == null || !ownsMembership())
+                return;
+
+            var queue = session.Events;
+            var notices = new Queue<IWritable>();
+            pendingStartNotices = notices;
+            awaitingStart = true;
+            Publish(allowRetry: true);
+
+            bool IsCurrent() => ReferenceEquals(pendingStartNotices, notices)
+                && ReferenceEquals(session.Events, queue) && GetCurrentPlayer() != null && ownsMembership();
+
+            void Retire()
+            {
+                if (ReferenceEquals(pendingStartNotices, notices))
+                    ClearPendingStart();
+            }
+
+            void Publish(bool allowRetry)
+            {
+                if (!IsCurrent()) { Retire(); return; }
+                if (!TryEnqueue(message))
+                {
+                    if (allowRetry && queue != null && IsCurrent())
+                        queue.EnqueueThreadSafe(new PredicateEvent(() => true, () => Publish(allowRetry: false)));
+                    else
+                        Retire();
+                    return;
+                }
+
+                // Reentrant notices stay behind the same start, including during this drain.
+                while (IsCurrent() && notices.TryDequeue(out IWritable notice))
+                    TryEnqueue(notice);
+                if (IsCurrent())
+                    awaitingStart = false;
+                Retire();
+            }
+        }
+
+        private void ClearPendingStart()
+        {
+            pendingStartNotices?.Clear();
+            pendingStartNotices = null;
+        }
+
+        private bool TryEnqueue(IWritable message)
+        {
             try
             {
                 session.EnqueueMessageEncrypted(message);
+                return true;
             }
             catch (Exception error)
             {
                 // A member's delivery failure must not interrupt shared event progress.
                 log.LogWarning(error, "Could not enqueue public event notice {Notice} for character {CharacterId}.",
                     message.GetType().Name, CharacterId);
+                return false;
             }
         }
 

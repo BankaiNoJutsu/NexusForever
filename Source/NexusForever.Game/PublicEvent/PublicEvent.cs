@@ -226,7 +226,7 @@ namespace NexusForever.Game.PublicEvent
 
             publicEventManager.AddEvent(player.CharacterId, this);
 
-            SendServerPublicEventStart(member, publicEventTeam);
+            SendServerPublicEventStart(player, member, publicEventTeam);
 
             if (CanChangeProgress && template.HasLiveStats())
                 SendServerPublicEventStatsUpdate();
@@ -234,7 +234,7 @@ namespace NexusForever.Game.PublicEvent
             log.LogTrace($"Character {player.CharacterId} has joined public event {Guid} on team {team}.");
         }
 
-        private void SendServerPublicEventStart(IPublicEventTeamMember member, IPublicEventTeam publicEventTeam)
+        private void SendServerPublicEventStart(IPlayer player, IPublicEventTeamMember member, IPublicEventTeam publicEventTeam)
         {
             IEnumerable<IPublicEventObjective> objectives = publicEventTeam.GetObjectives();
 
@@ -242,7 +242,7 @@ namespace NexusForever.Game.PublicEvent
             foreach (IPublicEventTeam otherPublicEventTeam in teams.Values.Where(t => t.Team != publicEventTeam.Team))
                 objectives = objectives.Concat(otherPublicEventTeam.GetOtherObjectives());
 
-            member.Send(new ServerPublicEventStart
+            member.SendStart(new ServerPublicEventStart
             {
                 PublicEventId     = Id,
                 PublicEventTeamId = publicEventTeam.Team,
@@ -251,7 +251,7 @@ namespace NexusForever.Game.PublicEvent
                     .ToList(),
                 Locations = template.Locations.ToList(),
                 Busy = IsBusy
-            });
+            }, () => CanChangeProgress && ReferenceEquals(GetCurrentMembership(player)?.Member, member));
         }
 
         /// <summary>

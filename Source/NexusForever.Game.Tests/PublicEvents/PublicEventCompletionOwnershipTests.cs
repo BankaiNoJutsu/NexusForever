@@ -17,8 +17,13 @@ using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable.Model;
+using NexusForever.Network;
 using NexusForever.Network.World.Message.Model.PublicEvent;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.Message;
+using NexusForever.Network.Packet;
+using NexusForever.Network.Session;
+using NexusForever.Shared.Game.Events;
 using NexusForever.Script;
 using NexusForever.Script.Instance;
 using NexusForever.Script.Template;
@@ -274,6 +279,145 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
         Assert.Single(teammate.Packets.OfType<ServerPublicEventStart>());
         Assert.Equal(new[] { first.Player, teammate.Player }, Assert.Single(publicEvent.GetTeams()).GetMembers()
             .Select(member => member.GetCurrentPlayer()));
+    }
+
+    [Fact]
+    public void FailedStartRetriesBeforeRegisteredObjectiveUpdatesOnItsOriginalQueue()
+    {
+        var (publicEvent, actor, teammate) = CreateStartParty();
+        var sent = new List<IWritable>();
+        int attempts = 0;
+        actor.Session.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerPublicEventStart && ++attempts == 1)
+                throw new IOException("Start failed before enqueue.");
+            sent.Add((IWritable)args[0]);
+            return null;
+        });
+
+        publicEvent.JoinEvent(actor.Player, EventTeam.PublicTeam);
+        publicEvent.JoinEvent(teammate.Player, EventTeam.PublicTeam);
+        publicEvent.UpdateObjective(201u, 1);
+        Assert.Empty(sent);
+        actor.Events.Update(0);
+
+        Assert.Equal(2, attempts);
+        Assert.Collection(sent,
+            message => Assert.Equal(0u, Assert.Single(Assert.IsType<ServerPublicEventStart>(message).Objectives).ObjectiveStatus.Count),
+            message => Assert.Equal(1u, Assert.IsType<ServerPublicEventObjectiveUpdate>(message).Objective.ObjectiveStatus.Count));
+        var messages = new MessageManager(NullLogger<MessageManager>.Instance);
+        messages.RegisterMessage(typeof(ServerPublicEventObjectiveUpdate));
+        Assert.Equal(GameMessageOpcode.ServerPublicEventObjectiveUpdate, messages.GetOpcode(sent[1]));
+        var packet = new ServerGamePacket(messages.GetOpcode(sent[1]).Value, sent[1]);
+        using var reader = new GamePacketReader(new MemoryStream(packet.Data));
+        Assert.Equal(201u, reader.ReadUInt(15));
+        Assert.Single(teammate.Packets.OfType<ServerPublicEventObjectiveUpdate>());
+        Assert.False(actor.Events.PendingEvents);
+    }
+
+    [Theory]
+    [InlineData("finish")]
+    [InlineData("leave")]
+    [InlineData("rejoin")]
+    [InlineData("queue")]
+    [InlineData("player")]
+    public void AStartRetryCannotReviveAnEndedOrReplacedMembership(string scenario)
+    {
+        var (publicEvent, actor, teammate) = CreateStartParty();
+        int attempts = 0;
+        actor.Session.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerPublicEventStart && ++attempts == 1)
+                throw new IOException("Start failed before enqueue.");
+            return null;
+        });
+        publicEvent.JoinEvent(actor.Player, EventTeam.PublicTeam);
+        publicEvent.JoinEvent(teammate.Player, EventTeam.PublicTeam);
+        if (scenario == "finish") publicEvent.Finish(null);
+        if (scenario is "leave" or "rejoin") publicEvent.LeaveEvent(actor.Player, PublicEventRemoveReason.Failure);
+        if (scenario == "rejoin") publicEvent.JoinEvent(actor.Player, EventTeam.PublicTeam);
+        if (scenario == "queue") actor.Session.SetProperty(nameof(IGameSession.Events), new EventQueue());
+        if (scenario == "player") actor.Session.SetProperty(nameof(IWorldSession.Player), teammate.Player);
+
+        actor.Events.Update(0);
+
+        Assert.Equal(scenario == "rejoin" ? 2 : 1, attempts);
+        Assert.False(actor.Events.PendingEvents);
+    }
+
+    [Fact]
+    public void PersistentStartFailureStopsAfterOneRetryAndKeepsOtherMembersReceivingUpdates()
+    {
+        var (publicEvent, actor, teammate) = CreateStartParty();
+        int attempts = 0;
+        var sent = new List<IWritable>();
+        actor.Session.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerPublicEventStart)
+            {
+                attempts++;
+                throw new IOException("Persistent start failure before enqueue.");
+            }
+            sent.Add((IWritable)args[0]);
+            return null;
+        });
+        publicEvent.JoinEvent(actor.Player, EventTeam.PublicTeam);
+        publicEvent.JoinEvent(teammate.Player, EventTeam.PublicTeam);
+        publicEvent.UpdateObjective(201u, 1);
+        actor.Events.Update(0);
+        publicEvent.UpdateObjective(201u, 1);
+        actor.Events.Update(0);
+
+        Assert.Equal(2, attempts);
+        Assert.Empty(sent);
+        Assert.Equal(2, teammate.Packets.OfType<ServerPublicEventObjectiveUpdate>().Count());
+        publicEvent.Finish(null);
+        Assert.Single(sent.OfType<ServerPublicEventEnd>());
+        Assert.False(actor.Events.PendingEvents);
+    }
+
+    [Fact]
+    public void NoticesProducedDuringTheStartRetryDrainRemainInOrder()
+    {
+        var (publicEvent, actor, _) = CreateStartParty();
+        int starts = 0;
+        bool advanced = false;
+        var sent = new List<IWritable>();
+        actor.Session.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerPublicEventStart && ++starts == 1)
+                throw new IOException("Start failed before enqueue.");
+            if (args[0] is ServerPublicEventStart)
+                publicEvent.UpdateObjective(201u, 1);
+            else if (args[0] is ServerPublicEventObjectiveUpdate && !advanced)
+            {
+                advanced = true;
+                publicEvent.UpdateObjective(201u, 1);
+            }
+            sent.Add((IWritable)args[0]);
+            return null;
+        });
+        publicEvent.JoinEvent(actor.Player, EventTeam.PublicTeam);
+
+        actor.Events.Update(0);
+
+        Assert.Collection(sent,
+            message => Assert.IsType<ServerPublicEventStart>(message),
+            message => Assert.Equal(1u, Assert.IsType<ServerPublicEventObjectiveUpdate>(message).Objective.ObjectiveStatus.Count),
+            message => Assert.Equal(2u, Assert.IsType<ServerPublicEventObjectiveUpdate>(message).Objective.ObjectiveStatus.Count));
+        Assert.False(actor.Events.PendingEvents);
+    }
+
+    private static (RuntimeEvent Event, Actor Actor, Actor Teammate) CreateStartParty()
+    {
+        var map = RecordingDispatchProxy<IBaseMap>.Create(out _);
+        var actor = new Actor(map, 42ul, 100u);
+        var teammate = new Actor(map, 43ul, 200u);
+        var players = RecordingDispatchProxy<IPlayerManager>.Create(out var registry);
+        registry.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] == 42ul ? actor.Player : teammate.Player);
+        var objective = CreateObjective(201u, 501u, EventTeam.PublicTeam);
+        objective.Count = 3;
+        return (CreateEvent(players, map, objective), actor, teammate);
     }
 
     [Fact]
@@ -694,6 +838,7 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
         public RecordingDispatchProxy<IWorldSession> Session { get; }
         public RecordingDispatchProxy<ICharacterAchievementManager> Achievements { get; }
         public RecordingDispatchProxy<IQuestManager> Quests { get; }
+        public EventQueue Events { get; } = new();
         public IEnumerable<object> Packets => Session.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted))
             .Select(call => call.Arguments[0]);
 
@@ -704,6 +849,7 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
             Proxy = actor;
             var session = RecordingDispatchProxy<IWorldSession>.Create(out var network);
             Session = network;
+            network.SetProperty(nameof(IGameSession.Events), Events);
             network.SetProperty(nameof(IWorldSession.Player), player);
             actor.SetProperty(nameof(IPlayer.CharacterId), characterId);
             actor.SetProperty(nameof(IPlayer.Guid), guid);

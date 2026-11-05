@@ -22222,6 +22222,32 @@ instance and matching tests passed in 11 seconds. The Game DLL hashes matched.
 Local evidence is under `artifacts/continuation-20261105/public-event-unload-cleanup/`.
 Deployed travel and native presentation remain open.
 
+#### Public event start recovery and objective updates
+
+5 November 2026. A failed enrollment enqueue retries once on the original
+World queue. The original start snapshot stays ahead of notices produced
+while it waits. Leaving, event completion, session-Player replacement or queue
+replacement retires that pending stream. A persistent second failure discards
+pending deltas for that membership while teammates continue receiving updates.
+Terminal leave and end notices retain their existing send path.
+
+Count and busy updates now use the registered `ServerPublicEventObjectiveUpdate`
+wrapper. The former producer passed the embedded objective row, which has no
+opcode registration and was discarded by `GameSession`. Build 16042's mapped
+`0132` reader and apply path supply the wire contract. REA matched the archived
+client SHA-256, and pinned PE reads and LLVM corroborated the start apply slot
+and objective lookup at `1405f3520`. The deep provider remains unavailable.
+
+The baseline reproduced a missing retry and a delta sent ahead of enrollment.
+The owning build took 30 seconds with zero warnings or errors, and 310 scoped
+Public Event, Hycrest, content-map and packet cases passed in 11 seconds.
+Eight final focused cases passed after the wire assertion and reentrant drain
+control were added. The 26-second build retained the same Game DLL hash. The
+intermediate missing test import is corrected and retained in the local logs.
+Evidence is under `artifacts/continuation-20261105/public-event-start-recovery/`.
+Failures are injected before enqueue. Deployed socket delivery, restart and
+native presentation remain open.
+
 #### Public event Character save recovery
 
 5 November 2026. A real public-event objective advanced an enrolled Player's

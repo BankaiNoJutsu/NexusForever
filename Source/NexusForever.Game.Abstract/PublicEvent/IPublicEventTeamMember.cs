@@ -1,6 +1,7 @@
 ﻿using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Network.Message;
+using NexusForever.Network.World.Message.Model.PublicEvent;
 using NexusForever.Network.World.Message.Model.Shared;
 
 namespace NexusForever.Game.Abstract.PublicEvent
@@ -31,6 +32,9 @@ namespace NexusForever.Game.Abstract.PublicEvent
         /// Send <see cref="IWritable"/> to <see cref="IPublicEventTeamMember"/>.
         /// </summary>
         void Send(IWritable message);
+
+        /// <summary>Send enrollment before subsequent notices, retrying once on the original queue while membership is current.</summary>
+        void SendStart(ServerPublicEventStart message, Func<bool> ownsMembership);
 
         /// <summary>
         /// Build <see cref="PublicEventStats"/> for <see cref="IPublicEventTeamMember"/>.

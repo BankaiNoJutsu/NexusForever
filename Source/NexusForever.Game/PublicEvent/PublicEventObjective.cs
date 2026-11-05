@@ -97,7 +97,7 @@ namespace NexusForever.Game.PublicEvent
 
         private void BroadcastObjectiveUpdate()
         {
-            BroadcastObjectiveUpdate(Build());
+            BroadcastObjectiveUpdate(new ServerPublicEventObjectiveUpdate { Objective = Build() });
         }
 
         private void BroadcastObjectiveStatusUpdate()
