@@ -1,0 +1,149 @@
+{
+  "build": 16042,
+  "sourceReferenceCommit": "de320b1b5777e084e636430f9fdb44e2bee2af49",
+  "clientSha256": "231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5",
+  "reaEvidenceId": "ev_142ebc012c9fce11df9c67703c5d9e335b4810c52c1d752b63ed2828030231d4",
+  "llvmObjdumpSha256": "3ae6715601f2eb0c1d0839929c46089906ba0f1e5e032fe519656a40c936b863",
+  "anchors": [
+    {
+      "name": "case-dispatch-cell",
+      "va": "0x1403f3590",
+      "fileOffset": 4139408,
+      "bytes": "a3d73e00"
+    },
+    {
+      "name": "packet-entity-resolver",
+      "va": "0x1403ed7a3",
+      "fileOffset": 4115363,
+      "bytes": "8b17488bcee823b9feff"
+    },
+    {
+      "name": "packet-selector-and-store",
+      "va": "0x1403ed7bb",
+      "fileOffset": 4115387,
+      "bytes": "48634f04448b470883f9180f8d543b00004489848810050000"
+    },
+    {
+      "name": "selector-six-and-nonzero-guards",
+      "va": "0x1403ed7d4",
+      "fileOffset": 4115412,
+      "bytes": "83f9060f85433b00004585c00f843a3b0000"
+    },
+    {
+      "name": "current-selection-check-and-clear-call",
+      "va": "0x1403ed7fd",
+      "fileOffset": 4115453,
+      "bytes": "8b80080100003b42080f85143b000033d2e8cdd81600"
+    },
+    {
+      "name": "reader-five-bit-selector",
+      "va": "0x140097657",
+      "fileOffset": 617047,
+      "bytes": "488d530441b805000000488bcfe8274afdff"
+    },
+    {
+      "name": "entity-vtable-reference",
+      "va": "0x140454391",
+      "fileOffset": 4536209,
+      "bytes": "488d05382c7100"
+    },
+    {
+      "name": "entity-vtable-install",
+      "va": "0x1404543d5",
+      "fileOffset": 4536277,
+      "bytes": "488901"
+    },
+    {
+      "name": "entity-array-zero-fill",
+      "va": "0x140454fa3",
+      "fileOffset": 4539299,
+      "bytes": "33d2488d8b10050000448d4260e87bf83800"
+    },
+    {
+      "name": "byte-fill-rep-path",
+      "va": "0x1407e4846",
+      "fileOffset": 8272966,
+      "bytes": "57488bf98bc2498bc8f3aa"
+    },
+    {
+      "name": "selection-request-id",
+      "va": "0x14055b0f0",
+      "fileOffset": 5612784,
+      "bytes": "448bf2"
+    },
+    {
+      "name": "selection-id-store",
+      "va": "0x14055b402",
+      "fileOffset": 5613570,
+      "bytes": "4489b308010000"
+    },
+    {
+      "name": "selection-no-new-entity-branch",
+      "va": "0x14055b466",
+      "fileOffset": 5613670,
+      "bytes": "4885ed0f84cd010000"
+    },
+    {
+      "name": "selection-send-payload-address",
+      "va": "0x14055b655",
+      "fileOffset": 5614165,
+      "bytes": "4c8d442470"
+    },
+    {
+      "name": "selection-outgoing-opcode-and-id",
+      "va": "0x14055b65a",
+      "fileOffset": 5614170,
+      "bytes": "ba850100004489742470e89792e9ff"
+    },
+    {
+      "name": "validation-resolves-candidate",
+      "va": "0x1403ae9e7",
+      "fileOffset": 3857895,
+      "bytes": "418b5724488b0da66e8b004c89642460e8d4a60200"
+    },
+    {
+      "name": "validation-preserves-candidate",
+      "va": "0x1403aea03",
+      "fileOffset": 3857923,
+      "bytes": "4c8be0"
+    },
+    {
+      "name": "validation-passes-candidate-arg-six",
+      "va": "0x1403aec8b",
+      "fileOffset": 3858571,
+      "bytes": "4c896424280f94c34889742420e8e31b0000"
+    },
+    {
+      "name": "validation-loads-candidate-arg-six",
+      "va": "0x1403b08ca",
+      "fileOffset": 3865802,
+      "bytes": "4c8b7577"
+    },
+    {
+      "name": "validation-passes-candidate-arg-five",
+      "va": "0x1403b0d78",
+      "fileOffset": 3867000,
+      "bytes": "4c89742420e8be140000"
+    },
+    {
+      "name": "validator-loads-candidate-arg-five",
+      "va": "0x1403b2251",
+      "fileOffset": 3872337,
+      "bytes": "488b9c2400010000"
+    },
+    {
+      "name": "validator-nonzero-invulnerable-return",
+      "va": "0x1403b2279",
+      "fileOffset": 3872377,
+      "bytes": "83bb28050000007612b8600000004881c4c0000000415e415d5bc3"
+    }
+  ],
+  "scope": "Static client observations. CastResult.TargetInvulnerable and ClientEntitySelect names use the existing source enum values.",
+  "limits": "The precise server-side selector definition, value domain, remaining selectors, producer, and emission order still need independent evidence.",
+  "scopedControls": {
+    "passed": 105,
+    "failed": 0,
+    "trxSha256": "c330d894067418acb7c106a0e824aaa0e147229082e41f9ecb2e3675e5ffb69a"
+  },
+  "localArtifacts": "artifacts/continuation-20261105/f025-08f4-consumers/"
+}

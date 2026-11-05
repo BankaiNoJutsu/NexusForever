@@ -703,6 +703,11 @@ maps the second word of selector 21 to an Interrupt Armor capacity addend
 and selector 22 to the base Absorption capacity getter. The first word,
 other selectors, and server producer and ordering remain unqualified.
 
+The [08F4 consumer trace](F025_STATIC_HANDLER_PROXY_MAPPING.md#5-november-08f4-target-validation-and-selection)
+establishes a 24-slot array and ties selector 6 to the client's target
+invulnerability rejection and selection clearing. The remaining selectors,
+exact server value domain, producer and ordering still need evidence.
+
 Next integrated evidence outcome: continue independent broader feature/upstream
 requirements and corroborate the remaining mapped F-025 field meanings
 and server producer/ordering requirements using independent table, packet or

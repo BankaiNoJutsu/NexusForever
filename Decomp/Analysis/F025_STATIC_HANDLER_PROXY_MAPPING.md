@@ -96,7 +96,7 @@ The previous reader-only blocker is superseded for these apply edges.
 | --- | --- | --- |
 | 0889 | `1403f33e4` -> `1403ede04` -> `1403dede0` | Payload+4/+8 replace entity+0x24/+0x28. Changed bit0x100 triggers additional state clearing; other dirty/selected-entity paths follow. Bit names and producer timing remain unqualified. |
 | 08CC | `1403f34f0` -> `1403edadd` | Entity lookup, then payload+8 wide-string pointer -> `14045b030`. That helper copies name text and references the exact `UnitNameChanged` event string at `140afb7c0`; full naming/fallback policy and server producer remain separate. |
-| 08F4 | `1403f3590` -> `1403ed7a3` | Sign-extended payload+4 selector is compared with24; accepted native reader values0..23 write payload+8 to entity+0x510+4*selector. Selector6/nonzero has an additional selected-entity path. Selector enum and server behavior remain unknown; do not copy native invalid-input behavior. |
+| 08F4 | `1403f3590` -> `1403ed7a3` | Five-bit selector values 0 through 23 write payload+8 to entity+0x510+4*selector. Selector 6 is checked by target validation and a nonzero update can clear the current selection. See the [consumer trace](#5-november-08f4-target-validation-and-selection). |
 | 0939 | `1403f36a4` -> `1403ed8ff` | Nonzero payload+8 selects a lookup through `1404835c0`; a successful row supplies a localized text ID at+8, otherwise text comes from payload+0x10. Both feed `14045b030`; payload+4 is also sent to `14045b790`. The later [field corroboration](#3-november-0939-name-and-title-fields) identifies the18-bit Creature2 key and14-bit CharacterTitle key; producer eligibility/order remain open. |
 | 093D | `1403f36b4` -> `1403ed56a` | Payload+4 selector has an unsigned upper bound26. Payload+8 writes entity+0xBE8+8*selector, and raw payload+0xC is consumed as float32 at entity+0xBEC+8*selector. The reader transports both as32 raw bits; do not silently change the existing UInt32 wire model or infer the selector enum. |
 | 093E | `1403f36b8` -> `1403ed98f` | Skips the entity equal to dispatcher+0x78; otherwise payload+4/+8 go to `14045bcd0`. Its observed body stores DWORD/QWORD at entity+0x124/+0x128, conditionally clears+0x130 and marks dirty state. Gameplay meaning remains open. |
@@ -197,3 +197,31 @@ The first word, 25 other selectors, possible virtual overrides, server
 producer and packet order remain open. The serializer retains raw words
 and the five-bit selector. All 105 scoped wire and emission controls passed
 using the unchanged binaries. Static inspection did not execute the client.
+
+## 5 November: 08F4 target validation and selection
+
+The build 16042 entity constructor zeroes `0x60` bytes at entity `+0x510`
+at `0x140454FA3`, independently confirming storage for 24 DWORDs. The reader
+at `0x140097657` reads the five-bit selector into payload `+4`. The apply case
+sign-extends that field and uses a signed upper-bound comparison against 24,
+so decoded selectors 24 through 31 skip the store.
+
+- **Target validation.** The spell validation parent resolves a target ID
+  through the same `0x1403D90D0` entity lookup as the packet apply case. It
+  passes that pointer at `0x1403AEC8B` to `0x1403B0880`, which forwards it at
+  `0x1403B0D78` to `0x1403B2240`. The callee tests DWORD `+0x528`, the exact
+  storage for selector 6, and returns `0x0060` for any nonzero value on this
+  path. The existing source enum names this result `CastResult.TargetInvulnerable`.
+- **Current selection.** The apply case stores the value first. If the
+  selector is 6, the value is nonzero and the updated entity matches the
+  current selection ID, it passes ID zero to `0x14055B0E0`. The selection
+  routine writes the new ID to `+0x108` and takes the `ClientEntitySelect`
+  (`0x0185`) send path with a zero ID when clearing the selection.
+
+The [22 verified byte anchors](coverage/f025-08f4-consumers-20261105.json)
+bind the lookup, argument forwarding, branches and storage to the same PE and
+REA evidence record. The other 23 selectors, selector 6's exact server-side
+value domain, its producer and packet ordering still need independent evidence.
+The packet model remains neutral and production emission remains gated. All
+105 scoped wire, naming and emission controls passed with the existing
+binaries. The client was inspected statically.
