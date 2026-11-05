@@ -33,6 +33,16 @@ within 64 bytes of a direct dispatch at `0x1403f4900` confirmed four
 sites with choices 1, 2, 14 and 15. Other encodings and other opcodes remain
 outside that scan. A correlated share-init sender or packet is still needed.
 
+A later pinned PE/LLVM pass follows incoming `00A9` through entity jump slot
+`1403f1464`, case `1403ef26a` and call `1403ef26d` to `14048f960`.
+That body unconditionally raises `ChallengeShared` at `140aff2e8` with the
+decoded challenge and sharer values and a timeout from GameFormula `0416`
+(30 seconds when absent). It has no preference check or outgoing accept call.
+The retained addon says its prompt is bypassed under AutoAccept, but that
+comment and this incoming body do not establish the missing automatic activation
+producer. No automatic server activation was added. The read-only REA identity
+and LLVM output are under `artifacts/continuation-20261105/challenge-share-activation/`.
+
 REA PE resource evidence
 `ev_f71b42226c3996b3e918194b6cb8eaa0e487687f1986da9cd7b0651c0f36a0b1`
 binds the client to SHA-256
