@@ -338,8 +338,7 @@ namespace NexusForever.Game.Matching.Match
         /// </remarks>
         public IMapPosition GetReturnPosition(IPlayer player)
         {
-            IMatchTeam team = GetTeam(player.Identity);
-            return team.GetReturnPosition(player.Identity);
+            return GetTeam(player.Identity)?.GetReturnPosition(player.Identity);
         }
 
         protected void Broadcast(IWritable message)

@@ -21609,8 +21609,17 @@ controls passed. The final owning build had zero warnings and errors, and
 all 350 scoped matching, map, instance, public-event, and transport tests
 passed. Evidence is under
 `artifacts/continuation-20261105/match-teleport-admission/`.
-Departure after destination attachment while client acknowledgement is
-pending remains open, along with deployment and native gameplay verification.
+
+Leaving after map attachment now holds the saved return until that admission's
+client acknowledgement is consumed. The return belongs to the same map and
+admission generation, and duplicate acknowledgements cannot queue it twice.
+Map unload can look up a player after their roster entry is removed and fall
+back to the usual return-location logic. The baseline lost the return both
+during bootstrap and after bootstrap, and threw on the retired roster lookup.
+The owning build completed in 55 seconds with zero warnings and errors. All
+394 scoped cases passed in 7 seconds. Local evidence is under
+`artifacts/continuation-20261105/match-return-on-entry/`.
+Deployment and native gameplay verification remain open.
 
 ### F-011 - Guild / Recruitment / War Party - PARTIAL (blocked)
 Guild handlers and recruitment output models exist. `ServerGuildBankTabInventory`

@@ -97,5 +97,6 @@ public partial class Player : IPlayerMapAdmission
         ClearPetMiniBars(sendPackets: false);
         mapAdmission.Cancel();
         pendingTeleport = null;
+        matchReturnAfterEntry = null;
     }
 }

@@ -1,3 +1,4 @@
+using System.Numerics;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.Matching;
@@ -11,6 +12,26 @@ namespace NexusForever.Game.Entity;
 
 public partial class Player
 {
+    private (ulong Generation, IBaseMap Map, IMapPosition Position, Vector3 Rotation)? matchReturnAfterEntry;
+
+    internal void ReturnFromMatch(IMapPosition position, Vector3 rotation)
+    {
+        lock (mapAdmission.SyncRoot)
+        {
+            if (!IsAdmissionAllowed() || Map == null)
+                return;
+
+            // The acknowledgement has no world identifier. Finish the current entry before sending another transfer.
+            if (mapAdmission.AwaitingEntry)
+            {
+                matchReturnAfterEntry = (mapAdmission.Generation, Map, position, rotation);
+                return;
+            }
+
+            TeleportToCore(position, TeleportReason.Relocate, arrivalRotation: rotation);
+        }
+    }
+
     internal void TeleportToMatch(IMatchTeamMember member, IMapEntrance entrance)
     {
         lock (mapAdmission.SyncRoot)

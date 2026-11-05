@@ -130,6 +130,12 @@ namespace NexusForever.Game.Matching.Match
             if (player == null)
                 return;
 
+            if (player is Player actor)
+            {
+                actor.ReturnFromMatch(ReturnPosition, ReturnRotation);
+                return;
+            }
+
             player.Rotation = ReturnRotation;
             player.TeleportTo(ReturnPosition);
         }

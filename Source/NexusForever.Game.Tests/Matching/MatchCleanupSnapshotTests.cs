@@ -116,6 +116,7 @@ public class MatchCleanupSnapshotTests
         Assert.Equal(anotherPending ? MatchStatus.InProgress : MatchStatus.Finalised, match.Status);
         Assert.Equal(identity, Assert.Single(team.LeftIdentities));
         Assert.Null(manager.GetMatchCharacter(identity).Match);
+        Assert.Null(match.GetReturnPosition(player));
         if (anotherPending)
             Assert.Same(match, manager.GetMatchCharacter(other).Match);
         Assert.Empty(actor.GetInvocations(nameof(IPlayer.TeleportTo)));

@@ -95,8 +95,9 @@ rejects map arrivals during and after event completion.
 allows a player to leave before admission, preserves other pending members and
 returns admitted players only from the match instance. Leaving cancels the
 member's queued match transfer and restores the source destination when source
-removal has already started. Departure between map attachment and client
-acknowledgement remains open.
+removal has already started. Once the match map is attached, leaving queues the
+return after that arrival's client acknowledgement. Deployment and native
+travel verification remain open.
 The [Character rollback probe](../../CURRENT_STATUS.md#public-event-character-save-recovery)
 reproduced early quest updates and loss of unsaved credit on the World save
 failure path. [Committed quest notices](../../CURRENT_STATUS.md#committed-public-event-quest-notices)

@@ -8,6 +8,7 @@ internal sealed class PlayerMapAdmissionState
     public bool Canceled { get; private set; }
     public bool Queued { get; private set; }
     public ulong? BootstrapGeneration { get; private set; }
+    public bool AwaitingEntry => BootstrapGeneration == Generation || ready;
     public bool HasUnconfirmedLocation { get; private set; }
     private bool ready;
     private bool entered;

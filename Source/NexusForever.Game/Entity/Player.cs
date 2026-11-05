@@ -1999,6 +1999,7 @@ namespace NexusForever.Game.Entity
         private void OnTeleportToFailedCore(GenericError error)
         {
             pendingTeleport = null;
+            matchReturnAfterEntry = null;
             IsLoading = false;
             if (Map != null)
             {
@@ -2040,6 +2041,8 @@ namespace NexusForever.Game.Entity
                 return;
             // Consume only this completed transition. Recovery callbacks may queue a new teleport.
             pendingTeleport = null;
+            var matchReturn = matchReturnAfterEntry;
+            matchReturnAfterEntry = null;
             // right before the loading screen is removed we can now send the actual network entity commands
             // this ensures there is no desync between the client and server caused by loading
             foreach (IGridEntity item in visibleEntities.Values)
@@ -2050,6 +2053,13 @@ namespace NexusForever.Game.Entity
             RefreshVisiblePlayersForNearbyList();
             QuestManager.SendInitialPackets();
             PathManager.SendInitialPackets();
+            if (matchReturn is { } transfer && transfer.Generation == generation
+                && ReferenceEquals(transfer.Map, Map) && IsAdmissionAllowed() && mapAdmission.IsCurrent(generation))
+            {
+                TeleportToCore(transfer.Position, TeleportReason.Relocate, arrivalRotation: transfer.Rotation);
+                if (!CanTeleport())
+                    return;
+            }
             SyncDeferredLoadingWorldZoneRuntimeState();
             if (!IsAdmissionAllowed() || !mapAdmission.IsCurrent(generation))
                 return;
