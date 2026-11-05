@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[Character guild affiliation recovery](Decomp/Analysis/GUILD_DISBAND_RECOVERY.md#character-affiliation-recovery-sourcesqlite-verified)
+fixes three executed real-Player failures. Nullable affiliation survives failed,
+rolled-back and uncertain saves; normal saves freeze it before Auth and retain
+later selections. Twenty new/377 scoped cases, clean owning build and both Source
+reviews pass. Provider/restart/deployment/native/retail remain open. Committed
+affiliation/nameplate/broker publication is next; guild creation fees stay separate.
+
 [STS selected mode4 derivation](Decomp/Analysis/STS_TOKEN_KEY_TRANSITION_EVIDENCE.md#follow-up-selected-mode4-expansion-and-filter-paths)
 now maps the actual expansion prefixes/digests, seed order, key slices and local
 filter ownership. The selected state call returns success without state writes;

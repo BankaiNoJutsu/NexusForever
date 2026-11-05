@@ -1,5 +1,17 @@
 # Assessment follow-through goal
 
+[Character guild affiliation recovery](GUILD_DISBAND_RECOVERY.md#character-affiliation-recovery-sourcesqlite-verified)
+fixes the three executed failures above the published`cea4629e` baseline: failed
+flush/rollback lose no accepted nullable value, and normal saves retain their
+pre-Auth selection while later edits stay pending. Twenty new/377 scoped cases,
+clean owning build and both Source review axes pass. The portable record retains
+the initial partial-Character-stub implementation failure and exact bindings.
+This qualifies Source/SQLite only; configured-provider/strategy, restart,
+physical socket/broker/deployment and native/retail gates remain open. Next
+integrate committed affiliation/nameplate/holomark/internal-broker publication;
+guild creation financial atomicity remains separate. Do not repeat the completed
+scalar recovery or run a full suite without a new explicit request.
+
 [STS selected mode4 derivation and filter paths](STS_TOKEN_KEY_TRANSITION_EVIDENCE.md#follow-up-selected-mode4-expansion-and-filter-paths)
 maps SHA-256/MD5 expansion with B/CC/DDD prefixes, seed order, key slices and
 local vector-write/buffered-parser ownership. The selected state call is a

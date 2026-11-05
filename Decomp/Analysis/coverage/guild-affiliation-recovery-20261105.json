@@ -1,0 +1,140 @@
+{
+  "version": 1,
+  "feature": "Retained and frozen Character guild affiliation persistence",
+  "recorded_utc": "2026-11-05T14:01:42.054576+00:00",
+  "base_head": "cea4629edd2971148c8280aadda7f5f2e230244e",
+  "disposition": "Implemented and Source/SQLite scoped verified; broader provider/runtime/retail qualification remains open",
+  "behavior": [
+    "Real Player saves retain nullable affiliation through rejected flush, rollback and uncertain acknowledgement",
+    "Normal Player snapshot captures affiliation before Auth and retains later selections for the next save",
+    "Original manager generation/Character, database route, frozen token and cross-manager ownership guarded",
+    "Tracked affiliation intent and phase-specific SQL checks protect the owned column while preserving unrelated Character intent"
+  ],
+  "baseline": {
+    "file": "baseline.trx",
+    "sha256": "b448eb25c31f2ab404b44ecc2447dafb9389f2efa7ad800a6db304b59db39716",
+    "counts": {
+      "Passed": 1,
+      "Failed": 3,
+      "NotExecuted": 0
+    },
+    "test_run_seconds": 9.974835,
+    "failures": [
+      "NexusForever.Game.Tests.Guild.GuildAffiliationRecoveryTests.AcceptedAffiliationSurvivesAnUncommittedRealPlayerSave(outcome: \"rollback\")",
+      "NexusForever.Game.Tests.Guild.GuildAffiliationRecoveryTests.AcceptedAffiliationSurvivesAnUncommittedRealPlayerSave(outcome: \"failed-flush\")",
+      "NexusForever.Game.Tests.Guild.GuildAffiliationRecoveryTests.NormalPlayerSaveFreezesAffiliationBeforeAuthAndRetainsTheLaterSelection"
+    ]
+  },
+  "initial_candidate": {
+    "test_run": {
+      "file": "affiliation-candidate.trx",
+      "sha256": "89b1bb824dcb820daff31b5f9aec31afd88763e0038fd7be82e07755ca53e2b9",
+      "counts": {
+        "Passed": 13,
+        "Failed": 7,
+        "NotExecuted": 0
+      },
+      "test_run_seconds": 15.510381
+    },
+    "reason": "Tracked guard incorrectly rejected untouched default affiliation in a partial Player Character stub; corrected without relaxing assertions"
+  },
+  "focused": {
+    "file": "affiliation-corrected.trx",
+    "sha256": "15b97633de16a5a8b64196012ad7992649001d294a3390e25174d064fd438940",
+    "counts": {
+      "Passed": 20,
+      "Failed": 0,
+      "NotExecuted": 0
+    },
+    "test_run_seconds": 14.890292
+  },
+  "affected": {
+    "file": "affected.trx",
+    "sha256": "7439999c82e27337c0d7c687f28e34c44c5c8a4e37d131e94f348fd58d9b8148",
+    "counts": {
+      "Passed": 377,
+      "Failed": 0,
+      "NotExecuted": 0
+    },
+    "test_run_seconds": 108.938066
+  },
+  "affected_scope": [
+    "Guild namespace",
+    "RewardNormalSaveSnapshotTests",
+    "QuestPersistenceDurabilityTests",
+    "PlayerExperiencePersistenceTests",
+    "PlayerProgressionPersistenceTests",
+    "PlayerKeybindingPersistenceTests"
+  ],
+  "build": {
+    "project": "Source/NexusForever.Game/NexusForever.Game.csproj",
+    "command": "dotnet build --no-restore -v minimal --nologo",
+    "warnings": 0,
+    "errors": 0,
+    "log": "final-build-console.log"
+  },
+  "reviews": {
+    "comparison": "git diff --cached -- Source against base_head; five Source files",
+    "spec_findings": 0,
+    "standards_documented_violations": 0,
+    "standards_actionable_smells": 0,
+    "standards_correctness_findings": 0,
+    "spec_report": "review-spec.md",
+    "standards_report": "review-standards.md"
+  },
+  "source_sha256": {
+    "Source/NexusForever.Game.Tests/Guild/GuildAffiliationRecoveryTests.cs": "f6001c32b6885d2ef77c4c979b5b48b032df839e54f241d0cc66c61758ce793c",
+    "Source/NexusForever.Game/Entity/Player.NormalRewardSave.cs": "bd2725b8b2a73d4433efb0417fbad1d09a618b814fee7c88f2a17ffaa795340c",
+    "Source/NexusForever.Game/Entity/Player.cs": "1437dd48283cc3dbd48b7555930715657c81d3162729948e00e5b834a7434900",
+    "Source/NexusForever.Game/Guild/GuildAffiliationPersistence.cs": "a54e288a7940710803acdc2f58d41fcf752bafe2c58c3b99a0eb8df4eb88aec9",
+    "Source/NexusForever.Game/Guild/GuildManager.cs": "8671028dfb63dbaca29522eb4b840715c23140920f2364307bcc339aab7a4de0"
+  },
+  "source_git_blob": {
+    "Source/NexusForever.Game.Tests/Guild/GuildAffiliationRecoveryTests.cs": "11993bbdb5ab57bd2cb2d946d36415ec770ccbdd",
+    "Source/NexusForever.Game/Entity/Player.NormalRewardSave.cs": "3a3a60351f3c728533b8f48e39cae4083bcbb395",
+    "Source/NexusForever.Game/Entity/Player.cs": "89b0df1d59979d532e438182b60b55abe79b58c6",
+    "Source/NexusForever.Game/Guild/GuildAffiliationPersistence.cs": "52f465b096404b2b600ace9875aa87d5d37926a7",
+    "Source/NexusForever.Game/Guild/GuildManager.cs": "9b616fb3353f3d863e0c671300951151ba4b5562"
+  },
+  "binary_sha256": {
+    "Source/NexusForever.Game/bin/Debug/net10.0/NexusForever.Game.dll": "3e368df5fca2817cf96b399bcaeedb85b72cc36a22303381c414083ea3555aae",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.dll": "3e368df5fca2817cf96b399bcaeedb85b72cc36a22303381c414083ea3555aae",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll": "5614a05ce3c91f7ef9c7014033d012a1cd31bc22577f14bad48ff9775341dc01"
+  },
+  "local_artifacts": {
+    "directory": "artifacts/continuation-20261105/guild-affiliation-recovery",
+    "sha256": {
+      "baseline-build-fixture-error.log": "3b46ff77b63f259e02a4a781cb6e571dac748ab5006f32e692c1560dd1f6a1d8",
+      "baseline-console.log": "7c4ba42142175c4a5920bca168a0177878232b43e49c6915f9993ac623ece86e",
+      "candidate-console.log": "b2aad7b12841763549660449f6f7419189cdb943a068068a1473024e7f5aff8f",
+      "corrected-console.log": "d6433503d57a3f46fba7b7823628ae0afa1abeb4320b473d08539cb4f36b6b0e",
+      "affected-console.log": "8a1c871e53bc6f6d97e543fd36142a2149e1303c2b5790e37c18df4f6daa5e38",
+      "final-build-console.log": "c24b793045e3fb1b13f6aca3bbcd460646ffecaf7e204ad7b8d6c3c8b13fdf7b",
+      "baseline.json": "434f28a80b085a98d150782915a807c5282d5e854758079c7bd0efe1a3f78b63",
+      "review-spec.md": "51d34763ccb9fece4fcac3d6d027d287f358ed2bef9af11c8a59900c96f611e1",
+      "review-standards.md": "996be78e947a5c317e7fa3887b768b0d5f870dfda719d9ed3d2c5182b6351ca4",
+      "upstream-refresh.json": "8388b8beeeda00183523cd0d8636e36dbfb40a4170fe68b41393b3103b687f00"
+    }
+  },
+  "verification_boundaries": {
+    "new_regressions": 20,
+    "final_affected_cases": 377,
+    "full_solution_build_or_suite": false,
+    "configured_mysql_or_provider_strategy_run": false,
+    "model_or_migration_changed": false,
+    "protocol_changed": false,
+    "tools_source_changed": false,
+    "native_client_or_computer_use": false,
+    "entitlement_defaults": "15:1/17:1 preserved; no automatic44 or seven baseline Character grants",
+    "rea": "Ordinary source persistence work; no new binary inspection required. Prior static STS evidence remains separately scoped.",
+    "historical_handoff": "Prior expected Source-divergence retained; unchanged historical failure not rerun"
+  },
+  "remaining": [
+    "Committed affiliation/nameplate/holomark/internal-broker publication",
+    "Guild creation fee atomicity",
+    "Configured-provider/strategy and copied-upgrade execution for this scalar milestone",
+    "Physical cross-process race/ABA, crash/restart/outbox, socket/broker/deployment qualification",
+    "Actual-table/native/retail and the full remaining assessment roadmap"
+  ],
+  "goal": "active"
+}

@@ -1,5 +1,4 @@
 ﻿using System.Collections;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
@@ -99,12 +98,12 @@ namespace NexusForever.Game.Guild
             set
             {
                 guildAffiliation = value;
-                saveMask |= SaveMask.Affiliation;
             }
         }
         private IGuildBase guildAffiliation;
 
-        private SaveMask saveMask;
+        private GuildAffiliationPersistence affiliationPersistence;
+        private int affiliationGeneration;
 
         private IPlayer owner;
         private readonly ITextFilterManager textFilterManager;
@@ -146,6 +145,13 @@ namespace NexusForever.Game.Guild
         /// </summary>
         public void Initialise(IPlayer player, CharacterModel model)
         {
+            if (affiliationPersistence?.HasUnfinishedSave == true)
+                throw new InvalidOperationException("Guild affiliation has an unfinished save.");
+            var origin = CharacterLoadOrigin.Get(model);
+            if (player.CharacterId != model.Id || origin != null && origin.AccountId != player.Account?.Id)
+                throw new InvalidOperationException("Guild affiliation changed its loaded Character/account owner.");
+            int generation = ++affiliationGeneration;
+            ulong character = model.Id;
             owner = player;
             guilds.Clear();
             Guild = null;
@@ -167,25 +173,23 @@ namespace NexusForever.Game.Guild
                 GuildAffiliation = guilds.TryGetValue(model.GuildAffiliation.Value, out IGuildBase guild) ? guild : guilds.Values.FirstOrDefault();
             else if (model.GuildAffiliation == null && guilds.Count > 0)
                 GuildAffiliation = guilds.Values.FirstOrDefault();
+
+            affiliationPersistence = new(character, model.GuildAffiliation, origin?.Database, () =>
+            {
+                if (generation != affiliationGeneration || !ReferenceEquals(owner, player) || player.CharacterId != character
+                    || player is Player concrete && !ReferenceEquals(concrete.GuildManager, this))
+                    throw new InvalidOperationException("Guild affiliation lost its loaded Character manager.");
+                return guildAffiliation?.Id;
+            });
         }
 
         public void Save(CharacterContext context)
         {
-            if (saveMask == SaveMask.None)
-                return;
-
-            // character is attached in Player::Save, this will only be local lookup
-            CharacterModel character = context.Character.Find(owner.CharacterId);
-            EntityEntry<CharacterModel> entity = context.Entry(character);
-
-            if ((saveMask & SaveMask.Affiliation) != 0)
-            {
-                character.GuildAffiliation = guildAffiliation?.Id;
-                entity.Property(p => p.GuildAffiliation).IsModified = true;
-            }
-
-            saveMask = SaveMask.None;
+            affiliationPersistence?.Save(context);
         }
+
+        internal Action<CharacterContext> CaptureNormalSave(object token, string database)
+            => affiliationPersistence?.CaptureNormal(token, database);
 
         /// <summary>
         /// Return guild of supplied <see cref="GuildType"/>.

@@ -411,3 +411,60 @@ absent. This is source/private SQLite and configured MySQL model-fixture evidenc
 plot-backed housing, fees, copied upgrades, actual tables, broker/restart,
 sockets/native and retail completeness remain open. Defaults15:1/17:1/no44/seven
 grants and the client/CUA stop remain unchanged. The Goal stays active.
+
+## Character affiliation recovery: Source/SQLite verified
+
+5 November2026. The original Character's selected guild affiliation now survives
+failed, rolled-back and uncertain saves. Normal Player saves freeze that nullable
+selection before Auth and write the captured value during Character enrollment;
+a newer selection remains pending for the next save. The
+[portable milestone record](coverage/guild-affiliation-recovery-20261105.json)
+binds the candidate, regressions, scoped results and separate final reviews.
+
+The real-Player starting probe on`cea4629e` executed three failures and one
+successful-save control: rejected flush and caller rollback both lost selection7
+on retry, while an Auth-time edit caused the first normal save to write8 instead
+of its captured7. The previous manager cleared its dirty mask during enrollment
+and the Player snapshot did not capture affiliation. This milestone fixes those
+executed failures through `GuildManager` and `Player.NormalRewardSave`, without
+changing the guild graph's independent periodic persistence.
+
+`GuildAffiliationPersistence` retains the loaded nullable baseline and attempted
+values through terminal completion. A fresh context must match that baseline or
+a retained uncertain outcome before staging another write. Original manager
+generation/Character, loaded or first-bound database route, frozen token and
+cross-manager context ownership remain guarded. The tracked-column intent and
+phase-specific SQL checks reject conflicting local/SQL changes. Only affiliation
+original/current/modified state is normalized after a proven flush; other
+Character columns keep their own intent. No-op selections add no affiliation
+write. This is same-process EF persistence evidence, not a durable restart outbox
+or a proof of physical cross-process race/ABA exclusion.
+
+All20 new regressions and377 final affected cases pass, with zero failures/skips.
+The affected set covers Guild tests, normal Player reward-save integration,
+Quest durability, XP/progression and Character keybindings. Nullable removal,
+later edits after flush/explicit EF acceptance, lost commit acknowledgement,
+suppressed flush, savepoint rollback, frozen retry, foreign routes/managers,
+tracked/SQL conflicts and unrelated Character changes are exercised. The owning
+Game project builds with zero warnings/errors. Both final Source review axes
+have zero findings. No full solution build or full suite was run.
+
+The initial20-case implementation run had seven failures: its tracked-value
+guard rejected the untouched default column in Player's partial Character stub
+after a prior save. The corrected guard first rejects local dirty/current versus
+original changes, then installs the independently read SQL original. Existing
+assertions remain intact. That failed run and the initial fixture-constructor
+build error are retained separately from the three original production failures.
+Raw logs/TRX, source/DLL bindings and review reports remain in
+`artifacts/continuation-20261105/guild-affiliation-recovery/`.
+
+Configured MySQL/provider strategy and copied-upgrade execution were not run for
+this scalar milestone; no database model, migration, protocol or Tools source
+changed. Physical restart, broker/socket delivery, deployment and native/retail
+qualification remain open. Existing affiliation/nameplate/holomark and internal
+broker notifications retain their current timing: committed publication is the
+next integrated guild outcome, and guild creation fee atomicity stays separate.
+This source analysis does not require another REA binary pass; the preceding
+STS static map retains its own REA identity and evidence boundary. Preserve
+defaults15:1/17:1, no automatic44 or seven baseline grants, and the client/CUA stop.
+The Goal remains active; continue those remaining outcomes and the broader roadmap.

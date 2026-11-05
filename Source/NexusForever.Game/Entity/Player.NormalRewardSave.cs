@@ -36,6 +36,7 @@ namespace NexusForever.Game.Entity
                 var inventorySnapshot = AuctionBidSaveAllowed ? null : (Inventory as Inventory)?.CaptureNormalSave(identity.ExecutionDatabase);
                 var satchelSnapshot = (SupplySatchelManager as SupplySatchelManager)?.CaptureNormalSave(questSnapshot.Token, identity.ExecutionDatabase);
                 var keybindingSnapshot = (KeybindingManager as CharacterKeybindingManager)?.CaptureNormalSave(questSnapshot.Token, identity.ExecutionDatabase);
+                var guildAffiliationSnapshot = (GuildManager as Guild.GuildManager)?.CaptureNormalSave(questSnapshot.Token, identity.ExecutionDatabase);
                 var challengeSnapshot = challenges.CaptureNormalSave(identity);
                 var bidReceipt = AuctionBidSaveAllowed ? auctionBidActor.CaptureReconciliationReceipt() : null;
                 var bankReceipt = BankSaveAllowed ? bankActor.CaptureReceipt() : null;
@@ -44,7 +45,7 @@ namespace NexusForever.Game.Entity
                 normalRewardSave = new(this, quests, challenges, questSnapshot, challengeSnapshot, currencySnapshot, bidReceipt,
                     AuctionBidSaveAllowed ? auctionBidActor.CaptureDeliveryWitness() : null,
                     AuctionBidSaveAllowed ? auctionBidActor.CaptureCommodityWitness() : null,
-                    AuctionBidSaveAllowed ? auctionBidActor.CaptureEscrowWitness() : null, wardrobeSnapshot, titleSnapshot, progressionSnapshot, experienceSnapshot, inventorySnapshot, satchelSnapshot, keybindingSnapshot, bankReceipt, housingReceipt, taxiFareVersion); return normalRewardSave;
+                    AuctionBidSaveAllowed ? auctionBidActor.CaptureEscrowWitness() : null, wardrobeSnapshot, titleSnapshot, progressionSnapshot, experienceSnapshot, inventorySnapshot, satchelSnapshot, keybindingSnapshot, bankReceipt, housingReceipt, taxiFareVersion, guildAffiliationSnapshot); return normalRewardSave;
             }
             catch { questSnapshot.Dispose(); throw; }
         }
@@ -64,7 +65,8 @@ namespace NexusForever.Game.Entity
             Action<NexusForever.Database.Character.CharacterContext> keybindingSnapshot = null,
             NexusForever.Database.Character.BankSaveReconciliation bankReceipt = null,
             NexusForever.Database.Character.CharacterSaveReconciliation housingReceipt = null,
-            long taxiFareVersion = 0)
+            long taxiFareVersion = 0,
+            Action<NexusForever.Database.Character.CharacterContext> guildAffiliationSnapshot = null)
         {
             internal long TaxiFareVersion { get; } = taxiFareVersion;
             internal NexusForever.Database.Character.MarketplaceBidReconciliation BidReceipt { get; private set; } = bidReceipt;
@@ -88,6 +90,8 @@ namespace NexusForever.Game.Entity
             { if (satchelSnapshot == null) owner.SupplySatchelManager.Save(context); else satchelSnapshot(context); }
             internal void SaveKeybindings(NexusForever.Database.Character.CharacterContext context)
             { if (keybindingSnapshot == null) owner.KeybindingManager.Save(context); else keybindingSnapshot(context); }
+            internal void SaveGuildAffiliation(NexusForever.Database.Character.CharacterContext context)
+            { if (guildAffiliationSnapshot == null) owner.GuildManager.Save(context); else guildAffiliationSnapshot(context); }
             private bool ended;
             private readonly Crafting.CraftingAccountIntent craftingAccounts = owner.craftingAccountIntent;
             internal void CheckCraftingCreditCapacity(AuthContext context) => craftingAccounts?.EnlistCreditCapacity(context);

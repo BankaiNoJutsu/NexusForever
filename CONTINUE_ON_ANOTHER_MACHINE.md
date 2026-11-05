@@ -1,5 +1,13 @@
 # Continue on another machine
 
+Latest Guild implementation: [Character affiliation recovery](Decomp/Analysis/GUILD_DISBAND_RECOVERY.md#character-affiliation-recovery-sourcesqlite-verified)
+fixes three executed real-Player failures. Twenty new/377 scoped cases and both
+Source reviews pass; the owning Game build is clean. Failed/uncertain nullable
+affiliation persists, and normal saves freeze it before Auth while retaining
+later edits. No full suite ran. Provider/restart/deployment/native/retail remain
+unqualified. Committed affiliation/nameplate/broker publication is next; guild
+creation fees remain separate. Client/CUA stay stopped and defaults are preserved.
+
 Latest static result: [STS mode4 derivation and filter paths](Decomp/Analysis/STS_TOKEN_KEY_TRANSITION_EVIDENCE.md#follow-up-selected-mode4-expansion-and-filter-paths)
 maps SHA-256/MD5 expansion with actual B/CC/DDD prefixes, seed order, key slices,
 and the selected constant-success state call. Local vector-write/buffered-parser

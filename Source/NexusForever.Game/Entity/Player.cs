@@ -1345,7 +1345,7 @@ namespace NexusForever.Game.Entity
             if (snapshot == null) SupplySatchelManager.Save(context); else snapshot.SaveSatchel(context);
             if (snapshot == null) SaveProgression(context); else snapshot.SaveProgression(context);
             if (experienceReputationOwner == null) ReputationManager.Save(context);
-            GuildManager.Save(context);
+            if (snapshot == null) GuildManager.Save(context); else snapshot.SaveGuildAffiliation(context);
             EntitlementManager.Save(context);
             AppearanceManager.Save(context);
             snapshot?.Quests.EndContractSave(context);
