@@ -96,20 +96,20 @@ namespace NexusForever.Network.World.Message.Model.Entity
         }
     }
 
-    /// <summary>Entity-stat aux (<c>0x093E</c>). Reader <c>ServerEntityStatTwoUInt32UInt64_ReadPayload</c> @ <c>140097f70</c>.</summary>
-    /// <remarks>Apply semantics blocked - no production emit.</remarks>
-    [Message(GameMessageOpcode.ServerEntityStatTwoUInt32UInt64)]
-    public class ServerEntityStatTwoUInt32UInt64 : IWritable
+    /// <summary>Updates the unit and group tag owners of an existing entity.</summary>
+    /// <remarks>Build 16042 uses the same setter for entity creation and opcode 0x093E. Producer timing remains open.</remarks>
+    [Message(GameMessageOpcode.ServerEntityTagOwnerUpdate)]
+    public class ServerEntityTagOwnerUpdate : IWritable
     {
-        public uint Value0 { get; set; }
-        public uint Value1 { get; set; }
-        public ulong Value2 { get; set; }
+        public uint UnitId { get; set; }
+        public uint UnitTagOwner { get; set; }
+        public ulong GroupTagOwner { get; set; }
 
         public void Write(GamePacketWriter writer)
         {
-            writer.Write(Value0);
-            writer.Write(Value1);
-            writer.Write(Value2);
+            writer.Write(UnitId);
+            writer.Write(UnitTagOwner);
+            writer.Write(GroupTagOwner);
         }
     }
 }

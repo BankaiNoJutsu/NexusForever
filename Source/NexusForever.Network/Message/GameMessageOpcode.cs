@@ -1019,7 +1019,7 @@ namespace NexusForever.Network.Message
         ServerEntityPropertiesUpdate    = 0x093A,
         ServerUnitUpdateObjectiveIndex  = 0x093B,
         ServerEntityStatUInt32UInt5Pair = 0x093D, // uint32 + 5-bit + two uint32; reader 140097690
-        ServerEntityStatTwoUInt32UInt64 = 0x093E, // two uint32 + uint64; reader 140097f70
+        ServerEntityTagOwnerUpdate      = 0x093E,
         ServerEntityStandState          = 0x093C,
         ClientItemUse                   = 0x0943,
         ClientCastGuildBossToken        = 0x094F,

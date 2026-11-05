@@ -1,7 +1,9 @@
 using System.Numerics;
+using Microsoft.Extensions.Logging.Abstractions;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network;
 using NexusForever.Network.Message;
+using NexusForever.Network.World.Message;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Entity;
 using NexusForever.Network.World.Message.Model.PublicEvent;
@@ -244,19 +246,27 @@ public class EntityAuxiliaryPacketShapeTests
         Assert.Equal(0x90A0B0C0u, reader.ReadUInt());
     }
 
-    [Fact]
-    public void ServerEntityStatTwoUInt32UInt64_WriteSerializesDecodedTwoUInt32AndUInt64()
+    [Theory]
+    [InlineData(0x50607080u, 0x0102030405060708ul)]
+    [InlineData(0u, 0ul)]
+    public void ServerEntityTagOwnerUpdate_UsesRegisteredOpcodeAndPreservesBothOwners(uint unitOwner, ulong groupOwner)
     {
-        using var reader = CreateReader(WritePacket(new ServerEntityStatTwoUInt32UInt64
+        var update = new ServerEntityTagOwnerUpdate
         {
-            Value0 = 0x10203040u,
-            Value1 = 0x50607080u,
-            Value2 = 0x0102030405060708ul
-        }));
+            UnitId = 0x10203040u,
+            UnitTagOwner = unitOwner,
+            GroupTagOwner = groupOwner
+        };
+        var messages = new MessageManager(NullLogger<MessageManager>.Instance);
+        messages.RegisterNetworkManagerWorldMessages();
+        Assert.Equal((GameMessageOpcode)0x093E, messages.GetOpcode(update));
 
+        byte[] payload = WritePacket(update);
+        Assert.Equal(16, payload.Length);
+        using var reader = CreateReader(payload);
         Assert.Equal(0x10203040u, reader.ReadUInt());
-        Assert.Equal(0x50607080u, reader.ReadUInt());
-        Assert.Equal(0x0102030405060708ul, reader.ReadULong());
+        Assert.Equal(unitOwner, reader.ReadUInt());
+        Assert.Equal(groupOwner, reader.ReadULong());
     }
 
     [Fact]

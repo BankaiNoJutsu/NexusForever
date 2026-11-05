@@ -22618,6 +22618,8 @@ ServerEntityCreate Faction fields versus entity-create aux fields (2026-06-05 pa
     This matches `Source/NexusForever.Network.World/Message/Model/ServerEntityCreate.cs`
     write order and the existing `EntityCreatePacketTests` wire-order
     regression.
+  - The [build 16042 tag-owner follow-up](F025_STATIC_HANDLER_PROXY_MAPPING.md#5-november-093e-tag-owner-update)
+    traces `0x093E` through the same setter and names both update fields.
   - `FUN_140456960` (`WildStar64.exe` `140456960`) is the cached
     `UnitCreated` apply/initialization path for the parsed create payload. It
     stores `param_2[0x35]` (`packet+0xd4`) at entity `+0x120`, calls

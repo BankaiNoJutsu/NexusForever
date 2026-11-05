@@ -99,7 +99,7 @@ The previous reader-only blocker is superseded for these apply edges.
 | 08F4 | `1403f3590` -> `1403ed7a3` | Five-bit selector values 0 through 23 write payload+8 to entity+0x510+4*selector. Selector 6 is checked by target validation and a nonzero update can clear the current selection. See the [consumer trace](#5-november-08f4-target-validation-and-selection). |
 | 0939 | `1403f36a4` -> `1403ed8ff` | Nonzero payload+8 selects a lookup through `1404835c0`; a successful row supplies a localized text ID at+8, otherwise text comes from payload+0x10. Both feed `14045b030`; payload+4 is also sent to `14045b790`. The later [field corroboration](#3-november-0939-name-and-title-fields) identifies the18-bit Creature2 key and14-bit CharacterTitle key; producer eligibility/order remain open. |
 | 093D | `1403f36b4` -> `1403ed56a` | Payload+4 selector has an unsigned upper bound26. Payload+8 writes entity+0xBE8+8*selector, and raw payload+0xC is consumed as float32 at entity+0xBEC+8*selector. The reader transports both as32 raw bits; do not silently change the existing UInt32 wire model or infer the selector enum. |
-| 093E | `1403f36b8` -> `1403ed98f` | Skips the entity equal to dispatcher+0x78; otherwise payload+4/+8 go to `14045bcd0`. Its observed body stores DWORD/QWORD at entity+0x124/+0x128, conditionally clears+0x130 and marks dirty state. Gameplay meaning remains open. |
+| 093E | `1403f36b8` -> `1403ed98f` | Resolves `UnitId` and skips the local entity. Payload+4 is `UnitTagOwner` and payload+8 is `GroupTagOwner`. Both go to the setter shared with entity creation. See the [tag-owner trace](#5-november-093e-tag-owner-update). |
 
 The six selected switch-case windows are not standalone functions; their
 containing exception group and table-byte bindings are retained separately.
@@ -264,3 +264,34 @@ same build 16042 PE and REA record. The precise flag definitions, derived
 entity overrides, server producer and emission order still need independent
 evidence. All 105 scoped wire, naming and emission controls passed with the
 existing binaries.
+
+## 5 November: 093E tag owner update
+
+The build 16042 registration at `0x14007501B` binds `0x093E` to the
+16-byte reader at `0x140097F70`. The apply case resolves the first DWORD as
+the target unit ID. It skips a failed lookup or the local player. The
+remaining DWORD and QWORD go to `0x14045BCD0`, which stores them at entity
+`+0x124` and `+0x128`. If both are zero, the setter also clears `+0x130`.
+
+The entity-create reader stores the corresponding `UnitTagOwner` and
+`GroupTagOwner` at decoded offsets `+0xDC` and `+0xE0`. The creation path at
+`0x1404578E0` forwards both fields to that same setter. The two adjacent
+name/function rows at `0x140C5B740` confirm how the client uses the values.
+
+- `IsTagged` (`0x1406612C0`) tests for either owner after checking a flag on
+  the entity's state component.
+- `IsTaggedByMe` (`0x140661360`) returns true for a nonzero `+0x130`. Otherwise
+  it checks the unit owner against the local player's unit ID, then the
+  nonzero group owner against the local player's group ID at `+0x18A0`.
+  The separate `0x0936` group-association handler writes that local group
+  field and references `UnitGroupChanged`.
+
+The [24 verified byte anchors](coverage/f025-093e-tag-owner-20261105.json)
+tie both packet paths and the named consumers to the same PE and REA record.
+Source now names this model `ServerEntityTagOwnerUpdate` with `UnitId`,
+`UnitTagOwner`, and `GroupTagOwner`. Its opcode and payload layout match the
+reader, including the all-zero owner clear. The exact role of `+0x130`,
+server ownership policy, producer, recipients, and send order remain open.
+The production emitter is still gated. The owning build passed with zero
+warnings or errors and all 151 scoped tests passed, including registration,
+full-width owner serialization, clear serialization, and the pre-create guard.

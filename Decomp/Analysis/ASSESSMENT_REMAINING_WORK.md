@@ -720,6 +720,11 @@ ties second-word `0x100` to resetting base Health and eleven resource fields,
 and `0x4000` to clearing or refusing target selection. The first word and
 server producer and ordering still need evidence.
 
+The [093E tag-owner trace](F025_STATIC_HANDLER_PROXY_MAPPING.md#5-november-093e-tag-owner-update)
+identifies both tag owners through entity creation and the named Lua readers.
+The wire model uses the confirmed field names. Server tag ownership policy,
+recipients, producer and send order still need evidence.
+
 Next integrated evidence outcome: continue independent broader feature/upstream
 requirements and corroborate the remaining mapped F-025 field meanings
 and server producer/ordering requirements using independent table, packet or

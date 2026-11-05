@@ -1,0 +1,156 @@
+{
+  "build": 16042,
+  "sourceReferenceCommit": "8c322b3e271092d21dd96993e821dec6f45fc8be",
+  "clientSha256": "231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5",
+  "reaEvidenceId": "ev_142ebc012c9fce11df9c67703c5d9e335b4810c52c1d752b63ed2828030231d4",
+  "llvmObjdumpSha256": "3ae6715601f2eb0c1d0839929c46089906ba0f1e5e032fe519656a40c936b863",
+  "anchors": [
+    {
+      "name": "093e-dispatch-cell",
+      "va": "0x1403f36b8",
+      "fileOffset": 4139704,
+      "bytes": "8fd93e00"
+    },
+    {
+      "name": "093e-registration-and-reader",
+      "va": "0x140074ffd",
+      "fileOffset": 476157,
+      "bytes": "488d0d6c2f02004533c9c74424300000000048894c2428458d4110488bcbba3e090000"
+    },
+    {
+      "name": "093e-reader-unit",
+      "va": "0x140097f95",
+      "fileOffset": 619413,
+      "bytes": "41b820000000488bd3e8ed40fdff"
+    },
+    {
+      "name": "093e-reader-unit-owner",
+      "va": "0x140097fa7",
+      "fileOffset": 619431,
+      "bytes": "488d530441b820000000488bcfe8d740fdff"
+    },
+    {
+      "name": "093e-reader-group-owner",
+      "va": "0x140097fbd",
+      "fileOffset": 619453,
+      "bytes": "488d5308488bcfe85741fdff"
+    },
+    {
+      "name": "093e-unit-id-lookup",
+      "va": "0x1403ed98f",
+      "fileOffset": 4115855,
+      "bytes": "8b17488bcee837b7feff"
+    },
+    {
+      "name": "093e-skips-local-entity",
+      "va": "0x1403ed9a2",
+      "fileOffset": 4115874,
+      "bytes": "483946780f846fedffff"
+    },
+    {
+      "name": "093e-forwards-both-owners",
+      "va": "0x1403ed9ac",
+      "fileOffset": 4115884,
+      "bytes": "4c8b47088b5704488bc8e815e30600"
+    },
+    {
+      "name": "setter-stores-both-owners-and-clears-local-override",
+      "va": "0x14045bcd0",
+      "fileOffset": 4567248,
+      "bytes": "4533c98991240100004c89812801000085d2750c4d85c0750744898930010000"
+    },
+    {
+      "name": "setter-marks-entity-dirty",
+      "va": "0x14045bcf7",
+      "fileOffset": 4567287,
+      "bytes": "c781a818000001000000"
+    },
+    {
+      "name": "create-reader-unit-owner",
+      "va": "0x140097355",
+      "fileOffset": 616277,
+      "bytes": "488d93dc00000041b820000000488bcfe8264dfdff"
+    },
+    {
+      "name": "create-reader-group-owner",
+      "va": "0x140097372",
+      "fileOffset": 616306,
+      "bytes": "488d93e0000000488bcfe89f4dfdff"
+    },
+    {
+      "name": "create-forwards-both-owners-to-shared-setter",
+      "va": "0x1404578e0",
+      "fileOffset": 4549856,
+      "bytes": "4c8b83e00000008b93dc000000488bcfe8db430000"
+    },
+    {
+      "name": "lua-is-tagged-name",
+      "va": "0x140b2b4d0",
+      "fileOffset": 11707600,
+      "bytes": "497354616767656400"
+    },
+    {
+      "name": "lua-is-tagged-by-me-name",
+      "va": "0x140b2b4a0",
+      "fileOffset": 11707552,
+      "bytes": "497354616767656442794d6500"
+    },
+    {
+      "name": "lua-tag-owner-method-bindings",
+      "va": "0x140c5b740",
+      "fileOffset": 12950336,
+      "bytes": "d0b4b24001000000c012664001000000a0b4b240010000006013664001000000"
+    },
+    {
+      "name": "lua-is-tagged-owner-tests",
+      "va": "0x140661306",
+      "fileOffset": 6686470,
+      "bytes": "399024010000750b483990280100008bc27405b801000000"
+    },
+    {
+      "name": "lua-is-tagged-by-me-local-override",
+      "va": "0x140661394",
+      "fileOffset": 6686612,
+      "bytes": "3990300100007407b801000000eb38"
+    },
+    {
+      "name": "lua-is-tagged-by-me-local-unit-test",
+      "va": "0x1406613aa",
+      "fileOffset": 6686634,
+      "bytes": "4c8b40784d85c07426418b400839812401000074dd"
+    },
+    {
+      "name": "lua-is-tagged-by-me-local-group-test",
+      "va": "0x1406613bf",
+      "fileOffset": 6686655,
+      "bytes": "488b81280100004885c0740e493980a0180000b8010000007402"
+    },
+    {
+      "name": "0936-group-association-dispatch-cell",
+      "va": "0x1403f3698",
+      "fileOffset": 4139672,
+      "bytes": "d4d93e00"
+    },
+    {
+      "name": "0936-store-group-association",
+      "va": "0x1403ed9fc",
+      "fileOffset": 4115964,
+      "bytes": "488981a0180000"
+    },
+    {
+      "name": "0936-group-change-event-reference",
+      "va": "0x1403ed9f5",
+      "fileOffset": 4115957,
+      "bytes": "488d156cdd7000"
+    },
+    {
+      "name": "0936-group-change-event-name",
+      "va": "0x140afb768",
+      "fileOffset": 11511656,
+      "bytes": "556e697447726f75704368616e67656400"
+    }
+  ],
+  "scope": "Static proof for the tag-owner update field names from the shared create setter and named Lua readers.",
+  "limits": "No shipped server or runtime was examined. Ownership policy, eligibility, recipient timing and production emission remain open.",
+  "localArtifacts": "artifacts/continuation-20261105/f025-093e-consumers/"
+}

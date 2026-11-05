@@ -1042,12 +1042,6 @@ public class PacketPlaceholderNamingTests
             nameof(ServerEntityStatUInt32UInt5Pair.Value1),
             nameof(ServerEntityStatUInt32UInt5Pair.Value2),
             nameof(ServerEntityStatUInt32UInt5Pair.Value3));
-
-        Assert.Equal((ushort)0x093E, (ushort)GameMessageOpcode.ServerEntityStatTwoUInt32UInt64);
-        AssertNeutralProperties<ServerEntityStatTwoUInt32UInt64>(
-            nameof(ServerEntityStatTwoUInt32UInt64.Value0),
-            nameof(ServerEntityStatTwoUInt32UInt64.Value1),
-            nameof(ServerEntityStatTwoUInt32UInt64.Value2));
     }
 
     [Fact]

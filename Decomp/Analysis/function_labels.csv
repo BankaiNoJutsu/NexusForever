@@ -84,7 +84,7 @@ WildStar64.exe,1400975b0,ServerEntityStatUInt32UInt5Float_ReadPayload,Registered
 WildStar64.exe,140097620,ServerEntityStatUInt32UInt5UInt32_ReadPayload,Parses server opcode 0x08F4 as uint32, 5-bit value, and uint32; semantics unresolved.
 WildStar64.exe,140097690,ServerEntityStatUInt32UInt5Pair_ReadPayload,Parses server opcode 0x093D as uint32, 5-bit value, uint32, and uint32; semantics unresolved.
 WildStar64.exe,140097ee0,ServerEntityStatUInt32UInt14UInt18WideString_ReadPayload,Parses server opcode 0x0939 as uint32, 14-bit value, 18-bit value, and wide string; semantics unresolved.
-WildStar64.exe,140097f70,ServerEntityStatTwoUInt32UInt64_ReadPayload,Parses server opcode 0x093E as two uint32 fields and one uint64 field; semantics unresolved.
+WildStar64.exe,140097f70,ServerEntityTagOwnerUpdate_ReadPayload,Parses server opcode 0x093E as UnitId u32 then UnitTagOwner u32 and GroupTagOwner u64.
 WildStar64.exe,140098080,ServerEntityThreatListUpdate_ReadPayload,Parses server opcode 0x0909 as source unit id, five threat unit ids, and five threat values.
 WildStar64.exe,14009fac0,ServerCombatLog_ReadTypeAndDispatch,Reads server opcode 0x0247 by parsing the 6-bit CombatLogType, validating the supported range, and dispatching through the combat-log subtype handler table with the payload cursor advanced past the type field.
 WildStar64.exe,1400980f0,ServerUInt32WideString_ReadPayload,Parses a uint32 followed by a wide string; used by server opcode 0x08CC and other unresolved UI/result packets.
@@ -3010,7 +3010,7 @@ WildStar64.exe,140075236,Network_RegisterServerOpcode_08CC,Registers server opco
 WildStar64.exe,140078cb0,Network_RegisterServerOpcode_0889,Registers server opcode 0x0889 ServerEntityStatUInt32Triplet with 0xC-byte reader ServerSpellUInt32TripletListRow_ReadPayload @140080bf0.
 WildStar64.exe,140074fb9,Network_RegisterServerOpcode_0939,Registers server opcode 0x0939 with 0x18-byte reader ServerEntityStatUInt32UInt14UInt18WideString_ReadPayload @140097ee0; immediate scan found other 0x0939 hits are non-registration offsets/formulas.
 WildStar64.exe,140074cda,Network_RegisterServerOpcode_093D,Registers server opcode 0x093D with 0x10-byte reader ServerEntityStatUInt32UInt5Pair_ReadPayload @140097690; immediate scan found other 0x093D hits are non-registration formulas.
-WildStar64.exe,14007501b,Network_RegisterServerOpcode_093E,Registers server opcode 0x093E with 0x10-byte reader ServerEntityStatTwoUInt32UInt64_ReadPayload @140097f70; immediate scan found other 0x093E hits are non-registration formulas.
+WildStar64.exe,14007501b,Network_RegisterServerOpcode_093E,Registers ServerEntityTagOwnerUpdate with 0x10-byte reader @140097f70.
 WildStar64.exe,1406e70a0,PrimalMatrix_UpdateNodeVisualStateFlags,PrimalMatrix callback family slot 5 at 140b721e8+0x28: updates DB\PrimalMatrixNode visual and selection flags at node+0x1e4 plus animation value node+0x1e0; false lead for prerequisite entity+0x1e4 ownership.
 WildStar64.exe,1406e73e0,PrimalMatrix_HandleNodeAllocationInput,PrimalMatrix callback family slot 6 at 140b721e8+0x30: handles node allocation or deallocation input and emits NodeAllocationChanged/CantAffordNodeAllocation/NodeDeallocationPrevented UI events; clears current node selection through 1406e66a0.
 WildStar64.exe,1404cc070,SceneProximityCue_LookupConfigById,Looks up DAT_140c65a00 scene proximity cue config by row or config id for the lifecycle candidate loop and cue application path.
@@ -3083,7 +3083,10 @@ WildStar64.exe,1403edadd,EntityMessageCase_Server08CC,Interior case of1403ec6a0:
 WildStar64.exe,1403ed7a3,EntityMessageCase_Server08F4,Interior case of1403ec6a0: slot1403f3590 -> entity+510 indexed DWORD array update for reader selectors0..23; selector6 has an additional path; enum and producer open.
 WildStar64.exe,1403ed8ff,EntityMessageCase_Server0939,Interior case of1403ec6a0: slot1403f36a4 -> entity lookup and optional localized text fallback via14045b030 plus payload+4 to14045b790; table/selector semantics open.
 WildStar64.exe,1403ed56a,EntityMessageCase_Server093D,Interior case of1403ec6a0: slot1403f36b4 -> entity+be8 indexed DWORD/float32 pair with selector<=26; raw32-bit reader shape preserved; enum and producer open.
-WildStar64.exe,1403ed98f,EntityMessageCase_Server093E,Interior case of1403ec6a0: slot1403f36b8 -> entity lookup and helper14045bcd0 storing DWORD/QWORD+124/+128; skips dispatcher+78 entity; meaning/producer open.
+WildStar64.exe,1403ed98f,EntityMessageCase_Server093E,Interior case of1403ec6a0: resolves UnitId and skips the local entity. Forwards UnitTagOwner and GroupTagOwner to the shared entity-create setter at14045bcd0. Server producer timing remains open.
+WildStar64.exe,14045bcd0,Entity_SetTagOwners,Stores the unit and group tag owners at entity+0x124/+0x128 and clears entity+0x130 when both owners are zero.
+WildStar64.exe,1406612c0,Lua_Unit_IsTagged,Tests for either stored tag owner after applying the entity state-component gate.
+WildStar64.exe,140661360,Lua_Unit_IsTaggedByMe,Returns true for nonzero entity+0x130 or a match with the local unit ID or nonzero group association.
 WildStar64.exe,1404d6210,FortuneNode_SetDelegateAndConnection,Stores retained argument2 at node+60 (fallback apply delegate) and argument3 at+58; selected entity-dispatch callers temporarily set and clear delegate. See F025_STATIC_HANDLER_PROXY_MAPPING.md.
 WildStar64.exe,1403dede0,Entity_ApplyServer0889StatePair,Resolves payload+0 entity id and stores payload+4/+8 at entity+0x24/+0x28. A rising second-word bit 0x100 clears base Health and eleven resource fields. Second-word bit 0x4000 clears the current selection if it matches the updated entity. Exact flag names and server timing remain open.
 WildStar64.exe,14045b030,Entity_ApplyNameTextAndNotify,Copies/selects wide name text with observed entity+88/+10 storage and references UnitNameChanged event; used by08CC and0939 cases; server producer policy remains open.
