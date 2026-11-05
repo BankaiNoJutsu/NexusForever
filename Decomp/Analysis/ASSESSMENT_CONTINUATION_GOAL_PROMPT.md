@@ -63,8 +63,12 @@ Verified continuation status - 5 November 2026
   The inventory records11 implementation-COMPLETE,23 partial/emulator-only,
   one diagnostic and one structural area; the five producer/emit gates remain.
   ICComm's typed join/sender, pending type/name key and readiness/callback paths
-  are mapped. Its response-name mismatch remains a static prediction requiring
-  a focused reproduction and fix. Use the companion
+  are mapped. The later Decomp/Analysis/ICCOMM_JOIN_CORRELATION.md milestone
+  reproduces and fixes response-name correlation and collapsed Group/Guild addon
+  memberships through public handlers:11 baseline failures fixed,26 selected
+  cases, clean owning/test-only builds and both Source reviews. Do not repeat
+  this completed Source slice. Native callbacks/socket and circle contexts remain
+  open. Use the companion
   Decomp/Analysis/ICCOMM_WEB_CORROBORATION_2026_11_05.md for API-era boundaries;
   entitlement identity, server quota, active formulas and reconnect stay open.
 - The latest recorded 20-PR all-state refresh retained reviewed unchanged heads,
@@ -88,7 +92,7 @@ Next actionable outcomes and remaining gates
   prerequisite/combat work, Hycrest later gameplay and Q5597 qualification as
   their specific inputs allow. Do not request the superseded Q5597 worksheet.
 - Use the all-family audit to distinguish unfinished Source work (including
-  ICComm response-name correlation/scoped names, guild bank and LAS public-flow
+  guild bank and LAS public-flow
   probes) from actual missing evidence. A proposed or unexecuted probe is not a
   reproduced defect. Contract reset edges, Fortune exact weights and other
   retail-policy gaps stay explicit; continue independent implementation.

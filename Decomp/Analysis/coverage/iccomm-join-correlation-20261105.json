@@ -1,0 +1,339 @@
+{
+  "date": "2026-11-05",
+  "milestone": "ICComm public join correlation and named scoped memberships",
+  "sourceBaselineCommit": "eaad953a0fb898258ef9bd0a96c84dc9c67508d7",
+  "publicationParent": "2a46b2cd44ca598a8c94912375f656c4814bfcde",
+  "sourceFiles": [
+    {
+      "path": "Source/NexusForever.Game/ICComm/ICCommManager.cs",
+      "sha256": "cb53a045dd7141b8b660db36878bb5b7e7f927ab8ed34875fe68b74d6cd65322",
+      "gitBlob": "f873fadea6043e77700a67ce9f9bbc0072a0fd99"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/ICComm/ICCommJoinCorrelationTests.cs",
+      "sha256": "38ab2cc45f6598ba03ef1d58c3c4fbdab52c596d6abd1b6015d61f14f46d5a4b",
+      "gitBlob": "6ddddcd8da15199ecae9eed6d9a856c61a03d22b"
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/Network/Message/Handler/ICComm/ClientICCommHandlers.cs",
+      "sha256": "e16bcdc20d68af90714f94724957f7888738c15c1a82fd7008325ff585d853fb",
+      "gitBlob": "ab11088b5b6a43cd2e8ebb578588a37f2e750bec"
+    },
+    {
+      "path": "Source/NexusForever.Game.Abstract/ICComm/IICCommManager.cs",
+      "sha256": "82f2a25770e8ac4010d34f2af30c260196b1986df743dfed517fd1c1fc7e5c31",
+      "gitBlob": "f1def6541fb7a6ddec379642394ed4edff0cbce4"
+    },
+    {
+      "path": "Source/NexusForever.Network.World/Message/Model/ICComm/ServerICCommChannelJoin.cs",
+      "sha256": "9804ebe32a008879ffe3dbb11980e4bd01b5c4e3e0112ca83378df755e325c77",
+      "gitBlob": "e1f6a0a3bae3daf0dbdff0584e8bbe9d45fec0be"
+    },
+    {
+      "path": "Source/NexusForever.Network.World/Message/Model/ICComm/ServerICCommChannelJoinResult.cs",
+      "sha256": "f6a5c5f99416f41fb9b98795ff70329bbff2f395ed1a3e2e87891ed01f847c89",
+      "gitBlob": "f2facb80cb3db327e0b26956b1c75da4c88e8657"
+    }
+  ],
+  "assemblies": [
+    {
+      "path": "Source/NexusForever.Game/bin/Debug/net10.0/NexusForever.Game.dll",
+      "sha256": "b028e8987435ddc98bba8339ef869fdf96ede4c0d30b2d6b073d6c2f86c8787b"
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+      "sha256": "660979b5b2dd84cbfaedafb43619d1480c5440d2d7a696779cb85ab08cd07726"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.dll",
+      "sha256": "b028e8987435ddc98bba8339ef869fdf96ede4c0d30b2d6b073d6c2f86c8787b"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+      "sha256": "660979b5b2dd84cbfaedafb43619d1480c5440d2d7a696779cb85ab08cd07726"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+      "sha256": "643c79c76f846e3cbafe9c4462219d95ae21478c0c4e4ecd8b08311dba7c7fbd"
+    }
+  ],
+  "baseline": {
+    "file": "artifacts/continuation-20261105/iccomm-join-correlation/baseline.trx",
+    "sha256": "a23fcbbf913b964a80e85d54efb6a6c456847f70022b317e58ff80ba7795be41",
+    "counters": {
+      "total": "13",
+      "executed": "13",
+      "passed": "2",
+      "failed": "11",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "cases": [
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.PublicFailureStillSelectsTheRequestedPendingChannel(type: Group, name: \"AddonSync\", expected: NoGroup)",
+        "outcome": "Failed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.PublicJoinRepliesWithTheExactPendingTypeAndName(type: Global)",
+        "outcome": "Failed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.PublicFailureStillSelectsTheRequestedPendingChannel(type: Global, name: \"     \", expected: BadName)",
+        "outcome": "Failed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.SameNameInDifferentScopesKeepsItsExistingIsolation(type: Guild)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.PublicJoinRepliesWithTheExactPendingTypeAndName(type: Group)",
+        "outcome": "Failed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.PublicJoinRepliesWithTheExactPendingTypeAndName(type: Guild)",
+        "outcome": "Failed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.NamedChannelsWithinOneScopeDoNotLeakAddonMessages(type: Group)",
+        "outcome": "Failed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.SameNameInDifferentScopesKeepsItsExistingIsolation(type: Group)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.RepeatedJoinAndNotJoinedCleanupKeepOtherNamedMemberships(type: Group)",
+        "outcome": "Failed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.PublicFailureStillSelectsTheRequestedPendingChannel(type: Guild, name: \"AddonSync\", expected: NoGuild)",
+        "outcome": "Failed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.NamedChannelsWithinOneScopeDoNotLeakAddonMessages(type: Guild)",
+        "outcome": "Failed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.RepeatedJoinAndNotJoinedCleanupKeepOtherNamedMemberships(type: Guild)",
+        "outcome": "Failed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.GlobalCanonicalAliasesShareDeliveryButEachReplyUsesItsOwnRequest",
+        "outcome": "Failed"
+      }
+    ]
+  },
+  "final": {
+    "file": "artifacts/continuation-20261105/iccomm-join-correlation/final.trx",
+    "sha256": "49f780f125732d52504367d22a58beeeee70f339fe6635a2f196828129330e9e",
+    "counters": {
+      "total": "26",
+      "executed": "26",
+      "passed": "26",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "cases": [
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.PublicFailureStillSelectsTheRequestedPendingChannel(type: Group, name: \"AddonSync\", expected: NoGroup)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.PublicFailureStillSelectsTheRequestedPendingChannel(type: Global, name: \"     \", expected: BadName)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.RepeatedJoinAndNotJoinedCleanupKeepOtherNamedMemberships(type: Group)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommManagerTests.SendMessage_WithMissingRecipientReturnsNotInChannelWithoutEcho",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommManagerTests.Update_RemovesEmptyTransientChannel",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.NamedChannelsWithinOneScopeDoNotLeakAddonMessages(type: Group)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.PublicJoinRepliesWithTheExactPendingTypeAndName(type: Guild)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.PublicFailureStillSelectsTheRequestedPendingChannel(type: Guild, name: \"AddonSync\", expected: NoGuild)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommManagerTests.SendMessage_GuildRecipientNoLongerInGuild_IsPrunedBeforeDelivery",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.GlobalCanonicalAliasesShareDeliveryButEachReplyUsesItsOwnRequest",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommManagerTests.Update_RemovesGuildMemberAfterLeavingGuild",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.DeparturePublishesOnlyAfterItsPeriodicCommit",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.SameNameInDifferentScopesKeepsItsExistingIsolation(type: Guild)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.PublicJoinRepliesWithTheExactPendingTypeAndName(type: Global)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Guild.GuildRenameRecoveryTests.PublicCommunityRenameReservesAcceptedNameBeforeAnotherRegistration",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.RepeatedJoinAndNotJoinedCleanupKeepOtherNamedMemberships(type: Guild)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommManagerTests.Update_RemovesOfflineMemberFromTransientChannel",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Guild.GuildDisbandRecoveryTests.PublicDisbandKeepsChatAndNameReservedUntilPeriodicCommit",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.NamedChannelsWithinOneScopeDoNotLeakAddonMessages(type: Guild)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.SameNameInDifferentScopesKeepsItsExistingIsolation(type: Group)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Quest.ContractLiveCompletionTests.NestedNormalSaveWaitsForAllOrdinaryRewardsAndInvokesItsCallbackAfterTheAtomicCommit",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Guild.GuildRenameRecoveryTests.PublicCommunityRenameRejectsAnotherGuildsNameBeforeCharging",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommManagerTests.SendMessage_EnqueuesResultOrderedEchoAndDirectedRecipientMessage",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommManagerTests.SendMessage_GroupSenderNoLongerInGroup_ReturnsNotInChannelAndRemovesMembership",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommManagerTests.SendMessage_WithRecipientNameOnlyDeliversToMatchingOnlineMember",
+        "outcome": "Passed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.ICComm.ICCommJoinCorrelationTests.PublicJoinRepliesWithTheExactPendingTypeAndName(type: Group)",
+        "outcome": "Passed"
+      }
+    ]
+  },
+  "testFilter": "FullyQualifiedName~ICComm",
+  "builds": [
+    {
+      "project": "NexusForever.WorldServer",
+      "seconds": 36.44,
+      "warnings": 0,
+      "errors": 0
+    },
+    {
+      "project": "NexusForever.Game.Tests",
+      "buildProjectReferences": false,
+      "seconds": 24.09,
+      "warnings": 0,
+      "errors": 0
+    }
+  ],
+  "reviews": {
+    "standards": {
+      "findings": 0,
+      "agent": "/root/iccomm_standards"
+    },
+    "spec": {
+      "findings": 0,
+      "agent": "/root/iccomm_spec"
+    }
+  },
+  "evidence": [
+    {
+      "path": "artifacts/continuation-20261105/iccomm-join-correlation/baseline-build.log",
+      "sha256": "bd3d3ca2c609571f6a664895b75649cb40cef7035b9b952794a36052948e8d79"
+    },
+    {
+      "path": "artifacts/continuation-20261105/iccomm-join-correlation/baseline-tests.log",
+      "sha256": "b6427d1dfcaba6fd15e46ab6f4ad126b28cb35da756cb2bb886b3bac6167e778"
+    },
+    {
+      "path": "artifacts/continuation-20261105/iccomm-join-correlation/baseline-dll-binding.json",
+      "sha256": "ec57e08cc8c898851ca415a90a5bb2f54bf198e4f66caff16f4084948836cc72"
+    },
+    {
+      "path": "artifacts/continuation-20261105/iccomm-join-correlation/owning-build.log",
+      "sha256": "a219d4d612157528e6d95f6bf8271c344c284072dcea12a337c8077d7e8425ef"
+    },
+    {
+      "path": "artifacts/continuation-20261105/iccomm-join-correlation/test-build.log",
+      "sha256": "4b2294a4ef7a30ca4a44ff1d200de66026c1eea5f8ed7a77c2ecb2d7dd68628b"
+    },
+    {
+      "path": "artifacts/continuation-20261105/iccomm-join-correlation/final-tests.log",
+      "sha256": "57b0e6a6dfebf1852123d54ba83a8efd195cebd306020c993b0371550dd35919"
+    },
+    {
+      "path": "artifacts/continuation-20261105/iccomm-join-correlation/review-final.md",
+      "sha256": "0bdade33179842544de2c08deb0ec7e5f2390445261a39265cbd9bd2b5ff983e"
+    },
+    {
+      "path": "artifacts/continuation-20261105/iccomm-join-correlation/upstream-refresh.json",
+      "sha256": "0a3dffe8f7aac3909c1315e32058f38e129673c3d43d530a60ae2d7dcd395601"
+    }
+  ],
+  "upstream": {
+    "latestAllStatePulls": 20,
+    "changedReviewedHeadsBasesStatesOrMergeStates": 0,
+    "608": "open",
+    "609": "closed/unmerged"
+  },
+  "limits": [
+    "Source/public-handler qualification only",
+    "No full solution build or full suite",
+    "No native client or Computer Use",
+    "No new provider or deployed socket evidence",
+    "Native callbacks, circle contexts, quota, entitlement, throttle and reconnect remain open",
+    "Exact scoped-name keys do not prove retail case/whitespace policy",
+    "Community creation finance and Auth handoff remain unfinished"
+  ]
+}

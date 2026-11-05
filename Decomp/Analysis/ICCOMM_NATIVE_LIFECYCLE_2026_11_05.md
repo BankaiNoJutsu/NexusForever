@@ -1,5 +1,12 @@
 # ICComm admission, callback and queue lifecycle - 5 November 2026
 
+Later Source result: [join correlation and named scoped channels](ICCOMM_JOIN_CORRELATION.md)
+reproduced and fixed the response-name and collapsed-membership predictions
+below through the real public handlers. Eleven baseline failures are fixed;
+26 selected cases, clean owning/test builds and both reviews pass. This
+supersedes the pending Source next step in this research record; its native,
+entitlement, quota, reconnect and retail evidence limits remain intact.
+
 The [all-family audit](ALL_REMAINING_BLOCKERS_RESEARCH_2026_11_05.md) left the
 typed join owner, indirect sender and callback roles unresolved. This pass
 maps those paths in the pinned build16042 client. It makes response-name and

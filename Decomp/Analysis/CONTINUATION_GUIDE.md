@@ -1,5 +1,12 @@
 # Client Binary Decompile Continuation Guide
 
+[ICComm join correlation and named scoped channels](ICCOMM_JOIN_CORRELATION.md)
+implements the public Source slice from the pinned native/authored lifecycle
+evidence: exact reply names and separate addon memberships within Group/Guild
+scope. Eleven baseline failures are fixed;26 selected cases, owning/test-only
+builds and both reviews pass. Native callback/socket, circle contexts, entitlement,
+quota, throttle, reconnect and retail equivalence remain unqualified.
+
 Latest provider evidence: [44-case MySQL listing concurrency qualification](MARKETPLACE_CONDITIONAL_LISTING_WRITES.md#actual-mysql-qualification---3-november-2026)
 uses unchanged Source/DLLs. Broader financial, physical-failure and retail gates remain open.
 

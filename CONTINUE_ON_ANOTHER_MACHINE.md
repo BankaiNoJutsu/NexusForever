@@ -1,5 +1,13 @@
 # Continue on another machine
 
+Latest ICComm implementation: [join correlation and named scoped channels](Decomp/Analysis/ICCOMM_JOIN_CORRELATION.md)
+fixes11 executed public-flow failures. Exact reply names and separate Group/Guild
+addon memberships pass26 selected cases, clean owning/test-only builds and both
+Source reviews. Existing Global canonical matching and transient cleanup remain
+covered. Native callbacks/socket, circle contexts and entitlement/quota/retail
+policy stay open. Continue Community creation finance with its distinct residence
+and Auth owners; no full suite/client/CUA ran.
+
 Latest ordinary Guild implementation: [creation finance](Decomp/Analysis/GUILD_CREATION_FINANCE.md)
 couples credits, complete guild/leader graph and Character affiliation in the
 original recoverable save.22 focused/202 affected cases, clean owning build and

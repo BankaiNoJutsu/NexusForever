@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[ICComm join correlation](Decomp/Analysis/ICCOMM_JOIN_CORRELATION.md) now preserves
+exact request names on public success/failure replies and isolates named addon
+channels within Group/Guild scope. Eleven baseline failures are fixed;26 scoped
+cases, clean owning/test builds and both Source reviews pass. Native callback/
+socket, retail casing, entitlement/quota/throttle/reconnect and circle contexts
+remain open; the feature stays partial.
+
 [Ordinary Guild creation finance](Decomp/Analysis/GUILD_CREATION_FINANCE.md)
 now couples the accepted credit fee, full guild/leader graph and Character
 affiliation through the original recoverable save. Private draft/effect fences
@@ -10,8 +17,8 @@ cross-owner achievement atomicity and provider/runtime/native/retail remain open
 [ICComm admission lifecycle](Decomp/Analysis/ICCOMM_NATIVE_LIFECYCLE_2026_11_05.md)
 now maps the typed join owner/0546 sender, exact pending type/name key and
 0547/0548/054A readiness/callback transitions.92 native byte checks plus authored
-API/addon corroboration make response-name correlation and scoped channel names
-concrete Source work. Entitlement identity, quota, active formula values,
+API/addon corroboration guided the linked implemented correlation/scoped-name
+slice above. Entitlement identity, quota, active formula values,
 server throttle/reconnect and runtime/retail qualification remain open.
 
 [All remaining blocker families audited](Decomp/Analysis/ALL_REMAINING_BLOCKERS_RESEARCH_2026_11_05.md)

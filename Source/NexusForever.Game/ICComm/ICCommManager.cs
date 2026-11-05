@@ -14,7 +14,6 @@ namespace NexusForever.Game.ICComm
             public ICCommChannelType Type { get; init; }
             public ulong ScopeId { get; init; }
             public string KeyName { get; init; }
-            public string DisplayName { get; init; }
             public Dictionary<uint, IPlayer> Members { get; } = [];
         }
 
@@ -29,12 +28,14 @@ namespace NexusForever.Game.ICComm
         public ICCommJoinResult? Join(IPlayer player, ICCommChannelType type, ulong guildId, string name, out ulong iccommId, out string channelName)
         {
             iccommId = 0ul;
-            channelName = string.Empty;
+            // Replies select the client's pending (type, exact request name),
+            // independently of the server's canonical channel key.
+            channelName = name ?? string.Empty;
 
             if (player == null)
                 return ICCommJoinResult.BadName;
 
-            ICCommJoinResult? keyFailure = TryCreateChannelKey(player, type, guildId, name, out ulong scopeId, out string keyName, out channelName);
+            ICCommJoinResult? keyFailure = TryCreateChannelKey(player, type, guildId, name, out ulong scopeId, out string keyName);
             if (keyFailure.HasValue)
                 return keyFailure;
 
@@ -48,8 +49,7 @@ namespace NexusForever.Game.ICComm
                         Id          = nextChannelId++,
                         Type        = type,
                         ScopeId     = scopeId,
-                        KeyName     = keyName,
-                        DisplayName = channelName
+                        KeyName     = keyName
                     };
 
                     channelsByKey.Add(key, channel);
@@ -66,7 +66,6 @@ namespace NexusForever.Game.ICComm
 
                 playerChannels.Add(channel.Id);
                 iccommId = channel.Id;
-                channelName = channel.DisplayName;
             }
 
             return null;
@@ -154,39 +153,33 @@ namespace NexusForever.Game.ICComm
         }
 
         private static ICCommJoinResult? TryCreateChannelKey(IPlayer player, ICCommChannelType type, ulong guildId, string name,
-            out ulong scopeId, out string keyName, out string channelName)
+            out ulong scopeId, out string keyName)
         {
             scopeId = 0ul;
             keyName = string.Empty;
-            channelName = string.Empty;
 
             switch (type)
             {
                 case ICCommChannelType.Global:
-                    channelName = NormaliseDisplayName(name);
-                    if (channelName.Length == 0)
+                    keyName = NormaliseDisplayName(name).ToUpperInvariant();
+                    if (keyName.Length == 0)
                         return ICCommJoinResult.BadName;
 
-                    keyName = channelName.ToUpperInvariant();
                     return null;
                 case ICCommChannelType.Group:
                     if (player.GroupAssociation == 0ul)
                         return ICCommJoinResult.NoGroup;
 
                     scopeId = player.GroupAssociation;
-                    keyName = scopeId.ToString();
-                    channelName = NormaliseDisplayName(name);
-                    if (channelName.Length == 0)
-                        channelName = $"Group {scopeId}";
+                    keyName = name ?? string.Empty;
                     return null;
                 case ICCommChannelType.Guild:
-                    IGuild guild = player.GuildManager.Guild;
+                    IGuild guild = player.GuildManager?.Guild;
                     if (guild == null || guildId != 0ul && guild.Id != guildId)
                         return ICCommJoinResult.NoGuild;
 
                     scopeId = guild.Id;
-                    keyName = scopeId.ToString();
-                    channelName = guild.Name;
+                    keyName = name ?? string.Empty;
                     return null;
                 default:
                     return ICCommJoinResult.BadName;

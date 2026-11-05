@@ -1,5 +1,14 @@
 # Assessment follow-through goal
 
+[ICComm join correlation and named scoped channels](ICCOMM_JOIN_CORRELATION.md)
+now pass the real public join/message/not-joined flow: exact request names on
+success/failure and independent addon memberships within Group/Guild scope.
+Eleven executed baseline failures are fixed; all 26 selected cases, clean owning
+and test-only builds, and both Source reviews pass. Native callback/socket,
+retail casing, entitlement/quota/throttle/reconnect and circle contexts remain
+open. Continue Community credit/residence creation and its durable Auth-token
+handoff; ordinary Guild creation remains completed at its own boundary below.
+
 [Ordinary public Guild creation finance](GUILD_CREATION_FINANCE.md) is now
 Source/SQLite verified: accepted credit fee, complete guild/data/three ranks/
 leader member and Character affiliation settle together, with original actor
