@@ -727,6 +727,11 @@ identifies both tag owners through entity creation and the named Lua readers.
 The wire model uses the confirmed field names. Server tag ownership policy,
 recipients, producer and send order still need evidence.
 
+The [0939 wire model](F025_STATIC_HANDLER_PROXY_MAPPING.md#5-november-0939-wire-model)
+uses the confirmed title and creature IDs and preserves the wide-name
+fallback. This reconciles the model from upstream #514. The combined
+update's server producer and ordering remain open.
+
 Next integrated evidence outcome: continue independent broader feature/upstream
 requirements and corroborate the remaining mapped F-025 field meanings
 and server producer/ordering requirements using independent table, packet or

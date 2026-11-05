@@ -97,7 +97,7 @@ The previous reader-only blocker is superseded for these apply edges.
 | 0889 | `1403f33e4` -> `1403ede04` -> `1403dede0` | Payload+4/+8 replace entity+0x24/+0x28. In the second word, setting bit `0x100` clears base Health and eleven resource slots. Bit `0x4000` clears a matching selection and prevents selecting that candidate. See the [consumer trace](#5-november-0889-vital-reset-and-target-selection). |
 | 08CC | `1403f34f0` -> `1403edadd` | Entity lookup, then payload+8 wide-string pointer -> `14045b030`. That helper copies name text and references the exact `UnitNameChanged` event string at `140afb7c0`; full naming/fallback policy and server producer remain separate. |
 | 08F4 | `1403f3590` -> `1403ed7a3` | Five-bit selector values 0 through 23 write payload+8 to entity+0x510+4*selector. Selector 6 is checked by target validation and a nonzero update can clear the current selection. See the [consumer trace](#5-november-08f4-target-validation-and-selection). |
-| 0939 | `1403f36a4` -> `1403ed8ff` | Nonzero payload+8 selects a lookup through `1404835c0`; a successful row supplies a localized text ID at+8, otherwise text comes from payload+0x10. Both feed `14045b030`; payload+4 is also sent to `14045b790`. The later [field corroboration](#3-november-0939-name-and-title-fields) identifies the18-bit Creature2 key and14-bit CharacterTitle key; producer eligibility/order remain open. |
+| 0939 | `1403f36a4` -> `1403ed8ff` | `ServerUnitNameAndTitleChange` resolves `UnitId`, uses the 18-bit `Creature2Id` for localized name lookup with a wide `Name` fallback, then applies the 14-bit `TitleId`. [Field evidence](#3-november-0939-name-and-title-fields) and [source reconciliation](#5-november-0939-wire-model). |
 | 093D | `1403f36b4` -> `1403ed56a` | Payload+4 selector has an unsigned upper bound26. Payload+8 writes entity+0xBE8+8*selector, and raw payload+0xC is consumed as float32 at entity+0xBEC+8*selector. The reader transports both as32 raw bits; do not silently change the existing UInt32 wire model or infer the selector enum. |
 | 093E | `1403f36b8` -> `1403ed98f` | Resolves `UnitId` and skips the local entity. Payload+4 is `UnitTagOwner` and payload+8 is `GroupTagOwner`. Both go to the setter shared with entity creation. See the [tag-owner trace](#5-november-093e-tag-owner-update). |
 
@@ -172,6 +172,26 @@ an exhaustive cache/type/call-graph inventory. The formatter's entity+34 meaning
 full locale/gender formatting, cache eligibility and complete producer/ordering
 requirements remain unresolved. No client launch, native UI observation,
 production emitter, source behavior or retail-matrix promotion occurred.
+
+## 5 November: 0939 wire model
+
+The build 16042 reader at `0x140097EE0` reads the unit ID, the 14-bit
+CharacterTitle ID, the 18-bit Creature2 ID, and the wide name in that order.
+The apply case uses the wide name if the Creature2 ID is zero or the cached
+lookup misses. It calls the name setter before the title setter on both paths.
+
+The model and opcode symbol now match upstream head `c684d1fd`.
+The `0x0939` wire layout and the empty-string default are preserved.
+[Upstream #514](https://github.com/NexusForever/NexusForever/pull/514)
+
+The recheck binds the retained lookup ranges and ten reader, apply and
+table-string anchors to the pinned PE and REA record. The owning build
+passed without warnings or errors and all 169 scoped tests passed, including
+opcode registration, maximum-width IDs, and wide-name serialization. See
+`artifacts/continuation-20261105/f025-0939-model/` for local results.
+
+Production emission remains gated pending evidence for sender eligibility and
+order. The existing `ServerTitleSet` path retains its own behavior and tests.
 
 ## 5 November: 093D capacity consumers
 

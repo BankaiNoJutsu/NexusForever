@@ -42,7 +42,7 @@ public class EntityCreateAuxiliaryEmissionTests
         Assert.DoesNotContain(packets, packet => packet is ServerEntityStatUInt32Triplet);
         Assert.DoesNotContain(packets, packet => packet is ServerEntityStatUInt32WideString);
         Assert.DoesNotContain(packets, packet => packet is ServerEntityStatUInt32UInt5UInt32);
-        Assert.DoesNotContain(packets, packet => packet is ServerEntityStatUInt32UInt14UInt18WideString);
+        Assert.DoesNotContain(packets, packet => packet is ServerUnitNameAndTitleChange);
         Assert.DoesNotContain(packets, packet => packet is ServerEntityStatUInt32UInt5Pair);
         Assert.DoesNotContain(packets, packet => packet is ServerEntityTagOwnerUpdate);
         Assert.DoesNotContain(packets, packet => packet is ServerMapTrackedUnitUpdate);

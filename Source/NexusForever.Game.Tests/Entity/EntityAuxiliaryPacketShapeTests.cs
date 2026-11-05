@@ -212,21 +212,27 @@ public class EntityAuxiliaryPacketShapeTests
         Assert.Equal(0x50607080u, reader.ReadUInt());
     }
 
-    [Fact]
-    public void ServerEntityStatUInt32UInt14UInt18WideString_WriteSerializesDecodedUInt32UInt14UInt18AndWideString()
+    [Theory]
+    [InlineData(0x3FFFu, 0x3FFFFu, "")]
+    [InlineData(0x1234u, 0u, "Éclaireur 星")]
+    public void ServerUnitNameAndTitleChange_UsesRegisteredOpcodeAndPreservesLookupIdsAndFallback(uint titleId, uint creatureId, string name)
     {
-        using var reader = CreateReader(WritePacket(new ServerEntityStatUInt32UInt14UInt18WideString
+        var update = new ServerUnitNameAndTitleChange
         {
-            Value0 = 0x10203040u,
-            Value1 = 0x1234u,
-            Value2 = 0x23456u,
-            Text = "entity label"
-        }));
+            UnitId = 0x10203040u,
+            TitleId = titleId,
+            Creature2Id = creatureId,
+            Name = name
+        };
+        var messages = new MessageManager(NullLogger<MessageManager>.Instance);
+        messages.RegisterNetworkManagerWorldMessages();
+        Assert.Equal((GameMessageOpcode)0x0939, messages.GetOpcode(update));
 
+        using var reader = CreateReader(WritePacket(update));
         Assert.Equal(0x10203040u, reader.ReadUInt());
-        Assert.Equal(0x1234u, reader.ReadUInt(14u));
-        Assert.Equal(0x23456u, reader.ReadUInt(18u));
-        Assert.Equal("entity label", reader.ReadWideString());
+        Assert.Equal(titleId, reader.ReadUInt(14u));
+        Assert.Equal(creatureId, reader.ReadUInt(18u));
+        Assert.Equal(name, reader.ReadWideString());
     }
 
     [Fact]

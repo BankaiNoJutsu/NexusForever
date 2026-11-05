@@ -1015,7 +1015,7 @@ namespace NexusForever.Network.Message
         ServerEntityGroupAssociation    = 0x0936,
         ServerEntityHealthUpdate        = 0x0937,
         ServerEntityStatUpdateInteger   = 0x0938,
-        ServerEntityStatUInt32UInt14UInt18WideString = 0x0939, // reader 140097ee0
+        ServerUnitNameAndTitleChange    = 0x0939,
         ServerEntityPropertiesUpdate    = 0x093A,
         ServerUnitUpdateObjectiveIndex  = 0x093B,
         ServerEntityStatUInt32UInt5Pair = 0x093D, // uint32 + 5-bit + two uint32; reader 140097690

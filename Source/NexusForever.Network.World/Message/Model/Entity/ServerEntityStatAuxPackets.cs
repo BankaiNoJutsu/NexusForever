@@ -50,27 +50,24 @@ namespace NexusForever.Network.World.Message.Model.Entity
         }
     }
 
-    /// <summary>Entity-stat aux (<c>0x0939</c>). Reader <c>ServerEntityStatUInt32UInt14UInt18WideString_ReadPayload</c> @ <c>140097ee0</c>.</summary>
-    /// <remarks>14/18-bit split fields blocked - no production emit.</remarks>
-    [Message(GameMessageOpcode.ServerEntityStatUInt32UInt14UInt18WideString)]
-    public class ServerEntityStatUInt32UInt14UInt18WideString : IWritable
+    /// <summary>Updates a unit name and title using the build 16042 client lookups.</summary>
+    /// <remarks>Producer and send timing remain open.</remarks>
+    [Message(GameMessageOpcode.ServerUnitNameAndTitleChange)]
+    public class ServerUnitNameAndTitleChange : IWritable
     {
-        public uint Value0 { get; set; }
+        public uint UnitId { get; set; }
+        public uint TitleId { get; set; }
+        public uint Creature2Id { get; set; }
 
-        /// <summary>14-bit field; apply semantics blocked.</summary>
-        public uint Value1 { get; set; }
-
-        /// <summary>18-bit field; apply semantics blocked.</summary>
-        public uint Value2 { get; set; }
-
-        public string Text { get; set; } = string.Empty;
+        /// <summary>Fallback name when the creature ID is zero or absent from the client cache.</summary>
+        public string Name { get; set; } = string.Empty;
 
         public void Write(GamePacketWriter writer)
         {
-            writer.Write(Value0);
-            writer.Write(Value1, 14u);
-            writer.Write(Value2, 18u);
-            writer.WriteStringWide(Text);
+            writer.Write(UnitId);
+            writer.Write(TitleId, 14u);
+            writer.Write(Creature2Id, 18u);
+            writer.WriteStringWide(Name);
         }
     }
 

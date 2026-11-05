@@ -219,6 +219,10 @@ The final all-state upstream query found no PR updates since21:41UTC, and
 observed official game_rework d8e43d2c / expedition3588ca5f heads are unchanged.
 No new PR inventory or native/retail completion is inferred from that empty query.
 
+5 November follow-up on the same open head. The [0939 wire model](../F025_STATIC_HANDLER_PROXY_MAPPING.md#5-november-0939-wire-model)
+now adopts #514's field names and preserves the existing payload. The
+combined update's production emit gate remains open.
+
 [Current unreserved bank currency recovery](../DESTINATION_PROVIDER_QUALIFICATION.md) drains late
 currency for bank move/split/use/delete, single attachment and unreserved/new
 wallet flows, and rejects publication reentry before accepting mutations.
