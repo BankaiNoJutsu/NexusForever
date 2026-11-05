@@ -97,6 +97,7 @@ namespace NexusForever.Game.Entity
             private void CaptureSnapshot()
             {
                 if (!Owns() || snapshot != null) throw new InvalidOperationException("Paid name lost its original frozen snapshot.");
+                if (!primary) command.PrepareOrdinaryEffects();
                 capturing = true;
                 try { snapshot = player.CaptureNormalRewardSave() ?? throw new InvalidOperationException("Paid name requires a complete frozen normal save."); }
                 finally { capturing = false; }
@@ -151,7 +152,7 @@ namespace NexusForever.Game.Entity
                                 // Save the adopted wallet and any deferred earning
                                 // effects through the same original full actor.
                             }
-                            else ReadyToPublish = !(wallet?.PrepareNextOrdinary() == true || currencies.HasPendingPersistenceSave);
+                            else ReadyToPublish = !(wallet?.PrepareNextOrdinary() == true || currencies.HasPendingPersistenceSave || command.HasPendingOrdinaryEffects);
                             terminal.TrySetResult();
                         }
                         catch (Exception error) { terminal.TrySetException(error); }
@@ -186,7 +187,7 @@ namespace NexusForever.Game.Entity
             internal void RefreshPublicationReadiness()
             {
                 if (ReadyToPublish && !Publishing
-                    && (wallet?.PrepareNextOrdinary() == true || currencies.HasPendingPersistenceSave))
+                    && (wallet?.PrepareNextOrdinary() == true || currencies.HasPendingPersistenceSave || command.HasPendingOrdinaryEffects))
                     ReadyToPublish = false;
             }
             internal void End()

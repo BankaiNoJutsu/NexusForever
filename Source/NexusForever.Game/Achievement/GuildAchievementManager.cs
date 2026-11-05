@@ -35,7 +35,7 @@ namespace NexusForever.Game.Achievement
             original.RequireAchievementOwner(this);
             return original;
         }
-        private void RequireEditable() => OriginalGuild()?.RequireMutationEditable();
+        private void RequireEditable() => OriginalGuild()?.RequireCreationAchievementEditable(this);
         private bool SaveGuild(CharacterContext context)
         {
             try

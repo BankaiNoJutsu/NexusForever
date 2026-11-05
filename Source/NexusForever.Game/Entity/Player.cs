@@ -1172,6 +1172,11 @@ namespace NexusForever.Game.Entity
 
         private Task SaveCharacterUnit(NormalRewardSave snapshot, OrdinaryCharacterSaveReconciliation recoveryReceipt = null)
         {
+            if (snapshot?.HousingReceipt is GuildCreationSaveReconciliation guildCreation)
+                return GetCharacterDatabase().SaveGuildCreationReconciliation(CharacterId, context =>
+                {
+                    SaveCharacter(context, snapshot); housingNameActor.StageNames(context);
+                }, guildCreation);
             if (snapshot?.HousingReceipt is HousingDecorPurchaseSaveReconciliation decorReceipt)
                 return GetCharacterDatabase().SaveHousingDecorPurchaseReconciliation(CharacterId, context =>
                 {

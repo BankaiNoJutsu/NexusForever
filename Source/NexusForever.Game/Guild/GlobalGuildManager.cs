@@ -181,6 +181,7 @@ namespace NexusForever.Game.Guild
         {
             UpdatePrivacyChanges();
             UpdatePaidNames();
+            UpdatePaidCreations();
             saveTimer.Update(lastTick);
 
             if (saveTimer.HasElapsed)

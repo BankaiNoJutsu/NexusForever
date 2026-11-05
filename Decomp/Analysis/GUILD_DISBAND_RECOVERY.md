@@ -1,5 +1,12 @@
 # Guild disband recovery and upstream #401 reconciliation
 
+[Ordinary Guild creation fee settlement](GUILD_CREATION_FINANCE.md) supersedes
+the ordinary Guild fee/graph/affiliation gap below.22 focused/202 affected cases,
+clean owning build and both final reviews pass. The private draft and complete
+credit/graph transaction retain rollback/uncertain recovery and effect/reply
+cursors. Community creation and cross-owner achievement/provider/runtime/native/
+retail gates remain open; earlier records keep their stated boundaries.
+
 [Registered residence graph recovery](RESIDENCE_GRAPH_RECOVERY.md) now connects
 real community creation and retirement to complete residence/plot/decor/neighbor
 saving. Donation/fee settlement, housing handler publication and external/native/

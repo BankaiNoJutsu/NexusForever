@@ -45,6 +45,8 @@ namespace NexusForever.Game.Achievement
                     effect();
                 });
             }
+            else if (guild is NexusForever.Game.Guild.GuildBase creation
+                && creation.TryRetainCreationGuildEffect(owner, guild.AchievementManager, effect)) return;
             else effect();
         }
         protected override ulong OwnerId => owner.CharacterId;

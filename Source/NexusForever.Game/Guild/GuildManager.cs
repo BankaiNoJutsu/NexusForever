@@ -279,7 +279,8 @@ namespace NexusForever.Game.Guild
             if (!textFilter.IsTextValid(name) || !textFilter.IsTextValid(name, UserText.GuildName))
                 return new GuildResultInfo(GuildResult.InvalidGuildName, referenceString: name);
 
-            if (GetGlobalGuildManager().GetGuild(type, name) != null)
+            if (GetGlobalGuildManager().GetGuild(type, name) != null
+                || GetGlobalGuildManager() is GlobalGuildManager registry && registry.IsCreationNameReserved(type, name))
                 return new GuildResultInfo(GuildResult.GuildNameUnavailable, referenceString: name);
 
             /*var rankNames = new List<string> { leaderRankName, councilRankName, memberRankName };

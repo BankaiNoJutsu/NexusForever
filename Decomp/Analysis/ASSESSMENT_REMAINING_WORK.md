@@ -1,5 +1,14 @@
 # Assessment follow-through goal
 
+[Ordinary public Guild creation finance](GUILD_CREATION_FINANCE.md) is now
+Source/SQLite verified: accepted credit fee, complete guild/data/three ranks/
+leader member and Character affiliation settle together, with original actor
+recovery and committed publication.22 focused/202 affected cases and both final
+Source reviews pass. Completion feedback enters the ordinary snapshot while
+general draft/save mutation stays fenced. Continue Community credits/residence
+creation and durable Auth Service Token handoff; cross-owner achievement
+atomicity and current provider/physical/deployment/native/retail remain open.
+
 [All remaining blocker-family audit](ALL_REMAINING_BLOCKERS_RESEARCH_2026_11_05.md)
 covers all 36 areas plus five emitter and cross-feature gates. It retires stale
 marketplace/reward-track ownership premises, distinguishes Source-owned probes

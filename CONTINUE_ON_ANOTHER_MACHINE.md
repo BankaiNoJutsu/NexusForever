@@ -1,5 +1,14 @@
 # Continue on another machine
 
+Latest ordinary Guild implementation: [creation finance](Decomp/Analysis/GUILD_CREATION_FINANCE.md)
+couples credits, complete guild/leader graph and Character affiliation in the
+original recoverable save.22 focused/202 affected cases, clean owning build and
+both final reviews pass. Guild completion feedback enters the next Character
+snapshot; structural/save fences and reply/effect cursors remain intact.
+Community credit/residence and Auth-token creation, cross-owner achievements
+and broader provider/runtime/native/retail gates stay open. No full suite/client/
+CUA ran. Concurrent research commits were preserved.
+
 Latest tracked-marker implementation: [full-width identity correction](Decomp/Analysis/TRACKED_MARKER_IDENTITY.md)
 fixes the first32-bit slot key, neutral trailing15-bit field and erroneous
 lookup mask. Four rebuilt baseline failures are fixed;118 scoped cases, owning

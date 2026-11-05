@@ -2,13 +2,16 @@ using NexusForever.Database.Character;
 
 namespace NexusForever.Game.Housing
 {
-    // The two coupled housing fees share the existing frozen Character actor;
-    // each operation still supplies its own narrowly typed SQL authorization.
+    // Coupled housing fees and ordinary guild creation reuse the existing frozen
+    // Character actor. Each supplies its own narrowly typed SQL authorization;
+    // the historical housing names do not confer shared-row ownership.
     internal interface IHousingFeeOperation
     {
         CharacterSaveReconciliation CreateReceipt(bool primary);
         void Stage(CharacterContext context);
         void PrepareEffects();
         void ApplyCommittedEffects();
+        void PrepareOrdinaryEffects() { }
+        bool HasPendingOrdinaryEffects => false;
     }
 }

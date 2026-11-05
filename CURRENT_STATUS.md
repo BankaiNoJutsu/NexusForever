@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[Ordinary Guild creation finance](Decomp/Analysis/GUILD_CREATION_FINANCE.md)
+now couples the accepted credit fee, full guild/leader graph and Character
+affiliation through the original recoverable save. Private draft/effect fences
+and retained publication prevent unpaid or early success.22 focused/202 affected
+cases, clean owning build and both final reviews pass. Community creation,
+cross-owner achievement atomicity and provider/runtime/native/retail remain open.
+
 [ICComm admission lifecycle](Decomp/Analysis/ICCOMM_NATIVE_LIFECYCLE_2026_11_05.md)
 now maps the typed join owner/0546 sender, exact pending type/name key and
 0547/0548/054A readiness/callback transitions.92 native byte checks plus authored

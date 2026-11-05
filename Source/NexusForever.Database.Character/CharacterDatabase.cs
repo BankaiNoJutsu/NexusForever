@@ -59,6 +59,9 @@ namespace NexusForever.Database.Character
         public virtual Task SavePublicEventQuestReconciliation(ulong characterId, Action<CharacterContext> action, PublicEventQuestSaveReconciliation receipt)
             => CharacterAtomicSave.ExecutePublicEventQuestReconciliation(CreateContext, characterId, action, receipt);
 
+        public virtual Task SaveGuildCreationReconciliation(ulong characterId, Action<CharacterContext> action, GuildCreationSaveReconciliation receipt)
+            => CharacterAtomicSave.ExecuteGuildCreationReconciliation(CreateContext, characterId, action, receipt);
+
         /// <summary>Create a complete Character graph and retain its confirmed database origin.</summary>
         public async Task CreateCharacter(CharacterModel character, IEnumerable<IDatabaseCharacter> items)
         {

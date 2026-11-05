@@ -53,6 +53,7 @@ namespace NexusForever.Game.Guild
             get => name;
             set
             {
+                if (paidCreation != null) RequireMutationEditable();
                 if (this is Community community) community.RequirePaidNameAssignment();
                 if (pendingDisband == null && globalGuildManager?.AssignRegisteredGuildName(this, value) == true)
                     return;
@@ -215,6 +216,11 @@ namespace NexusForever.Game.Guild
         {
             lock (MutationGate)
             {
+                if (paidCreation != null && !paidCreation.OwnsEnrollment(context))
+                {
+                    var error = new InvalidOperationException("Paid guild creation owns its complete fee and guild save.");
+                    context.RejectSave(error); throw error;
+                }
                 mutationPersistence?.RequireAvailable(context);
                 mutationPersistence?.RequireOriginalDatabase(context);
                 namePersistence?.RequireAvailable(context);
@@ -541,6 +547,7 @@ namespace NexusForever.Game.Guild
         {
             lock (MutationGate)
             {
+                if (paidCreation != null) RequireMutationEditable();
                 if (IsDisbandAccepted) throw new InvalidOperationException("Disband has captured its original membership.");
                 if (!members.TryGetValue(player.CharacterId, out IGuildMember member))
                     throw new ArgumentException($"Invalid member {player.CharacterId} for guild {Id}.");
@@ -593,6 +600,7 @@ namespace NexusForever.Game.Guild
         {
             lock (MutationGate)
             {
+                if (paidCreation != null) RequireMutationEditable();
                 if (pendingDisband != null)
                     return;
                 var disband = new DisbandChange(Name, LeaderId, members.Values.Select(member => member.CharacterId).ToArray());
@@ -620,6 +628,7 @@ namespace NexusForever.Game.Guild
         {
             lock (MutationGate)
             {
+                if (paidCreation != null) RequireMutationEditable();
                 if (IsDisbandAccepted) throw new InvalidOperationException("Disband has captured its original membership.");
                 if (index > 9)
                     throw new ArgumentOutOfRangeException(nameof(index), $"Index {index} out of range, maximum rank index is 9!");
@@ -656,6 +665,7 @@ namespace NexusForever.Game.Guild
         {
             lock (MutationGate)
             {
+                if (paidCreation != null) RequireMutationEditable();
                 if (IsDisbandAccepted) throw new InvalidOperationException("Disband has captured its original membership.");
                 if (index > 9)
                     throw new ArgumentOutOfRangeException(nameof(index), $"Index {index} out of range, maximum rank index is 9!");
@@ -782,6 +792,7 @@ namespace NexusForever.Game.Guild
         {
             lock (MutationGate)
             {
+                if (paidCreation != null) RequireMutationEditable();
                 if (IsDisbandAccepted) throw new InvalidOperationException("Disband has captured its original membership.");
                 if (!ranks.TryGetValue(rank, out IGuildRank guildRank))
                     throw new ArgumentException($"Invalid rank {rank} for guild {Id}.");
@@ -826,6 +837,7 @@ namespace NexusForever.Game.Guild
         {
             lock (MutationGate)
             {
+                if (paidCreation != null) RequireMutationEditable();
                 if (IsDisbandAccepted) throw new InvalidOperationException("Disband has captured its original membership.");
                 if (!members.TryGetValue(characterId, out IGuildMember member))
                     throw new ArgumentException($"Invalid member {characterId} for guild {Id}.");

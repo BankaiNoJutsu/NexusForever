@@ -56,6 +56,10 @@ namespace NexusForever.Database.Character
             Action<CharacterContext> enroll, PublicEventQuestSaveReconciliation receipt)
             => ExecuteReconciliation(contexts, characterId, enroll, receipt);
 
+        public static Task ExecuteGuildCreationReconciliation(Func<CharacterContext> contexts, ulong characterId,
+            Action<CharacterContext> enroll, GuildCreationSaveReconciliation receipt)
+            => ExecuteReconciliation(contexts, characterId, enroll, receipt);
+
         private static Task ExecuteReconciliation(Func<CharacterContext> contexts, ulong characterId,
             Action<CharacterContext> enroll, CharacterSaveReconciliation receipt)
         {

@@ -27,6 +27,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Guild
 
         public void HandleMessage(IWorldSession session, ClientGuildRegister guildRegister)
         {
+            ulong creationCost = 0;
             IGuildResultInfo GetResult()
             {
                 // hardcoded GameFormula entries come from client GuildLib.GetCreateCost/GetAlternateCreateCost
@@ -40,6 +41,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Guild
 
                         if (!session.Player.CurrencyManager.CanAfford(CurrencyType.Credits, entry.Dataint0))
                             return new GuildResultInfo(GuildResult.NotEnoughCredits);
+                        creationCost = entry.Dataint0;
                         break;
                     }
                     case GuildType.Community:
@@ -63,6 +65,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Guild
             if (result.Result != GuildResult.Success)
             {
                 GuildBase.SendGuildResult(session, result);
+                return;
+            }
+
+            if (guildRegister.GuildType == GuildType.Guild && session.Player is NexusForever.Game.Entity.Player
+                && session.Player.GuildManager is GuildManager membership)
+            {
+                GuildResult paidResult = membership.RegisterPaidGuild(guildRegister, creationCost);
+                if (paidResult != GuildResult.Success) GuildBase.SendGuildResult(session, new GuildResultInfo(paidResult));
                 return;
             }
 

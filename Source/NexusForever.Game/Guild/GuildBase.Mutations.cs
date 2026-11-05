@@ -14,6 +14,8 @@ namespace NexusForever.Game.Guild
         protected bool OwnsMutationSave(CharacterContext context) => mutationPersistence?.Owns(context) == true;
         internal void RequireMutationEditable()
         {
+            if (paidCreation != null)
+                throw new InvalidOperationException("Paid creation has frozen its original guild graph.");
             if (pendingDisband is { Publishing: true } or { Published: true })
                 throw new InvalidOperationException("Guild cleanup has sealed its accepted mutation graph.");
         }
