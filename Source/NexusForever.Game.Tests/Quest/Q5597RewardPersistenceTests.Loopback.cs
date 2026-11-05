@@ -62,16 +62,16 @@ namespace NexusForever.Game.Tests.Quest;
 public sealed partial class Q5597RewardPersistenceTests
 {
     private readonly ITestOutputHelper output;
-    private readonly DbContextOptions<CharacterContext> conversionOptions;
+    private readonly DbContextOptions<CharacterContext> characterOptions;
     private const uint FixtureFanfareSpellId = 91001;
     private const Property FixtureLevelProperty = Property.BaseHealth;
 
     public Q5597RewardPersistenceTests(ITestOutputHelper output) => this.output = output;
 
-    internal Q5597RewardPersistenceTests(ITestOutputHelper output, DbContextOptions<CharacterContext> conversionOptions)
+    internal Q5597RewardPersistenceTests(ITestOutputHelper output, DbContextOptions<CharacterContext> characterOptions)
         : this(output)
     {
-        this.conversionOptions = conversionOptions;
+        this.characterOptions = characterOptions;
     }
 
     [Theory]
@@ -155,7 +155,7 @@ public sealed partial class Q5597RewardPersistenceTests
         RecordingDispatchProxy<IWorldSession> retiredObserver = null;
         RecordingDispatchProxy<IWorldSession> lateObserverSession = null;
         RecordingDispatchProxy<IAccount> retiredObserverAccount = null;
-        using var f = new Fixture(itemConversion == null ? null : conversionOptions);
+        using var f = new Fixture(itemConversion != null || questLifecycle.HasValue ? characterOptions : null);
         using var authConnection = new SqliteConnection(new SqliteConnectionStringBuilder
         {
             DataSource = $"q5597-{Guid.NewGuid():N}", Mode = SqliteOpenMode.Memory,
@@ -285,13 +285,14 @@ public sealed partial class Q5597RewardPersistenceTests
             if (rejectFirstSave)
             {
                 using (var fault = f.Context())
-                    await fault.Database.ExecuteSqlRawAsync(retryQuest ? """
-                        CREATE TRIGGER reject_quest_lifecycle BEFORE UPDATE ON character_quest
-                        BEGIN SELECT RAISE(ABORT, 'Loopback test rejected quest retry'); END;
-                        """ : """
-                        CREATE TRIGGER reject_quest_lifecycle BEFORE DELETE ON character_quest
-                        BEGIN SELECT RAISE(ABORT, 'Loopback test rejected quest abandon'); END;
-                        """);
+                {
+                    string operation = retryQuest ? "UPDATE" : "DELETE";
+                    string rejectWrite = fault.Database.IsSqlite()
+                        ? "BEGIN SELECT RAISE(ABORT, 'Loopback test rejected quest lifecycle write'); END"
+                        : "FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Loopback test rejected quest lifecycle write'";
+                    await fault.Database.ExecuteSqlRawAsync(
+                        string.Concat("CREATE TRIGGER reject_quest_lifecycle BEFORE ", operation, " ON character_quest ", rejectWrite));
+                }
                 await RunSession(async (world, client, actor) =>
                 {
                     await SendWhileSavePending(world, client, actor);

@@ -43,7 +43,9 @@ cannot produce a stale success reply.
 
 [Committed quest abandon and retry](../../CURRENT_STATUS.md#committed-quest-abandon-and-retry)
 holds ordinary quest and inventory notices until the original Character save.
-Encrypted loopback covers rejected writes and a fresh session retry.
+Encrypted loopback covers rejected writes and a fresh session retry. The
+[configured MySQL gate](DESTINATION_PROVIDER_QUALIFICATION.md#quest-lifecycle-and-notice-publication)
+also covers those requests and the committed public-event notice retry.
 
 [Marketplace inbox route recovery](../../CURRENT_STATUS.md#marketplace-inbox-route-recovery)
 retries failed recipient route checks for already committed mail on behalf of

@@ -1,5 +1,9 @@
 # Destination configured-provider qualification
 
+[Quest lifecycle and notice publication](#quest-lifecycle-and-notice-publication)
+covers ordinary abandon and retry over encrypted loopback and public-event
+notice recovery on migrated MySQL Character schemas.
+
 [CREDD compatibility settlement](#credd-compatibility-settlement) covers
 the World handler and Realm recovery on migrated MySQL 8.4.13 Auth and
 Character schemas.
@@ -47,6 +51,26 @@ The [portable report](coverage/marketplace-mysql-concurrency-20261103.json) bind
 unchanged Source/DLLs and all44 outcomes. Owned workloads are stopped. No full
 suite was run. Other profiles, physical failures, other financial commands,
 broker/restart, deployment, native and retail qualification remain separate.
+
+### Quest lifecycle and notice publication
+
+5 November 2026. Four ordinary quest lifecycle cases exercise abandon and
+retry over an encrypted World loopback connection. Both success cases hold
+notices until the Character write commits. Both SQL rejection cases preserve
+the stored quest and inventory, then succeed in a fresh World session after
+the fixture removes its trigger. The Auth side uses a separate SQLite fixture.
+
+Four public-event cases exercise failure at the objective or state enqueue,
+queue replacement during the failed enqueue, and a persistent rejection.
+They verify one Character save, the stored progress, and the ordered notices
+on a recording World session.
+
+Each case starts from a separate MySQL 8.4.13 Character schema with all 48
+migrations and `MySqlRetryingExecutionStrategy`. The TLS control connection
+reports `REPEATABLE-READ`. The owning build and eight SQLite controls passed.
+The [portable result](coverage/quest-mutations-mysql-20261105.json) records
+case outcomes, tested binaries and shutdown of the owned fixture. Deployed
+delivery, provider outages, restart and native client behavior remain open.
 
 ### CREDD compatibility settlement
 

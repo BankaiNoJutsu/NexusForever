@@ -1,0 +1,94 @@
+{
+  "productionSourceCommit": "fe3ee172a3e0a4eb779fb4d329297adf835bb2ca",
+  "testFixtures": [
+    {
+      "path": "Source/NexusForever.Game.Tests/Quest/Q5597RewardPersistenceTests.Loopback.cs",
+      "gitBlob": "6a43088bce42f79ee8e99fff4929d5d31c9db7d9"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/PublicEvents/PublicEventCompletionOwnershipTests.cs",
+      "gitBlob": "eacbf0bba314cb81679c09ab481f8c0cdd320a3c"
+    }
+  ],
+  "engine": {
+    "version": "8.4.13",
+    "sha256": "7a976874ef3974d612081960b1c193c663b4434692b6257382352c587e367ad6",
+    "tlsRequired": true,
+    "controlConnectionIsolation": "REPEATABLE-READ"
+  },
+  "strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+  "migrationsPerSchema": 48,
+  "testCases": [
+    {
+      "name": "LoopbackQuestLifecyclePublishesOnlyAfterTheCharacterSave(ClientQuestAbandon,False)",
+      "passed": true
+    },
+    {
+      "name": "LoopbackQuestLifecyclePublishesOnlyAfterTheCharacterSave(ClientQuestAbandon,True)",
+      "passed": true
+    },
+    {
+      "name": "LoopbackQuestLifecyclePublishesOnlyAfterTheCharacterSave(ClientQuestRetry,False)",
+      "passed": true
+    },
+    {
+      "name": "LoopbackQuestLifecyclePublishesOnlyAfterTheCharacterSave(ClientQuestRetry,True)",
+      "passed": true
+    },
+    {
+      "name": "CommittedQuestNoticesResumeFromTheRejectedEnqueue(objective)",
+      "passed": true
+    },
+    {
+      "name": "CommittedQuestNoticesResumeFromTheRejectedEnqueue(state)",
+      "passed": true
+    },
+    {
+      "name": "CommittedQuestNoticesResumeFromTheRejectedEnqueue(replaced-queue)",
+      "passed": true
+    },
+    {
+      "name": "CommittedQuestNoticesResumeFromTheRejectedEnqueue(persistent)",
+      "passed": true
+    }
+  ],
+  "elapsedSeconds": 157.6821589,
+  "sqliteControls": {
+    "passed": 8,
+    "trxSha256": "685f22886a20a3aa64ccab9b35c4eaa3a327def8b68429b3ad361ad687854be6"
+  },
+  "assemblies": [
+    {
+      "file": "NexusForever.Database.Auth.dll",
+      "sha256": "4876239b5d82e6b3f36af5163e7d0aca661b3e5a8939c8c80958261dbe6cb08b"
+    },
+    {
+      "file": "NexusForever.Database.Character.dll",
+      "sha256": "8560f97b1d6892100ca578c9c97e577dd667bde79296703d56d759b13c13783b"
+    },
+    {
+      "file": "NexusForever.Game.dll",
+      "sha256": "b839497037ac00a98f5fcfe0b81845fd0454ae28b759fde7f6b16ddbaf55d772"
+    },
+    {
+      "file": "NexusForever.Game.Tests.dll",
+      "sha256": "d498f5e2edcb5d43edd5bc13d604ce949dc4900f46485698a43cab920ef02cc7"
+    },
+    {
+      "file": "NexusForever.WorldServer.dll",
+      "sha256": "b2815e82d53e7d8acd1c44d4485672cca830849cadccd3a84c3536f8fda61fe9"
+    }
+  ],
+  "runnerSourceSha256": "1faf444ee7b38cbb923d52fa51ce33d52370f0959327f831a1e48b90f4e40128",
+  "runnerSha256": "5959238a3ebbc82333b92d9526f19167ab3c0e18f18b00bf832d431ee9d4d25c",
+  "resultsSha256": "8e6910e463375d9eb9f451d21a392c9033063d3512ae9edb21e91354b11758cd",
+  "shutdown": {
+    "serverAbsent": true,
+    "listenerAbsent": true,
+    "runnerAbsent": true,
+    "helperAbsent": true,
+    "proofSha256": "5feb227fc355b122b2b4e92bd658cdbdb8f86811ab960d4f61281ed14fa7c789"
+  },
+  "limits": "Quest lifecycle cases use encrypted loopback with disposable SQLite Auth. Public-event cases use a recording session. No deployed delivery, provider outage, restart replay or native client behavior was exercised.",
+  "localArtifacts": "artifacts/continuation-20261105/quest-mutations-mysql/"
+}
