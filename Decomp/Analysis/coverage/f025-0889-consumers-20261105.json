@@ -1,0 +1,397 @@
+{
+  "build": 16042,
+  "sourceReferenceCommit": "2382d1b87bca939f382c2f5e414cb4711b494fa0",
+  "clientSha256": "231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5",
+  "reaEvidenceId": "ev_142ebc012c9fce11df9c67703c5d9e335b4810c52c1d752b63ed2828030231d4",
+  "llvmObjdumpSha256": "3ae6715601f2eb0c1d0839929c46089906ba0f1e5e032fe519656a40c936b863",
+  "anchors": [
+    {
+      "name": "case-dispatch-cell",
+      "va": "0x1403f33e4",
+      "fileOffset": 4138980,
+      "bytes": "04de3e00"
+    },
+    {
+      "name": "case-forwards-payload",
+      "va": "0x1403ede04",
+      "fileOffset": 4116996,
+      "bytes": "488bd7488bcee8d10fffff"
+    },
+    {
+      "name": "case-resolves-entity-id",
+      "va": "0x1403dedf2",
+      "fileOffset": 4055538,
+      "bytes": "8b12488bf1e8d4a2ffff"
+    },
+    {
+      "name": "case-replaces-both-state-words",
+      "va": "0x1403dee08",
+      "fileOffset": 4055560,
+      "bytes": "8b47048943248b4f088b432833c133ff894b28"
+    },
+    {
+      "name": "transition-guard",
+      "va": "0x1403dee1b",
+      "fileOffset": 4055579,
+      "bytes": "2500010000742d0fbae1087321"
+    },
+    {
+      "name": "set-transition-state-and-clear-vitals",
+      "va": "0x1403dee28",
+      "fileOffset": 4055592,
+      "bytes": "488d8b1c020000448d472c33d2c7834813000001000000897b40e8e9594000"
+    },
+    {
+      "name": "unset-transition-state",
+      "va": "0x1403dee49",
+      "fileOffset": 4055625,
+      "bytes": "89bb48130000"
+    },
+    {
+      "name": "constructor-base-vtable",
+      "va": "0x140454391",
+      "fileOffset": 4536209,
+      "bytes": "488d05382c7100"
+    },
+    {
+      "name": "constructor-installs-base-vtable",
+      "va": "0x1404543d5",
+      "fileOffset": 4536277,
+      "bytes": "488901"
+    },
+    {
+      "name": "constructor-resource-zero-fill",
+      "va": "0x140454f93",
+      "fileOffset": 4539283,
+      "bytes": "488d8b1c020000448d422ce88df83800"
+    },
+    {
+      "name": "byte-fill-rep-path",
+      "va": "0x1407e4846",
+      "fileOffset": 8272966,
+      "bytes": "57488bf98bc2498bc8f3aa"
+    },
+    {
+      "name": "current-vital-switch",
+      "va": "0x14046653e",
+      "fileOffset": 4610366,
+      "bytes": "448b8481406746004c03c141ffe0"
+    },
+    {
+      "name": "health-dispatch-cell",
+      "va": "0x140466740",
+      "fileOffset": 4610880,
+      "bytes": "4c654600"
+    },
+    {
+      "name": "health-vtable-call",
+      "va": "0x14046654c",
+      "fileOffset": 4610380,
+      "bytes": "488b03488bcbff5040"
+    },
+    {
+      "name": "health-base-vtable-cell",
+      "va": "0x140b67010",
+      "fileOffset": 11952144,
+      "bytes": "00f8194001000000"
+    },
+    {
+      "name": "health-base-field-reader",
+      "va": "0x14019f800",
+      "fileOffset": 1698816,
+      "bytes": "8b4140c3"
+    },
+    {
+      "name": "independent-flag-initialization",
+      "va": "0x14045ba00",
+      "fileOffset": 4566528,
+      "bytes": "f7412800010000742333d2c7814813000001000000c7414000000000448d422c4881c11c020000e9048e3800"
+    },
+    {
+      "name": "independent-flag-clear",
+      "va": "0x14045ba2c",
+      "fileOffset": 4566572,
+      "bytes": "c7814813000000000000c3"
+    },
+    {
+      "name": "changed-state-read",
+      "va": "0x14046ce02",
+      "fileOffset": 4637186,
+      "bytes": "8b8648130000"
+    },
+    {
+      "name": "changed-state-compare",
+      "va": "0x14046ce10",
+      "fileOffset": 4637200,
+      "bytes": "3b864c1300000f84a501000083f801"
+    },
+    {
+      "name": "selectability-bit-test",
+      "va": "0x1403dee82",
+      "fileOffset": 4055682,
+      "bytes": "f74328004000007421"
+    },
+    {
+      "name": "selected-id-check-and-clear-call",
+      "va": "0x1403dee97",
+      "fileOffset": 4055703,
+      "bytes": "8bb808010000397b08750a33d2488bcee834c21700"
+    },
+    {
+      "name": "selection-routine-candidate-resolver",
+      "va": "0x14055b106",
+      "fileOffset": 5612806,
+      "bytes": "e8c5dfe7ff488be8"
+    },
+    {
+      "name": "selection-routine-candidate-refusal",
+      "va": "0x14055b246",
+      "fileOffset": 5613126,
+      "bytes": "f74528004000000f85ba050000"
+    },
+    {
+      "name": "selection-routine-refusal-exit",
+      "va": "0x14055b80d",
+      "fileOffset": 5614605,
+      "bytes": "4c8b6c24384c8b6424404c8b7c2430488b5c2478488b6c24504883c458415e5ec3"
+    },
+    {
+      "name": "selection-routine-id-store",
+      "va": "0x14055b402",
+      "fileOffset": 5613570,
+      "bytes": "4489b308010000"
+    },
+    {
+      "name": "selection-routine-send",
+      "va": "0x14055b65a",
+      "fileOffset": 5614170,
+      "bytes": "ba850100004489742470e89792e9ff"
+    },
+    {
+      "name": "relationship-test-and-return",
+      "va": "0x1403b44e0",
+      "fileOffset": 3881184,
+      "bytes": "f6472401741785db75178d4359"
+    },
+    {
+      "name": "separate-dead-criteria-storage",
+      "va": "0x1403b2366",
+      "fileOffset": 3872614,
+      "bytes": "39bb50020000750b83bb8000000017"
+    },
+    {
+      "name": "separate-dead-criteria-returns",
+      "va": "0x1403b2388",
+      "fileOffset": 3872648,
+      "bytes": "b86b000000e94e02000085c0740ab86a000000"
+    },
+    {
+      "name": "resource-0-dispatch",
+      "va": "0x140466750",
+      "fileOffset": 4610896,
+      "bytes": "9b654600"
+    },
+    {
+      "name": "resource-0-float-load",
+      "va": "0x14046659b",
+      "fileOffset": 4610459,
+      "bytes": "f30f10831c020000"
+    },
+    {
+      "name": "resource-1-dispatch",
+      "va": "0x140466754",
+      "fileOffset": 4610900,
+      "bytes": "a9654600"
+    },
+    {
+      "name": "resource-1-float-load",
+      "va": "0x1404665a9",
+      "fileOffset": 4610473,
+      "bytes": "f30f108320020000"
+    },
+    {
+      "name": "resource-2-dispatch",
+      "va": "0x140466758",
+      "fileOffset": 4610904,
+      "bytes": "b7654600"
+    },
+    {
+      "name": "resource-2-float-load",
+      "va": "0x1404665b7",
+      "fileOffset": 4610487,
+      "bytes": "f30f108324020000"
+    },
+    {
+      "name": "resource-3-dispatch",
+      "va": "0x14046675c",
+      "fileOffset": 4610908,
+      "bytes": "c5654600"
+    },
+    {
+      "name": "resource-3-float-load",
+      "va": "0x1404665c5",
+      "fileOffset": 4610501,
+      "bytes": "f30f108328020000"
+    },
+    {
+      "name": "resource-4-dispatch",
+      "va": "0x140466760",
+      "fileOffset": 4610912,
+      "bytes": "d3654600"
+    },
+    {
+      "name": "resource-4-float-load",
+      "va": "0x1404665d3",
+      "fileOffset": 4610515,
+      "bytes": "f30f10832c020000"
+    },
+    {
+      "name": "resource-5-dispatch",
+      "va": "0x140466764",
+      "fileOffset": 4610916,
+      "bytes": "e1654600"
+    },
+    {
+      "name": "resource-5-float-load",
+      "va": "0x1404665e1",
+      "fileOffset": 4610529,
+      "bytes": "f30f108330020000"
+    },
+    {
+      "name": "resource-6-dispatch",
+      "va": "0x140466768",
+      "fileOffset": 4610920,
+      "bytes": "ef654600"
+    },
+    {
+      "name": "resource-6-float-load",
+      "va": "0x1404665ef",
+      "fileOffset": 4610543,
+      "bytes": "f30f108334020000"
+    },
+    {
+      "name": "resource-7-dispatch",
+      "va": "0x14046677c",
+      "fileOffset": 4610940,
+      "bytes": "fd654600"
+    },
+    {
+      "name": "resource-7-float-load",
+      "va": "0x1404665fd",
+      "fileOffset": 4610557,
+      "bytes": "f30f108338020000"
+    },
+    {
+      "name": "resource-8-dispatch",
+      "va": "0x1404667a8",
+      "fileOffset": 4610984,
+      "bytes": "0b664600"
+    },
+    {
+      "name": "resource-8-float-load",
+      "va": "0x14046660b",
+      "fileOffset": 4610571,
+      "bytes": "f30f10833c020000"
+    },
+    {
+      "name": "resource-9-dispatch",
+      "va": "0x1404667ac",
+      "fileOffset": 4610988,
+      "bytes": "19664600"
+    },
+    {
+      "name": "resource-9-float-load",
+      "va": "0x140466619",
+      "fileOffset": 4610585,
+      "bytes": "f30f108340020000"
+    },
+    {
+      "name": "resource-10-dispatch",
+      "va": "0x1404667b0",
+      "fileOffset": 4610992,
+      "bytes": "27664600"
+    },
+    {
+      "name": "resource-10-float-load",
+      "va": "0x140466627",
+      "fileOffset": 4610599,
+      "bytes": "f30f108344020000"
+    }
+  ],
+  "resourceGetters": [
+    {
+      "index": 0,
+      "vital": 5,
+      "entityOffset": "0x21c",
+      "getterVA": "0x14046659b"
+    },
+    {
+      "index": 1,
+      "vital": 6,
+      "entityOffset": "0x220",
+      "getterVA": "0x1404665a9"
+    },
+    {
+      "index": 2,
+      "vital": 7,
+      "entityOffset": "0x224",
+      "getterVA": "0x1404665b7"
+    },
+    {
+      "index": 3,
+      "vital": 8,
+      "entityOffset": "0x228",
+      "getterVA": "0x1404665c5"
+    },
+    {
+      "index": 4,
+      "vital": 9,
+      "entityOffset": "0x22c",
+      "getterVA": "0x1404665d3"
+    },
+    {
+      "index": 5,
+      "vital": 10,
+      "entityOffset": "0x230",
+      "getterVA": "0x1404665e1"
+    },
+    {
+      "index": 6,
+      "vital": 11,
+      "entityOffset": "0x234",
+      "getterVA": "0x1404665ef"
+    },
+    {
+      "index": 7,
+      "vital": 16,
+      "entityOffset": "0x238",
+      "getterVA": "0x1404665fd"
+    },
+    {
+      "index": 8,
+      "vital": 27,
+      "entityOffset": "0x23c",
+      "getterVA": "0x14046660b"
+    },
+    {
+      "index": 9,
+      "vital": 28,
+      "entityOffset": "0x240",
+      "getterVA": "0x140466619"
+    },
+    {
+      "index": 10,
+      "vital": 29,
+      "entityOffset": "0x244",
+      "getterVA": "0x140466627"
+    }
+  ],
+  "scope": "Static target selection, base Health getter, Resource0 through Resource10 getters and the 0x100 transition. Vital names use the existing source enum.",
+  "limits": "The remaining flag semantics, names, server producer, timing, override paths and retail behavior need independent evidence.",
+  "scopedControls": {
+    "passed": 105,
+    "failed": 0,
+    "trxSha256": "54afac8ebe34eff28691246114e7a4bc452ec0799a5766524558faaafa17cb40"
+  },
+  "localArtifacts": "artifacts/continuation-20261105/f025-0889-consumers/"
+}

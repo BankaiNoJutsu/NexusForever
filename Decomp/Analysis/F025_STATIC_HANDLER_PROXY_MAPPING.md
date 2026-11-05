@@ -94,7 +94,7 @@ The previous reader-only blocker is superseded for these apply edges.
 
 | Opcode | Table slot -> case | Observed consumer facts |
 | --- | --- | --- |
-| 0889 | `1403f33e4` -> `1403ede04` -> `1403dede0` | Payload+4/+8 replace entity+0x24/+0x28. Changed bit0x100 triggers additional state clearing; other dirty/selected-entity paths follow. Bit names and producer timing remain unqualified. |
+| 0889 | `1403f33e4` -> `1403ede04` -> `1403dede0` | Payload+4/+8 replace entity+0x24/+0x28. In the second word, setting bit `0x100` clears base Health and eleven resource slots. Bit `0x4000` clears a matching selection and prevents selecting that candidate. See the [consumer trace](#5-november-0889-vital-reset-and-target-selection). |
 | 08CC | `1403f34f0` -> `1403edadd` | Entity lookup, then payload+8 wide-string pointer -> `14045b030`. That helper copies name text and references the exact `UnitNameChanged` event string at `140afb7c0`; full naming/fallback policy and server producer remain separate. |
 | 08F4 | `1403f3590` -> `1403ed7a3` | Five-bit selector values 0 through 23 write payload+8 to entity+0x510+4*selector. Selector 6 is checked by target validation and a nonzero update can clear the current selection. See the [consumer trace](#5-november-08f4-target-validation-and-selection). |
 | 0939 | `1403f36a4` -> `1403ed8ff` | Nonzero payload+8 selects a lookup through `1404835c0`; a successful row supplies a localized text ID at+8, otherwise text comes from payload+0x10. Both feed `14045b030`; payload+4 is also sent to `14045b790`. The later [field corroboration](#3-november-0939-name-and-title-fields) identifies the18-bit Creature2 key and14-bit CharacterTitle key; producer eligibility/order remain open. |
@@ -225,3 +225,42 @@ value domain, its producer and packet ordering still need independent evidence.
 The packet model remains neutral and production emission remains gated. All
 105 scoped wire, naming and emission controls passed with the existing
 binaries. The client was inspected statically.
+
+## 5 November: 0889 vital reset and target selection
+
+The apply helper compares the old and new second words with XOR before
+testing `0x100`. A clear-to-set transition writes `1` to entity `+0x1348`,
+zeroes `+0x40`, and clears `0x2C` bytes beginning at `+0x21C`. A set-to-clear
+transition writes `0` to `+0x1348`. An unchanged bit skips these writes.
+The independent initializer at `0x14045BA00` uses the same reset when the
+bit is set. The routine at `0x14046CDC0` compares `+0x1348` with its previous
+value at `+0x134C` before branching on state `1`.
+
+The current-vital switch at `0x140466520` indexes the table at `0x140466740`
+with `(vitalId - 1)`. In the existing `Vital` enum, ID `0x01` is Health.
+That branch calls slot `+0x40` of the entity vtable. The constructor's base
+table binds this slot to `0x14019F800`, which returns the DWORD at entity
+`+0x40`. Eleven other switch entries load the float fields cleared by the
+reset. IDs `0x05` through `0x0B` read `+0x21C` through `+0x234` (Resource0
+through Resource6), `0x10` reads `+0x238` (Resource7), and `0x1B` through
+`0x1D` read `+0x23C` through `+0x244` (Resource8 through Resource10).
+
+Independently of the `0x100` transition, the apply helper tests the new second
+word for `0x4000`. If the updated entity is the selected target, it calls
+`0x14055B0E0` with ID zero. The same selection routine reads the candidate's
+`+0x28` and exits on `0x4000` before replacing the selected ID or taking the
+`ClientEntitySelect` send path. This establishes the selection behavior of
+that bit on the two traced paths.
+
+The first word's bit `0x01` is read by the relationship gate at `0x1403B44E0`.
+Its `0x59` branch corresponds to `CastResult.TargetGroup` in source. The
+separate `TargetMustBeDead` and `TargetCannotBeDead` branches test `+0x250`
+and entity type `0x17`. The relationship read leaves the first word's bit
+name open.
+
+The [52 verified byte anchors](coverage/f025-0889-consumers-20261105.json)
+bind the dispatcher, transition, vital getters and selection paths to the
+same build 16042 PE and REA record. The precise flag definitions, derived
+entity overrides, server producer and emission order still need independent
+evidence. All 105 scoped wire, naming and emission controls passed with the
+existing binaries.

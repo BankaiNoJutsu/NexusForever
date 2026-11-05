@@ -711,6 +711,11 @@ establishes a 24-slot array and ties selector 6 to the client's target
 invulnerability rejection and selection clearing. The remaining selectors,
 exact server value domain, producer and ordering still need evidence.
 
+The [0889 consumer trace](F025_STATIC_HANDLER_PROXY_MAPPING.md#5-november-0889-vital-reset-and-target-selection)
+ties second-word `0x100` to resetting base Health and eleven resource fields,
+and `0x4000` to clearing or refusing target selection. The first word and
+server producer and ordering still need evidence.
+
 Next integrated evidence outcome: continue independent broader feature/upstream
 requirements and corroborate the remaining mapped F-025 field meanings
 and server producer/ordering requirements using independent table, packet or

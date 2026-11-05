@@ -8796,7 +8796,7 @@ found:
 
 ### SpellTarget_ValidateTargetRelationship @ 1403b44b0
 
-Validates that a spell target meets relationship and alive requirements.
+Evaluates spell target relationship and target-mask requirements.
 
 ```c
 undefined8 SpellTarget_ValidateTargetRelationship(
@@ -8806,8 +8806,8 @@ undefined8 SpellTarget_ValidateTargetRelationship(
     if (has_faction_check != 0) {
         int relation = FUN_14046c580(target_entity, caster_ctx);  // GetRelation
         if (relation == expected_faction) return 0;  // same group - OK
-        if ((*(byte *)(target_entity + 0x24) & 1) != 0) {  // target is dead
-            if (target_mask == 0) return 0x59;  // error: dead target
+        if ((*(byte *)(target_entity + 0x24) & 1) != 0) {
+            if (target_mask == 0) return 0x59;  // CastResult.TargetGroup
             goto validate_mask;
         }
     }
@@ -8819,20 +8819,16 @@ validate_mask:
 ```
 
 **Key observations:**
-- `target_entity + 0x24` byte bit 0 = dead flag (entity alive/dead state)
-- Error code `0x59` (89 decimal) = dead-target rejection
+- `target_entity + 0x24` byte bit 0 participates in this relationship gate.
+- The source enum assigns `0x59` (89 decimal) to `CastResult.TargetGroup`.
 - `FUN_14046c580` = entity relationship query (faction/group comparison)
 - `expected_faction` = 0 means self-group check; if target is in same faction as
   caster the validation short-circuits to success (return 0)
 - `target_mask == 0` = no further type-check needed; non-zero triggers vtable
   dispatch to `FUN_1403b4a10`/`FUN_1403b4a20` for deeper interactable/relation checks
 
-**Entity dead flag:** `entity + 0x24` bit 0 = dead.
-- This is a client-side dead marker distinct from health == 0 checks.
-
-**Server implication:** Server already validates dead targets separately; no server
-change needed. The `0x59` error code maps to a client-side `SpellCastFailed`
-result that is not surfaced to the server.
+The [build 16042 follow-up](F025_STATIC_HANDLER_PROXY_MAPPING.md#5-november-0889-vital-reset-and-target-selection)
+traces the separate dead-target criteria and leaves the name of `+0x24` bit 0 open.
 
 ---
 
@@ -8857,7 +8853,7 @@ equivalent of `fMaxTime` from the runtime wrapper. No server change needed.
 |----------|---------|---------------|
 | Entity_LookupSpellWrapperInBST | 1405a5b90 | Client-only cache; no server equivalent needed |
 | SpellTarget_ResolveAndValidateWrapper | 140398800 | Server validates wrappers via GameTable; no change needed |
-| SpellTarget_ValidateTargetRelationship | 1403b44b0 | Dead/faction checks in server spell validation; no change needed |
+| SpellTarget_ValidateTargetRelationship | 1403b44b0 | Relationship and target-mask checks mapped in the client |
 | Channel data fInitialDelay/fMaxTime | 1405ed640 | Server uses Spell4Entry.CastTime; consistent |
 
 
