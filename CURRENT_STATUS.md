@@ -1,5 +1,10 @@
 # NexusForever Feature Restoration - Current Status
 
+[Public auction rejection replies](Decomp/Analysis/NORMAL_AUCTION_BID_TRANSACTION.md#recovery-for-rejected-public-purchase-replies)
+retain failed admission/preparation/settlement replies on the original buyer
+queue; six new/112 scoped cases pass. Successful settlement behavior is preserved.
+Physical socket/restart and retail qualification remain separate.
+
 [Public housing decor purchases](Decomp/Analysis/HOUSING_DECOR_PURCHASE_SETTLEMENT.md)
 now couple the original Character save, fee and residence decor row, then adopt
 and publish committed state. Eleven new regressions and70 final scoped cases

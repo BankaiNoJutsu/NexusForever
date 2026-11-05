@@ -40,6 +40,58 @@ namespace NexusForever.Game.Tests.Marketplace;
 public sealed class NormalBidCoordinatorTests
 {
     [Theory]
+    [InlineData("bid-error-retry")]
+    [InlineData("buyout-error-retry")]
+    [InlineData("bid-poor-error-retry")]
+    [InlineData("bid-error-replace")]
+    [InlineData("bid-error-queue")]
+    public Task RejectedPublicBidResultRetriesOnItsOriginalActorAfterSettlementReleases(string scenario)
+        => PublicRequestPreflightDebitAndRefundFinishBeforeTheSingleResultAfterScopeDisposal("none", scenario);
+
+    [Fact]
+    public async Task AdmissionRejectionRetriesItsFrozenPublicReplyWithoutStartingACharacterSave()
+    {
+        using var f = new Fixture(null); f.Seed();
+        var session = RecordingDispatchProxy<IWorldSession>.Create(out var messages); var queue = new EventQueue();
+        messages.SetProperty(nameof(IWorldSession.Events), queue);
+        var account = (RecordingDispatchProxy<IAccount>)(object)f.Source.Player.Account;
+        account.SetProperty(nameof(IAccount.Id), 12u); account.SetProperty(nameof(IAccount.Session), session);
+        using var actor = new RewardNormalSaveSnapshotTests.Actor(f, actorSession: session, actorEvents: queue);
+        messages.SetProperty(nameof(IWorldSession.Player), actor.Player);
+        var database = new CharacterDatabase();
+        using (var context = f.Context()) database.Initialise(new DatabaseConnectionString
+            { Provider = DatabaseProvider.Sqlite, ConnectionString = context.Database.GetDbConnection().ConnectionString });
+        var databases = RecordingDispatchProxy<IDatabaseManager>.Create(out var db);
+        db.SetMethodReturn(nameof(IDatabaseManager.GetDatabase), database);
+        var players = RecordingDispatchProxy<IPlayerManager>.Create(out var registry);
+        registry.SetMethodReturn(nameof(IPlayerManager.GetPlayer), actor.Player);
+        var items = RecordingDispatchProxy<IItemManager>.Create(out var itemManager);
+        var info = RecordingDispatchProxy<IItemInfo>.Create(out var item);
+        item.SetProperty(nameof(IItemInfo.Id), 7001u); item.SetProperty(nameof(IItemInfo.Entry), new Item2Entry { Id = 7001 });
+        itemManager.SetMethodReturn(nameof(IItemManager.GetItemInfo), info);
+        var marketplace = new GlobalMarketplaceManager(databases, f.Source.Tables, playerManager: players, itemManager: items);
+        marketplace.Initialise(); int attempts = 0, accepted = 0, saves = 0; actor.OnAuth = () => saves++;
+        messages.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is not ServerAuctionBidResult packet) return null;
+            Assert.Equal(GenericError.ItemBadId, packet.Result); Assert.Equal(99ul, packet.Auction.AuctionId);
+            Assert.Equal(7001u, packet.Auction.Item2Id); Assert.Equal(10ul, packet.Auction.CurrentBid);
+            if (++attempts == 1) { packet.Auction.AuctionId = 999; throw new IOException("Owned admission reply rejection before acceptance."); }
+            accepted++; return null;
+        });
+        var request = new ClientAuctionBuyOrderSubmit();
+        typeof(ClientAuctionBuyOrderSubmit).GetProperty(nameof(ClientAuctionBuyOrderSubmit.AuctionId))!.SetValue(request, 99ul);
+        typeof(ClientAuctionBuyOrderSubmit).GetProperty(nameof(ClientAuctionBuyOrderSubmit.Item2Id))!.SetValue(request, 7001u);
+        typeof(ClientAuctionBuyOrderSubmit).GetProperty(nameof(ClientAuctionBuyOrderSubmit.AmountOffered))!.SetValue(request, 10ul);
+        new ClientAuctionBuyOrderSubmitHandler(NullLogger<ClientAuctionBuyOrderSubmitHandler>.Instance, items, new(marketplace)).HandleMessage(session, request);
+        typeof(ClientAuctionBuyOrderSubmit).GetProperty(nameof(ClientAuctionBuyOrderSubmit.AuctionId))!.SetValue(request, 555ul);
+        var watch = Stopwatch.StartNew();
+        while (queue.PendingEvents) { Assert.True(watch.Elapsed < TimeSpan.FromSeconds(5)); queue.Update(.01); await Task.Delay(5); }
+        Assert.Equal(2, attempts); Assert.Equal(1, accepted); Assert.Equal(0, saves); Assert.Empty(actor.Errors);
+        using var stored = f.Context(); Assert.Empty(stored.MarketplaceBidReceipt); Assert.Empty(stored.CharacterCurrency);
+    }
+
+    [Theory]
     [InlineData("none", "unchanged")] [InlineData("self", "unchanged")]
     [InlineData("offline", "unchanged")] [InlineData("online", "unchanged")]
     [InlineData("none", "before")] [InlineData("none", "after")]
@@ -82,9 +134,11 @@ public sealed class NormalBidCoordinatorTests
         bool buyout = competing.StartsWith("buyout-", StringComparison.Ordinal);
         bool mailDelivery = competing is "buyout-mail" or "buyout-mail-replacement-during-won" or "buyout-ordinary-mail-custody" or "buyout-ordinary-header-custody" or "buyout-ordinary-link-custody" or "buyout-ordinary-link-postimage", sellerOnline = competing is "buyout-seller" or "buyout-seller-cap";
         string fault = buyout ? competing[7..] is "direct" or "mail" or "seller" or "seller-cap" or "overoffer" ? "unchanged" : competing[7..] : competing;
-        bool failBidResult = competing.StartsWith("bid-result-", StringComparison.Ordinal)
+        bool failedReply = competing.Contains("-error-", StringComparison.Ordinal);
+        bool failBidResult = failedReply || competing.StartsWith("bid-result-", StringComparison.Ordinal)
             || competing is "buyout-result-retry" or "buyout-result-replace";
-        if (failBidResult) fault = competing == "bid-result-superseded" ? "after" : "unchanged";
+        if (failedReply) fault = competing == "bid-poor-error-retry" ? "poor" : "before";
+        else if (failBidResult) fault = competing == "bid-result-superseded" ? "after" : "unchanged";
         bool reloadAfterResult = competing == "buyout-reload-after-result";
         bool pausePriorPublication = competing == "buyout-prior-queue-unpolled";
         if (competing is "buyout-won-retry" or "buyout-replace-after-result" || reloadAfterResult || pausePriorPublication) fault = "unchanged";
@@ -281,8 +335,9 @@ public sealed class NormalBidCoordinatorTests
                 if (++bidResultAttempts == 1 && failBidResult)
                 {
                     firstBidResultExpiration = view.ExpirationTime;
-                    if (competing is "bid-result-replace" or "buyout-result-replace")
+                    if (competing is "bid-result-replace" or "buyout-result-replace" or "bid-error-replace")
                         sessionProxy.SetProperty(nameof(IWorldSession.Player), RecordingDispatchProxy<IPlayer>.Create(out _));
+                    if (competing == "bid-error-queue") sessionProxy.SetProperty(nameof(IWorldSession.Events), new EventQueue());
                     view.CurrentBid = 999; // A failed send must not mutate the retry or listing.
                     throw new IOException("Committed auction bid result failed before enqueue.");
                 }
@@ -331,7 +386,7 @@ public sealed class NormalBidCoordinatorTests
             }
         }));
         bool expectsReply = fault is not ("retired" or "replacement" or "publication-replacement")
-            && competing is not ("bid-result-replace" or "bid-result-superseded" or "buyout-result-replace");
+            && competing is not ("bid-result-replace" or "bid-result-superseded" or "buyout-result-replace" or "bid-error-replace" or "bid-error-queue");
         var deadline = Stopwatch.StartNew();
         do
         {

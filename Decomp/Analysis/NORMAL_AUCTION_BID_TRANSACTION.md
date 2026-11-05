@@ -1,5 +1,38 @@
 # Normal auction bid transaction
 
+## Recovery for rejected public purchase replies
+
+5 November2026. Public bid/buyout errors now retain their reply after an enqueue
+rejected before acceptance. This includes immediate admission rejection,
+insufficient funds during preparation and rejected SQL settlement. Successful
+replies keep the existing coordinator's listing authority and ordering.
+
+The rejection route captures the original Player, Character/account identity,
+session and event queue. It checks those owners, the account's session, current
+player registry, disconnect/logout state and supplied publication guard before
+each attempt. A failed send waits one second on that original queue. Each attempt
+gets a fresh DTO from the captured rejection view, with its expiry recomputed
+from the captured deadline. Mutating the first failed DTO or reusable request
+cannot alter the retry. Financial settlement and reservation release finish
+independently; a reply retry neither saves nor restarts a financial operation.
+
+Five baseline cases reproduced an IOException escaping to the buyer event queue
+and losing the rejection. All six new cases now pass, including original-player
+and queue replacement suppression, normal-bid and buyout SQL failure, preparation
+failure, and admission rejection with zero Character saves or bid receipts.
+All112 selected public coordinator/auction compatibility cases pass in76seconds.
+The owning Game build passes in37.53seconds; final test compile takes20.49seconds,
+both with zero warnings/errors. Both final review axes have zero findings.
+
+The [portable report](coverage/auction-error-publication-20261105.json) binds
+the two changed Source files, all6344 Source/Tools inputs, matching owning/test
+DLLs, baseline and final scoped results, review and incremental upstream check.
+Local evidence: `artifacts/continuation-20261105/auction-error-publication/`.
+No SQL/model/migration changed, and no new configured-provider run is claimed.
+Other marketplace error producers, physical socket loss, cross-process replay,
+deployment and retail qualification remain open. Client/CUA remain stopped and
+the entitlement defaults/no-auto-grant rules are preserved.
+
 ## Recovery for the committed buyer result
 
 4 November 2026. Three public-handler cases reproduced an exception reaching

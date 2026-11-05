@@ -1,0 +1,155 @@
+{
+  "version": 1,
+  "feature": "Public auction purchase rejection reply recovery",
+  "verified_utc": "2026-11-05T12:29:50.964855+00:00",
+  "base_head": "11f68d5f9be9b7ba6087ac3e0fb1c647bdd6fdce",
+  "behavior": [
+    "Public bid/buyout admission, preparation and settlement error replies retain an immutable view and deadline",
+    "Failed enqueue retries fresh DTOs on the original Player/session/account/queue while those owners and registry remain current",
+    "Financial reservations remain released; reply retry performs no persistence or new financial operation",
+    "Successful reply listing authority, ordering and financial settlement remain on the existing coordinator path"
+  ],
+  "qualification": {
+    "baseline": {
+      "path": "artifacts/continuation-20261105/auction-error-publication/baseline.trx",
+      "sha256": "8f745ce3cefdc5b9a8302f061fd70e5bf60bd5e402f11fa165d0c2fa8b5f3ddf",
+      "counters": {
+        "total": "5",
+        "executed": "5",
+        "passed": "0",
+        "failed": "5",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "times": {
+        "creation": "2026-11-05T13:24:44.6798987+01:00",
+        "queuing": "2026-11-05T13:24:44.6799114+01:00",
+        "start": "2026-11-05T13:24:33.5333127+01:00",
+        "finish": "2026-11-05T13:24:51.6524607+01:00"
+      }
+    },
+    "focused": {
+      "path": "artifacts/continuation-20261105/auction-error-publication/candidate-errors.trx",
+      "sha256": "f042c8762a2c3d86463db9330756186934671f88b39fcd68ee96927364bdd469",
+      "counters": {
+        "total": "6",
+        "executed": "6",
+        "passed": "6",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "times": {
+        "creation": "2026-11-05T13:27:10.4072121+01:00",
+        "queuing": "2026-11-05T13:27:10.4072272+01:00",
+        "start": "2026-11-05T13:26:54.5202281+01:00",
+        "finish": "2026-11-05T13:27:18.0712657+01:00"
+      }
+    },
+    "affected": {
+      "path": "artifacts/continuation-20261105/auction-error-publication/candidate-affected.trx",
+      "sha256": "767c15c052dccea440c33d533706729e322f9216a21f1591fe8f175df75a6009",
+      "counters": {
+        "total": "112",
+        "executed": "112",
+        "passed": "112",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "times": {
+        "creation": "2026-11-05T13:27:38.1692543+01:00",
+        "queuing": "2026-11-05T13:27:38.1692715+01:00",
+        "start": "2026-11-05T13:27:34.1786912+01:00",
+        "finish": "2026-11-05T13:28:53.9276459+01:00"
+      }
+    },
+    "new_cases": 6,
+    "owning_build": "Game project passed,37.53s,0warnings/errors",
+    "final_test_compile": "20.49s,0warnings/errors",
+    "configured_provider": "Not rerun: publication-only correction, no SQL/model/migration changes; prior provider results retain their original candidate bindings",
+    "full_suite": "Not run; scoped-only user policy",
+    "native_client_computer_use": "Remain stopped; no runtime services started",
+    "entitlements": "15:1/17:1 unchanged; no automatic44 or seven baseline Character grants",
+    "boundary": "Injected enqueue rejection before acceptance on private SQLite public-handler fixtures; no physical socket, deployment, restart or retail claim"
+  },
+  "source": {
+    "inputs": 6344,
+    "normalized_git_blob_manifest_sha256": "5038b7791a87df56caf834abe14a1b8c57e4223c218763a344b287e7c4b3bad9",
+    "manifest_algorithm": "sha256 of sorted path NUL normalized-Git-blob-SHA1 LF records",
+    "changed_files": [
+      {
+        "path": "Source/NexusForever.Game/Marketplace/GlobalMarketplaceManager.AuctionSettlement.cs",
+        "sha256": "e113ff8a49bb57b31d0c369a3b9fba96872b92fa03d14c4fcc0963f120bb11f2"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Marketplace/NormalBidCoordinatorTests.cs",
+        "sha256": "296a83296921b6c6ef7a039a61347e3ec2a894a0b6fe07200d65cbc9fc650c0d"
+      }
+    ]
+  },
+  "binaries": [
+    {
+      "name": "NexusForever.Game.dll",
+      "sha256": "c7cfa0940f86b5b4df58a03aa73a93f9f7e23f266ee025617f952cea4150f10f",
+      "owner_test_match": true
+    },
+    {
+      "name": "NexusForever.WorldServer.dll",
+      "sha256": "2d8230c53f748f21483e92bf174a349bad1279d5535d867b904c9b8e68337f2e",
+      "owner_test_match": true
+    },
+    {
+      "name": "NexusForever.Game.Tests.dll",
+      "sha256": "6d7a90ec6821a03f4b8101a4226e341a7d22c54d6e2b6e763ca3e0cbd46d56be",
+      "owner_test_match": true
+    }
+  ],
+  "review": {
+    "standards_remaining": 0,
+    "spec_remaining": 0,
+    "raw_report_sha256": "cd853063f581e609be065faec5af7940d92a4849984b219d999e531d3e927cb4"
+  },
+  "upstream": {
+    "observedUtc": "2026-11-05T12:27:41.996Z",
+    "query": "repo:NexusForever/NexusForever updated:>2026-11-05T12:04:45Z",
+    "issues": [],
+    "prior": "artifacts/continuation-20261105/housing-decor-purchase/upstream-refresh.json",
+    "boundary": "Incremental update query is empty; prior608/609/604 heads and dispositions reused, not a fresh all-open inventory."
+  },
+  "historical_handoff_verification": "Previously retained expected Source divergence; not rerun or altered",
+  "remaining": [
+    "Other marketplace error producers, cross-process replay, physical failure and deployment/socket/native qualification",
+    "Broader economic, Contract, progression/gameplay and reverse-engineering requirements in canonical roadmap"
+  ]
+}

@@ -27,8 +27,47 @@ namespace NexusForever.Game.Marketplace
             Action<GenericError, AuctionInfo> reply, Func<bool> publicationAllowed = null)
         {
             if (player is not Player buyer || TryGetCharacterDatabase() == null) return false;
-            QueueAuctionPurchase(buyer, auctionId, definition, amount, reply, publicationAllowed);
+            QueueAuctionPurchase(buyer, auctionId, definition, amount,
+                RetainRejectedAuctionPurchaseReply(buyer, reply, publicationAllowed), publicationAllowed);
             return true;
+        }
+
+        private Action<GenericError, AuctionInfo> RetainRejectedAuctionPurchaseReply(Player buyer,
+            Action<GenericError, AuctionInfo> reply, Func<bool> publicationAllowed)
+        {
+            var session = buyer.Session;
+            var queue = session.Events;
+            var account = buyer.Account;
+            ulong character = buyer.CharacterId;
+            uint accountId = account.Id;
+            bool CurrentActor() => ReferenceEquals(buyer.Session, session) && ReferenceEquals(session.Events, queue)
+                && (session is not IPlayerSession bound || ReferenceEquals(bound.Player, buyer))
+                && buyer.CharacterId == character && ReferenceEquals(buyer.Account, account) && account.Id == accountId
+                && ReferenceEquals(account.Session, session) && ReferenceEquals(playerManager?.GetPlayer(character), buyer)
+                && session is not NetworkSession { IsDisconnecting: true }
+                && buyer.LogoutManager?.State is not (LogoutState.Logout or LogoutState.Finished)
+                && publicationAllowed?.Invoke() != false;
+
+            return (error, view) =>
+            {
+                // Successful replies already have listing-specific authority
+                // and ordering in the settlement coordinator.
+                if (error == GenericError.Ok) { reply(error, view); return; }
+                var snapshot = CloneAuction(view);
+                ulong deadline = checked((ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds() + snapshot.ExpirationTime);
+                void Publish()
+                {
+                    if (!CurrentActor()) return;
+                    try { reply(error, CloneAuction(snapshot, deadline)); }
+                    catch (Exception failure)
+                    {
+                        log.Warn(failure, "Rejected auction purchase reply failed; retrying on its original actor.");
+                        var delay = Task.Delay(TimeSpan.FromSeconds(1));
+                        queue.EnqueueThreadSafe(new PredicateEvent(() => !CurrentActor() || delay.IsCompleted, Publish));
+                    }
+                }
+                Publish();
+            };
         }
 
         internal void QueueAuctionPurchase(Player buyer, ulong auctionId, uint definition, ulong amount,

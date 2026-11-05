@@ -10,6 +10,13 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Rejected public auction purchase replies](NORMAL_AUCTION_BID_TRANSACTION.md#recovery-for-rejected-public-purchase-replies)
+now retry admission/preparation/settlement failures on their original Player
+queue without financial reservations or another save. Five executed baseline
+failures are fixed; six new/112 scoped cases and both final review axes pass.
+No new provider, physical socket, cross-process replay or retail claim is made.
+Other marketplace error producers and the broader roadmap remain open.
+
 [Public housing decor purchase settlement](HOUSING_DECOR_PURCHASE_SETTLEMENT.md)
 now freezes the accepted request/fee and commits it with the original Character
 and residence graph before live decor adoption and broadcast. Eleven new/70 final

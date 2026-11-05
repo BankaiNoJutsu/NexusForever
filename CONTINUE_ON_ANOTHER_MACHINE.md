@@ -1,5 +1,10 @@
 # Continue on another machine
 
+Latest auction implementation: [rejected public purchase reply recovery](Decomp/Analysis/NORMAL_AUCTION_BID_TRANSACTION.md#recovery-for-rejected-public-purchase-replies)
+passes six new/112 scoped cases with both final reviews. Reply retry retains
+original actor/queue ownership and performs no further financial save. The
+portable report preserves baseline, Source/DLL and qualification boundaries.
+
 Latest housing implementation: [public decor purchase settlement](Decomp/Analysis/HOUSING_DECOR_PURCHASE_SETTLEMENT.md)
 couples fee/decor and the original Character graph, with retained SQL recovery
 and committed adoption/publication. Eleven new/70 final scoped cases pass;
