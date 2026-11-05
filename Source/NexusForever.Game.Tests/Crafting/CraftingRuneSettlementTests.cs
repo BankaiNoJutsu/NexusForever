@@ -30,6 +30,10 @@ namespace NexusForever.Game.Tests.Crafting;
 
 public sealed class CraftingRuneSettlementTests
 {
+    private readonly DbContextOptions<CharacterContext> options;
+    public CraftingRuneSettlementTests() { }
+    internal CraftingRuneSettlementTests(DbContextOptions<CharacterContext> options) => this.options = options;
+
     [Theory]
     [InlineData("install", "commit")]
     [InlineData("install", "rollback")]
@@ -48,13 +52,13 @@ public sealed class CraftingRuneSettlementTests
     [InlineData("reroll", "rollback")]
     public async Task PublicRuneChangeCommitsTheSocketAndInventoryBeforeSuccess(string operation, string outcome)
     {
-        using var f = new Fixture(null);
+        using var f = new Fixture(options);
         f.Seed();
         var database = new CharacterDatabase();
         string before = operation is "clear" or "recover" ? "13:900" : "13:0";
         using (var seed = f.Context())
         {
-            database.Initialise(new DatabaseConnectionString { Provider = DatabaseProvider.Sqlite,
+            database.Initialise(new DatabaseConnectionString { Provider = seed.Database.IsSqlite() ? DatabaseProvider.Sqlite : DatabaseProvider.MySql,
                 ConnectionString = seed.Database.GetDbConnection().ConnectionString });
             seed.Character.Single().AccountId = 12;
             seed.Item.Add(new() { Id = 904, OwnerId = 42, ItemId = 7001, Location = (ushort)InventoryLocation.Inventory,

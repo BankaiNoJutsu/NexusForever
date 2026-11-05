@@ -552,8 +552,16 @@ restart/outbox and native/retail gates remain open. No full suite was run.
 couples socket changes and rune consumption/recovery in the existing inventory
 transaction before success publication. Full bags preserve the installed rune,
 and metadata or result callbacks cannot grant to or refresh a replacement actor.
-The owning build and120 scoped cases pass. Configured-provider, actual-table,
-socket, native and retail fee qualification remain open for this new flow.
+The owning build and120 scoped cases pass. The later
+[configured MySQL gate](DESTINATION_PROVIDER_QUALIFICATION.md#rune-crafting-settlement)
+passes all15 compiled cases, with15 SQLite controls and verified owned shutdown.
+Actual-table, physical connection failure, restart, socket, native and retail fee
+qualification remain open. The next crafting outcome is fixed-recipe settlement
+through all existing public senders. Source inspection of
+`ClientCraftingCraftHandlers.cs` shows material/modifier debits, item or generated
+loot grants, progression and success before the later Character save. Reproduce
+that boundary with a real Player and rejected save, then connect the complete
+recipe flow without treating direct-output fixtures as all loot/reward kinds.
 
 [Committed tradeskill publication](TRADESKILL_PUBLICATION.md) retains learning,
 archiving/reactivation, XP/talent, schematic and successful reset notices until

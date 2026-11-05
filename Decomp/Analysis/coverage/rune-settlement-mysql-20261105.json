@@ -1,0 +1,166 @@
+{
+  "productionSourceCommit": "5a4dd170804fc055d2084e6ac4a6823711beb5b4",
+  "testAdapter": "Configured context constructor and provider selection in the rune test fixture",
+  "sources": {
+    "Source/NexusForever.Game.Tests/Crafting/CraftingRuneSettlementTests.cs": "ba3c54065233e35a70ef28340167f0c17aaeb36c754e31c20f9a9e6afd7c2889",
+    "Source/NexusForever.Game/Entity/Inventory.RuneCrafting.cs": "cc0737b6f4f51c9d5bb0c810f4224fecb6c592be18bb51f15ca9685928d22510",
+    "Source/NexusForever.WorldServer/Network/Message/Handler/Crafting/ClientCraftingRuneHandlers.cs": "4660487d8277ea569be0c6312e6677b1bd89f334a3725d36c161a646e185fe19"
+  },
+  "binaryIdentityNote": "SDK assembly informational version embeds the pushed commit; runtime source matches prior milestone.",
+  "engine": {
+    "version": "8.4.13",
+    "sha256": "7a976874ef3974d612081960b1c193c663b4434692b6257382352c587e367ad6",
+    "tlsRequired": true,
+    "controlConnectionIsolation": "REPEATABLE-READ"
+  },
+  "strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+  "migrationsPerSchema": 48,
+  "schemasDropped": 15,
+  "testCases": [
+    {
+      "name": "PublicRuneChangeCommitsTheSocketAndInventoryBeforeSuccess(install,commit)",
+      "arguments": [
+        "install",
+        "commit"
+      ],
+      "passed": true
+    },
+    {
+      "name": "PublicRuneChangeCommitsTheSocketAndInventoryBeforeSuccess(install,rollback)",
+      "arguments": [
+        "install",
+        "rollback"
+      ],
+      "passed": true
+    },
+    {
+      "name": "PublicRuneChangeCommitsTheSocketAndInventoryBeforeSuccess(install,lost)",
+      "arguments": [
+        "install",
+        "lost"
+      ],
+      "passed": true
+    },
+    {
+      "name": "PublicRuneChangeCommitsTheSocketAndInventoryBeforeSuccess(install,replacement)",
+      "arguments": [
+        "install",
+        "replacement"
+      ],
+      "passed": true
+    },
+    {
+      "name": "PublicRuneChangeCommitsTheSocketAndInventoryBeforeSuccess(install,publication-replacement)",
+      "arguments": [
+        "install",
+        "publication-replacement"
+      ],
+      "passed": true
+    },
+    {
+      "name": "PublicRuneChangeCommitsTheSocketAndInventoryBeforeSuccess(recover,commit)",
+      "arguments": [
+        "recover",
+        "commit"
+      ],
+      "passed": true
+    },
+    {
+      "name": "PublicRuneChangeCommitsTheSocketAndInventoryBeforeSuccess(recover,rollback)",
+      "arguments": [
+        "recover",
+        "rollback"
+      ],
+      "passed": true
+    },
+    {
+      "name": "PublicRuneChangeCommitsTheSocketAndInventoryBeforeSuccess(recover,full)",
+      "arguments": [
+        "recover",
+        "full"
+      ],
+      "passed": true
+    },
+    {
+      "name": "PublicRuneChangeCommitsTheSocketAndInventoryBeforeSuccess(recover,metadata-replacement)",
+      "arguments": [
+        "recover",
+        "metadata-replacement"
+      ],
+      "passed": true
+    },
+    {
+      "name": "PublicRuneChangeCommitsTheSocketAndInventoryBeforeSuccess(clear,commit)",
+      "arguments": [
+        "clear",
+        "commit"
+      ],
+      "passed": true
+    },
+    {
+      "name": "PublicRuneChangeCommitsTheSocketAndInventoryBeforeSuccess(clear,rollback)",
+      "arguments": [
+        "clear",
+        "rollback"
+      ],
+      "passed": true
+    },
+    {
+      "name": "PublicRuneChangeCommitsTheSocketAndInventoryBeforeSuccess(add,commit)",
+      "arguments": [
+        "add",
+        "commit"
+      ],
+      "passed": true
+    },
+    {
+      "name": "PublicRuneChangeCommitsTheSocketAndInventoryBeforeSuccess(add,rollback)",
+      "arguments": [
+        "add",
+        "rollback"
+      ],
+      "passed": true
+    },
+    {
+      "name": "PublicRuneChangeCommitsTheSocketAndInventoryBeforeSuccess(reroll,commit)",
+      "arguments": [
+        "reroll",
+        "commit"
+      ],
+      "passed": true
+    },
+    {
+      "name": "PublicRuneChangeCommitsTheSocketAndInventoryBeforeSuccess(reroll,rollback)",
+      "arguments": [
+        "reroll",
+        "rollback"
+      ],
+      "passed": true
+    }
+  ],
+  "startupSeconds": 133.190159,
+  "elapsedSeconds": 247.5650372,
+  "sqliteControls": {
+    "cases": 15,
+    "trxSha256": "d8e6d863745974db699905dc13e9334acfac67e54338b5ab4a31e6dfa37d0ad0"
+  },
+  "assemblies": {
+    "NexusForever.Game.Tests.dll": "c011856fa75496f9b0ba5723673d80a6b12ce899b309f34e64eef871f47ef3aa",
+    "NexusForever.Game.dll": "a46c8cd0725e3eafee14c1f2d08d68f805c9697f007eeb3dfdb70b99d541e655",
+    "NexusForever.WorldServer.dll": "38f5e0f8cf2d2bf5264fdccd5ebcd3afce2a19d685ffea4b48909c7ae724e77a",
+    "NexusForever.Database.Character.dll": "3e0cdb63a149794cbb205c01d5f140ded39ef292ea5043d2c459ff56fa5f70e5",
+    "NexusForever.Database.dll": "15011abf8539e29248500de1f4b070517be599796066e8f3a21ba42710abd155"
+  },
+  "runnerSourceSha256": "7f26acfee232cc33b85d76b054b6c5cab0e17ed605fedd07696713ceabc33108",
+  "runnerSha256": "d6737cf4e313f700701c58cc69fd5969cb1aff0de25fcc44ebe54da9efafacf5",
+  "resultsSha256": "ace44cce6857aed0f7f441c3f04de4db9e0755f4beb24beebcad6aa54c06cc20",
+  "shutdown": {
+    "serverAbsent": true,
+    "listenerAbsent": true,
+    "runnerAbsent": true,
+    "helperAbsent": true,
+    "proofSha256": "01ef7764fcbe9f560ff390c5a6dfb9d219627565675e93b5c2e41c9e9789fccc"
+  },
+  "limits": "Compiled public handlers with real Player, Inventory and Character persistence. Auth phase and World sends are fixture adapters. Synthetic item templates. Commit acknowledgement faults are injected. No physical connection-loss, restart, deployed socket, full-table, native or retail fee qualification.",
+  "localArtifacts": "artifacts/continuation-20261105/rune-settlement-mysql/"
+}

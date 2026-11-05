@@ -21134,9 +21134,13 @@ match their owning outputs. The earlier fixture constructor/import, analyzer,
 error-packet import and overload-access corrections remain in the local logs
 under `artifacts/continuation-20261105/rune-settlement/`.
 
-The new cases use disposable SQLite and projected item templates. They do not
-qualify configured MySQL, real-table delivery, deployed sockets or native rune
-presentation. Rune fees and retail economic rules retain their existing scope.
+The source cases use disposable SQLite and projected item templates. The later
+[configured MySQL gate](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#rune-crafting-settlement)
+passes all15 cases on separately migrated schemas with the configured retry
+strategy. The fixture build and15 SQLite controls pass against the current DLLs.
+Real-table delivery, physical connection failure, restart, deployed sockets and
+native rune presentation remain open. Rune fees and retail economic rules retain
+their existing scope.
 No schema, entitlement default or native launch policy changed. No full solution
 build or full test suite was run under the user's scoped-only policy.
 

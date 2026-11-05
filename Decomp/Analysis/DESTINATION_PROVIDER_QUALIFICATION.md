@@ -186,6 +186,36 @@ binds the cases, binaries and owned shutdown. Physical connection failures,
 deployed restart and delivery, native play and retail selector semantics
 remain open.
 
+### Rune crafting settlement
+
+5 November 2026. All15 compiled rune settlement cases passed on separate
+disposable MySQL8.4.13 Character schemas, each with all48 migrations and the
+configured `MySqlRetryingExecutionStrategy`. The TLS control connection reported
+`REPEATABLE-READ`.
+
+The public install, clear/recovery, add and reroll handlers commit socket and
+inventory changes together before success publication. The cases cover rollback
+for all four operations, injected lost commit acknowledgement, session replacement
+before commit and during publication, full-bag recovery rejection, and replacement
+during metadata lookup. The last case grants nothing to the replacement inventory.
+The real Player and Inventory use fixture Auth and World sends and projected item
+templates. This qualifies the configured provider for these cases, not retail fees
+or actual-table crafting.
+
+The test-project build took65 seconds, its15 SQLite controls13 seconds, and the
+provider runner build7 seconds. Startup took133 seconds and the15 SQL cases248
+seconds. All15 schema drops succeeded. The server, listener, runner and helper
+stopped. The [portable result](coverage/rune-settlement-mysql-20261105.json)
+binds the cases, source and current DLLs and owned shutdown. An initial identity
+guard refused the older pre-push DLL hashes before starting MySQL. Current
+assembly metadata embeds commit `5a4dd170`; runner copies and runtime source were
+verified before the run. Local evidence is under
+`artifacts/continuation-20261105/rune-settlement-mysql/`.
+
+Physical connection failures, deployed restart and sockets, native presentation,
+actual tables and retail economic qualification remain open. No full solution
+build or full test suite was run under the user's scoped-only policy.
+
 ### Vendor repair settlement
 
 5 November 2026. All seven compiled repair cases passed on separate disposable
@@ -205,8 +235,10 @@ All seven schema drops succeeded. The server, listener, runner and helper
 stopped. The [portable result](coverage/vendor-repair-mysql-20261105.json)
 binds the cases, current DLLs and shutdown proof. Local inputs and results
 are under `artifacts/continuation-20261105/vendor-repair-mysql/`.
-Physical connection loss, deployed restart, socket delivery, the durability
-wire producer and native presentation remain open.
+Physical connection loss, deployed restart, socket delivery and native
+presentation remain open. These cases predate the later
+[durability wire and producer integration](ITEM_DURABILITY_WIRE_EVIDENCE.md),
+whose source qualification retains its separate evidence boundary.
 
 ### Vendor settlement and recovery
 
