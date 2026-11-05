@@ -12,6 +12,7 @@ namespace NexusForever.Game.PublicEvent
     public class PublicEventManager : IPublicEventManager
     {
         private IBaseMap map;
+        private bool cleanupStarted;
         private readonly Dictionary<uint, IPublicEvent> publicEvents = [];
 
         private readonly Dictionary<ulong, MapCharacter> characters = [];
@@ -61,14 +62,37 @@ namespace NexusForever.Game.PublicEvent
         /// </remarks>
         public void Cleanup()
         {
+            if (cleanupStarted)
+                return;
+
+            cleanupStarted = true;
+
             foreach (IPublicEvent @event in publicEvents.Values)
-            {
-                @event.Finish(null);
-                @event.Dispose();
-            }
+                CleanupEvent(@event);
 
             publicEvents.Clear();
             characters.Clear();
+        }
+
+        private void CleanupEvent(IPublicEvent @event)
+        {
+            try
+            {
+                @event.Finish(null);
+            }
+            catch (Exception exception)
+            {
+                log.LogError(exception, "Failed to finish public event {EventId} during unload of map {MapId}.", @event.Id, map.Entry.Id);
+            }
+
+            try
+            {
+                @event.Dispose();
+            }
+            catch (Exception exception)
+            {
+                log.LogError(exception, "Failed to dispose public event {EventId} during unload of map {MapId}.", @event.Id, map.Entry.Id);
+            }
         }
 
         /// <summary>
@@ -76,7 +100,7 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public void Update(double lastTick)
         {
-            if (publicEvents.Count == 0)
+            if (cleanupStarted || publicEvents.Count == 0)
                 return;
 
             var toRemove = new List<IPublicEvent>();
@@ -84,12 +108,18 @@ namespace NexusForever.Game.PublicEvent
             foreach (IPublicEvent @event in publicEvents.Values)
             {
                 @event.Update(lastTick);
+                if (cleanupStarted)
+                    return;
+
                 if (@event.IsFinalised)
                     toRemove.Add(@event);
             }
 
             foreach (IPublicEvent @event in toRemove)
             {
+                if (cleanupStarted)
+                    return;
+
                 publicEvents.Remove(@event.Id);
                 @event.Dispose();
 
@@ -105,6 +135,9 @@ namespace NexusForever.Game.PublicEvent
             if (publicEvents.TryGetValue(id, out IPublicEvent existingEvent))
                 return existingEvent;
 
+            if (cleanupStarted)
+                return null;
+
             IPublicEventTemplate template = publicEventTemplateManager.GetTemplate(id);
             if (template == null)
                 return null;
@@ -114,6 +147,13 @@ namespace NexusForever.Game.PublicEvent
 
             IPublicEvent @event = publicEventFactory.CreateEvent(id);
             @event.Initialise(this, template, map);
+
+            // Initialisation scripts can unload the map before this event is registered.
+            if (cleanupStarted)
+            {
+                CleanupEvent(@event);
+                return null;
+            }
 
             log.LogTrace($"Created new public event {id} for map {map.Entry.Id}.");
 
@@ -160,6 +200,9 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public void OnAddToMap(IGridEntity gridEntity)
         {
+            if (cleanupStarted)
+                return;
+
             if (gridEntity is IPlayer player)
             {
                 IPublicEventCharacter character = publicEventCharacterFactory.Resolve();

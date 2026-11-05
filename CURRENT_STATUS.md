@@ -22206,6 +22206,22 @@ took 25 seconds with zero warnings or errors. All 69 scoped tests passed in
 `artifacts/continuation-20261105/content-map-unload/`.
 Deployed travel and native presentation remain open.
 
+#### Public event cleanup during map unload
+
+5 November 2026. The map's Public Event manager starts teardown once. It
+attempts finish and disposal separately for each registered event, logs either
+failure, and clears the event and character indexes. It rejects new events
+and late arrivals while unloading. An event whose initialization starts the
+unload is cleaned up before it can register. An interrupted tick leaves the
+remaining disposal work with the unload path.
+
+All five new manager cases reproduced failures before the change, including a
+duplicate disposal and registration after unload. The owning build took 34
+seconds with zero warnings or errors, and all 2,386 scoped Public Event,
+instance and matching tests passed in 11 seconds. The Game DLL hashes matched.
+Local evidence is under `artifacts/continuation-20261105/public-event-unload-cleanup/`.
+Deployed travel and native presentation remain open.
+
 #### Public event Character save recovery
 
 5 November 2026. A real public-event objective advanced an enrolled Player's

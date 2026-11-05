@@ -103,6 +103,9 @@ travel verification remain open.
 [Content map unload](../../CURRENT_STATUS.md#content-map-unload-and-match-cleanup)
 completes cleanup of the original match and its public events when a finish
 callback detaches the match or throws.
+[Public event cleanup](../../CURRENT_STATUS.md#public-event-cleanup-during-map-unload)
+isolates finish and disposal failures, rejects late registrations, and keeps
+an interrupted tick from disposing events again.
 The [Character rollback probe](../../CURRENT_STATUS.md#public-event-character-save-recovery)
 reproduced early quest updates and loss of unsaved credit on the World save
 failure path. [Committed quest notices](../../CURRENT_STATUS.md#committed-public-event-quest-notices)
