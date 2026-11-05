@@ -38,6 +38,90 @@ public sealed class PlayerExperiencePersistenceTests
     internal PlayerExperiencePersistenceTests(DbContextOptions<CharacterContext> options) => this.options = options;
     private const BindingFlags Instance = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
+    [Fact]
+    public async Task PathXpAndThePathLogUseTheCommittedFrozenTotals()
+    {
+        using var f = new Fixture(options);
+        f.Seed();
+        Seed(f);
+        using var actor = CreatePathPublicationActor(f, out var session);
+        await actor.Load();
+        var (_, path) = Configure(f, actor);
+        path.ActivateMissions(9, new Dictionary<ushort, uint> { [35] = 25 });
+        Assert.True(path.CompleteActiveMission(35));
+
+        path.SendInitialPackets();
+        Assert.Equal(0u, Assert.Single(PathPackets<ServerPathInitialise>(session)).PathProgress[(int)GamePath.Soldier]);
+        Assert.Empty(PathPackets<ServerPathUpdateXP>(session));
+        await Assert.ThrowsAsync<IOException>(() => Persist(f, actor, true));
+        await actor.Drain();
+        Assert.Empty(PathPackets<ServerPathUpdateXP>(session));
+
+        actor.OnAuth = () => path.AddXp(7);
+        await actor.Player.SaveDirect();
+        await actor.Drain();
+        Assert.Equal(25u, Assert.Single(PathPackets<ServerPathUpdateXP>(session)).TotalXP);
+        path.SendInitialPackets();
+        Assert.Equal(25u, PathPackets<ServerPathInitialise>(session).Last().PathProgress[(int)GamePath.Soldier]);
+
+        actor.OnAuth = null;
+        await actor.Player.SaveDirect();
+        await actor.Drain();
+        Assert.Equal(new uint[] { 25, 32 }, PathPackets<ServerPathUpdateXP>(session).Select(packet => packet.TotalXP));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FailedPathXpEnqueueRetriesOnlyForTheDisplayedPath(bool changePath)
+    {
+        using var f = new Fixture(options);
+        f.Seed();
+        Seed(f);
+        using var actor = CreatePathPublicationActor(f, out var session);
+        await actor.Load();
+        var (_, path) = Configure(f, actor);
+        path.UnlockPath(GamePath.Settler);
+
+        int attempts = 0;
+        session.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerPathUpdateXP && ++attempts == 1)
+            {
+                if (changePath)
+                    path.ActivatePath(GamePath.Settler);
+                throw new IOException("Old path XP enqueue failed before delivery.");
+            }
+            return null;
+        });
+
+        path.AddXp(25);
+        await Persist(f, actor, false);
+        await actor.Drain();
+        Assert.Equal(changePath ? 1 : 2, attempts);
+        Assert.All(PathPackets<ServerPathUpdateXP>(session), update => Assert.Equal(25u, update.TotalXP));
+        if (changePath)
+        {
+            var log = PathPackets<ServerPathInitialise>(session).Last();
+            Assert.Equal(GamePath.Settler, log.ActivePath);
+            Assert.Equal(25u, log.PathProgress[(int)GamePath.Soldier]);
+            Assert.Equal(0u, log.PathProgress[(int)GamePath.Settler]);
+        }
+    }
+
+    private static IEnumerable<T> PathPackets<T>(RecordingDispatchProxy<IWorldSession> session)
+        => session.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).Select(call => call.Arguments[0]).OfType<T>();
+
+    private static Actor CreatePathPublicationActor(Fixture fixture, out RecordingDispatchProxy<IWorldSession> sessionProxy)
+    {
+        var session = RecordingDispatchProxy<IWorldSession>.Create(out sessionProxy);
+        var events = new EventQueue();
+        sessionProxy.SetProperty(nameof(IWorldSession.Events), events);
+        var actor = new Actor(fixture, actorSession: session, actorEvents: events);
+        sessionProxy.SetProperty(nameof(IWorldSession.Player), actor.Player);
+        return actor;
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -46,11 +130,7 @@ public sealed class PlayerExperiencePersistenceTests
         using var f = new Fixture(options);
         f.Seed();
         Seed(f);
-        var session = RecordingDispatchProxy<IWorldSession>.Create(out var sessionProxy);
-        var events = new EventQueue();
-        sessionProxy.SetProperty(nameof(IWorldSession.Events), events);
-        using var actor = new Actor(f, actorSession: session, actorEvents: events);
-        sessionProxy.SetProperty(nameof(IWorldSession.Player), actor.Player);
+        using var actor = CreatePathPublicationActor(f, out var sessionProxy);
         await actor.Load();
         var (_, path) = Configure(f, actor);
         path.ActivateMissions(9, new Dictionary<ushort, uint> { [35] = 25 });

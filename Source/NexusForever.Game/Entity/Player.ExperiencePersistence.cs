@@ -66,7 +66,7 @@ namespace NexusForever.Game.Entity
                 maps?.NotifyPublicationReady();
                 reputation?.NotifyPublicationReady();
                 spells?.NotifyAmpPowerPublicationReady();
-                path?.NotifyMissionCompletionReady();
+                path?.NotifyPathPublicationReady();
                 try { achievements?.NotifyPublicationReady(); }
                 finally { archive?.NotifyPublicationReady(); }
             }
@@ -74,7 +74,7 @@ namespace NexusForever.Game.Entity
                 achievements?.RealmFirst, archive == null ? null : archive.AcknowledgePublication, PublicationReady,
                 cubes == null ? null : cubes.AcknowledgePublication, maps == null ? null : maps.AcknowledgePublication,
                 reputation == null ? null : reputation.AcknowledgePublication, spells == null ? null : spells.AcknowledgeAmpPowerPublication,
-                path == null ? null : path.AcknowledgeMissionCompletions);
+                path == null ? null : path.AcknowledgePathPublication);
         }
         internal bool OwnsDatacubePublication(DatacubeManager manager, Identity identity, IGameSession session)
             => Identity?.Id == identity.Id && Identity.RealmId == identity.RealmId
@@ -100,7 +100,7 @@ namespace NexusForever.Game.Entity
                 && (playerManager == null || ReferenceEquals(playerManager.GetPlayer(identity), this))
                 && session is IPlayerSession current && ReferenceEquals(current.Player, this)
                 && session is not NetworkSession { IsDisconnecting: true };
-        internal bool OwnsPathCompletionPublication(PathManager manager, Identity identity, IGameSession session)
+        internal bool OwnsPathPublication(PathManager manager, Identity identity, IGameSession session)
             => Identity?.Id == identity.Id && Identity.RealmId == identity.RealmId
                 && ReferenceEquals(PathManager, manager) && ReferenceEquals(Session, session)
                 && (playerManager == null || ReferenceEquals(playerManager.GetPlayer(identity), this))

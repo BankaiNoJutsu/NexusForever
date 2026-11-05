@@ -123,7 +123,7 @@ namespace NexusForever.Game.Entity
             LoadedMissions = model.PathMission.Select(ExperiencePersistence.FromModel).OrderBy(row => row.Id).ToArray();
             LoadedPathDatabase = CharacterLoadOrigin.Get(model)?.Database;
             if (player is Player)
-                InitialiseMissionCompletionPublication();
+                InitialisePathPublication();
             foreach (CharacterPathModel pathModel in model.Path)
                 paths.Add((Path)pathModel.Path, new PathEntry(pathModel) { CharacterSaveOwner = TrySaveExperience });
 
@@ -568,7 +568,12 @@ namespace NexusForever.Game.Entity
 
             GrantOutstandingLevelRewards(path, entry.TotalXp);
             if (xpChanged)
-                SendServerPathUpdateXp(entry.TotalXp);
+            {
+                if (player is not Player)
+                    SendServerPathUpdateXp(entry.TotalXp);
+                else if (OwnsPathPublication)
+                    player.RequestSave();
+            }
         }
 
         /// <summary>
@@ -1806,13 +1811,20 @@ namespace NexusForever.Game.Entity
         /// </summary>
         private void SendPathLogPacket()
         {
-            player.Session.EnqueueMessageEncrypted(new ServerPathInitialise
+            var packet = new ServerPathInitialise
             {
                 ActivePath                  = player.Path,
-                PathProgress                = paths.Values.Select(p => p.TotalXp).ToArray(),
                 PathUnlockedMask            = GetPathUnlockedMask(),
                 TimeSinceLastActivateInDays = GetCooldownTime()
-            });
+            };
+            if (player is Player)
+            {
+                SendConfirmedPathLog(packet);
+                return;
+            }
+
+            packet.PathProgress = paths.Values.Select(p => p.TotalXp).ToArray();
+            player.Session.EnqueueMessageEncrypted(packet);
         }
 
         private float GetCooldownTime()

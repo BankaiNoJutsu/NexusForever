@@ -368,9 +368,24 @@ and a second-packet failure with and without session replacement. The final
 owning build took 31 seconds with zero warnings or errors. All 196 scoped
 cases passed in 7 seconds. Evidence is under
 `artifacts/continuation-20261105/path-completion-publication/`.
-Path XP and item notifications have separate publication paths. Item overflow,
-configured-provider qualification, and native ordering relative to holdout
-results remain open.
+Item overflow and item notification settlement, configured-provider
+qualification, and native ordering relative to holdout results remain open.
+
+### Committed Path XP
+
+Path XP grants and mission XP now request the ordinary save and publish
+confirmed totals through the same original-session queue as mission results.
+The full Path log also uses confirmed XP for each slot. A later grant that
+arrives during a frozen save stays hidden until its own save confirms it.
+
+The incremental XP packet has no Path ID. A retry uses the latest confirmed
+total for the displayed Path, while a successful Path switch sends the
+confirmed totals in the full log. The old Path's pending total cannot then
+appear as the newly displayed Path's XP. The baseline reproduced the
+uncommitted total in the full log and an enqueue failure escaping the XP
+grant. The owning build took 33 seconds with zero warnings or errors.
+All 232 scoped cases passed in 40 seconds. Local evidence is under
+`artifacts/continuation-20261105/path-xp-publication/`.
 
 ### Committed reputation deltas
 
