@@ -1,0 +1,104 @@
+{
+  "productionSourceCommit": "19ebc49ba7a555d7dba818ff0ccd79a34da5bb6a",
+  "testFixture": {
+    "path": "Source/NexusForever.Game.Tests/Vendor/VendorRepairSettlementTests.cs",
+    "gitBlob": "cbfff15ec8ce3377d2a0ab942a1824e49c8ecfa5"
+  },
+  "engine": {
+    "version": "8.4.13",
+    "sha256": "7a976874ef3974d612081960b1c193c663b4434692b6257382352c587e367ad6",
+    "controlConnectionIsolation": "REPEATABLE-READ",
+    "tlsRequired": true
+  },
+  "strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+  "migrationsPerSchema": 48,
+  "schemasDropped": 7,
+  "testCases": [
+    {
+      "name": "RepairHandlerSettlesDurabilityAndCreditsBeforePublishingTheBalance(commit)",
+      "arguments": [
+        "commit"
+      ],
+      "passed": true
+    },
+    {
+      "name": "RepairHandlerSettlesDurabilityAndCreditsBeforePublishingTheBalance(rollback)",
+      "arguments": [
+        "rollback"
+      ],
+      "passed": true
+    },
+    {
+      "name": "RepairHandlerSettlesDurabilityAndCreditsBeforePublishingTheBalance(lost)",
+      "arguments": [
+        "lost"
+      ],
+      "passed": true
+    },
+    {
+      "name": "RepairHandlerSettlesDurabilityAndCreditsBeforePublishingTheBalance(replacement)",
+      "arguments": [
+        "replacement"
+      ],
+      "passed": true
+    },
+    {
+      "name": "RepairHandlerSettlesDurabilityAndCreditsBeforePublishingTheBalance(single)",
+      "arguments": [
+        "single"
+      ],
+      "passed": true
+    },
+    {
+      "name": "RepairHandlerSettlesDurabilityAndCreditsBeforePublishingTheBalance(all)",
+      "arguments": [
+        "all"
+      ],
+      "passed": true
+    },
+    {
+      "name": "RepairHandlerSettlesDurabilityAndCreditsBeforePublishingTheBalance(changed)",
+      "arguments": [
+        "changed"
+      ],
+      "passed": true
+    }
+  ],
+  "startupSeconds": 180.9345976,
+  "elapsedSeconds": 129.6792,
+  "sqliteControls": {
+    "totalCasesInFinalRun": 15,
+    "repairCases": 7,
+    "trxSha256": "7213fd5c05cd53825bce1b2846036a0ab732399e6e1bd3a4b1fc64a11c724f59"
+  },
+  "assemblies": [
+    {
+      "file": "NexusForever.Game.Tests.dll",
+      "sha256": "d4d9b1e67c6638604f48b2d96805d74750710e1d9eed5b22623edd4f62a3f636"
+    },
+    {
+      "file": "NexusForever.Game.dll",
+      "sha256": "149eb97d779037423cebcc7999081aa223c9946b2e84e1226a5cb028eee7dd67"
+    },
+    {
+      "file": "NexusForever.WorldServer.dll",
+      "sha256": "33846d4fbec52d2905084c3eb15365348a3317bd2190538a09a57eaf6d999ec7"
+    },
+    {
+      "file": "NexusForever.Database.Character.dll",
+      "sha256": "a6159496e4534e3f4cf7fc1f01104ed46dc60e8a2e71b3019d7719eccff13f97"
+    }
+  ],
+  "runnerSourceSha256": "a8d4be5aa65d485e06ad36383e04672947a342f6c44374b42ce425f1ef15419d",
+  "runnerSha256": "b52dd18a00460330402f7771a3d3742479762d2cd88e3ba62701be21900c7f05",
+  "resultsSha256": "f17fcf4deac711a9c7b19276ecde810fa1a7acb7fea23906a1ad548b664ff024",
+  "shutdown": {
+    "runnerAbsent": true,
+    "helperAbsent": true,
+    "proofSha256": "a6f8dcf86972d3679eaf447e631e406db8e71471e59b9a584ec8d1c4fe7d5764",
+    "listenerAbsent": true,
+    "serverAbsent": true
+  },
+  "limits": "The compiled repair handler cases use the real Player, Inventory and Character wallet with a fixture Auth phase and recording World session. Commit faults are injected. Physical connection loss, deployed restart, socket delivery, the durability wire producer and native presentation remain open.",
+  "localArtifacts": "artifacts/continuation-20261105/vendor-repair-mysql/"
+}

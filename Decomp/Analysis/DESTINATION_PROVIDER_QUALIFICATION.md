@@ -26,6 +26,10 @@ receipt-backed item, reputation and wallet conversions on migrated MySQL
 purchase, buyback and Realm recovery cases on migrated MySQL 8.4.13 Auth and
 Character schemas.
 
+[Vendor repair settlement](#vendor-repair-settlement) covers the seven compiled
+repair cases on migrated MySQL Character schemas, including rollback, lost
+acknowledgement, repair-all and stale quotes.
+
 [Fortune settlement and recovery](#fortune-settlement-and-recovery) passes
 twelve cases on migrated MySQL 8.4.13 Auth schemas with the configured retry
 strategy.
@@ -181,6 +185,28 @@ The [portable result](coverage/resource-conversion-mysql-20261105.json)
 binds the cases, binaries and owned shutdown. Physical connection failures,
 deployed restart and delivery, native play and retail selector semantics
 remain open.
+
+### Vendor repair settlement
+
+5 November 2026. All seven compiled repair cases passed on separate disposable
+MySQL 8.4.13 Character schemas. Each schema applied 48 migrations, and each
+context used `MySqlRetryingExecutionStrategy`. The TLS control connection
+reported `REPEATABLE-READ`.
+
+The public handler cases cover committed debit and durability, rollback,
+injected commit acknowledgement loss, session replacement, single-item and
+repair-all selection, and a durability change during the preceding save.
+The last case keeps the changed item and retires the stale quote before debit.
+These runs use the real Player, Inventory and Character wallet, with the Auth
+phase and World sends supplied by the fixture.
+
+Startup to runner launch took 181 seconds, and the cases took 130 seconds.
+All seven schema drops succeeded. The server, listener, runner and helper
+stopped. The [portable result](coverage/vendor-repair-mysql-20261105.json)
+binds the cases, current DLLs and shutdown proof. Local inputs and results
+are under `artifacts/continuation-20261105/vendor-repair-mysql/`.
+Physical connection loss, deployed restart, socket delivery, the durability
+wire producer and native presentation remain open.
 
 ### Vendor settlement and recovery
 

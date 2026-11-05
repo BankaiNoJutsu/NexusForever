@@ -193,8 +193,10 @@ and publishes to the original session.
 
 [Committed vendor repairs](../../CURRENT_STATUS.md#committed-vendor-repairs)
 save the quoted durability and credit debit together before the balance notice,
-and retire a quote changed during the preceding Character save. Configured
-MySQL and native durability presentation remain open.
+and retire a quote changed during the preceding Character save. The
+[configured MySQL gate](DESTINATION_PROVIDER_QUALIFICATION.md#vendor-repair-settlement)
+covers all seven compiled repair cases. Socket delivery and native durability
+presentation remain open.
 
 [Vendor purchase capacity](../../CURRENT_STATUS.md#vendor-purchase-capacity)
 checks the complete delivery before charging, including slots freed by item

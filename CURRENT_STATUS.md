@@ -23228,9 +23228,10 @@ buyback controls then passed in 10 seconds after an 18-second test-project build
 with matching, unchanged Game and WorldServer DLLs. The initial test type-name
 compile error is corrected and retained. Evidence is under
 `artifacts/continuation-20261105/vendor-repair-settlement/`.
-These are source and SQLite checks. Configured MySQL, socket delivery and native
-durability presentation remain open. The unregistered `ServerItemDurability`
-model still requires a verified wire producer.
+The [configured MySQL gate](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#vendor-repair-settlement)
+also passes all seven compiled repair cases on separately migrated schemas.
+Socket delivery and native durability presentation remain open. The unregistered
+`ServerItemDurability` model still requires a verified wire producer.
 
 #### Vendor purchase capacity
 
