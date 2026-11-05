@@ -1,5 +1,12 @@
 # Client64 Initial Reverse-Engineering Findings
 
+Latest protocol implementation: [Primal Matrix wire contracts](PRIMAL_MATRIX_WIRE_CONTRACTS.md)
+uses the pinned REA identity and independently named native save/getter paths to
+decode0072 increments and register06DF absolute snapshots. Twenty-four fresh PE
+range/anchor checks match the retained inspector evidence. Sixteen new/143 scoped
+cases and both Source reviews pass. Allocation gameplay, native timing and retail
+remain gated; no client execution or new provider/label export is claimed.
+
 Latest static result: [STS mode4 derivation and filter paths](STS_TOKEN_KEY_TRANSITION_EVIDENCE.md#follow-up-selected-mode4-expansion-and-filter-paths)
 maps the selected SHA-256/MD5 expansion, seed order, key slices and local filter
 key ownership. The selected state slot returns1 without changing RC4 state.

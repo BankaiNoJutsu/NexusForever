@@ -1,5 +1,16 @@
 # Assessment follow-through goal
 
+[Primal Matrix request/snapshot contracts](PRIMAL_MATRIX_WIRE_CONTRACTS.md)
+fix the missing0072 public decoder and incorrect auction registration of06DF.
+Increment bytes and absolute saved counts stay distinct; the former serializer
+retains its bytes without an opcode. Sixteen new/143 scoped cases, clean owning
+WorldServer build and both Source reviews pass. Fresh PE checks match24 reused
+native range/anchor observations under the pinned REA identity. The handler is
+diagnostic only: authoritative catalogs, ownership/validation, checked essence
+settlement, saved allocation/reward adoption and committed recovery still gate
+gameplay. No placeholder snapshot, native execution or retail claim is added.
+Continue those evidence-backed requirements and independent broader work.
+
 [Committed Character affiliation publication](GUILD_DISBAND_RECOVERY.md#committed-character-affiliation-publication)
 connects public change/removal and published entity/login/join/ghost views to
 Character confirmation and the original actor/World queue. Immutable state,

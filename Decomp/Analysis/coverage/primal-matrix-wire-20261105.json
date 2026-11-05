@@ -1,0 +1,372 @@
+{
+  "version": 1,
+  "feature": "Primal Matrix0072 request and06DF snapshot contracts",
+  "recorded_utc": "2026-11-05T15:04:47.779663+00:00",
+  "base_head": "4d939e90b2ca57e29a6e6688db49899bfa8d6a20",
+  "disposition": "Wire models and non-mutating public diagnostic dispatch implemented; allocation gameplay remains gated",
+  "contracts": {
+    "0072": {
+      "model": "ClientPrimalMatrixSave",
+      "fields": "count32, node IDs uint32[], allocation increments uint8[]",
+      "validation": "Check complete count against remaining bytes before decoding arrays; preserve raw values",
+      "handler": "ClientPrimalMatrixSaveHandler logs count only; no session gameplay access/mutation/response"
+    },
+    "06df": {
+      "model": "ServerPrimalMatrixSnapshot",
+      "fields": "count32, node IDs uint32[], absolute saved counts uint8[], Matrix-only AMP contribution uint32",
+      "compatibility": "ServerAuctionPostAux remains a byte-compatible unregistered serializer; old enum classification replaced",
+      "producer": "None added; empty snapshots clear client state, so no diagnostic placeholder response"
+    }
+  },
+  "native_evidence": {
+    "binary": "C:\\GIT\\_archive\\cluster-3d\\NexusForever\\Decomp\\Client64\\WildStar64.exe",
+    "bytes": 13927576,
+    "sha256": "231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5",
+    "image_base": "0x140000000",
+    "rea_evidence_id": "ev_142ebc012c9fce11df9c67703c5d9e335b4810c52c1d752b63ed2828030231d4",
+    "rea_operation": "inspect_pe_imports",
+    "rea_bundle_sha256": "d900a258756bfdec974ff1b901e22e7e72af469326fce8796cc1a65504d8fa6f",
+    "reused_manifest_sha256": "effca416746b7f95d8465de57b42cfe6cdd6bdf43ab3f3c926138a65edfed64a",
+    "selected_code_ranges": [
+      {
+        "name": "matrix-snapshot-0",
+        "startVA": "0x1404d6af0",
+        "bytes": 321,
+        "fileOffset": 5070576,
+        "sha256": "f06e1e9cb8333c3f732c0d94f4a07955e4a23bf8e8db7aed41b3ed580863a5fc",
+        "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+      },
+      {
+        "name": "matrix-cache-0",
+        "startVA": "0x1404d64d0",
+        "bytes": 1422,
+        "fileOffset": 5069008,
+        "sha256": "d0d5cc1da0dbcded8e9abefba31316ae80526db196aef33e87501a6b874291a1",
+        "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+      },
+      {
+        "name": "matrix-lua-node-0",
+        "startVA": "0x1406e9330",
+        "bytes": 1652,
+        "fileOffset": 7243568,
+        "sha256": "7abd0601ad43baf47453ab6068a60cd97c1e650828318e8be360b332bf37d293",
+        "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+      },
+      {
+        "name": "saved-count-getter-0",
+        "startVA": "0x1406eb160",
+        "bytes": 196,
+        "fileOffset": 7251296,
+        "sha256": "785af373de723b19864e3b440942533a5835c7bcc583e0a6d8ee94bdb08a8174",
+        "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+      },
+      {
+        "name": "pending-count-getter-0",
+        "startVA": "0x1406eb230",
+        "bytes": 129,
+        "fileOffset": 7251504,
+        "sha256": "8aab7ae267d77bc86e454777d729a72b54f015d6a09cae6d4d0b87fd0c38cf6f",
+        "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+      },
+      {
+        "name": "maximum-count-getter-0",
+        "startVA": "0x1406eb2c0",
+        "bytes": 198,
+        "fileOffset": 7251648,
+        "sha256": "e318a34d686e8a5cd8f7d6b968434ae062330d4b2b1e89ab80a8aa88538b2ba9",
+        "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+      },
+      {
+        "name": "amp-total-calculation-0",
+        "startVA": "0x1403cdbf0",
+        "bytes": 271,
+        "fileOffset": 3985392,
+        "sha256": "a14e196fac38908b5729d199bbe9b2a2ea03a257561a3f767214beb6af8306bb",
+        "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+      },
+      {
+        "name": "matrix-action-factory-0",
+        "startVA": "0x140526610",
+        "bytes": 2696,
+        "fileOffset": 5397008,
+        "sha256": "85334c5274b57557373ec7f4d469cca16f1a13e816e56dcf880eda7551b9b6a5",
+        "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+      },
+      {
+        "name": "matrix-action-setup-0",
+        "startVA": "0x1405239b0",
+        "bytes": 173,
+        "fileOffset": 5385648,
+        "sha256": "2fd44975e3f4d75ee3ba2442821c97ca4364c4df8b74dd1ba6e221cd31c90341",
+        "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+      },
+      {
+        "name": "matrix-action-confirm-0",
+        "startVA": "0x140523a60",
+        "bytes": 181,
+        "fileOffset": 5385824,
+        "sha256": "63f64ea81a1a5ee1193bc83626a73be7e1a705c19284815b2e2c40cae88e6f80",
+        "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+      },
+      {
+        "name": "matrix-stage-positive-increments-0",
+        "startVA": "0x1406e6910",
+        "bytes": 441,
+        "fileOffset": 7232784,
+        "sha256": "bcb2f8bdca454b162249d1fdca7308ab0b395ede25759a8ad163c649447d4ab9",
+        "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+      },
+      {
+        "name": "append-node-id-0",
+        "startVA": "0x140003460",
+        "bytes": 146,
+        "fileOffset": 10336,
+        "sha256": "173b46d456a1f8cdeda8f66eee5aab391daa013f8cd3a1e73b680376dd43dd97",
+        "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+      },
+      {
+        "name": "0072-writer-0",
+        "startVA": "0x14008be20",
+        "bytes": 217,
+        "fileOffset": 569888,
+        "sha256": "d354916d6d3b4f8fbfb79d81d648712ec79b04c8f0c87a1a45762e898f6b6772",
+        "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+      },
+      {
+        "name": "network-send-helper-0",
+        "startVA": "0x1403f4900",
+        "bytes": 457,
+        "fileOffset": 4144384,
+        "sha256": "6eec097175e040304ef0d045be137d6ee87cac8b62bf659325d203a39eb9c769",
+        "boundary": "Observed PE x64 chained unwind ranges; tail callees remain separate"
+      }
+    ],
+    "selected_anchors": [
+      {
+        "name": "get-total-power-leaf",
+        "startVA": "0x140748f00",
+        "bytes": 50,
+        "fileOffset": 7635712,
+        "hex": "4c8b4110488b058dc951000fbf90606e000041c7400803000000b801000000660f6ec2f30fe6c0f2410f11004883411010c3",
+        "sha256": "17dc8c5482deaaa15ce5783f279753bc1754a5fd416db0f23bf28ad047fe4c75"
+      },
+      {
+        "name": "save-primal-enum-41",
+        "startVA": "0x14070c21d",
+        "bytes": 21,
+        "fileOffset": 7386653,
+        "hex": "4c8d054c86430041b929000000488bcfe81e3d9eff",
+        "sha256": "24efd6ea810b21d57efb3a3c378b8caa5919fe13f351e773507e6299cb32f7a6"
+      },
+      {
+        "name": "0072-registration",
+        "startVA": "0x1400716b9",
+        "bytes": 45,
+        "fileOffset": 461497,
+        "hex": "488d0d60a70100ba72000000c7442430000000004c8d0d1ca7010048c74424280000000048894c2420448d42a6",
+        "sha256": "b72827beff6cb57d2aa962d3dd0970a07cf18af0b9c7e87be434d3d7d6ef5fec"
+      },
+      {
+        "name": "06df-dispatch",
+        "startVA": "0x1403f0fb0",
+        "bytes": 15,
+        "fileOffset": 4129712,
+        "hex": "488bd7e8385b0e008bd8e961030000",
+        "sha256": "52c3b2bd72b2eb3deac89045e3d01ac18a981f24e703137865a4a8d62d986084"
+      },
+      {
+        "name": "confirm-action-vtable",
+        "startVA": "0x140b6a9c0",
+        "bytes": 32,
+        "fileOffset": 11966912,
+        "hex": "a03f524001000000603a524001000000e0f8514001000000b039524001000000",
+        "sha256": "9d8aa3c68a26a9bc55d4e9550dc44ca4ab0800a589d42badfa123916d53dc12d"
+      },
+      {
+        "name": "get-total-power-binding",
+        "startVA": "0x140b75240",
+        "bytes": 16,
+        "fileOffset": 12010048,
+        "hex": "98a0b44001000000008f744001000000",
+        "sha256": "f765658141fd1f3e285995ee802396801c13a553405d8c074ec30395e60f9db8"
+      },
+      {
+        "name": "saved-count-binding",
+        "startVA": "0x140c5ea70",
+        "bytes": 16,
+        "fileOffset": 12963440,
+        "hex": "f8f1b3400100000060b16e4001000000",
+        "sha256": "97b872a5c33ac61b2fe77c70d076d29d1e8ff248185c044a811ee33e830e6a7e"
+      },
+      {
+        "name": "pending-count-binding",
+        "startVA": "0x140c5ea80",
+        "bytes": 16,
+        "fileOffset": 12963456,
+        "hex": "d8f1b3400100000030b26e4001000000",
+        "sha256": "c2ca3e6b2f5509d2104fd417eeca88237c7430d97085323c0247f012850cd632"
+      },
+      {
+        "name": "maximum-count-binding",
+        "startVA": "0x140c5ea90",
+        "bytes": 16,
+        "fileOffset": 12963472,
+        "hex": "c0f1b34001000000c0b26e4001000000",
+        "sha256": "542920ce00c8e0703837a4bc2dcae157425824a0adf21621c1c26460f3a37daf"
+      },
+      {
+        "name": "node-coordinate-binding",
+        "startVA": "0x140c5e970",
+        "bytes": 16,
+        "fileOffset": 12963184,
+        "hex": "d0f0b34001000000b0996e4001000000",
+        "sha256": "02fc019440fd16a63ab9b4f87c234e8d76a024e887eacc6a629a842ea26fa87f"
+      }
+    ],
+    "retained_inspector_sha256": {
+      "VerifyDeeperContracts.java": "2cc51da083f1fc816a301c7f08df3d9ab9cabb8b4c45d7b59b50e0dd68f70820",
+      "deep-verify-console.log": "3599be78c9517dd8131705b97741f54e06fc7ecd3148273fb498648f8e6a21e1",
+      "deep-primal-writer-console.log": "871482b3f4cd4104e5dadeb3b6e276e262c37854037383a35d4885be33e5296e",
+      "deep-save-timer-console.log": "d04988d82968788b5993695865b4746880c531e09d1a43c5a85245461a27bfcf",
+      "deep-save-pending-console.log": "54f4ba8259cdcd54afc4f1b9dd87fbc92124e19fc699dc767faa9f691b2434a3",
+      "deep-matrix-buff-console.log": "cf95a218d7238af592fcea8f6ae4e66f490efa7b5c89349eb1ff5fd20055312b"
+    },
+    "checks": 24,
+    "boundary": "Fresh raw PE identity/offset/hash checks against existing exact-artifact REA and standalone Ghidra evidence. No target execution or new unavailable-provider call."
+  },
+  "baseline": {
+    "file": "baseline.trx",
+    "sha256": "3d8ebd8d251a2b619002d9c352d1abf4a324822733e3890384336451f8a07866",
+    "counts": {
+      "Passed": 1,
+      "Failed": 2,
+      "NotExecuted": 0
+    },
+    "test_run_seconds": 4.868456
+  },
+  "baseline_failures": [
+    "NexusForever.Game.Tests.Network.PrimalMatrixProtocolTests.FormerAuctionSerializerCannotBeDispatchedAsAMarketplacePacket",
+    "NexusForever.Game.Tests.Network.PrimalMatrixProtocolTests.NativeSaveRequestHasARegisteredPublicDecoder"
+  ],
+  "focused": {
+    "file": "focused.trx",
+    "sha256": "dd0f7c269a97b95a172a964920dbec707e0e9b85b12256603ebc4022cba21a99",
+    "counts": {
+      "Passed": 16,
+      "Failed": 0,
+      "NotExecuted": 0
+    },
+    "test_run_seconds": 4.346589
+  },
+  "affected": {
+    "file": "affected.trx",
+    "sha256": "f6d51bc3519ae653e4aec22be3ea71cf3f56914d5fa398cc60bcf0e28b460549",
+    "counts": {
+      "Passed": 143,
+      "Failed": 0,
+      "NotExecuted": 0
+    },
+    "test_run_seconds": 3.319392
+  },
+  "new_cases": 16,
+  "final_affected_cases": 143,
+  "new_case_names": [
+    "NexusForever.Game.Tests.Network.PrimalMatrixProtocolTests.ReaderPreservesRawZeroAndHighByteValuesAndLeavesTrailingDataToTheFrameReader",
+    "NexusForever.Game.Tests.Network.PrimalMatrixProtocolTests.TruncatedOrHostileCountsFailBeforeAllocatingTheCountedArrays(hex: \"02000000040302014433221101\")",
+    "NexusForever.Game.Tests.Network.PrimalMatrixProtocolTests.FormerSerializerKeepsItsExistingWireBytesForCompatibility",
+    "NexusForever.Game.Tests.Network.PrimalMatrixProtocolTests.FormerAuctionSerializerCannotBeDispatchedAsAMarketplacePacket",
+    "NexusForever.Game.Tests.Network.PrimalMatrixProtocolTests.EmptyRequestIsStructurallyDecodedWithoutFabricatingAnAllocationResult",
+    "NexusForever.Game.Tests.Network.PrimalMatrixProtocolTests.TruncatedOrHostileCountsFailBeforeAllocatingTheCountedArrays(hex: \"030000\")",
+    "NexusForever.Game.Tests.Network.PrimalMatrixProtocolTests.NativeSaveRequestHasARegisteredPublicDecoder",
+    "NexusForever.Game.Tests.Network.PrimalMatrixProtocolTests.SnapshotWritesAbsoluteSavedCountsAndFullWidthMatrixContributionAcrossCompositeBoundaries(count: 0)",
+    "NexusForever.Game.Tests.Network.PrimalMatrixProtocolTests.TruncatedOrHostileCountsFailBeforeAllocatingTheCountedArrays(hex: \"01000000040302\")",
+    "NexusForever.Game.Tests.Network.PrimalMatrixProtocolTests.SnapshotWritesAbsoluteSavedCountsAndFullWidthMatrixContributionAcrossCompositeBoundaries(count: 3)",
+    "NexusForever.Game.Tests.Network.PrimalMatrixProtocolTests.MismatchedSnapshotColumnsRejectBeforeWritingAnyPartialPayload",
+    "NexusForever.Game.Tests.Network.PrimalMatrixProtocolTests.PublicPacketReaderAndRegisteredHandlerDecodeIncrementsWithoutEmittingOrTouchingSessionState",
+    "NexusForever.Game.Tests.Network.PrimalMatrixProtocolTests.SnapshotWritesAbsoluteSavedCountsAndFullWidthMatrixContributionAcrossCompositeBoundaries(count: 8)",
+    "NexusForever.Game.Tests.Network.PrimalMatrixProtocolTests.TruncatedOrHostileCountsFailBeforeAllocatingTheCountedArrays(hex: \"FFFFFFFF\")",
+    "NexusForever.Game.Tests.Network.PrimalMatrixProtocolTests.SnapshotHasOnePrimalMatrixRegistrationAndTheFormerAuctionTypeIsSerializerOnly",
+    "NexusForever.Game.Tests.Network.PrimalMatrixProtocolTests.SnapshotWritesAbsoluteSavedCountsAndFullWidthMatrixContributionAcrossCompositeBoundaries(count: 1)"
+  ],
+  "affected_scope": [
+    "PrimalMatrixProtocolTests",
+    "PacketPlaceholderNamingTests",
+    "ClientUnresolvedDiagnosticHandlerTests",
+    "RewardTrackRoutingProtocolTests",
+    "retail composite readers",
+    "GamePacketReaderTests"
+  ],
+  "build": {
+    "project": "Source/NexusForever.WorldServer/NexusForever.WorldServer.csproj",
+    "command": "dotnet build --no-restore -v minimal --nologo",
+    "warnings": 0,
+    "errors": 0,
+    "log": "build-console.log"
+  },
+  "reviews": {
+    "comparison": "git diff --cached -- Source against base_head; six Source files",
+    "spec_findings": 0,
+    "standards_findings": 0,
+    "actionable_smells": 0,
+    "spec_report": "review-spec.md",
+    "standards_report": "review-standards.md"
+  },
+  "source_sha256": {
+    "Source/NexusForever.Game.Tests/Network/PrimalMatrixProtocolTests.cs": "b5280ecaa8ab2a23709cd63599f6bca3235b204863502220bcda46baa94e43b7",
+    "Source/NexusForever.Network.World/Message/Model/PrimalMatrix/ClientPrimalMatrixSave.cs": "caf931c6316bef1bd8bb4abdbb56e307fbdf6f40c61eb7593b29bed19551c112",
+    "Source/NexusForever.Network.World/Message/Model/PrimalMatrix/ServerPrimalMatrixSnapshot.cs": "d4a74a09ff5c07ccc81bcf693a56103c21b616d56eefb322ca3405191ca605a1",
+    "Source/NexusForever.Network.World/Message/Model/ServerClusterAuxPackets.cs": "ba59cd52358a7674949cd65b53d5616c60c76740f2d5231905ce771706c59db8",
+    "Source/NexusForever.Network/Message/GameMessageOpcode.cs": "1243ecbe61a1aacafe9840cdcc98a0c24f01ed88b8a4d846f522f6a7df0f4d08",
+    "Source/NexusForever.WorldServer/Network/Message/Handler/PrimalMatrix/ClientPrimalMatrixSaveHandler.cs": "12023f7848bb794657a27364ed58042cf1379b5ca18804b676815da82a92f71b"
+  },
+  "source_git_blob": {
+    "Source/NexusForever.Game.Tests/Network/PrimalMatrixProtocolTests.cs": "061ebe790fff390b5547a8e411e19dbe52210dca",
+    "Source/NexusForever.Network.World/Message/Model/PrimalMatrix/ClientPrimalMatrixSave.cs": "cfd074b4890b5cde6eed3c3e0566bb69b21f8fab",
+    "Source/NexusForever.Network.World/Message/Model/PrimalMatrix/ServerPrimalMatrixSnapshot.cs": "d166c7bbcabbbbae10e19032a13b77931f7cbd37",
+    "Source/NexusForever.Network.World/Message/Model/ServerClusterAuxPackets.cs": "002634fb5907f8701300af78908141f3b435713e",
+    "Source/NexusForever.Network/Message/GameMessageOpcode.cs": "c7e4abd4b1a31003b17377a867e7036015ff3608",
+    "Source/NexusForever.WorldServer/Network/Message/Handler/PrimalMatrix/ClientPrimalMatrixSaveHandler.cs": "3b7a7b5ad33388d8a1a9583ac500ea4656d2df93"
+  },
+  "binary_sha256": {
+    "Source/NexusForever.Network/bin/Debug/net10.0/NexusForever.Network.dll": "26b05af879f8606481350856981e4f9057e45b31af2460a758c79fb5a5c4eb18",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Network.dll": "26b05af879f8606481350856981e4f9057e45b31af2460a758c79fb5a5c4eb18",
+    "Source/NexusForever.Network.World/bin/Debug/net10.0/NexusForever.Network.World.dll": "b367aeb6973a1125db63af3ff46410017e19f83f2e8f606c87a19210efe4c422",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Network.World.dll": "b367aeb6973a1125db63af3ff46410017e19f83f2e8f606c87a19210efe4c422",
+    "Source/NexusForever.WorldServer/bin/Debug/net10.0/NexusForever.WorldServer.dll": "e2c519276a026570ba04b29093bc0e58927e4ceab5192a2f0f7c70757f209f6b",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.WorldServer.dll": "e2c519276a026570ba04b29093bc0e58927e4ceab5192a2f0f7c70757f209f6b",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll": "4c822160367563f86e6c97e1c6f2bb84dd65f81519166478e2c4d5433b4177c6"
+  },
+  "local_artifacts": {
+    "directory": "artifacts/continuation-20261105/primal-matrix-wire",
+    "sha256": {
+      "baseline-console.log": "835b5fc908603478a345a807526815bea7a6001a862150478a0a51319da7c1e9",
+      "focused-console.log": "faee105532a926fc641d2fcefa0fe5a6769304f8ab1ff4469f6f66f989b454fe",
+      "affected-console.log": "7d6ddd072fd4abf5528c48ec26a174bf480248adaab688c18c8a3e9f20d3b7fc",
+      "build-console.log": "0a9d21c8a477bb1e320a4fee494ecad83c63052e9689c8891e3f89c616b6666d",
+      "native-verification.json": "1e56ea377dee8df21410251e0d4ecba56b6b47897ec57074fbc162d4a2cb88d1",
+      "reused-deeper-contracts.json": "effca416746b7f95d8465de57b42cfe6cdd6bdf43ab3f3c926138a65edfed64a",
+      "review-spec.md": "c2ec7da446d6e5f1a0087c565d5c8ccb790fcc99700c323fbf96eb9eb52b4d73",
+      "review-standards.md": "8141252d2e04663d131c74502cb6332307dd1c8e65386058aaeb0dd556b1c1fe",
+      "upstream-refresh.json": "7e035594950fd0c2808da675abcff1ea074aac2a788b905d4fff59cd4a76fc59"
+    }
+  },
+  "boundaries": {
+    "full_solution_build_or_suite": false,
+    "native_execution_or_cua": false,
+    "new_ghidra_provider_or_configuration": false,
+    "configured_provider_or_full_table_qualification": false,
+    "database_or_gameplay_state_changed": false,
+    "allocation_handler_enabled": false,
+    "labels_or_project_exports_changed": false,
+    "entitlements": "Defaults15:1/17:1; no automatic44 or seven baseline grants",
+    "handoff": "Prior expected Source-divergence retained; unchanged historical failure not repeated"
+  },
+  "remaining": [
+    "Qualified node/reward catalogs and Character/account allocation ownership",
+    "Max-rank, adjacency/prerequisite and checked essence settlement rules",
+    "Saved allocation persistence/recovery, reward/AMP adoption and original-actor publication",
+    "Native/retail accepted transcript, request/reply timing and any refund/reset/respec policy",
+    "All other assessment/reconciliation and broader feature requirements"
+  ],
+  "goal": "active"
+}

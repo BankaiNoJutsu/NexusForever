@@ -610,15 +610,14 @@ namespace NexusForever.Network.World.Message.Model
         }
     }
 
-    // Marketplace cluster
-    [Message(GameMessageOpcode.ServerAuctionPostAux)]
+    // Compatibility serializer only. Native06DF belongs to Primal Matrix.
     public class ServerAuctionPostAux : IWritable
     {
         /// <summary>
         /// Client reader <c>ServerAuctionPostAux_ReadPayload</c>
         /// (<c>140090090</c>) reads one count, that many uint32 values, that
-        /// many bytes, and one trailing uint32 field. Auction producer
-        /// semantics remain blocked.
+        /// many bytes, and one trailing uint32 field. Retained for source/wire
+        /// compatibility only; this class has no opcode registration.
         /// </summary>
         public List<uint> Values { get; } = [];
 
@@ -628,14 +627,7 @@ namespace NexusForever.Network.World.Message.Model
 
         public void Write(GamePacketWriter writer)
         {
-            byte[] data = Data ?? [];
-            if (data.Length != Values.Count)
-                throw new InvalidOperationException("Auction post aux byte data length must match the uint32 value count.");
-
-            writer.Write((uint)Values.Count);
-            writer.WriteRetailCompositeUInt32Array(Values.ToArray());
-            writer.WriteRetailCompositeByteSpan(data);
-            writer.Write(Value);
+            PrimalMatrix.ServerPrimalMatrixSnapshot.WritePayload(writer, Values, Data, Value);
         }
     }
 

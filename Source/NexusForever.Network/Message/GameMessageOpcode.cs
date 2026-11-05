@@ -11,6 +11,7 @@ namespace NexusForever.Network.Message
         ServerPlayerEnteredWorld        = 0x0061,
         ServerPetSpawned                = 0x0068, // native reader LAB_14008ce70 reads unit id + 18-bit spell id + 5-bit valid stances + 5-bit stance; apply path Pet_ApplySpawnedPayload 1403c08d0 dispatches PetSpawned
         ServerClientEntityUpdateInterval = 0x0070,
+        ClientPrimalMatrixSave          = 0x0072, // native SavePrimalMatrix confirmation: count32, node IDs uint32[], positive allocation increments uint8[]
         ClientPetCommand                = 0x0073, // native misc-skill action-bar click 1405c9b90 sends { ShortcutSet, SlotIndex }; row 299 PrimaryPetBar uses this for Engineer Attack/Stop buttons
         ServerAuthEncrypted             = 0x0076,
         ServerItemTradePartners         = 0x007E, // krakal/inventory item trade-partner identity-list research; non-conflicting opcode
@@ -784,7 +785,7 @@ namespace NexusForever.Network.Message
         ServerCommodityOrderResult      = 0x06DB,
         ClientAuctionSellOrderSubmit    = 0x06DC,
         ServerAuctionPostResult         = 0x06DD,
-        ServerAuctionPostAux            = 0x06DF, // count + counted uint32 list + counted byte list + uint32; reader 140090090
+        ServerPrimalMatrixSnapshot       = 0x06DF, // absolute saved node allocation counts plus Matrix AMP-power contribution; consumer1404d6af0
         ClientInitiatePTRCharacterCopy  = 0x06E7, // native sender Client0x06E7_SendFromLuaDispatch 140022270 pairs with CharacterScreenLib InitiatePTRCharacterCopy @ 1409edc80; payload is selected-character u64
         ClientPtrCopy                   = 0x06E8, // native registration size 1 via ClientCraftingAbandon_WritePayload; send sites FUN_14063f540 and FUN_140707d80 emit one zero padding byte; separate from ClientInitiatePTRCharacterCopy 0x06E7
         ServerPtrCharacterCopyQueued    = 0x06EA, // native ServerEmpty_ReadPayload size 1; client consumer FUN_140020ea0 fires Lua PTRCharacterCopyQueued @ 1409ed738; no NexusForever emit mapped yet

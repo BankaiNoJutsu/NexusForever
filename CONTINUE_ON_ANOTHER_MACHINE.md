@@ -1,5 +1,13 @@
 # Continue on another machine
 
+Latest protocol implementation: [Primal Matrix wire contracts](Decomp/Analysis/PRIMAL_MATRIX_WIRE_CONTRACTS.md)
+passes16 new/143 scoped cases, clean owning WorldServer build and both Source
+reviews.0072 decodes allocation increments and reaches a non-mutating diagnostic
+handler;06DF owns absolute saved counts/Matrix AMP contribution. The legacy
+auction serializer stays byte-compatible and unregistered. Catalog/ownership,
+allocation settlement/persistence/recovery and native/retail timing remain gated.
+No full suite or client/CUA ran; separate research/label edits remain unstaged.
+
 Latest Guild implementation: [committed affiliation publication](Decomp/Analysis/GUILD_DISBAND_RECOVERY.md#committed-character-affiliation-publication)
 passes26 new/421 scoped cases and both final Source reviews. Public change/leave
 notices and holomarks wait for Character confirmation and the original World

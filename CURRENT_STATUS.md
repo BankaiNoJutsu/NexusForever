@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[Primal Matrix wire contracts](Decomp/Analysis/PRIMAL_MATRIX_WIRE_CONTRACTS.md)
+register0072 bounded decoding/diagnostic dispatch and correct06DF ownership to
+absolute saved allocations plus Matrix AMP contribution. Sixteen new/143 scoped
+cases, clean owning WorldServer build and both Source reviews pass. The public
+handler mutates/emits nothing. Full allocation gameplay, catalogs/ownership,
+settlement, persistence and native/retail timing remain open.
+
 [Committed Character affiliation publication](Decomp/Analysis/GUILD_DISBAND_RECOVERY.md#committed-character-affiliation-publication)
 now releases accepted nameplates, holomarks and broker updates only after the
 original Character confirmation, from its retained World queue. Twenty-six new/
