@@ -95,22 +95,32 @@ namespace NexusForever.Game.Entity
                         lock (questRewardGate)
                             if (!publicEventPublications.Remove(publication))
                                 continue;
-                        publication.Events.EnqueueThreadSafe(new PredicateEvent(
-                            () => !publication.OwnsSession() || player is not Player { IsNormalSaveInProgress: true },
-                            () => PublishPublicEventQuestNotices(publication)));
+                        QueuePublicEventQuestNotices(publication, start: 0, canRetry: true);
                     }
                 });
             };
         }
 
-        private void PublishPublicEventQuestNotices(PublicEventPublication publication)
+        private void QueuePublicEventQuestNotices(PublicEventPublication publication, int start, bool canRetry)
+            => publication.Events.EnqueueThreadSafe(new PredicateEvent(
+                () => !publication.OwnsSession() || player is not Player { IsNormalSaveInProgress: true },
+                () => PublishPublicEventQuestNotices(publication, start, canRetry)));
+
+        private void PublishPublicEventQuestNotices(PublicEventPublication publication, int start, bool canRetry)
         {
-            foreach (var notice in publication.Notices)
+            for (int index = start; index < publication.Notices.Count; index++)
             {
                 if (!publication.OwnsSession() || RequiresAuthoritativeReload)
                     return;
-                try { notice(); }
-                catch (Exception error) { log.Error(error, "Failed to publish committed public event quest progress."); }
+                try { publication.Notices[index](); }
+                catch (Exception error)
+                {
+                    log.Error(error, "Failed to publish committed public event quest progress.");
+                    // Keep dependent notices behind the rejected notice without replaying the sent prefix.
+                    if (canRetry && publication.OwnsSession())
+                        QueuePublicEventQuestNotices(publication, index, canRetry: false);
+                    return;
+                }
             }
         }
     }

@@ -78,6 +78,9 @@ now wait for Character settlement while the map event finishes independently.
 uses a receipt to confirm commit or retry the original frozen save once.
 The [configured MySQL gate](DESTINATION_PROVIDER_QUALIFICATION.md#public-event-quest-recovery)
 covers commit, retry, lost acknowledgment, SQL rejection and session replacement.
+[Committed notice retry](../../CURRENT_STATUS.md#public-event-quest-notice-retry)
+resumes failed publication on the original World queue without replaying
+the accepted notices or the Character save.
 Deployed delivery, restart and retail reward tiers remain open.
 
 [Instance transfer retries](../../CURRENT_STATUS.md#instance-transfer-retries)

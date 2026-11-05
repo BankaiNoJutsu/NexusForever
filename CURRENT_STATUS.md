@@ -22143,6 +22143,22 @@ covers the five queued cases. Deployed client delivery, restart, and retail
 reward tiers remain open.
 Local results are under `artifacts/continuation-20261105/public-event-quest-save-retry/`.
 
+#### Public event quest notice retry
+
+5 November 2026. If a committed public-event quest notice throws during
+publication, the original World queue resumes at the failed notice once.
+The retry preserves the accepted prefix and the order of the remaining
+notices. A replaced queue or a second rejection ends the batch. Character
+settlement and map finalization each run once.
+
+The SQLite World-save fixture reproduced dropped objective and state notices
+and an out-of-order remainder after persistent rejection. It also controls
+for a queue replacement during the failed enqueue. The owning build passed
+with zero warnings or errors and all 981 scoped tests passed, including the
+four fault cases. This gate exercises server-side enqueue behavior. Socket
+delivery and restart replay remain open.
+Local results are under `artifacts/continuation-20261105/public-event-quest-notice-retry/`.
+
 #### Public event contribution ownership
 
 4 November 2026. Player-driven objective credit, stat changes, scoreboard

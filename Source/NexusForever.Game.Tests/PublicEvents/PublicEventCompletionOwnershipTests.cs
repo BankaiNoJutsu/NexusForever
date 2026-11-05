@@ -238,6 +238,77 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
         Assert.Single(mapProxy.GetInvocations(nameof(IBaseMap.OnPublicEventFinish)));
     }
 
+    [Theory]
+    [InlineData("objective")]
+    [InlineData("state")]
+    [InlineData("replaced-queue")]
+    [InlineData("persistent")]
+    public async Task CommittedQuestNoticesResumeFromTheRejectedEnqueue(string outcome)
+    {
+        const uint objectiveId = 201u;
+        using var f = new SaveFixture(options, new QuestObjectiveEntry
+        {
+            Id = 90010, Type = (uint)QuestObjectiveType.CompletePublicEventObjective, Data = objectiveId, Count = 2
+        });
+        f.Seed();
+        var database = new PublicEventSaveDatabase(f, "queued-success");
+        using var actor = new SaveActor(f, characterDatabase: database);
+        await actor.Load();
+        var map = RecordingDispatchProxy<IBaseMap>.Create(out var mapProxy);
+        actor.Set(nameof(IPlayer.Map), map);
+        var players = RecordingDispatchProxy<IPlayerManager>.Create(out var registry);
+        registry.SetMethodReturn(nameof(IPlayerManager.GetPlayer), actor.Player);
+        var publicEvent = CreateEvent(players, map, objectiveId, 501);
+        publicEvent.JoinEvent(actor.Player, EventTeam.PublicTeam);
+
+        var rejectedType = outcome == "state" ? typeof(ServerQuestStateChange) : typeof(ServerQuestObjectiveUpdate);
+        var attempts = new List<Type>();
+        var accepted = new List<Type>();
+        int rejections = 0;
+        var replacementQueue = new NexusForever.Shared.Game.Events.EventQueue();
+        f.Source.SessionProxy.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is not (ServerQuestObjectiveUpdate or ServerQuestStateChange or ServerQuestObjectiveWorldLocation))
+                return null;
+
+            var type = args[0].GetType();
+            attempts.Add(type);
+            if (type == rejectedType && (rejections == 0 || outcome == "persistent"))
+            {
+                rejections++;
+                if (outcome == "replaced-queue")
+                    f.Source.SessionProxy.SetProperty(nameof(IWorldSession.Events), replacementQueue);
+                throw new IOException("Owned public-event quest packet rejection.");
+            }
+            accepted.Add(type);
+            return null;
+        });
+
+        publicEvent.UpdateObjective(objectiveId, 1);
+        Assert.True(publicEvent.IsFinalised);
+        Assert.Empty(attempts);
+        actor.StartSave();
+        await actor.Drain();
+
+        Assert.Equal(1, database.Attempts);
+        Assert.Single(mapProxy.GetInvocations(nameof(IBaseMap.OnPublicEventFinish)));
+        using var read = f.Context();
+        Assert.Equal(2u, read.CharacterQuestObjective.Single().Progress);
+        Assert.Equal((byte)QuestState.Achieved, read.CharacterQuest.Single().State);
+        if (outcome is "persistent" or "replaced-queue")
+        {
+            Assert.Equal(outcome == "persistent" ? new[] { rejectedType, rejectedType } : [rejectedType], attempts);
+            Assert.Empty(accepted);
+            Assert.False(replacementQueue.PendingEvents);
+            return;
+        }
+
+        Type[] expected = [typeof(ServerQuestObjectiveUpdate), typeof(ServerQuestStateChange), typeof(ServerQuestObjectiveWorldLocation)];
+        Assert.Equal(expected, accepted);
+        Assert.Equal(outcome == "state" ? [expected[0], expected[1], expected[1], expected[2]]
+            : new[] { expected[0], expected[0], expected[1], expected[2] }, attempts);
+    }
+
     private sealed class PublicEventSaveDatabase(SaveFixture fixture, string outcome) : CharacterDatabase
     {
         internal int Attempts { get; private set; }
