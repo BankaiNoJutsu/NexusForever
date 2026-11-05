@@ -496,8 +496,13 @@ namespace NexusForever.Game.Entity
 
         public bool RemoveProc(ISpellProcInstance instance)
         {
+            return IsCurrentProc(instance) && procStates.Remove(instance.EffectId);
+        }
+
+        internal bool IsCurrentProc(ISpellProcInstance instance)
+        {
             return instance != null && procStates.TryGetValue(instance.EffectId, out ProcState current)
-                && ReferenceEquals(current, instance) && procStates.Remove(instance.EffectId);
+                && ReferenceEquals(current, instance);
         }
 
         public IReadOnlyCollection<ProcRegistrationSnapshot> CreateProcRegistrationSnapshot()
@@ -566,7 +571,7 @@ namespace NexusForever.Game.Entity
 
         private void TryDispatchProc(uint effectId, ProcState state, string eventName, string phase, uint? observedTriggerEvent, IUnitEntity source, IUnitEntity target)
         {
-            if (!observedTriggerEvent.HasValue || observedTriggerEvent.Value != state.TriggerEvent)
+            if (observedTriggerEvent != state.TriggerEvent || !IsCurrentProc(state))
                 return;
 
             ProcDispatchEvidenceBoundarySnapshot boundary = ProcDispatchEvidenceBoundary.Describe(state.TriggerEvent, state.TargetData);
@@ -659,7 +664,7 @@ namespace NexusForever.Game.Entity
         private ISpellParameters CreateProcSpellParameters(ProcState state, IUnitEntity target)
         {
             ISpellInfo procHolderSpellInfo = ResolveSpellInfo(state.Spell4Id);
-            return new SpellParameters
+            return new ProcTriggeredSpellParameters(state)
             {
                 ParentSpellInfo        = procHolderSpellInfo,
                 RootSpellInfo          = procHolderSpellInfo,
@@ -2160,6 +2165,13 @@ namespace NexusForever.Game.Entity
             }
 
             var spell = new Spell.Spell(this, parameters, prerequisiteManagerResolver?.Invoke(), GetGlobalSpellManager(), GetScriptManager(), GetGameTableManager());
+            // Spell construction loads scripts before dispatching action-cast procs.
+            if (parameters is ProcTriggeredSpellParameters proc && !IsCurrentProc(proc.Registration))
+            {
+                spell.Dispose();
+                return CastResult.SpellRemoved;
+            }
+
             ProbeProcEvent("action-cast-any", ProcTriggerEventCandidate.ActionCastAny, this, ResolveProcProbePrimaryTarget(parameters), spell, null, null, "before-cast");
             CastResult castResult = spell.Cast();
             if (castResult != CastResult.Ok)

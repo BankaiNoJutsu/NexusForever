@@ -189,6 +189,21 @@ scoped cases passed in 3 seconds with the updated Game DLL. Local baseline
 and scoped verification are under
 `artifacts/continuation-20261105/proc-dispatch-result/`.
 
+### Triggered cast admission
+
+5 November 2026. A triggered spell carries the registration that dispatched
+it. Spell setup checks that identity before firing action-cast procs, and
+admission checks it again after cast validation. If a script or nested cast
+replaces the registration, the retired cast stops without sending a client
+failure. The replacement can trigger on a later event. A spell that has
+already been admitted keeps its existing lifetime when the proc is removed.
+
+Both baseline regressions admitted the retired cast. The owning build took
+30 seconds with zero warnings or errors. All 225 scoped combat, proc, AMP and
+cast admission tests passed in 3 seconds on the matching Game DLL. Evidence is
+under `artifacts/continuation-20261105/proc-trigger-admission/`. Automatic proc
+AMP application and retail rules for already admitted child effects remain open.
+
 ## Original reconciliation
 
 2026-10-29. Fork: `legacy-di-storefront-hardening`.

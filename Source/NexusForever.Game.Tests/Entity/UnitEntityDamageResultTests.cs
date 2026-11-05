@@ -265,6 +265,57 @@ public class UnitEntityDamageResultTests
             nestedProc => Assert.Equal(3d, nestedProc.CooldownRemainingSeconds));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ProbeProcEvent_OnlyTheCurrentRegistrationCanAdmitItsTriggeredCast(bool duringNestedCast)
+    {
+        TestUnitEntity unit = new(CreateScaleMovementManager(out _));
+        unit.SetIdentityForTest(guid: 1001u, position: Vector3.Zero);
+        unit.SetHealthForTest(maxHealth: 1000u, health: 1000u);
+
+        IGameTableManager tables = CreateOverdriveSpellGameTableManager();
+        var spells = new GlobalSpellManager(tables);
+        spells.Initialise();
+        IScriptManager scripts = RecordingDispatchProxy<IScriptManager>.Create(out var scriptProxy);
+        IScriptCollection collection = RecordingDispatchProxy<IScriptCollection>.Create(out _);
+        unit.InitialiseSpellRuntimeForTest(spells, tables, scripts);
+        ISpellProcInstance original = RegisterProc();
+        ISpellProcInstance replacement = null;
+        unit.AddProc(2u, 46867u, 11u, ProcTriggerEventCandidate.ActionCastAny, 42908u, 1f, 9u, 3000u, 1u, 0u, 0u, 0u, 0u);
+        uint replacementSpell = duringNestedCast ? 42908u : 46867u;
+        scriptProxy.SetMethodHandler(nameof(IScriptManager.InitialiseOwnedScripts), args =>
+        {
+            if ((uint)args[1] == replacementSpell && replacement == null)
+                replacement = RegisterProc();
+            return collection;
+        });
+
+        FireKillProc();
+
+        Assert.NotNull(replacement);
+        Assert.NotSame(original, replacement);
+        Assert.Null(unit.GetActiveSpell(spell => spell.Parameters.SpellInfo.Entry.Id == 46867u));
+        Assert.Equal(duringNestedCast, unit.GetActiveSpell(spell => spell.Parameters.SpellInfo.Entry.Id == 42908u) != null);
+        Assert.Collection(unit.CreateProcRegistrationSnapshot(),
+            proc => Assert.Equal(0d, proc.CooldownRemainingSeconds),
+            nested => Assert.Equal(duringNestedCast ? 3d : 0d, nested.CooldownRemainingSeconds));
+
+        FireKillProc();
+
+        ISpell child = unit.GetActiveSpell(spell => spell.Parameters.SpellInfo.Entry.Id == 46867u);
+        Assert.NotNull(child);
+        Assert.Equal(1d, unit.CreateProcRegistrationSnapshot().Single(proc => proc.EffectId == 1u).CooldownRemainingSeconds);
+        Assert.True(unit.RemoveProc(replacement));
+        Assert.Same(child, unit.GetActiveSpell(spell => spell.Parameters.SpellInfo.Entry.Id == 46867u));
+
+        ISpellProcInstance RegisterProc() => unit.AddProc(1u, 42908u, 10u, ProcTriggerEventCandidate.KillTarget,
+            46867u, 1f, 9u, 1000u, 1u, 0u, 0u, 0u, 0u);
+
+        void FireKillProc() => unit.ProbeProcEvent("kill-target", ProcTriggerEventCandidate.KillTarget,
+            unit, null, null, null, null, "test");
+    }
+
     [Fact]
     public void Update_DoesNotRegenerateHealthWhileInCombat()
     {

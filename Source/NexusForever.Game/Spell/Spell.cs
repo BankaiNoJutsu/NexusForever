@@ -154,12 +154,18 @@ namespace NexusForever.Game.Spell
             log.Trace($"Spell {Parameters.SpellInfo.Entry.Id} has started initating.");
 
             CastResult result = CheckCast();
-            if (result == CastResult.Ok && Parameters is RapidTransportSpellParameters transport)
+            // Action procs and cast checks can retire the originating registration.
+            bool retiredProc = Parameters is ProcTriggeredSpellParameters proc
+                && (Caster is not UnitEntity holder || !holder.IsCurrentProc(proc.Registration));
+            if (retiredProc)
+                result = CastResult.SpellRemoved;
+            else if (result == CastResult.Ok && Parameters is RapidTransportSpellParameters transport)
                 result = TryConsumeRapidTransportFare(transport.Fare);
             if (result != CastResult.Ok)
             {
                 SpellRuntimeEvidenceCollector.RecordCastAttempt(this, result);
-                SendSpellCastResult(result);
+                if (!retiredProc)
+                    SendSpellCastResult(result);
                 status = SpellStatus.Finished;
                 SpellRuntimeEvidenceCollector.FinalizeAndExport(this, "cast-blocked");
                 return result;

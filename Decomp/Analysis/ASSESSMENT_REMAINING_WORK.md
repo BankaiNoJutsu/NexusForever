@@ -295,7 +295,10 @@ and casting IDs. Proc and mixed AMP ownership and row evidence remain open.
 keeps the currently installed proc when an earlier cast ends.
 [Triggered cast cooldown](AMP_UPSTREAM_RECONCILIATION.md#triggered-cast-cooldown)
 starts from that proc's own cast result even when a nested cast also succeeds.
-Automatic proc AMP application and trigger-child lifetime remain open.
+[Triggered cast admission](AMP_UPSTREAM_RECONCILIATION.md#triggered-cast-admission)
+rejects a cast whose registration is replaced during script setup or nested
+dispatch. Automatic proc AMP application and retail rules for already admitted
+child effects remain open.
 
 [Confirmed Challenge medal and completion results](CHARACTER_CHALLENGE_LIVE_PRODUCERS.md#confirmed-medal-and-completion-results)
 publish after the original Character or Contract transaction confirms.

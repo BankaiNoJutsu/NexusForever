@@ -1,4 +1,5 @@
 ﻿using NexusForever.Game.Abstract.Spell;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Network.World.Entity;
 
 namespace NexusForever.Game.Spell
@@ -32,5 +33,10 @@ namespace NexusForever.Game.Spell
     public sealed class RapidTransportSpellParameters(uint fare) : SpellParameters
     {
         public uint Fare { get; } = fare;
+    }
+
+    internal sealed class ProcTriggeredSpellParameters(ISpellProcInstance registration) : SpellParameters
+    {
+        internal ISpellProcInstance Registration { get; } = registration;
     }
 }
