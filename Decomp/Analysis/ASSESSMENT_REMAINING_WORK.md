@@ -69,8 +69,9 @@ failure path. [Committed quest notices](../../CURRENT_STATUS.md#committed-public
 now wait for Character settlement while the map event finishes independently.
 [Queued World-save recovery](../../CURRENT_STATUS.md#public-event-world-save-recovery)
 uses a receipt to confirm commit or retry the original frozen save once.
-Configured-provider, deployed delivery, and retail reward qualification remain open.
-Retail reward tiers and client presentation remain open.
+The [configured MySQL gate](DESTINATION_PROVIDER_QUALIFICATION.md#public-event-quest-recovery)
+covers commit, retry, lost acknowledgment, SQL rejection and session replacement.
+Deployed delivery, restart and retail reward tiers remain open.
 
 [Instance transfer retries](../../CURRENT_STATUS.md#instance-transfer-retries)
 preserve queued transfers waiting on an unload. The follow-up

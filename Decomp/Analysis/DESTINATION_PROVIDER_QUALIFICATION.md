@@ -1,5 +1,8 @@
 # Destination configured-provider qualification
 
+[Public event quest recovery](#public-event-quest-recovery) covers the queued
+World Character save on migrated MySQL 8.4.13 schemas.
+
 [Resource conversion settlement](#resource-conversion-settlement) covers
 receipt-backed item, reputation and wallet conversions on migrated MySQL
 8.4.13 Character schemas.
@@ -40,6 +43,24 @@ The [portable report](coverage/marketplace-mysql-concurrency-20261103.json) bind
 unchanged Source/DLLs and all44 outcomes. Owned workloads are stopped. No full
 suite was run. Other profiles, physical failures, other financial commands,
 broker/restart, deployment, native and retail qualification remain separate.
+
+### Public event quest recovery
+
+5 November 2026. Five queued World-save cases exercise real map event
+completion and the original Player's frozen Character save. The committed
+quest rows and receipt are verified before credit is published. A confirmed
+rollback retries the Character save once. A lost acknowledgment confirms
+the original commit through its receipt. Persistent SQL rejection and
+replacement of the session suppress personal quest notices.
+
+Each case used a disposable MySQL 8.4.13 Character schema with all 48
+migrations and the configured `MySqlRetryingExecutionStrategy`. The TLS
+control connection reported `REPEATABLE-READ`. Session delivery and Auth
+mutation use fixtures. Commit faults are injected and persistent rejection
+uses a MySQL trigger. The owning project built and 13 SQLite controls passed.
+The [portable result](coverage/public-event-quest-mysql-20261105.json) records
+the exact cases, binaries and owned shutdown. Physical connection loss,
+deployed delivery and restart, and retail reward tiers remain open.
 
 ### Resource conversion settlement
 

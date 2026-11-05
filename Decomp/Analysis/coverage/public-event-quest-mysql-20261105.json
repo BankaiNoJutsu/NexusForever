@@ -1,0 +1,93 @@
+{
+  "productionSourceCommit": "97a97a73cc0cb4e6951baaa1f21cf49d0e25309f",
+  "testFixture": {
+    "path": "Source/NexusForever.Game.Tests/PublicEvents/PublicEventCompletionOwnershipTests.cs",
+    "gitBlob": "e5babaf7d7992560fc0615d641c05bfa638200d7"
+  },
+  "engine": {
+    "version": "8.4.13",
+    "sha256": "7a976874ef3974d612081960b1c193c663b4434692b6257382352c587e367ad6",
+    "controlConnectionIsolation": "REPEATABLE-READ",
+    "tlsRequired": true
+  },
+  "assemblies": [
+    {
+      "file": "NexusForever.Database.Auth.dll",
+      "sha256": "d255668e20c11aeebbd6dddfbf105bced9794f6da9ec396dbda2ed2b514150d9"
+    },
+    {
+      "file": "NexusForever.Database.Character.dll",
+      "sha256": "37f0bdb56eaf0be2d9109b9a5da03f293c14b8c3355364813a7778de03d017ba"
+    },
+    {
+      "file": "NexusForever.Game.dll",
+      "sha256": "e1741026bc79f04b6d4561dcaaab73b9fcec19ebb5606de8892bf89bd7bb773d"
+    },
+    {
+      "file": "NexusForever.Game.Tests.dll",
+      "sha256": "27812aed24c34802f82c145f0cce404a3cd0d4d27a5242e4d4240dadc3257fbd"
+    },
+    {
+      "file": "NexusForever.WorldServer.dll",
+      "sha256": "e8c18767215edcc61a368ffc18b3362f3ad8f85770a3f320dc56843e244f50c2"
+    },
+    {
+      "file": "StorefrontWireValidate.dll",
+      "sha256": "e87b92e5e97c6f108a89d89ec247b622c036b025781092e96fd8dd4daf75874e"
+    }
+  ],
+  "strategy": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy",
+  "migrationsPerSchema": 48,
+  "startupToRunnerSeconds": 150.617,
+  "elapsedSeconds": 110.454,
+  "cases": [
+    {
+      "name": "PublicEventFinalityAndQuestCreditAreSeparateFromCharacterRollback(queued-success)",
+      "passed": true
+    },
+    {
+      "name": "PublicEventFinalityAndQuestCreditAreSeparateFromCharacterRollback(queued-retry)",
+      "passed": true
+    },
+    {
+      "name": "PublicEventFinalityAndQuestCreditAreSeparateFromCharacterRollback(queued-lost-ack)",
+      "passed": true
+    },
+    {
+      "name": "PublicEventFinalityAndQuestCreditAreSeparateFromCharacterRollback(queued-rollback)",
+      "passed": true
+    },
+    {
+      "name": "PublicEventFinalityAndQuestCreditAreSeparateFromCharacterRollback(queued-owner-replaced)",
+      "passed": true
+    }
+  ],
+  "sqliteControl": {
+    "passed": 13,
+    "failed": 0,
+    "trxSha256": "67c294bbb4e6bd7cbcba560a4bad347f7f87519a86f6e01253d49b32ec29b51c"
+  },
+  "ownedShutdown": {
+    "caseSchemasDropped": 5,
+    "processAbsent": true,
+    "listenerAbsent": true,
+    "runnerAndHelperAbsent": true,
+    "observedUtc": "2026-11-05T00:03:40.2124737Z"
+  },
+  "scope": [
+    "Real map event completion and Player World-save queue use configured MySQL Character storage with per-case schemas.",
+    "Session sends and Auth mutation use fixtures. Commit faults use interceptors. Persistent SQL rejection uses a disposable MySQL trigger.",
+    "Physical connection loss, deployed delivery and restart, native play and retail reward tiers remain open."
+  ],
+  "localArtifacts": {
+    "directory": "artifacts/continuation-20261105/public-event-quest-mysql",
+    "sha256": {
+      "sqlite.log": "3a151d0a04d78f5ff305399893e1702714e31a845eb4daa7c8e5d2c6ae10833f",
+      "provider/Program.cs": "57e11de11c83b72c579dba76113e2d2cc23e540a8308a5ad4530fa045ff1bb55",
+      "provider/Provider.csproj": "10b806000fc4254de1c1e333d688f93e38e6e29c677f9f3b0964dffe1d5683b5",
+      "provider/results.json": "ad033226c9853b0241c008007b46e06fc7b39be259b14c5c67eff4f5b0584dbc",
+      "provider/native-run-state.json": "e6daeafa76650c179ffc1fa27daf19552699b15ee91720a1a3ee4ceb00fb0083",
+      "shutdown-verification.json": "268e0ef79f69211cf6f220094cda42bebdadc690a5f30a989684b984533b3bbf"
+    }
+  }
+}

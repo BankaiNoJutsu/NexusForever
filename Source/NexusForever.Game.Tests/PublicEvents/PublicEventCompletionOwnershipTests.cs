@@ -30,6 +30,14 @@ namespace NexusForever.Game.Tests.PublicEvents;
 
 public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output)
 {
+    private readonly DbContextOptions<CharacterContext> options;
+
+    internal PublicEventCompletionOwnershipTests(ITestOutputHelper output, DbContextOptions<CharacterContext> options)
+        : this(output)
+    {
+        this.options = options;
+    }
+
     [Theory]
     [InlineData("current")]
     [InlineData("replacement")]
@@ -90,7 +98,7 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
     public async Task PublicEventFinalityAndQuestCreditAreSeparateFromCharacterRollback(string outcome)
     {
         const uint objectiveId = 201u;
-        using var f = new SaveFixture(null, new QuestObjectiveEntry
+        using var f = new SaveFixture(options, new QuestObjectiveEntry
         {
             Id = 90010, Type = (uint)QuestObjectiveType.CompletePublicEventObjective, Data = objectiveId, Count = 2
         });
@@ -110,9 +118,12 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
         publicEvent.JoinEvent(actor.Player, EventTeam.PublicTeam);
         if (reject)
             using (var setup = f.Context())
-                await setup.Database.ExecuteSqlRawAsync("""
+                await setup.Database.ExecuteSqlRawAsync(setup.Database.IsSqlite() ? """
                     CREATE TRIGGER reject_public_event_quest BEFORE UPDATE ON character_quest_objective
                     BEGIN SELECT RAISE(ABORT, 'owned public event quest write failure'); END
+                    """ : """
+                    CREATE TRIGGER reject_public_event_quest BEFORE UPDATE ON character_quest_objective
+                    FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'owned public event quest write failure'
                     """);
 
         IEnumerable<object> Packets() => f.Source.SessionProxy.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted))

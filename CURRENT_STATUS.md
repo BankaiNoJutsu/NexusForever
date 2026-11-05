@@ -22082,8 +22082,10 @@ The owning build and 230 scoped SQLite tests passed. After a diagnostic
 wording change, all 24 targeted public-event and resource-conversion cases
 passed again. The gate exercised committed progress and notices, rollback and
 retry, lost acknowledgment, persistent SQL rejection, and owner replacement.
-Specialized settlement still owns its existing receipt. Configured MySQL,
-deployed client delivery, and retail reward tiers remain open.
+Specialized settlement still owns its existing receipt. The
+[configured MySQL gate](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#public-event-quest-recovery)
+covers the five queued cases. Deployed client delivery, restart, and retail
+reward tiers remain open.
 Local results are under `artifacts/continuation-20261105/public-event-quest-save-retry/`.
 
 #### Public event contribution ownership
