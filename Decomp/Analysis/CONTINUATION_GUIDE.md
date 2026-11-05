@@ -1,5 +1,11 @@
 # Client Binary Decompile Continuation Guide
 
+[Confirmed pet-flair grants](PET_FLAIR_PROGRESSION.md) now use the real spell
+producer, frozen Character rows and original World unlock/initial-bit packets.
+Three baseline defects are fixed;16 new/all299 affected cases and both reviews
+pass with clean scoped builds. Broader cosmetic timing, consumption and external
+qualification remain open; F-026 stays partial. Continue independent gameplay.
+
 [Public bank rank settings](GUILD_BANK_RANK_SETTINGS.md) now use the mapped
 operations through the original guild snapshot/World recipients.22 new/346
 affected cases and both reviews pass; the rank alias and lost later ordinary

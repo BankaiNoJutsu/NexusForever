@@ -8,6 +8,18 @@ namespace NexusForever.Game.Entity
         // accept independently matching rows from different uncertain graphs.
         private static void StageCollections(Unit unit, Snapshot before, Snapshot desired, Snapshot previous)
         {
+            if (desired.Flairs != null)
+            {
+                var flairs = before.Flairs.ToDictionary(row => row.Id);
+                var previousFlairs = previous.Flairs.ToDictionary(row => row.Id);
+                if (flairs.Keys.Except(desired.Flairs.Select(row => row.Id)).Any()) throw new InvalidOperationException("Experience cannot delete unlocked pet flairs.");
+                foreach (Flair row in desired.Flairs)
+                {
+                    Flair old = flairs.GetValueOrDefault(row.Id);
+                    if (row == old && row == previousFlairs.GetValueOrDefault(row.Id)) continue;
+                    Write(unit, old == null ? null : Model(old), Model(row), [nameof(CharacterPetFlairModel.Id), nameof(CharacterPetFlairModel.PetFlairId)], []);
+                }
+            }
             if (desired.Datacubes != null)
             {
                 var cubes = before.Datacubes.ToDictionary(row => (row.Type, row.Id));
@@ -71,5 +83,6 @@ namespace NexusForever.Game.Entity
         private static CharacterGalacticArchiveModel Model(ArchiveState row) => new() { Id = row.Owner, ArchiveArticleId = row.Id, UnlockedFlags = row.Unlocked, ViewedFlags = row.Viewed };
         private static CharacterZonemapHexgroupModel Model(ExploredHexgroup row) => new() { Id = row.Owner, ZoneMap = row.Zone, HexGroup = row.Group };
         private static CharacterReputation Model(ReputationState row) => new() { Id = row.Owner, FactionId = row.Faction, Amount = row.Amount };
+        private static CharacterPetFlairModel Model(Flair row) => new() { Id = row.Owner, PetFlairId = row.Id };
     }
 }

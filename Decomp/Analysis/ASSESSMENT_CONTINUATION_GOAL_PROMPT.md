@@ -1,6 +1,6 @@
 # Assessment continuation Goal prompt
 
-Updated 5 November 2026 with verified creation/LAS milestones and bank contracts,
+Updated 5 November 2026 with verified pet-flair/creation/LAS milestones and bank contracts,
 remaining implementation/evidence priorities and current REA boundary. Retains
 roadmap-driven execution, scoped-only validation and the existing main-thread
 regular commit/push policy.
@@ -76,6 +76,15 @@ Verified continuation status - 5 November 2026
   resumption as directed below; do not count unchanged PRs as new implementation.
 
 Next actionable outcomes and remaining gates
+- The later Decomp/Analysis/PET_FLAIR_PROGRESSION.md milestone completes the
+  real spell-effect flair grant's frozen Character rows and confirmed original
+  World unlock/initial-bit publication. Three baseline failures are fixed;
+  16 new/all299 affected cases, clean owning/test builds and both reviews pass.
+  Do not repeat this completed Source slice. F-026 remains partial; broader
+  cosmetic timing, public consumption settlement, physical restart, providers,
+  actual tables, sockets/deployment and native/retail remain open. Continue the
+  wider actionable gameplay/progression queue. Concurrent duel work is separately
+  scoped and must be preserved.
 - Community credit creation now has the later verified result in
   Decomp/Analysis/COMMUNITY_CREATION_FINANCE.md: the real public credit fee,
   guild/membership/affiliation and full residence/plot graph settle together

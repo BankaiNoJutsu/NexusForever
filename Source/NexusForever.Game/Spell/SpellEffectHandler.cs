@@ -3043,7 +3043,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            if (info.Entry.DataBits00 == 0u)
+            if (info.Entry.DataBits00 == 0u || info.Entry.DataBits00 > PetCustomisationManager.MaxWireFlairId)
             {
                 SpellEffectDiagnostics.TracePlayerCollection(spell, target, "unlock-pet-flair", player.Guid, info.Entry.DataBits00, 0u, false, "missing-pet-flair");
                 return;

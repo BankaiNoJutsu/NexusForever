@@ -1,5 +1,12 @@
 # Continue on another machine
 
+Latest pet progression: [confirmed flair grants](Decomp/Analysis/PET_FLAIR_PROGRESSION.md)
+bind the real spell effect to the frozen Character graph and original World
+unlock/initial-bit publication. Three baseline defects are fixed;16 new/all299
+affected cases, clean owning/test builds and both review axes pass. F-026 stays
+partial; broader cosmetic timing, consumption, provider/restart/native/retail
+qualification remain open. Concurrent duel work is separately scoped.
+
 Latest bank implementation: [public rank settings](Decomp/Analysis/GUILD_BANK_RANK_SETTINGS.md)
 persist operations23/24/30 through the original guild owner with frozen World
 readback/cursors.22 new/346 affected cases and both reviews pass. The rank256

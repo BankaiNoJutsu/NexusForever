@@ -13,7 +13,7 @@ using NexusForever.Network.World.Message.Model.Pet;
 
 namespace NexusForever.Game.Entity
 {
-    public class PetCustomisationManager : IPetCustomisationManager
+    public partial class PetCustomisationManager : IPetCustomisationManager
     {
         public const byte MaxCustomisationFlairs = 4;
 
@@ -29,6 +29,14 @@ namespace NexusForever.Game.Entity
         private readonly Dictionary<uint/*petFlairId*/, IPetFlair> petFlairs = new();
         private readonly Dictionary<ulong/*hash*/, IPetCustomisation> petCustomisations = new();
         internal ExperiencePersistence.Pet[] LoadedExperiencePets { get; }
+        internal ExperiencePersistence.Flair[] LoadedExperienceFlairs { get; }
+        internal ExperiencePersistence.Flair[] CaptureExperienceFlairs()
+        {
+            if (player.CharacterId != PetCharacter || LoadedExperienceFlairs.Any(row => row.Owner != PetCharacter)
+                || petFlairs.Any(row => row.Value.Owner != PetCharacter || row.Key != row.Value.Entry.Id))
+                throw new InvalidOperationException("Pet flairs changed their Character owner or identity.");
+            return LoadedExperienceFlairs.Concat(petFlairs.Keys.Select(id => new ExperiencePersistence.Flair(PetCharacter, id))).Distinct().OrderBy(row => row.Id).ToArray();
+        }
         internal ulong PetCharacter { get; }
         internal string PetDatabase { get; }
         internal ExperiencePersistence.Pet[] CaptureExperiencePets()
@@ -36,11 +44,6 @@ namespace NexusForever.Game.Entity
             if (player.CharacterId != PetCharacter || petCustomisations.Values.Any(row => row.Owner != PetCharacter)) throw new InvalidOperationException("Pets changed their Character owner.");
             return petCustomisations.Values.Select(row => ((PetCustomisation)row).CaptureExperiencePet()).OrderBy(row => row.Type).ThenBy(row => row.Id).ToArray();
         }
-        internal void SaveFlairs(CharacterContext context)
-        {
-            foreach (IPetFlair flair in petFlairs.Values) flair.Save(context);
-        }
-
         /// <summary>
         /// Create a new <see cref="IPetCustomisationManager"/> from existing <see cref="CharacterModel"/> database model.
         /// </summary>
@@ -57,6 +60,7 @@ namespace NexusForever.Game.Entity
             this.prerequisiteManager = prerequisiteManager;
             PetCharacter = model.Id; PetDatabase = CharacterLoadOrigin.Get(model)?.Database;
             LoadedExperiencePets = model.PetCustomisation.Select(ExperiencePersistence.FromModel).OrderBy(row => row.Type).ThenBy(row => row.Id).ToArray();
+            LoadedExperienceFlairs = model.PetFlair.Select(ExperiencePersistence.FromModel).OrderBy(row => row.Id).ToArray();
 
             foreach (CharacterPetFlairModel flairModel in model.PetFlair)
             {
@@ -72,11 +76,12 @@ namespace NexusForever.Game.Entity
                 var customisation = new PetCustomisation(customisationModel, GetGameTableManager().PetFlair) { CharacterSaveOwner = TrySaveExperience };
                 petCustomisations.Add(PetCustomisationHash(customisation.Type, customisation.ObjectId), customisation);
             }
+            InitialiseFlairPublication();
         }
 
         public void Save(CharacterContext context)
         {
-            if (TrySaveExperience(context)) { SaveFlairs(context); return; }
+            if (TrySaveExperience(context)) return;
             foreach (IPetFlair flair in petFlairs.Values)
                 flair.Save(context);
 
@@ -98,7 +103,7 @@ namespace NexusForever.Game.Entity
         public void UnlockFlair(ushort id)
         {
             PetFlairEntry entry = GetGameTableManager().PetFlair?.GetEntry(id);
-            if (entry == null)
+            if (entry == null || id > MaxWireFlairId || entry.UnlockBitIndex == null || entry.UnlockBitIndex.Any(bit => bit >= FlairBitCount))
                 throw new ArgumentOutOfRangeException();
 
             if (petFlairs.ContainsKey(id))
@@ -108,6 +113,11 @@ namespace NexusForever.Game.Entity
                 return;
 
             petFlairs.Add(id, new PetFlair(player.CharacterId, entry));
+
+            if (player is Player)
+            {
+                QueueFlairPublication(id, !player.IsLoading); player.RequestSave(); return;
+            }
 
             if (!player.IsLoading)
             {
@@ -231,6 +241,7 @@ namespace NexusForever.Game.Entity
 
         public void SendInitialPackets()
         {
+            if (player is Player) { QueueInitialFlairPublication(); return; }
             var petCustomisationList = new ServerPetCustomisationList
             {
                 PetCustomisations = petCustomisations.Values

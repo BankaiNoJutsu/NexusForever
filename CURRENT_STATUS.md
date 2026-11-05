@@ -1,5 +1,11 @@
 # NexusForever Feature Restoration - Current Status
 
+[Confirmed pet-flair progression](Decomp/Analysis/PET_FLAIR_PROGRESSION.md)
+now binds the real spell grant to frozen Character rows and original World
+unlock/initial ownership packets. Three baseline defects are fixed;16 new/all299
+affected cases and both reviews pass with clean scoped builds. F-026 stays
+partial; broader cosmetic timing, consumption and external qualification remain.
+
 [Public bank rank settings](Decomp/Analysis/GUILD_BANK_RANK_SETTINGS.md) now
 persist permission/money/repair settings and publish frozen rank readback on
 each original World recipient.22 new/346 affected cases and both reviews pass,
@@ -23544,6 +23550,8 @@ null-table guard and tests for 15-bit id masking/objective lookup, but no
 producer or reverse selector.
 
 ### F-026 - Items / Unlocks / Costumes / Pets / Titles - PARTIAL
+
+See [confirmed pet-flair progression](Decomp/Analysis/PET_FLAIR_PROGRESSION.md) for the later grant/publication result and remaining gates.
 
 #### Committed vendor repairs
 

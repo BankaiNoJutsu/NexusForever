@@ -20,6 +20,7 @@ namespace NexusForever.Game.Entity
         internal sealed record Amp(ulong Owner, byte Spec, ushort Id);
         internal sealed record Spellbook(byte Active, byte Bonus, LearnedSpell[] Learned, Shortcut[] Shortcuts, Amp[] Amps, ushort AmpPower);
         internal sealed record Pet(ulong Owner, byte Type, uint Id, string Name, ulong Flairs);
+        internal sealed record Flair(ulong Owner, uint Id);
         internal sealed record Achievement(ulong Owner, ushort Id, uint Progress, uint Credited, DateTime? Completed);
         internal sealed record DatacubeState(ulong Owner, byte Type, ushort Id, uint Progress);
         internal sealed record ArchiveState(ulong Owner, uint Id, uint Unlocked, uint Viewed);
@@ -28,7 +29,7 @@ namespace NexusForever.Game.Entity
         internal sealed record Snapshot(Experience Experience, Selection Selection, PathState[] Paths, Mission[] Missions,
             Spellbook Spells = null, Pet[] Pets = null, Achievement[] Achievements = null,
             DatacubeState[] Datacubes = null, ArchiveState[] Articles = null,
-            ExploredHexgroup[] MapHexgroups = null, ReputationState[] Reputations = null, long ReputationSequence = 0, long ActionSetSequence = 0);
+            ExploredHexgroup[] MapHexgroups = null, ReputationState[] Reputations = null, long ReputationSequence = 0, long ActionSetSequence = 0, Flair[] Flairs = null);
         private sealed record Frozen(object Token, string Database, Snapshot State);
         private sealed class Unit(CharacterContext context, string database, object token)
         {
@@ -56,9 +57,10 @@ namespace NexusForever.Game.Entity
         private readonly Action<ushort> acknowledgeAmpPower;
         private readonly Action<PathState[], Mission[]> acknowledgePath;
         private readonly Action<Spellbook, long> acknowledgeActionSets;
+        private readonly Action<Flair[]> acknowledgeFlairs;
         private readonly Action publicationReady;
         private readonly RealmFirstPersistence realmFirst;
-        private readonly bool ownsExperience, ownsPaths, ownsSpells, ownsPets, ownsAchievements, ownsDatacubes, ownsArchive, ownsMaps, ownsReputations;
+        private readonly bool ownsExperience, ownsPaths, ownsSpells, ownsPets, ownsAchievements, ownsDatacubes, ownsArchive, ownsMaps, ownsReputations, ownsFlairs;
         private string database;
         private Snapshot baseline;
         private Snapshot baselineIntent;
@@ -70,7 +72,7 @@ namespace NexusForever.Game.Entity
             RealmFirstPersistence realmFirst = null, Action<ArchiveState[]> acknowledgeArchive = null, Action publicationReady = null,
             Action<DatacubeState[]> acknowledgeDatacubes = null, Action<ExploredHexgroup[]> acknowledgeExploration = null,
             Action<ReputationState[], long> acknowledgeReputation = null, Action<ushort> acknowledgeAmpPower = null,
-            Action<PathState[], Mission[]> acknowledgePath = null, Action<Spellbook, long> acknowledgeActionSets = null)
+            Action<PathState[], Mission[]> acknowledgePath = null, Action<Spellbook, long> acknowledgeActionSets = null, Action<Flair[]> acknowledgeFlairs = null)
         {
             this.character = character; this.baseline = baseline; this.current = current; this.database = database;
             this.acknowledgeAchievements = acknowledgeAchievements;
@@ -82,11 +84,13 @@ namespace NexusForever.Game.Entity
             this.acknowledgeAmpPower = acknowledgeAmpPower;
             this.acknowledgePath = acknowledgePath;
             this.acknowledgeActionSets = acknowledgeActionSets;
+            this.acknowledgeFlairs = acknowledgeFlairs;
             baselineIntent = baseline;
             ownsExperience = baseline.Experience != null; ownsPaths = baseline.Selection != null;
             ownsSpells = baseline.Spells != null; ownsPets = baseline.Pets != null; ownsAchievements = baseline.Achievements != null;
             ownsDatacubes = baseline.Datacubes != null; ownsArchive = baseline.Articles != null;
             ownsMaps = baseline.MapHexgroups != null; ownsReputations = baseline.Reputations != null;
+            ownsFlairs = baseline.Flairs != null;
         }
         internal static Experience FromExperience(CharacterModel row) => new(row.TotalXp, row.RestBonusXp, row.Level);
         internal static Selection FromSelection(CharacterModel row) => new(row.ActivePath, row.PathActivatedTimestamp);
@@ -96,6 +100,7 @@ namespace NexusForever.Game.Entity
         internal static Shortcut FromModel(CharacterActionSetShortcutModel row) => new(row.Id, row.SpecIndex, row.Location, row.ShortcutType, row.ObjectId, row.Tier);
         internal static Amp FromModel(CharacterActionSetAmpModel row) => new(row.Id, row.SpecIndex, row.AmpId);
         internal static Pet FromModel(CharacterPetCustomisationModel row) => new(row.Id, row.Type, row.ObjectId, row.Name, row.FlairIdMask);
+        internal static Flair FromModel(CharacterPetFlairModel row) => new(row.Id, row.PetFlairId);
         internal static Achievement FromModel(CharacterAchievementModel row) => new(row.Id, row.AchievementId, row.ProgressState, row.CreditedChecklistMask, row.DateCompleted);
         internal static DatacubeState FromModel(CharacterDatacubeModel row) => new(row.Id, row.Type, row.Datacube, row.Progress);
         internal static ArchiveState FromModel(CharacterGalacticArchiveModel row) => new(row.Id, row.ArchiveArticleId, row.UnlockedFlags, row.ViewedFlags);
@@ -112,7 +117,7 @@ namespace NexusForever.Game.Entity
             && left.Paths.SequenceEqual(right.Paths) && left.Missions.SequenceEqual(right.Missions)
             && SameSpells(left.Spells, right.Spells) && SameRows(left.Pets, right.Pets) && SameRows(left.Achievements, right.Achievements)
             && SameRows(left.Datacubes, right.Datacubes) && SameRows(left.Articles, right.Articles)
-            && SameRows(left.MapHexgroups, right.MapHexgroups) && SameRows(left.Reputations, right.Reputations);
+            && SameRows(left.MapHexgroups, right.MapHexgroups) && SameRows(left.Reputations, right.Reputations) && SameRows(left.Flairs, right.Flairs);
         internal Action<CharacterContext> CaptureNormal(object token, string route)
         {
             lock (gate)
@@ -184,7 +189,8 @@ namespace NexusForever.Game.Entity
                 ownsDatacubes ? context.CharacterDatacube.AsNoTracking().Where(value => value.Id == character).OrderBy(value => value.Type).ThenBy(value => value.Datacube).AsEnumerable().Select(FromModel).ToArray() : null,
                 ownsArchive ? context.CharacterGalacticArchive.AsNoTracking().Where(value => value.Id == character).OrderBy(value => value.ArchiveArticleId).AsEnumerable().Select(FromModel).ToArray() : null,
                 ownsMaps ? context.CharacterZonemapHexgroup.AsNoTracking().Where(value => value.Id == character).OrderBy(value => value.ZoneMap).ThenBy(value => value.HexGroup).AsEnumerable().Select(FromModel).ToArray() : null,
-                ownsReputations ? context.CharacterReputation.AsNoTracking().Where(value => value.Id == character).OrderBy(value => value.FactionId).AsEnumerable().Select(FromModel).ToArray() : null);
+                ownsReputations ? context.CharacterReputation.AsNoTracking().Where(value => value.Id == character).OrderBy(value => value.FactionId).AsEnumerable().Select(FromModel).ToArray() : null,
+                Flairs: ownsFlairs ? context.CharacterPetFlair.AsNoTracking().Where(value => value.Id == character).OrderBy(value => value.PetFlairId).AsEnumerable().Select(FromModel).ToArray() : null);
         }
         private Snapshot StoredTarget(CharacterContext context, Snapshot target)
         {
@@ -300,6 +306,7 @@ namespace NexusForever.Game.Entity
                         acknowledgeReputation?.Invoke(unit.Sql.Reputations ?? [], unit.FlushedIntent.ReputationSequence);
                         if (unit.Sql.Spells != null) acknowledgeAmpPower?.Invoke(unit.Sql.Spells.AmpPower);
                         if (unit.Sql.Spells != null) acknowledgeActionSets?.Invoke(unit.Sql.Spells, unit.FlushedIntent.ActionSetSequence);
+                        if (unit.Sql.Flairs != null) acknowledgeFlairs?.Invoke(unit.Sql.Flairs);
                         acknowledgePath?.Invoke(unit.Sql.Paths, unit.Sql.Missions);
                         baseline = unit.Sql; baselineIntent = unit.FlushedIntent; uncertain = null;
                         ready = true;

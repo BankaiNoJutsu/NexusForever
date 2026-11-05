@@ -1,5 +1,14 @@
 # Assessment follow-through goal
 
+[Confirmed pet-flair progression](PET_FLAIR_PROGRESSION.md) completes the real
+spell grant, frozen normal-save rows and confirmed original World unlock/initial
+bits. Three baseline defects are fixed;16 new/all299 affected cases, clean
+owning/test builds and both final review axes pass. F-026 remains partial;
+cosmetic timing, public
+consumption, actual tables/provider/restart/socket/native/retail remain open.
+Continue independent actionable gameplay/progression rather than repeating this
+completed grant slice.
+
 [Public bank rank settings](GUILD_BANK_RANK_SETTINGS.md) now route operations
 23/24/30 through the original guild save and confirmed World readback.22 new/
 346 affected cases and both final reviews pass. A reproduced full-width rank

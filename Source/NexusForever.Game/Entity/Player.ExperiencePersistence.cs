@@ -42,7 +42,7 @@ namespace NexusForever.Game.Entity
             string database = routes.SingleOrDefault();
             var baseline = new ExperiencePersistence.Snapshot(xp?.LoadedExperience, path?.LoadedSelection, path?.LoadedPaths ?? [], path?.LoadedMissions ?? [],
                 spells?.LoadedSpellbook, pets?.LoadedExperiencePets, achievements?.LoadedExperienceAchievements, cubes?.LoadedCollection, archive?.LoadedArchive,
-                maps?.LoadedExploration, reputation?.LoadedReputations);
+                maps?.LoadedExploration, reputation?.LoadedReputations, Flairs: pets?.LoadedExperienceFlairs);
             ExperiencePersistence.Snapshot Current()
             {
                 if (CharacterId != owner || !ReferenceEquals(XpManager as XpManager, xp) || !ReferenceEquals(PathManager as PathManager, path)
@@ -54,7 +54,7 @@ namespace NexusForever.Game.Entity
                 var standing = reputation?.CaptureReputations();
                 return new(xp?.CaptureExperience(), paths?.Selection, paths?.Paths ?? [], paths?.Missions ?? [],
                     spells?.CaptureSpellbook(), pets?.CaptureExperiencePets(), achievements?.CaptureExperienceAchievements(), cubes?.CaptureCollection(), archive?.CaptureArchive(),
-                    maps?.CaptureExploration(), standing?.Rows, standing?.Sequence ?? 0, spells?.ActionSetSequence ?? 0);
+                    maps?.CaptureExploration(), standing?.Rows, standing?.Sequence ?? 0, spells?.ActionSetSequence ?? 0, pets?.CaptureExperienceFlairs());
             }
             experienceXpOwner = xp; experiencePathOwner = path;
             experienceSpellOwner = spells; experiencePetOwner = pets; experienceAchievementOwner = achievements;
@@ -67,6 +67,7 @@ namespace NexusForever.Game.Entity
                 reputation?.NotifyPublicationReady();
                 spells?.NotifyAmpPowerPublicationReady();
                 spells?.NotifyActionSetPublicationReady();
+                pets?.NotifyFlairPublicationReady();
                 path?.NotifyPathPublicationReady();
                 try { achievements?.NotifyPublicationReady(); }
                 finally { archive?.NotifyPublicationReady(); }
@@ -75,8 +76,15 @@ namespace NexusForever.Game.Entity
                 achievements?.RealmFirst, archive == null ? null : archive.AcknowledgePublication, PublicationReady,
                 cubes == null ? null : cubes.AcknowledgePublication, maps == null ? null : maps.AcknowledgePublication,
                 reputation == null ? null : reputation.AcknowledgePublication, spells == null ? null : spells.AcknowledgeAmpPowerPublication,
-                path == null ? null : path.AcknowledgePathPublication, spells == null ? null : spells.AcknowledgeActionSetPublication);
+                path == null ? null : path.AcknowledgePathPublication, spells == null ? null : spells.AcknowledgeActionSetPublication,
+                pets == null ? null : pets.AcknowledgeFlairPublication);
         }
+        internal bool OwnsPetFlairPublication(PetCustomisationManager manager, Identity identity, IGameSession session)
+            => Identity?.Id == identity.Id && Identity.RealmId == identity.RealmId
+                && ReferenceEquals(PetCustomisationManager, manager) && ReferenceEquals(Session, session)
+                && (playerManager == null || ReferenceEquals(playerManager.GetPlayer(identity), this))
+                && session is IPlayerSession current && ReferenceEquals(current.Player, this)
+                && session is not NetworkSession { IsDisconnecting: true };
         internal bool OwnsDatacubePublication(DatacubeManager manager, Identity identity, IGameSession session)
             => Identity?.Id == identity.Id && Identity.RealmId == identity.RealmId
                 && ReferenceEquals(DatacubeManager, manager) && ReferenceEquals(Session, session)

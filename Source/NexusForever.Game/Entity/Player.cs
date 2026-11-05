@@ -1339,7 +1339,7 @@ namespace NexusForever.Game.Entity
             if (snapshot == null) SaveExperience(context); else snapshot.SaveExperience(context);
             if (snapshot == null) TitleManager.Save(context); else snapshot.SaveTitles(context);
             if (snapshot == null) CostumeManager.Save(context); else snapshot.SaveWardrobe(context);
-            if (experiencePetOwner == null) PetCustomisationManager.Save(context); else experiencePetOwner.SaveFlairs(context);
+            if (experiencePetOwner == null) PetCustomisationManager.Save(context);
             if (snapshot == null) KeybindingManager.Save(context); else snapshot.SaveKeybindings(context);
             if (experienceSpellOwner == null) SpellManager.Save(context);
             if (experienceDatacubeOwner == null) DatacubeManager.Save(context);

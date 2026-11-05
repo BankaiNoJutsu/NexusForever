@@ -1,0 +1,360 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-05T20:21:21.825023+00:00",
+  "milestone": "F-026 confirmed pet-flair grant progression",
+  "baseCommit": "e9f4f2c17cc3b6ca3bde000d4563730bbec83b44",
+  "observedHead": "e9f4f2c17cc3b6ca3bde000d4563730bbec83b44",
+  "branch": "legacy-di-storefront-hardening",
+  "qualification": "Source and synthetic-row disposable Character SQLite only; no provider/native/retail qualification",
+  "sources": [
+    {
+      "path": "Source/NexusForever.Game/Entity/ExperiencePersistence.cs",
+      "sha256": "e967fb4dd4ea82761871d61071d26709a016d4525b45843cab6527ab7c773fe4",
+      "gitBlob": "aff2ef77293622ef4c15f13a069b9be861ccb95e"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/ExperiencePersistence.Collections.cs",
+      "sha256": "2185ee77b654bd2b3b7350a1db0a196603ee104fccf2f8560b633b6002d24215",
+      "gitBlob": "e4d6e91ca5ef413ca4bab10853b69c12bbe77acf"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/Player.ExperiencePersistence.cs",
+      "sha256": "4825a0f3fadf544d5487fd0c128886b8877dd0266b966c6c82a55d8415100412",
+      "gitBlob": "470eee45cc0da0eb72add02b618fd5da1c2e121f"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/Player.cs",
+      "sha256": "acdc0759b33498b937ebf0657eb59cb92f206b9701adf72adb073662ceb858dc",
+      "gitBlob": "391fff8c61bd8284c083c5c6782948e8794fe032"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/PetCustomisationManager.cs",
+      "sha256": "804bb90a2ec79c43895477e273758d71153d5eb525519f2a251abfadafa1f875",
+      "gitBlob": "9c62bda2f2bd1d090a849a74f54a82021630bcdc"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/PetCustomisationManager.FlairPublication.cs",
+      "sha256": "aaed59b547adebd09613a79d2c1ba7920ddf0d782383b82d5479d27a39190496",
+      "gitBlob": "8cc9b7ef351db2353e358f0a29cf9f7c75683f70"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/PetFlair.cs",
+      "sha256": "bbc386a390b9bd2016f6cc14ff80729b00637c1a73ee8ed225db1779ebe9ee3d",
+      "gitBlob": "538cb7226405da02af67a7b600d28216593b9f7c"
+    },
+    {
+      "path": "Source/NexusForever.Game/Spell/SpellEffectHandler.cs",
+      "sha256": "735ea67a3604a71e19b12d0eba21af041ad9dfbcb13a96caa489cd055624431c",
+      "gitBlob": "5a7830e603aa49d129498c84d40c36864f296377"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Pet/PetFlairProgressionTests.cs",
+      "sha256": "3373294182245f64a079ff46e6e08c7ec7d40cf901c3da25f1ffcec96347a62f",
+      "gitBlob": "b7c149b7282c9b8c47425dc49b27d23a0d811121"
+    }
+  ],
+  "assemblies": [
+    {
+      "path": "Source/NexusForever.Game.Abstract/bin/Debug/net10.0/NexusForever.Game.Abstract.dll",
+      "sha256": "90296ea66c23b0966501dcaedc3a1a948535deb166660dc9c0bdeb01b8bbe99c"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Abstract.dll",
+      "sha256": "90296ea66c23b0966501dcaedc3a1a948535deb166660dc9c0bdeb01b8bbe99c"
+    },
+    {
+      "path": "Source/NexusForever.Game/bin/Debug/net10.0/NexusForever.Game.dll",
+      "sha256": "1d8965ca8886b29548b4f08adc260e960473be22b7cb6f298fac721ca4fa3576"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.dll",
+      "sha256": "1d8965ca8886b29548b4f08adc260e960473be22b7cb6f298fac721ca4fa3576"
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+      "sha256": "6ea737fdc4b216ababe147eed3b74d22df4dbea6e57fccf2e850f11d9e872bbe"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+      "sha256": "6ea737fdc4b216ababe147eed3b74d22df4dbea6e57fccf2e850f11d9e872bbe"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+      "sha256": "b01242b2544b4566e6e43bb9014422f23bfc5bfc1f308d942bcf8455ee1a708a"
+    }
+  ],
+  "baseline": {
+    "path": "artifacts/continuation-20261105/pet-flair-progression/baseline.trx",
+    "sha256": "aeb25c13f7287ef1be230da2cf8684bc32f5d6ae203bdd09690bacbf63055e02",
+    "counters": {
+      "total": 3,
+      "executed": 3,
+      "passed": 0,
+      "failed": 3,
+      "error": 0,
+      "timeout": 0,
+      "aborted": 0,
+      "inconclusive": 0,
+      "passedButRunAborted": 0,
+      "notRunnable": 0,
+      "notExecuted": 0,
+      "disconnected": 0,
+      "warning": 0,
+      "completed": 0,
+      "inProgress": 0,
+      "pending": 0
+    },
+    "groups": {
+      "PetFlairProgressionTests": {
+        "Failed": 3
+      }
+    },
+    "nonPassing": [
+      {
+        "name": "NexusForever.Game.Tests.Pet.PetFlairProgressionTests.RejectedSpellFlairSaveRetainsItsGrantForRetry",
+        "outcome": "Failed",
+        "message": "Assert.Single() Failure: The collection was empty"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Pet.PetFlairProgressionTests.FrozenNormalSaveDoesNotFlushAFlairGrantedDuringAuth",
+        "outcome": "Failed",
+        "message": "Assert.Equal() Failure: Collections differ\r\nExpected: [12]\r\nActual:   [12, 13]\r\n               \u2191 (pos 1)"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Pet.PetFlairProgressionTests.SpellFlairGrantDoesNotPublishBeforeCharacterConfirmation",
+        "outcome": "Failed",
+        "message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [ServerUnlockPetFlair { PetFlairId = 12 }]"
+      }
+    ]
+  },
+  "initialCandidate": {
+    "path": "artifacts/continuation-20261105/pet-flair-progression/candidate.trx",
+    "sha256": "bbcdaadbde014e56b3471f90ce42b4c75ea6a53b23202cfa2496a45e6cd60518",
+    "counters": {
+      "total": 3,
+      "executed": 3,
+      "passed": 3,
+      "failed": 0,
+      "error": 0,
+      "timeout": 0,
+      "aborted": 0,
+      "inconclusive": 0,
+      "passedButRunAborted": 0,
+      "notRunnable": 0,
+      "notExecuted": 0,
+      "disconnected": 0,
+      "warning": 0,
+      "completed": 0,
+      "inProgress": 0,
+      "pending": 0
+    },
+    "groups": {
+      "PetFlairProgressionTests": {
+        "Passed": 3
+      }
+    },
+    "nonPassing": []
+  },
+  "expandedCandidate": {
+    "path": "artifacts/continuation-20261105/pet-flair-progression/expanded.trx",
+    "sha256": "eab8ad7c0559816509d8873773c6186fb7632979e26997f3dfbfec5eb0a12aad",
+    "counters": {
+      "total": 16,
+      "executed": 16,
+      "passed": 16,
+      "failed": 0,
+      "error": 0,
+      "timeout": 0,
+      "aborted": 0,
+      "inconclusive": 0,
+      "passedButRunAborted": 0,
+      "notRunnable": 0,
+      "notExecuted": 0,
+      "disconnected": 0,
+      "warning": 0,
+      "completed": 0,
+      "inProgress": 0,
+      "pending": 0
+    },
+    "groups": {
+      "PetFlairProgressionTests": {
+        "Passed": 16
+      }
+    },
+    "nonPassing": []
+  },
+  "finalAffected": {
+    "path": "artifacts/continuation-20261105/pet-flair-progression/affected.trx",
+    "sha256": "a479ac5a2aa0150f51fe9aacc4e669397f09dce4cc0cfa509342af8f850b3fe9",
+    "counters": {
+      "total": 299,
+      "executed": 299,
+      "passed": 299,
+      "failed": 0,
+      "error": 0,
+      "timeout": 0,
+      "aborted": 0,
+      "inconclusive": 0,
+      "passedButRunAborted": 0,
+      "notRunnable": 0,
+      "notExecuted": 0,
+      "disconnected": 0,
+      "warning": 0,
+      "completed": 0,
+      "inProgress": 0,
+      "pending": 0
+    },
+    "groups": {
+      "GuildCreationFinanceTests": {
+        "Passed": 54
+      },
+      "PlayerExplorationPersistenceTests": {
+        "Passed": 32
+      },
+      "RewardNormalSaveSnapshotTests": {
+        "Passed": 55
+      },
+      "PlayerExperiencePersistenceTests": {
+        "Passed": 51
+      },
+      "PetFlairProgressionTests": {
+        "Passed": 16
+      },
+      "ArchivePublicationTests": {
+        "Passed": 18
+      },
+      "CharacterAtomicSaveTests": {
+        "Passed": 20
+      },
+      "ActionSetPublicationTests": {
+        "Passed": 16
+      },
+      "SpellCollectionEffectTests": {
+        "Passed": 23
+      },
+      "ClientPetCustomisationHandlerTests": {
+        "Passed": 3
+      },
+      "ClientPathScientistSetScannerNameHandlerTests": {
+        "Passed": 3
+      },
+      "PetCustomisationTests": {
+        "Passed": 5
+      },
+      "PetCustomisationManagerTests": {
+        "Passed": 3
+      }
+    },
+    "nonPassing": []
+  },
+  "fixtureDiagnostics": {
+    "result": {
+      "path": "artifacts/continuation-20261105/pet-flair-progression/fixture-diagnostics.trx",
+      "sha256": "1b4caceaa394ea1824de6346bd92558b66395270859471f2ba66730c2517b9db",
+      "counters": {
+        "total": 3,
+        "executed": 3,
+        "passed": 0,
+        "failed": 3,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      },
+      "groups": {
+        "PetFlairProgressionTests": {
+          "Failed": 3
+        }
+      },
+      "nonPassing": [
+        {
+          "name": "NexusForever.Game.Tests.Pet.PetFlairProgressionTests.SpellFlairGrantDoesNotPublishBeforeCharacterConfirmation",
+          "outcome": "Failed",
+          "message": "System.NullReferenceException : Object reference not set to an instance of an object."
+        },
+        {
+          "name": "NexusForever.Game.Tests.Pet.PetFlairProgressionTests.FrozenNormalSaveDoesNotFlushAFlairGrantedDuringAuth",
+          "outcome": "Failed",
+          "message": "System.NullReferenceException : Object reference not set to an instance of an object."
+        },
+        {
+          "name": "NexusForever.Game.Tests.Pet.PetFlairProgressionTests.RejectedSpellFlairSaveRetainsItsGrantForRetry",
+          "outcome": "Failed",
+          "message": "System.NullReferenceException : Object reference not set to an instance of an object."
+        }
+      ]
+    },
+    "explanation": "Initial spell fixture omitted trace SpellInfo/BaseInfo; these failures are not production negatives. Compilation logs also retain interface/enum and mask-buffer API corrections."
+  },
+  "builds": [
+    {
+      "path": "artifacts/continuation-20261105/pet-flair-progression/final-owning-build.log",
+      "sha256": "e3de7dcff2830a8959608bea897301c6e321878020425da7fdbd767be70df5a8"
+    },
+    {
+      "path": "artifacts/continuation-20261105/pet-flair-progression/final-test-build.log",
+      "sha256": "80d69b7489618085fbe58df6d25ae74b67b1dbb75c680cd66445752328876463"
+    }
+  ],
+  "testFilter": "FullyQualifiedName~PetFlairProgressionTests|FullyQualifiedName~PetCustomisationManagerTests|FullyQualifiedName~ClientPetCustomisationHandlerTests|FullyQualifiedName~PetCustomisationTests|FullyQualifiedName~ClientPathScientistSetScannerNameHandlerTests|FullyQualifiedName~SpellCollectionEffectTests|FullyQualifiedName~PlayerExperiencePersistenceTests|FullyQualifiedName~RewardNormalSaveSnapshotTests|FullyQualifiedName~CharacterAtomicSaveTests|FullyQualifiedName~PlayerExplorationPersistenceTests|FullyQualifiedName~ArchivePublicationTests|FullyQualifiedName~ActionSetPublicationTests|FullyQualifiedName~GuildCreationFinanceTests|FullyQualifiedName~CommunityCreationFinanceTests",
+  "review": {
+    "fixedBase": "e9f4f2c17cc3b6ca3bde000d4563730bbec83b44",
+    "standards": {
+      "findings": 0,
+      "path": "artifacts/continuation-20261105/pet-flair-progression/review-standards.txt",
+      "sha256": "e409593004fdd5dff241979557a462d8ad4d4cd3d1ab705f7701d28a1e60c60a"
+    },
+    "spec": {
+      "findings": 0,
+      "path": "artifacts/continuation-20261105/pet-flair-progression/review-spec.txt",
+      "sha256": "dac8bae66758c6588f45b215941fe9784655557c9f0669c9bddc0d37eba9cd68"
+    },
+    "postReviewCleanup": "Removed unused live SaveFlairs helper; initial packet rejection fixture mutates its actual buffer. Final affected run covers both."
+  },
+  "upstream": {
+    "path": "artifacts/continuation-20261105/pet-flair-progression/upstream-refresh.json",
+    "sha256": "f0a108c28685c70804b01129057e50593e1553ef42c580f61d3068115b5cf56e",
+    "latestAllStateCount": 20,
+    "changedRecordsSinceBankRankMilestone": 0,
+    "pr608": "open",
+    "pr609": "closed, unmerged"
+  },
+  "unrelatedSharedTreeBuildDependencies": [
+    {
+      "path": "Source/NexusForever.Game/Pvp/DuelManager.cs",
+      "sha256": "25e6e7827db2b695abf46cde6cb033213b4bba27dc1c8588091dc059163ffe2f",
+      "gitBlob": "d0cceb04ef776977fad2b4b0c3e3163f07e17970"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Pvp/DuelParticipantOwnershipTests.cs",
+      "sha256": "865d30eba5befd852b8c7c190c804579056a27c42fa69efe3f1a4406b9ab9836",
+      "gitBlob": "e70163ed60f546e780af04d9ee0f0803ab18135a"
+    }
+  ],
+  "dependencyBoundary": "Concurrent duel Source was present in shared owning/test builds, is excluded from this task source manifest/staging, and has its own isolated qualification. Its source binding is recorded above, not a claim that this flair filter validates duels.",
+  "preserved": [
+    "default entitlements15:1/17:1",
+    "no automatic44/seven grants",
+    "unrelated files and staging",
+    "no full solution/full suite/client/CUA"
+  ],
+  "remaining": [
+    "F-026 partial",
+    "broader cosmetic name/slot timing",
+    "public item consumption settlement",
+    "actual catalog/prerequisite qualification",
+    "physical restart/autonomous publication recovery",
+    "configured provider",
+    "socket/deployment",
+    "native timing",
+    "retail behavior"
+  ]
+}
