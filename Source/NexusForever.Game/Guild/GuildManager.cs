@@ -24,7 +24,7 @@ using NetworkGuildMember = NexusForever.Network.World.Message.Model.Guild.GuildM
 
 namespace NexusForever.Game.Guild
 {
-    public class GuildManager : IGuildManager
+    public partial class GuildManager : IGuildManager
     {
         private const double DefaultGuildInviteExpirySeconds = 300d;
         private const uint ShowNameplateRecruitmentAvailability = 1u;
@@ -97,7 +97,7 @@ namespace NexusForever.Game.Guild
             get => guildAffiliation;
             set
             {
-                guildAffiliation = value;
+                SetAffiliation(value, false);
             }
         }
         private IGuildBase guildAffiliation;
@@ -155,7 +155,7 @@ namespace NexusForever.Game.Guild
             owner = player;
             guilds.Clear();
             Guild = null;
-            GuildAffiliation = null;
+            guildAffiliation = null;
 
             foreach (IGuildBase guild in GetGlobalGuildManager().GetCharacterGuilds(owner.CharacterId))
             {
@@ -170,9 +170,9 @@ namespace NexusForever.Game.Guild
             // check that the player is allowed to be affiliated with this guild
             // validation can fail if the player is removed from the guild or the guild is disbanded while offline
             if (model.GuildAffiliation != null)
-                GuildAffiliation = guilds.TryGetValue(model.GuildAffiliation.Value, out IGuildBase guild) ? guild : guilds.Values.FirstOrDefault();
+                guildAffiliation = guilds.TryGetValue(model.GuildAffiliation.Value, out IGuildBase guild) ? guild : guilds.Values.FirstOrDefault();
             else if (model.GuildAffiliation == null && guilds.Count > 0)
-                GuildAffiliation = guilds.Values.FirstOrDefault();
+                guildAffiliation = guilds.Values.FirstOrDefault();
 
             affiliationPersistence = new(character, model.GuildAffiliation, origin?.Database, () =>
             {
@@ -180,16 +180,21 @@ namespace NexusForever.Game.Guild
                     || player is Player concrete && !ReferenceEquals(concrete.GuildManager, this))
                     throw new InvalidOperationException("Guild affiliation lost its loaded Character manager.");
                 return guildAffiliation?.Id;
-            });
+            }, () => affiliationVersion, AcknowledgeAffiliation, ScheduleAffiliationPublication);
+            InitialiseAffiliationPublication(model);
         }
 
         public void Save(CharacterContext context)
         {
             affiliationPersistence?.Save(context);
+            ScheduleAffiliationPublication();
         }
 
         internal Action<CharacterContext> CaptureNormalSave(object token, string database)
-            => affiliationPersistence?.CaptureNormal(token, database);
+        {
+            var frozen = affiliationPersistence?.CaptureNormal(token, database);
+            return frozen == null ? null : context => { frozen(context); ScheduleAffiliationPublication(); };
+        }
 
         /// <summary>
         /// Return guild of supplied <see cref="GuildType"/>.
@@ -208,7 +213,7 @@ namespace NexusForever.Game.Guild
         public void OnLogin()
         {
             SendGuildInitialise();
-            if (Guild != null)
+            if (owner is Player || Guild != null)
                 UpdateHolomark();
 
             foreach (IGuildBase guild in guilds.Values)
@@ -218,12 +223,13 @@ namespace NexusForever.Game.Guild
         private void SendGuildInitialise()
         {
             var guildInit = new ServerGuildInit();
+            ulong? displayed = owner is Player ? PublishedAffiliation.Id : guildAffiliation?.Id;
 
             uint index = 0u;
             foreach (IGuildBase guild in guilds.Values)
             {
                 NetworkGuildMember member = guild.GetMember(owner.CharacterId).Build();
-                if (guildAffiliation?.Id == guild.Id)
+                if (displayed == guild.Id)
                 {
                     guildInit.ShowNameplateIndex = index;
                     member.RecruitmentAvailability = ShowNameplateRecruitmentAvailability;
@@ -553,6 +559,8 @@ namespace NexusForever.Game.Guild
             if (!guilds.TryGetValue(guildId, out IGuildBase guild))
                 throw new ArgumentException($"Invalid guild id {guildId} for character {owner.CharacterId}!");
 
+            if (owner is Player) { SetAffiliation(guild, true); return; }
+
             // update Holomark if our new affiliation is a guild
             if (guild.Type == GuildType.Guild)
                 UpdateHolomark();
@@ -587,6 +595,8 @@ namespace NexusForever.Game.Guild
             if (GuildAffiliation == null)
                 throw new InvalidOperationException($"Unable to remove guild affilation for character {owner.CharacterId}, no existing affilation!");
 
+            if (owner is Player) { SetAffiliation(null, true); return; }
+
             if (GuildAffiliation.Type == GuildType.Guild)
                 RemoveHolomark();
 
@@ -616,6 +626,7 @@ namespace NexusForever.Game.Guild
 
             CharacterFlag mask = owner.Flags;
 
+            bool show = owner is not Player || PublishedAffiliation.Type == GuildType.Guild;
             if (backHidden)
             {
                 mask |= CharacterFlag.HolomarkHideBack;
@@ -624,7 +635,8 @@ namespace NexusForever.Game.Guild
             else
             {
                 mask &= ~CharacterFlag.HolomarkHideBack;
-                owner.AddVisual(ItemSlot.GuildStandardBack, (ushort)(distanceNear ? 7163 : 5580));
+                if (show) owner.AddVisual(ItemSlot.GuildStandardBack, (ushort)(distanceNear ? 7163 : 5580));
+                else owner.RemoveVisual(ItemSlot.GuildStandardBack);
             }
 
             if (leftHidden)
@@ -635,7 +647,8 @@ namespace NexusForever.Game.Guild
             else
             {
                 mask &= ~CharacterFlag.HolomarkHideLeft;
-                owner.AddVisual(ItemSlot.GuildStandardShoulderL, (ushort)(distanceNear ? 7164 : 5581));
+                if (show) owner.AddVisual(ItemSlot.GuildStandardShoulderL, (ushort)(distanceNear ? 7164 : 5581));
+                else owner.RemoveVisual(ItemSlot.GuildStandardShoulderL);
             }
 
             if (rightHidden)
@@ -646,7 +659,8 @@ namespace NexusForever.Game.Guild
             else
             {
                 mask &= ~CharacterFlag.HolomarkHideRight;
-                owner.AddVisual(ItemSlot.GuildStandardShoulderR, (ushort)(distanceNear ? 7165 : 5582));
+                if (show) owner.AddVisual(ItemSlot.GuildStandardShoulderR, (ushort)(distanceNear ? 7165 : 5582));
+                else owner.RemoveVisual(ItemSlot.GuildStandardShoulderR);
             }
 
             if (distanceNear)
@@ -664,6 +678,11 @@ namespace NexusForever.Game.Guild
         /// </summary>
         public void UpdateHolomark()
         {
+            if (owner is Player)
+            {
+                lock (affiliationPersistence.Gate) ApplyAffiliationVisuals(PublishedAffiliation, publishedHolomark);
+                return;
+            }
             if (Guild == null)
                 throw new InvalidOperationException($"Failed to update Holomark visual data for character {owner.CharacterId}!");
 

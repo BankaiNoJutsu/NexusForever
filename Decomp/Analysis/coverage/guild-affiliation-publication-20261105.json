@@ -1,0 +1,218 @@
+{
+  "version": 1,
+  "feature": "Committed Character guild affiliation publication",
+  "recorded_utc": "2026-11-05T14:36:26.972219+00:00",
+  "base_head": "d2a74275ae8004cf9421886287a4bace32c1ff22",
+  "disposition": "Implemented and Source/SQLite scoped verified; no retail-complete claim",
+  "behavior": [
+    "Public change/removal retain immutable nameplate/holomark/broker notices until Character confirmation",
+    "Frozen normal save captures publication revision with the selected affiliation before Auth",
+    "Original Player/session/event queue/account epoch and manager generation own the publication cursor",
+    "Network and broker retries retain rejected or pending steps without replaying accepted steps or SQL",
+    "Real Player entity/login/join/ghost projections use published affiliation; legacy adapters retain immediate live state",
+    "Quiet fallback repair applies committed visuals while suppressing selection notices"
+  ],
+  "new_regressions": 26,
+  "final_affected_cases": 421,
+  "baseline": {
+    "file": "baseline.trx",
+    "sha256": "b4f78b5830737a9563113b46b1821fb41e634fc133622434d0ab2a5d480c6380",
+    "counts": {
+      "Passed": 1,
+      "Failed": 3,
+      "NotExecuted": 0
+    },
+    "test_run_seconds": 9.538284
+  },
+  "baseline_failures": [
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.ARejectedNameplateEnqueueDoesNotPreventAcceptanceOrLoseItsCommittedReply",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.LeavingTheLastAffiliationDoesNotPublishRemovalBeforeItsCharacterCommit",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.PublicNameplateSelectionWaitsForCharacterCommitAndTheOriginalWorldQueue"
+  ],
+  "initial_candidate": {
+    "file": "initial-candidate.trx",
+    "sha256": "adc739cb5e9eb8174a07e7be36a5d1439163e023ad4f71a94b0cd19503a31bab",
+    "counts": {
+      "Passed": 24,
+      "Failed": 0,
+      "NotExecuted": 0
+    },
+    "test_run_seconds": 21.416099
+  },
+  "extended_candidate": {
+    "file": "extended.trx",
+    "sha256": "787f5566210d7d6779c51872f56ea07f4644a5d3d3ec796818b747100deed1bd",
+    "counts": {
+      "Passed": 42,
+      "Failed": 0,
+      "NotExecuted": 0
+    },
+    "test_run_seconds": 24.568925
+  },
+  "introduced_generation_failure": {
+    "run": {
+      "file": "reinitialisation-negative.trx",
+      "sha256": "ea3bda377a9379c97b38731b2105d91e52e2ff1ef65e533a80479aee67eec454",
+      "counts": {
+        "Passed": 0,
+        "Failed": 1,
+        "NotExecuted": 0
+      },
+      "test_run_seconds": 6.819734
+    },
+    "reason": "Old callback cleared a new same-manager generation queue; cleanup now checks original actor record"
+  },
+  "review_reproductions": {
+    "run": {
+      "file": "review-negative.trx",
+      "sha256": "6cf01dd5ee038ad4f89b28e1539bcd04a599f5092147d664d2ea3bcb7e199014",
+      "counts": {
+        "Passed": 1,
+        "Failed": 2,
+        "NotExecuted": 0
+      },
+      "test_run_seconds": 7.834728
+    },
+    "spec_initial_findings": 2,
+    "standards_initial_findings": 1,
+    "reason": "Stale legacy view and missing quiet-fallback holomark; both reproduced and corrected without relaxing assertions",
+    "matching_extra_control": "InventoryMutationScopeTests.LegacyAdapterKeepsItsExistingBehaviorWithoutOptingIntoTheNewProtocol"
+  },
+  "pre_review_affected": {
+    "file": "affected.trx",
+    "sha256": "8c516ff80880926b45cfb57499744a5025f1477709a556135bf38675ff814add",
+    "counts": {
+      "Passed": 419,
+      "Failed": 0,
+      "NotExecuted": 0
+    },
+    "test_run_seconds": 97.649994
+  },
+  "final_affected": {
+    "file": "final-affected.trx",
+    "sha256": "710b91c0fe1d490544a7039cf1a9fa94b188f528045c14383e8b7bd5ba9c10d8",
+    "counts": {
+      "Passed": 421,
+      "Failed": 0,
+      "NotExecuted": 0
+    },
+    "test_run_seconds": 131.170405
+  },
+  "new_case_names": [
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.RecipientRetryUsesFreshPacketsOrSkipsTheReplacedRecipient(replace: True)",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.EntityAndLoginModelsUsePublishedAffiliationWhileALaterSelectionWaits",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.ReinitialisingDuringAnAcceptedNoticeCannotClearTheNewGenerationsCommittedPublication",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.LegacyAdapterKeepsItsImmediateLiveAffiliationPresentation",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.PublicNameplateSelectionWaitsForCharacterCommitAndTheOriginalWorldQueue",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.ReplacedPublicationOwnersCannotEmitTheCommittedOldActorsNotices(replaced: \"player\")",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.BrokerFailuresRetryFreshMessagesWithoutReplayingAcceptedNameplates(fault: \"cancel\")",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.FailedOrUncertainSavesCannotPublishUntilTheOriginalAffiliationIsConfirmed(fault: \"lost-ack\")",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.ReplacedPublicationOwnersCannotEmitTheCommittedOldActorsNotices(replaced: \"manager\")",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.ReplacedPublicationOwnersCannotEmitTheCommittedOldActorsNotices(replaced: \"epoch\")",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.ReplacedPublicationOwnersCannotEmitTheCommittedOldActorsNotices(replaced: \"queue\")",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.RecipientRetryUsesFreshPacketsOrSkipsTheReplacedRecipient(replace: False)",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.LoadedAffiliationStillInitialisesItsExistingNameplateSelection",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.QuietLoadedAffiliationRepairAppliesItsCommittedHolomarkWithoutSendingSelectionNotices",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.HolomarkChangesWaitForCommitAndKeepTheAcceptedStandardAndCurrentPlacementFlags",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.ARejectedNameplateEnqueueDoesNotPreventAcceptanceOrLoseItsCommittedReply",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.AnInFlightBrokerTaskRetainsFifoWithoutResendingOrAdvancingNewerPublication",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.LeavingTheLastAffiliationDoesNotPublishRemovalBeforeItsCharacterCommit",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.NameplateRetryDoesNotAddressAUnitGuidThatWasReplacedAfterTheRejectedEnqueue",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.BrokerFailuresRetryFreshMessagesWithoutReplayingAcceptedNameplates(fault: \"fault\")",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.RebindingDuringAnAcceptedNameplateStopsRemainingBrokerAndRecipientSteps",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.FailedOrUncertainSavesCannotPublishUntilTheOriginalAffiliationIsConfirmed(fault: \"rollback\")",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.FailedOrUncertainSavesCannotPublishUntilTheOriginalAffiliationIsConfirmed(fault: \"failed-flush\")",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.BrokerFailuresRetryFreshMessagesWithoutReplayingAcceptedNameplates(fault: \"sync\")",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.CommittedNoticeKeepsItsAcceptedNameAndAnUnchangedIdCanStillPublishANewRequest",
+    "NexusForever.Game.Tests.Guild.GuildAffiliationPublicationTests.NormalSavePublishesItsFrozenSelectionAndRetainsALaterPublicRequest"
+  ],
+  "affected_scope": [
+    "Guild namespace",
+    "RewardNormalSaveSnapshotTests",
+    "QuestPersistenceDurabilityTests",
+    "PlayerExperiencePersistenceTests",
+    "PlayerProgressionPersistenceTests",
+    "PlayerKeybindingPersistenceTests",
+    "TitlePublicationTests"
+  ],
+  "owning_build": {
+    "project": "Source/NexusForever.Game/NexusForever.Game.csproj",
+    "command": "dotnet build --no-restore -v minimal --nologo",
+    "warnings": 0,
+    "errors": 0,
+    "log": "final-build-console.log"
+  },
+  "reviews": {
+    "comparison": "git diff --cached -- Source against base_head; nine Source files",
+    "spec_final_findings": 0,
+    "standards_final_findings": 0,
+    "actionable_smells": 0,
+    "spec_report": "review-final-spec.md",
+    "standards_report": "review-final-standards.md"
+  },
+  "source_sha256": {
+    "Source/NexusForever.Game.Tests/Guild/GuildAffiliationPublicationTests.Recovery.cs": "e6795df41f3a509ef7a29cca908d548a1df1fca6fcc4c311bd9628d957fb184c",
+    "Source/NexusForever.Game.Tests/Guild/GuildAffiliationPublicationTests.cs": "908c6dfbdbc1e2623077bd2c1470b6e80e6ccb19b4d2033ac258a3bd36adde8f",
+    "Source/NexusForever.Game/Entity/GhostEntity.cs": "5b389479e3ef4204673211f2bd24351d0498aaf53cb66fe00e7f22c900031cfd",
+    "Source/NexusForever.Game/Entity/Player.GuildAffiliationPublication.cs": "96181ca1f373f4d366f103e4b72c2b2ec7e13f1b77cc7e549e3ded0ed6793950",
+    "Source/NexusForever.Game/Entity/Player.cs": "f53c7861df8124e2133635b269ea57846b4173eac881c2311c2c26ed3a42a460",
+    "Source/NexusForever.Game/Guild/GuildAffiliationPersistence.cs": "249fe9846f7e9eedac2dd6ab56c138e3fc43a3652eb0137cccfd4c1c9e11c64d",
+    "Source/NexusForever.Game/Guild/GuildBase.cs": "98f49e9abeaf8541e6e0d79a5b005bcaf2a58994d51782f4dee31ce338cc3137",
+    "Source/NexusForever.Game/Guild/GuildManager.AffiliationPublication.cs": "81b49181f389e0f6dbe1b1f74303ff0c07c08e32e553ea630914bc4c803f1063",
+    "Source/NexusForever.Game/Guild/GuildManager.cs": "7d15e83ba9662502073e3c1945b4eaf7cc01102caf0956bd3f59e4b1d0a4c9f4"
+  },
+  "source_git_blob": {
+    "Source/NexusForever.Game.Tests/Guild/GuildAffiliationPublicationTests.Recovery.cs": "fdcbcd860676b7d21f3910a62403f7e320213d7d",
+    "Source/NexusForever.Game.Tests/Guild/GuildAffiliationPublicationTests.cs": "3082bb0beb54873fba7436726567a344c35fc169",
+    "Source/NexusForever.Game/Entity/GhostEntity.cs": "e5c3e7f4d12080ec88d7352830593fbded42c0b3",
+    "Source/NexusForever.Game/Entity/Player.GuildAffiliationPublication.cs": "f5fb207a389a63f0cbf23363da70cf062666045a",
+    "Source/NexusForever.Game/Entity/Player.cs": "6eca670b8b291df418f5db90ba8c4a9f70d15bdc",
+    "Source/NexusForever.Game/Guild/GuildAffiliationPersistence.cs": "84afd927bf45808b89bd74022aaa316b8a43fc39",
+    "Source/NexusForever.Game/Guild/GuildBase.cs": "33d1162246b215a33aa188f0d23aa7266496d7b9",
+    "Source/NexusForever.Game/Guild/GuildManager.AffiliationPublication.cs": "c4ada6e37fbd324ff5a2d15bd0f27cf5279eeadf",
+    "Source/NexusForever.Game/Guild/GuildManager.cs": "178951f78776fddae4f083c7546e62f338985906"
+  },
+  "binary_sha256": {
+    "Source/NexusForever.Game/bin/Debug/net10.0/NexusForever.Game.dll": "74f7818a4289e9be6abffb9e68d28ef9c4fa9fe1f5e9992b973ef24a5dc3ae36",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.dll": "74f7818a4289e9be6abffb9e68d28ef9c4fa9fe1f5e9992b973ef24a5dc3ae36",
+    "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll": "77662d2ad8d6feaef58dad1510bc2779c3df44bcc8961cb1cb285b5b46f4fb40"
+  },
+  "local_artifacts": {
+    "directory": "artifacts/continuation-20261105/guild-affiliation-publication",
+    "sha256": {
+      "baseline-console.log": "8cc8c0e7f9c76a47c24c9957161669a037e43290d3bb23b55ef578f465162520",
+      "baseline-fixture-build-error.log": "08c2c379ec41b201861c75c90ea4af38707999fb38059776e98b6342fadcf9fe",
+      "initial-candidate-console.log": "e3ff9d5fceb8207f6d1e4b66c455b323843772d6d3f8213936d790d808550dc3",
+      "extended-console.log": "040e38178e038b7c590d6bfc432ef1c3065cc6dd17ffcaa85534b951f11da566",
+      "reinitialisation-negative-console.log": "d8e78917025a2fef4306aa06f601bf41753c7f9cf0921187c12c6bfad8df3954",
+      "review-negative-console.log": "89489426897a5c1151718a070b712768ddf08192f154bc0aadc4e0a4d384e843",
+      "affected-console.log": "0d6eae99903b43d8bcd908d40d19791b00daaa3d0db14d1c78ffdbe02e91b30c",
+      "final-affected-console.log": "3b9283689d6704be4809833594dfb1dc6e2e60224bd9e72f97aa1a7b120a933c",
+      "final-build-console.log": "16ca90c5ab61d4ce09864106fab2d372600f6e65216bfaef4d3e3497198fb20f",
+      "review-initial-spec.md": "77cc28ddaa71bdf249a3f7b4256df58768834eeac15c7e78efd817b837abfcc4",
+      "review-initial-standards.md": "8a05d9f14ed5a5273772e2e1a77cc6a5b177d266169edacdb2102a877501d4aa",
+      "review-final-spec.md": "f24cb35a099fb848418d8e7b5c072e3871ee4f257a26f51399ff2b6902c6a2f5",
+      "review-final-standards.md": "47a9fdd7ecb94e412352b8960a569e2a1c04cdcff8c1c4219963968eee1c7d3c",
+      "upstream-refresh.json": "39c3e559996c7036111f0a1bd24cb6ae16da89c6489afd415d6ab7962b3ea82e"
+    }
+  },
+  "boundaries": {
+    "full_solution_build_or_suite": false,
+    "configured_provider_run": false,
+    "database_model_or_migration_changed": false,
+    "packet_layout_or_opcode_changed": false,
+    "native_client_or_computer_use": false,
+    "rea": "Ordinary Source work; prior STS/other artifact analyses retain their own REA evidence scope",
+    "entitlements": "Defaults15:1/17:1; no automatic44 or seven baseline grants",
+    "initial_packet": "Existing ShowNameplateIndex default0 preserved; no unsupported None sentinel or native UI semantics inferred",
+    "holomark_flags": "Existing positional/hide flags remain immediate; affiliation-driven standard/visual transitions wait for Character confirmation",
+    "handoff": "Prior expected Source-divergence retained; unchanged historical failure not rerun"
+  },
+  "remaining": [
+    "Guild creation fees and combined Guild membership/Character affiliation atomicity",
+    "Configured-provider/strategy, copied-upgrade, cross-process/ABA and physical crash/restart/outbox qualification",
+    "Actual broker subscriber/socket/deployment/native/retail proof; task success is not an end-to-end delivery receipt",
+    "Full remaining assessment, reward/progression and broader feature roadmap"
+  ],
+  "goal": "active"
+}

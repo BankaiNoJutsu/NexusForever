@@ -1,5 +1,14 @@
 # Continue on another machine
 
+Latest Guild implementation: [committed affiliation publication](Decomp/Analysis/GUILD_DISBAND_RECOVERY.md#committed-character-affiliation-publication)
+passes26 new/421 scoped cases and both final Source reviews. Public change/leave
+notices and holomarks wait for Character confirmation and the original World
+queue; rejected network/broker work retains its cursor without replaying SQL.
+Published entity/login/join/ghost views, quiet fallback visuals and legacy
+adapters retain their distinct behavior. Provider/restart/subscriber/deployment/
+native/retail gates and guild creation fee/graph atomicity remain open. Continue
+independent roadmap work and available REA leads; no full suite or client/CUA ran.
+
 Latest Guild implementation: [Character affiliation recovery](Decomp/Analysis/GUILD_DISBAND_RECOVERY.md#character-affiliation-recovery-sourcesqlite-verified)
 fixes three executed real-Player failures. Twenty new/377 scoped cases and both
 Source reviews pass; the owning Game build is clean. Failed/uncertain nullable

@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[Committed Character affiliation publication](Decomp/Analysis/GUILD_DISBAND_RECOVERY.md#committed-character-affiliation-publication)
+now releases accepted nameplates, holomarks and broker updates only after the
+original Character confirmation, from its retained World queue. Twenty-six new/
+421 scoped cases, clean owning build and both final Source reviews pass. Quiet
+fallback visuals and legacy adapters remain compatible. Provider/restart/
+subscriber/deployment/native/retail and joint Guild/Character fee/graph gates stay open.
+
 [Character guild affiliation recovery](Decomp/Analysis/GUILD_DISBAND_RECOVERY.md#character-affiliation-recovery-sourcesqlite-verified)
 fixes three executed real-Player failures. Nullable affiliation survives failed,
 rolled-back and uncertain saves; normal saves freeze it before Auth and retain

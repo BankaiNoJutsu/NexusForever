@@ -45,8 +45,9 @@ namespace NexusForever.Game.Entity
             GuildIds  = owner.GuildManager
                 .Select(g => g.Id)
                 .ToList();
-            GuildName = owner.GuildManager.GuildAffiliation?.Name;
-            GuildType = owner.GuildManager.GuildAffiliation?.Type ?? GuildType.None;
+            var affiliation = (owner.GuildManager as Guild.GuildManager)?.PublishedAffiliation;
+            GuildName = affiliation == null ? owner.GuildManager.GuildAffiliation?.Name : affiliation.Name;
+            GuildType = affiliation?.Type ?? owner.GuildManager.GuildAffiliation?.Type ?? GuildType.None;
             Title     = owner.TitleManager.ActiveTitleId;
 
             foreach (IItemVisual visual in owner.GetVisuals())

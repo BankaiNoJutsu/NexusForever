@@ -1,5 +1,17 @@
 # Assessment follow-through goal
 
+[Committed Character affiliation publication](GUILD_DISBAND_RECOVERY.md#committed-character-affiliation-publication)
+connects public change/removal and published entity/login/join/ghost views to
+Character confirmation and the original actor/World queue. Immutable state,
+cursor-owned network/broker retries, quiet fallback visuals and legacy adapters
+pass26 new/421 scoped cases, clean owning build and both final Source reviews.
+Three baseline failures, an introduced generation-cleanup failure and two
+executed review-found regressions remain retained separately. This is Source/
+SQLite, not provider/restart/subscriber/deployment/native/retail qualification.
+Guild creation financial and combined parent/membership/affiliation atomicity
+remain open. Continue independent financial/reward/gameplay requirements and
+available REA evidence leads rather than repeating this completed integration.
+
 [Character guild affiliation recovery](GUILD_DISBAND_RECOVERY.md#character-affiliation-recovery-sourcesqlite-verified)
 fixes the three executed failures above the published`cea4629e` baseline: failed
 flush/rollback lose no accepted nullable value, and normal saves retain their

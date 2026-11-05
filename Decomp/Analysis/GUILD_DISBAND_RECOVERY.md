@@ -468,3 +468,67 @@ This source analysis does not require another REA binary pass; the preceding
 STS static map retains its own REA identity and evidence boundary. Preserve
 defaults15:1/17:1, no automatic44 or seven baseline grants, and the client/CUA stop.
 The Goal remains active; continue those remaining outcomes and the broader roadmap.
+
+## Committed Character affiliation publication
+
+5 November2026. Public affiliation change and removal now retain their accepted
+nameplate, holomark and internal-broker publication until the original Character
+save confirms. The [portable record](coverage/guild-affiliation-publication-20261105.json)
+binds26 new regressions,421 final scoped passes, the owning build and both final
+Source review axes. This extends the preceding scalar recovery; it does not
+couple guild creation/membership persistence or fees to the Character transaction.
+
+The baseline on`d2a74275` reproduced three failures and one loaded-selection
+control: change and leave published before saving; a rejected nameplate enqueue
+threw before the new selection was accepted. The real Player now records immutable
+name/type/standard snapshots with a publication revision. Ordinary and frozen
+saves capture that revision with the affiliation. Confirmed completion queues
+only that captured prefix, leaving later accepted choices pending. The SQL worker
+does not send gameplay/broker notices: release waits on the original World queue
+until the normal Player save has settled.
+
+The retained cursor checks original manager generation, Player identity/session,
+event queue, account reference/epoch and Player-manager ownership. Each network
+attempt builds a fresh packet; rejected recipients retry without replaying
+accepted recipients. Replaced recipients and obsolete unit/map bindings are
+skipped. Broker tasks remain retained while pending; success advances once,
+and synchronous rejection, task fault or cancellation retries the original step
+without replaying SQL or earlier notices. A completed publisher task is not a
+subscriber-delivery receipt, and this is not a physical exactly-once claim.
+
+Real Player entity, ghost, guild-init and join nameplate projections use the
+published view. Initial `ShowNameplateIndex` retains its existing default0; no
+unsupported None sentinel or native UI interpretation is introduced. Quiet loaded
+fallback repair adopts its committed presentation and visuals without sending
+selection notices. Legacy non-Player adapters keep their existing immediate live
+view. Affiliation-driven holomark standards are captured at acceptance; existing
+positional/hide flags keep their separate immediate behavior and determine the
+placement when committed visuals apply.
+
+All26 new cases pass within the421-case final affected gate, zero failures/skips.
+The scope covers Guild, normal reward saves, Quest durability, XP/progression,
+Character keybindings and title publication. Tests exercise failed/rolled-back/
+uncertain saves, normal frozen/later requests, immutable names/standards, quiet
+repair, pending/faulted/canceled broker work, recipient/actor/queue/epoch/manager
+replacement and holomark timing. A callback-reinitialization regression exposed
+an introduced old-generation cleanup bug; generation-specific cleanup now retains
+the new generation's committed queue. Its executed failure is retained separately.
+
+Initial Spec review found two issues and Standards found one overlapping issue:
+the legacy published accessor stayed stale, and quiet fallback repaired cached
+state without installing the holomark. Both executed negative reproductions are
+retained; both fixes pass targeted re-review with zero remaining findings. The
+pre-review419-case run remains historical;421 cases bind the corrected candidate.
+An initial fixture method-group build error is separately retained. Raw logs/TRX,
+source/DLL hashes and reviews are in
+`artifacts/continuation-20261105/guild-affiliation-publication/`.
+
+The owning Game build is clean. No full solution build/test suite, configured
+MySQL/provider-strategy run, schema migration or wire layout/opcode change occurred.
+Configured-provider/copied-upgrade, cross-process/ABA, durable restart/outbox,
+socket/broker subscriber/deployment and native/retail qualification remain open.
+Guild creation fee and combined parent/membership/affiliation atomicity remain
+separate work. Continue independent financial/reward/gameplay requirements and
+newly available REA evidence leads rather than repeating this integration.
+Source analysis required no additional binary pass. Defaults15:1/17:1, no
+automatic44/seven baseline grants and the client/CUA stop remain; the Goal is active.

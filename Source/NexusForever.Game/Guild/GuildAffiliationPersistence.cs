@@ -9,9 +9,10 @@ namespace NexusForever.Game.Guild
 {
     // Affiliation is a nullable Character column, independent of the guild's
     // own graph. Keep its accepted value through failed or uncertain saves.
-    internal sealed class GuildAffiliationPersistence(ulong character, ulong? loaded, string database, Func<ulong?> current)
+    internal sealed class GuildAffiliationPersistence(ulong character, ulong? loaded, string database, Func<ulong?> current,
+        Func<long> publicationVersion, Action<ulong?, long> acknowledge, Action publicationReady)
     {
-        private sealed record Frozen(object Token, string Database, ulong? Value);
+        private sealed record Frozen(object Token, string Database, ulong? Value, long Version);
         private sealed class Unit(CharacterContext context, object token)
         {
             internal readonly CharacterContext Context = context;
@@ -19,25 +20,27 @@ namespace NexusForever.Game.Guild
             internal readonly HashSet<ulong?> Possible = [];
             internal ulong? Sql, Target;
             internal bool Flushed;
+            internal long Version, FlushedVersion;
             internal CharacterColumnSaveIntent Row;
             internal IDisposable Scope;
             internal EventHandler<SavedChangesEventArgs> OnFlushed;
         }
 
-        private readonly object gate = new();
+        internal readonly object Gate = new();
         private static readonly object leaseGate = new();
         private static readonly Dictionary<(string, ulong), Unit> leases = [];
         private ulong? baseline = loaded;
         private HashSet<ulong?> uncertain;
         private Unit active;
-        internal bool HasUnfinishedSave { get { lock (gate) return active != null; } }
+        private long acknowledgedVersion;
+        internal bool HasUnfinishedSave { get { lock (Gate) return active != null; } }
 
         internal Action<CharacterContext> CaptureNormal(object token, string route)
         {
-            lock (gate)
+            lock (Gate)
             {
                 if (active != null) throw new InvalidOperationException("Guild affiliation has an unfinished save.");
-                var frozen = new Frozen(token, route, current());
+                var frozen = new Frozen(token, route, current(), publicationVersion());
                 return context => Save(context, frozen);
             }
         }
@@ -45,7 +48,7 @@ namespace NexusForever.Game.Guild
         internal void Save(CharacterContext context) => Save(context, null);
         private void Save(CharacterContext context, Frozen frozen)
         {
-            lock (gate)
+            lock (Gate)
             {
                 try
                 {
@@ -57,9 +60,10 @@ namespace NexusForever.Game.Guild
                     if (frozen != null) CharacterDatabaseIdentity.Require(context, frozen.Database);
                     database ??= route;
                     ulong? target = frozen == null ? live : frozen.Value;
+                    long version = frozen?.Version ?? publicationVersion();
                     if (active != null && (!ReferenceEquals(active.Context, context) || !ReferenceEquals(active.Token, frozen?.Token)))
                         throw new InvalidOperationException("Guild affiliation belongs to an unfinished save unit.");
-                    if (active == null && uncertain == null && target == baseline) return;
+                    if (active == null && uncertain == null && target == baseline && version <= acknowledgedVersion) return;
 
                     Unit unit = active;
                     if (unit == null)
@@ -91,6 +95,7 @@ namespace NexusForever.Game.Guild
                     unit.Row?.Validate();
                     Write(unit, target);
                     unit.Target = target;
+                    unit.Version = version;
                     unit.Possible.Add(target);
                     context.Database.AutoTransactionBehavior = AutoTransactionBehavior.Always;
                 }
@@ -130,7 +135,7 @@ namespace NexusForever.Game.Guild
 
         private void Validate(Unit unit, CharacterSaveValidationPhase phase)
         {
-            lock (gate)
+            lock (Gate)
             {
                 if (!ReferenceEquals(active, unit)) throw new InvalidOperationException("Guild affiliation lost its save owner.");
                 if (unit.Context.HasSavepointRollback) return;
@@ -144,23 +149,31 @@ namespace NexusForever.Game.Guild
 
         private void Flushed(Unit unit)
         {
-            lock (gate)
+            lock (Gate)
             {
                 if (!ReferenceEquals(active, unit) || unit.Context.HasSavepointRollback || Read(unit.Context) != unit.Target) return;
                 unit.Sql = unit.Target;
                 unit.Flushed = true;
+                unit.FlushedVersion = unit.Version;
                 if (unit.Row != null) { unit.Row.Capture(); unit.Row.Flushed = true; }
             }
         }
 
         private void Complete(Unit unit, string route, bool committed)
         {
-            lock (gate)
+            bool ready = false;
+            lock (Gate)
             {
                 if (!ReferenceEquals(active, unit)) return;
                 try
                 {
-                    if (committed && unit.Flushed) { baseline = unit.Sql; uncertain = null; }
+                    if (committed && unit.Flushed)
+                    {
+                        acknowledge(unit.Sql, unit.FlushedVersion);
+                        baseline = unit.Sql; uncertain = null;
+                        acknowledgedVersion = Math.Max(acknowledgedVersion, unit.FlushedVersion);
+                        ready = true;
+                    }
                     else
                     {
                         uncertain ??= [baseline];
@@ -177,6 +190,7 @@ namespace NexusForever.Game.Guild
                     unit.Scope.Dispose();
                 }
             }
+            if (ready) publicationReady();
         }
     }
 }

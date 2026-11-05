@@ -1353,6 +1353,7 @@ namespace NexusForever.Game.Entity
 
         protected override IEntityModel BuildEntityModel()
         {
+            var affiliation = (GuildManager as Guild.GuildManager)?.PublishedAffiliation;
             return new PlayerEntityModel
             {
                 Id        = CharacterId,
@@ -1368,8 +1369,8 @@ namespace NexusForever.Game.Entity
                 GuildIds  = GuildManager
                     .Select(g => g.Id)
                     .ToList(),
-                GuildName = GuildManager.GuildAffiliation?.Name,
-                GuildType = GuildManager.GuildAffiliation?.Type ?? GuildType.None,
+                GuildName = affiliation == null ? GuildManager.GuildAffiliation?.Name : affiliation.Name,
+                GuildType = affiliation?.Type ?? GuildManager.GuildAffiliation?.Type ?? GuildType.None,
                 PvPFlag   = PvPFlag,
 
                 // We use Group 1 as the "dominant group"

@@ -490,7 +490,8 @@ namespace NexusForever.Game.Guild
                 GuildData                 = Build(),
                 Self                      = guildMember,
                 WithdrawlInfo             = playerLimits,
-                DisplayThisGuildNameplate = player.GuildManager.GuildAffiliation.Id == Id
+                DisplayThisGuildNameplate = player.GuildManager is GuildManager committed
+                    ? committed.PublishedAffiliation.Id == Id : player.GuildManager.GuildAffiliation?.Id == Id
             });
         }
 
