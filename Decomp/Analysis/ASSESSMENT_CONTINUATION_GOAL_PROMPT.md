@@ -1,7 +1,9 @@
 # Assessment continuation Goal prompt
 
-Updated 3 November 2026 for roadmap-driven execution, user-directed scoped-only
-validation and the user-authorized regular commit/push workflow.
+Updated 5 November 2026 with the verified ordinary Guild creation milestone,
+remaining implementation/evidence priorities and current REA boundary. Retains
+roadmap-driven execution, scoped-only validation and the existing main-thread
+regular commit/push policy.
 Paste the following instructions into the main
 implementation chat. Continue its existing Goal; create a Goal only if no
 unfinished Goal exists. This file does not itself change or restart a Goal.
@@ -27,6 +29,80 @@ Workspace and continuity
   Decomp/Analysis/CONTINUATION_GUIDE.md. Use the latest verified records, not
   stale test counts or old-machine runtime results. Re-read only relevant
   sections as work changes.
+
+Verified continuation status - 5 November 2026
+- The latest verified implementation checkpoint is
+  eaad953a0fb898258ef9bd0a96c84dc9c67508d7 (ordinary Guild creation finance).
+  Local HEAD and origin/legacy-di-storefront-hardening matched this commit
+  during the status check; the research commits below are also published.
+  Revalidate the live branch and working tree before resuming; this is a
+  checkpoint to recognize, not a reset target or an instruction to rerun checks.
+- Decomp/Analysis/GUILD_CREATION_FINANCE.md and its linked portable record
+  qualify the public real-Player ordinary Guild credit route in Source/SQLite:
+  accepted fee, complete guild/data/three ranks/leader-member graph and Character
+  affiliation settle together through the original recoverable save. The draft
+  stays private/fenced through ordinary followup; owned Guild achievement effects
+  and completion feedback enter the next Character snapshot. Adoption and
+  effect/reply cursors prevent replay of the debit or completed publication.
+  All 22 focused/202 affected cases, clean owning/test builds and both final
+  Source reviews pass. Community creation and cross-owner achievement atomicity
+  are not closed by this result. Do not repeat the completed ordinary Guild fix.
+- Other completed supported boundaries include Character affiliation recovery
+  and committed publication, the tracked-marker first 32-bit TrackingSlot identity
+  and unmasked lookup (84481977; 118 affected), and Primal Matrix 0072 decoding /
+  corrected 06DF snapshot ownership (a621990e; 16 focused/143 affected). Marker
+  producer timing/selection remains open; the Primal handler remains diagnostic
+  and allocation gameplay is unfinished. These counts describe separate scopes.
+- Published research commits 85efbcc5 and fedf5972 add the all-blocker-family audit and
+  ICComm native/authored lifecycle evidence. Read
+  Decomp/Analysis/ALL_REMAINING_BLOCKERS_RESEARCH_2026_11_05.md and its linked
+  36-area inventory, plus Decomp/Analysis/ICCOMM_NATIVE_LIFECYCLE_2026_11_05.md,
+  when selecting work. These are mapped inputs, not completed gameplay or
+  row-by-row content closure. Supersede older research next steps with later
+  verified implementation records, including the ordinary Guild result above.
+  The inventory records11 implementation-COMPLETE,23 partial/emulator-only,
+  one diagnostic and one structural area; the five producer/emit gates remain.
+  ICComm's typed join/sender, pending type/name key and readiness/callback paths
+  are mapped. Its response-name mismatch remains a static prediction requiring
+  a focused reproduction and fix. Use the companion
+  Decomp/Analysis/ICCOMM_WEB_CORROBORATION_2026_11_05.md for API-era boundaries;
+  entitlement identity, server quota, active formulas and reconnect stay open.
+- The latest recorded 20-PR all-state refresh retained reviewed unchanged heads,
+  bases and states, including #608 open and #609 closed/unmerged. Refresh on
+  resumption as directed below; do not count unchanged PRs as new implementation.
+
+Next actionable outcomes and remaining gates
+- Continue Community creation finance through the real public route: couple
+  Character credits, guild/membership/affiliation and residence/plot creation.
+  Its Service Token option also needs a complete durable Auth/Character handoff.
+  The existing Community route remains unfinished. Do not reuse an ordinary
+  Guild receipt as authorization for residence rows or an Auth debit; preserve
+  direct/admin/free registration and the completed ordinary Guild guarantees.
+- Keep the full broader roadmap active: Contract public claim/reset requires
+  remaining unclaimed/final-first/excess policy evidence and complete canonical
+  delivery/recovery. Its726 choices are already recovered; retain the remaining
+  item-metadata qualification rather than reopening that corpus as missing.
+  Primal allocation requires qualified catalogs, ownership,
+  validation, essence settlement, persistence/rewards and committed publication.
+  Continue Zone earning, unsupported Challenge producers, broader AMP/spell/
+  prerequisite/combat work, Hycrest later gameplay and Q5597 qualification as
+  their specific inputs allow. Do not request the superseded Q5597 worksheet.
+- Use the all-family audit to distinguish unfinished Source work (including
+  ICComm response-name correlation/scoped names, guild bank and LAS public-flow
+  probes) from actual missing evidence. A proposed or unexecuted probe is not a
+  reproduced defect. Contract reset edges, Fortune exact weights and other
+  retail-policy gaps stay explicit; continue independent implementation.
+- Fresh configured-provider/copied-upgrade, actual-table delivery, physical
+  failure/restart, broker/socket/deployment and native/retail qualification remain
+  required where recorded. Existing Source/SQLite results do not qualify those
+  boundaries or the current deployment. Client-dependent checks stay stopped
+  under the existing native-client/Computer Use constraint.
+- REA is used for exact shipped-artifact identity/import evidence and retained
+  bundles. The recorded REA 6.8.0 native-provider failure requires Ghidra 12.1.x;
+  installed standalone Ghidra 12.0.4/JDK 21 and LLVM support separate read-only
+  static inspection. Keep these evidence types distinct. Reuse exact-hash
+  evidence; do not retry unchanged provider failures, install/configure tools
+  merely to repeat them, or use REA readiness calls for ordinary Source work.
 
 Follow the roadmap
 - Use Decomp/Analysis/ASSESSMENT_REMAINING_WORK.md as the canonical roadmap and
@@ -118,9 +194,12 @@ Accountability and constraints
 - Computer Use and native client launch remain stopped until explicitly resumed.
   After coherent verified milestones, commit the explicitly reviewed task files
   and push `origin/legacy-di-storefront-hardening` in
-  `BankaiNoJutsu/NexusForever`, as authorized by the user on2 November. Verify
-  the destination, scope, secrets and local/remote HEAD parity; use normal
-  fast-forward pushes. This does not authorize merging or creating upstream PRs.
+  `BankaiNoJutsu/NexusForever`. On5 November the user explicitly authorized
+  this current public origin and named this branch, superseding the earlier
+  private-only restriction for this destination and task scope. Do not request
+  the same public-origin approval again. Verify the destination, reviewed scope,
+  secrets and local/remote HEAD parity; use normal fast-forward pushes and
+  preserve other staged work. This does not authorize merging or upstream PRs.
   Preserve unrelated files, configuration,
   original databases and other workloads; use authorized disposable fixtures.
 - Do not claim retail completeness from source tests. Keep unavailable provider,
