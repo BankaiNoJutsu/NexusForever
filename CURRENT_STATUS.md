@@ -21583,6 +21583,23 @@ helpers;
 `Client0x062A`/`0634`
 still need a native sender or live sniff before semantic rename or mutation.
 
+#### Match cleanup and pending admissions
+
+5 November 2026. A leave request before map admission removes the requesting
+player's roster entry. Other pending members retain their registrations.
+Early cleanup runs when the roster is empty. Explicit map cleanup returns
+admitted players still on that instance and removes other roster entries
+without a return teleport. It can close a match whose map was never created.
+Cleanup clears the close timer and detaches the map once.
+
+Baseline cases reproduced a failed leave request, a failed cleanup for a
+pending member, a return teleport from another map, repeated map detachment,
+and premature removal of another pending member. The owning build passed
+without warnings or errors in 32 seconds. All 184 scoped matching, instance
+and public-event cases passed in 12 seconds. Local evidence is under
+`artifacts/continuation-20261105/match-admission-cleanup/`.
+Queued teleport cancellation, deployment and native gameplay remain open.
+
 ### F-011 - Guild / Recruitment / War Party - PARTIAL (blocked)
 Guild handlers and recruitment output models exist. `ServerGuildBankTabInventory`
 (`0x047A`) now emits the native-mapped row count before item rows. Guild bank

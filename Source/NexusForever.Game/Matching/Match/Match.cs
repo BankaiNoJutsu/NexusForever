@@ -161,8 +161,12 @@ namespace NexusForever.Game.Matching.Match
         /// </summary>
         public void MatchCleanup()
         {
+            if (Status == MatchStatus.Finalised)
+                return;
+
             log.LogTrace($"Cleaning up match {Guid}...");
             Status = MatchStatus.Cleanup;
+            closeTimer = null;
 
             messagePublisher.PublishAsync(new MatchRemovedMessage
             {
@@ -175,8 +179,7 @@ namespace NexusForever.Game.Matching.Match
                 {
                     log.LogTrace($"Removing member {matchTeamMember.Identity} from match {Guid} due to cleanup.");
 
-                    // it is possible for the player to be offline during cleanup
-                    // in this case we just need to remove them from the match, no need to teleport or exit
+                    // Pending arrivals and players outside the instance still need their roster entry removed.
                     IPlayer player = playerManager.GetPlayer(matchTeamMember.Identity);
                     if (player != null)
                         MatchExit(player, true);
@@ -185,7 +188,8 @@ namespace NexusForever.Game.Matching.Match
                 }
             }
 
-            map.RemoveMatch();
+            if (ReferenceEquals(map?.Match, this))
+                map.RemoveMatch();
 
             Status = MatchStatus.Finalised;
 
@@ -232,7 +236,12 @@ namespace NexusForever.Game.Matching.Match
         public void MatchExit(IPlayer player, bool teleport)
         {
             IMatchTeam team = GetTeam(player.Identity);
-            if (team == null)
+            if (team?.GetMember(player.Identity)?.InMatch != true)
+                return;
+
+            // The map removal callback runs after the player's map reference is cleared.
+            // Only an exit that requests a return teleport requires the player to still be here.
+            if (teleport && (map == null || !ReferenceEquals(player.Map, map)))
                 return;
 
             team.MatchExit(player.Identity, teleport);
@@ -284,9 +293,7 @@ namespace NexusForever.Game.Matching.Match
         private bool CanCleanupEarly()
         {
             return Status != MatchStatus.Cleanup
-                && GetTeams()
-                    .SelectMany(t => t.GetMembers())
-                    .All(m => !m.InMatch);
+                && characterTeams.Count == 0;
         }
 
         /// <summary>
@@ -307,9 +314,8 @@ namespace NexusForever.Game.Matching.Match
             GameFormulaEntry entry = gameTableManager.GameFormula.GetEntry(656);
             closeTimer = new UpdateTimer(TimeSpan.FromMilliseconds(entry?.Dataint0 ?? 300000));
 
-            map.OnMatchFinish();
-
             log.LogTrace($"Match {Guid} has finished, closing in {closeTimer.Duration} seconds.");
+            map?.OnMatchFinish();
         }
 
         /// <summary>

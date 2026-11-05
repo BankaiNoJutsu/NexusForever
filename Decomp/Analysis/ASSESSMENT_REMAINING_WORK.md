@@ -91,6 +91,9 @@ individual member enqueue fails.
 [Event finalization and enrollment](../../CURRENT_STATUS.md#public-event-finalization-and-enrollment)
 keeps the match-finish callback from completing the same event twice and
 rejects map arrivals during and after event completion.
+[Match cleanup and pending admissions](../../CURRENT_STATUS.md#match-cleanup-and-pending-admissions)
+allows a player to leave before admission, preserves other pending members and
+returns admitted players only from the match instance.
 The [Character rollback probe](../../CURRENT_STATUS.md#public-event-character-save-recovery)
 reproduced early quest updates and loss of unsaved credit on the World save
 failure path. [Committed quest notices](../../CURRENT_STATUS.md#committed-public-event-quest-notices)
