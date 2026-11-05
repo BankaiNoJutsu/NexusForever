@@ -1,5 +1,6 @@
 ﻿using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Game.Entity;
 
 namespace NexusForever.WorldServer.Network.Message.Handler.Quest
 {
@@ -7,7 +8,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Quest
     {
         public void HandleMessage(IWorldSession session, ClientQuestAbandon questAbandon)
         {
-            session.Player.QuestManager.QuestAbandon(questAbandon.QuestId);
+            var player = session.Player;
+            if (player is Player owner && !ReferenceEquals(owner.Session, session)) return;
+
+            if (player is Player && player.QuestManager is QuestManager quests)
+                quests.QuestAbandonFromClient(questAbandon.QuestId);
+            else
+                player.QuestManager.QuestAbandon(questAbandon.QuestId);
         }
     }
 }

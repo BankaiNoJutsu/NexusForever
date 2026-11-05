@@ -41,6 +41,10 @@ commits ordinary acceptance before sending updates to the recipient and
 success to the original sharer. A rejected save or replaced sharer session
 cannot produce a stale success reply.
 
+[Committed quest abandon and retry](../../CURRENT_STATUS.md#committed-quest-abandon-and-retry)
+holds ordinary quest and inventory notices until the original Character save.
+Encrypted loopback covers rejected writes and a fresh session retry.
+
 [Marketplace inbox route recovery](../../CURRENT_STATUS.md#marketplace-inbox-route-recovery)
 retries failed recipient route checks for already committed mail on behalf of
 the original session, with no replay of settlement. A mismatched route or a

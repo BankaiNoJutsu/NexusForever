@@ -400,7 +400,7 @@ namespace NexusForever.Game.Entity
                 return;
             }
 
-            if (QuestAcceptanceBusy(owner))
+            if (OrdinaryQuestMutationBusy(owner))
                 throw new QuestException("Quest acceptance cannot overlap pending or quarantined character work.");
 
             // Validation failures must occur before opening the save-bound mutation.
@@ -470,7 +470,7 @@ namespace NexusForever.Game.Entity
                 throw new QuestException($"Player {player.CharacterId} tried to start quest {info.Entry.Id} without meeting the prerequisites!");
         }
 
-        private bool QuestAcceptanceBusy(Player owner)
+        private bool OrdinaryQuestMutationBusy(Player owner)
             => questRewardReload || questRewardInvalidated || contractClaimOperation != null || QuestCompletionBusy(owner);
 
         private void PrepareSharedQuestAcceptance(IQuestInfo info, IQuest quest)
@@ -718,6 +718,12 @@ namespace NexusForever.Game.Entity
         /// Retry an inactive quest id that was previously failed.
         /// </summary>
         public void QuestRetry(ushort questId)
+            => QuestRetry(questId, publishOnSave: false);
+
+        public void QuestRetryFromClient(ushort questId)
+            => QuestRetry(questId, publishOnSave: true);
+
+        private void QuestRetry(ushort questId, bool publishOnSave)
         {
             IQuestInfo info = GetGlobalQuestManager().GetQuestInfo(questId);
             if (info == null)
@@ -730,13 +736,20 @@ namespace NexusForever.Game.Entity
             if (quest.State != QuestState.Botched)
                 throw new QuestException($"Player {player.CharacterId} tried to restart quest {questId} which hasn't been failed!");
 
-            QuestAdd(info, quest, null);
+            PrepareQuestAcceptance(info, quest, null);
+            ApplyQuestLifecycleChange(info, publishOnSave, () => TryApplyQuestAcceptance(info, null));
         }
 
         /// <summary>
         /// Abandon an active quest.
         /// </summary>
         public void QuestAbandon(ushort questId)
+            => QuestAbandon(questId, publishOnSave: false);
+
+        public void QuestAbandonFromClient(ushort questId)
+            => QuestAbandon(questId, publishOnSave: true);
+
+        private void QuestAbandon(ushort questId, bool publishOnSave)
         {
             if (GetGlobalQuestManager().GetQuestInfo(questId) == null)
                 throw new ArgumentException($"Invalid quest {questId}!");
@@ -748,6 +761,12 @@ namespace NexusForever.Game.Entity
             if (!quest.CanAbandon())
                 throw new QuestException($"Player {player.CharacterId} tried to abandon quest {questId} which can't be abandoned!");
 
+            ApplyQuestLifecycleChange(quest.Info, publishOnSave, () => ApplyQuestAbandon(quest));
+        }
+
+        private bool ApplyQuestAbandon(IQuest quest)
+        {
+            ushort questId = quest.Id;
             // don't delete quests that have been mentioned, they may not be able to be re-collected.
             if (!quest.PendingCreate && quest.CanDelete())
                 quest.EnqueueDelete(true);
@@ -777,6 +796,21 @@ namespace NexusForever.Game.Entity
                 quest.State = QuestState.Abandoned;
 
             log.Trace($"Abandoned quest {questId}.");
+            return true;
+        }
+
+        private void ApplyQuestLifecycleChange(IQuestInfo info, bool publishOnSave, Func<bool> mutate)
+        {
+            if (!publishOnSave || info.IsContract() || player is not Player owner || owner.Session is not GameSession session)
+            {
+                mutate();
+                return;
+            }
+
+            if (OrdinaryQuestMutationBusy(owner))
+                throw new QuestException("Quest lifecycle changes cannot overlap pending or quarantined character work.");
+
+            SaveOrdinaryQuestMutation(owner, session, mutate, afterCommit: null);
         }
 
         /// <summary>
@@ -1397,7 +1431,7 @@ namespace NexusForever.Game.Entity
             var owner = player as Player;
             var session = player.Session as GameSession;
             bool saveBeforePublishing = !info.IsContract() && owner != null && session != null;
-            if (saveBeforePublishing && QuestAcceptanceBusy(owner))
+            if (saveBeforePublishing && OrdinaryQuestMutationBusy(owner))
                 throw new QuestException("Shared quest acceptance cannot overlap pending or quarantined character work.");
 
             PrepareSharedQuestAcceptance(info, GetQuest(questId, GetQuestFlags.All));

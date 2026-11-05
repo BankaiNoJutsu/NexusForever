@@ -22077,6 +22077,20 @@ evidence is under `artifacts/continuation-20261104/quest-share-publication/`.
 Contract sharing, delivery after a socket failure and native client behavior
 remain separate.
 
+#### Committed quest abandon and retry
+
+5 November 2026. The World handlers for ordinary quest abandon and retry
+hold quest and inventory notices until the original Character save commits.
+Abandon publishes the resulting state after the deletion. Retry saves the
+quest state and its pushed items together. A rejected save leaves the stored
+state and inventory intact so a fresh session can submit the request again.
+
+All four encrypted loopback baselines received the abandon state or the retry
+item grant while SQL still held the previous state. The owning build passed
+with zero warnings or errors and all 129 scoped tests passed. Local evidence is in
+`artifacts/continuation-20261105/quest-lifecycle-save/`.
+Contract lifecycle, deployed sockets and native client behavior remain separate.
+
 #### Public event completion ownership
 
 4 November 2026. Objective completion credit and team broadcasts belong to the
