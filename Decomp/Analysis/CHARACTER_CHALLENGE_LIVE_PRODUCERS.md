@@ -1,5 +1,51 @@
 # Live Character Challenge earning producers
 
+## Shared Challenge preference admission
+
+5 November 2026. Build 16042's `SetSharedChallengePreference` binding at
+`0x1407055b0` sends world opcode `0x012B` with option type 1 and the selected
+integer. The enum registration at `0x14070c3e6` passes three 16-byte records
+from `0x140c38260`. The helper at `0x1400f0520` reads the name pointer and
+integer from each record. The records use UTF-16 enum names.
+
+| Value | Name | Existing invitation gate |
+| --- | --- | --- |
+| 0 | AutoAccept | Allow invitations |
+| 1 | Prompt | Allow invitations |
+| 2 | AutoReject | Block invitations |
+
+The archived Interface Options addon uses AutoAccept as its default and sends
+Prompt when its checkbox is selected. The Challenge Log sends AutoReject
+through the same setter when the recipient selects Always Reject.
+[Options addon](https://github.com/NexusInstruments/CarbineAddons/blob/cf063b3e22b08f49ff51c12cec258a9f1cf86d68/OptionsInterface/OptionsInterface.lua#L768)
+· [Challenge Log](https://github.com/NexusInstruments/CarbineAddons/blob/cf063b3e22b08f49ff51c12cec258a9f1cf86d68/Challenges/ChallengeLog.lua#L1479)
+
+The server option handler projects the three known preferences into the
+existing stored invitation gate. Separate automatic activation remains open.
+The packet regression reads both 32-bit fields from the raw body and exercises
+the option handler followed by the existing invitation receiver. The baseline
+blocked AutoAccept and rejected AutoReject as malformed.
+The registered ChallengesLib table at `0x140b73890` has 13 methods before
+its null terminator. It includes both replies. The other library-name
+reference at `0x14050b6a1` registers the same callback at `0x140711f80`.
+A bounded scan for literal `mov edx, 0xc5`
+within 64 bytes of a direct dispatch at `0x1403f4900` confirmed four
+sites with choices 1, 2, 14 and 15. Other encodings and other opcodes remain
+outside that scan. A correlated share-init sender or packet is still needed.
+
+REA PE resource evidence
+`ev_f71b42226c3996b3e918194b6cb8eaa0e487687f1986da9cd7b0651c0f36a0b1`
+binds the client to SHA-256
+`231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`.
+LLVM disassembly and pinned addon source establish the option values and
+producer. Local evidence is under
+`artifacts/continuation-20261105/challenge-share-native/`.
+The first scoped run exposed a readiness fixture that omitted the World
+session binding used by character selection. The fixture now covers a failed
+load on the original Player and after replacement. The final owning build
+took 25 seconds with zero warnings or errors. All 77 scoped tests passed in
+34 seconds.
+
 ## Terminal Challenge area timers
 
 5 November 2026. Completing an attempt or reaching its active timeout

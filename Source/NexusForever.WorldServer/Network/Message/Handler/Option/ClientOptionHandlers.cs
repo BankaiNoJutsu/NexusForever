@@ -51,9 +51,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Option
                     session.Player.CastingOptions = (CastingOptionFlags)options.NewValue;
                     break;
                 case OptionType.SharedChallenge:
-                    if (options.NewValue > 1u)
-                        throw new InvalidPacketValueException($"Invalid shared challenge option received: {options.NewValue}");
-                    session.Player.SharedChallengeEnabled = options.NewValue != 0u;
+                    session.Player.SharedChallengeEnabled = (SharedChallengePreference)options.NewValue switch
+                    {
+                        SharedChallengePreference.AutoAccept or SharedChallengePreference.Prompt => true,
+                        SharedChallengePreference.AutoReject => false,
+                        _ => throw new InvalidPacketValueException($"Invalid shared challenge option received: {options.NewValue}")
+                    };
                     break;
                 default:
                     throw new InvalidPacketValueException($"Invalid option type received: {options.Type}");

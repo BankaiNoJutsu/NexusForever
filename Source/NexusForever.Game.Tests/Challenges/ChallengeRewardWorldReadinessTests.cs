@@ -93,13 +93,22 @@ public sealed class ChallengeRewardWorldReadinessTests
         using var read = f.Context(); Assert.Empty(read.CharacterChallengeAttempt); Assert.Empty(read.CharacterChallengeRewardTrack);
     }
 
-    [Fact]
-    public async Task FailedInitialLoadDisconnectsWithoutAdmittingOrCreatingRewardRows()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FailedInitialLoadDisconnectsOnlyTheOriginalActor(bool replacePlayer)
     {
         using var f = new Fixture(options); using var h = new Harness(f, () => throw new IOException("Initial reward identity unavailable."));
-        int entered = 0; h.Owner.PrepareForWorld(() => ++entered); await h.Drain();
+        h.World.Player = f.Player;
+        int entered = 0;
+        h.Owner.PrepareForWorld(() => ++entered);
+        if (replacePlayer)
+            h.World.Player = RecordingDispatchProxy<IPlayer>.Create(out _);
+        await h.Drain();
+
         Assert.Equal(0, entered); Assert.True(h.Owner.RequiresAuthoritativeReload); Assert.False(h.Owner.CharacterRewardsReady);
-        Assert.Single(h.Session.GetInvocations(nameof(IGameSession.ForceDisconnect))); Assert.Empty(h.Reloads);
+        Assert.Equal(replacePlayer ? 0 : 1, h.Session.GetInvocations(nameof(IGameSession.ForceDisconnect)).Count);
+        Assert.Empty(h.Reloads);
         using var read = f.Context(); Assert.Empty(read.CharacterChallengeAttempt); Assert.Empty(read.CharacterChallengeRewardTrack);
     }
 

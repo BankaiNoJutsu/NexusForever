@@ -2,9 +2,14 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Account.Option;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Challenges;
 using NexusForever.Game.Static.Option;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.Game.Tests.Transport;
+using NexusForever.GameTable;
+using NexusForever.GameTable.Model;
 using NexusForever.Network;
+using NexusForever.Network.World.Message.Model.Challenges;
 using NexusForever.Network.World.Message.Model.Option;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Option;
@@ -64,21 +69,35 @@ public class OptionHandlerTests
     }
 
     [Theory]
-    [InlineData(0u, false)]
-    [InlineData(1u, true)]
-    public void Options_SharedChallengeUpdatesPreference(uint value, bool expected)
+    [InlineData("0100000000000000", true)]
+    [InlineData("0100000001000000", true)]
+    [InlineData("0100000002000000", false)]
+    public void Options_SharedChallengeControlsInvitationAdmission(string body, bool expected)
     {
-        IWorldSession session = CreateSession(out _);
+        IWorldSession session = CreateSession(out var player);
+        player.SetProperty(nameof(IPlayer.Session), session);
+        player.SetProperty(nameof(IPlayer.SharedChallengeEnabled), !expected);
+        var tables = RecordingDispatchProxy<IGameTableManager>.Create(out var table);
+        table.SetProperty(nameof(IGameTableManager.Challenge), PlayerBindPointTests.Table(new ChallengeEntry { Id = 103 }));
+        var challengeManager = new ChallengeManager(session.Player, tables);
         var handler = new ClientOptionsHandler(NullLogger<ClientOptionsHandler>.Instance);
+        using var reader = new GamePacketReader(new MemoryStream(Convert.FromHexString(body)));
+        var packet = new ClientOptions();
+        packet.Read(reader);
 
-        handler.HandleMessage(session, CreateOptions(OptionType.SharedChallenge, value));
+        handler.HandleMessage(session, packet);
+        challengeManager.ReceiveShare(103, 200);
 
         Assert.Equal(expected, session.Player.SharedChallengeEnabled);
+        var recorded = (RecordingDispatchProxy<IWorldSession>)(object)session;
+        var invitations = recorded.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted))
+            .Select(call => call.Arguments[0]).OfType<ServerChallengeShared>();
+        Assert.Equal(expected ? 1 : 0, invitations.Count());
     }
 
     [Theory]
     [InlineData((uint)OptionType.Casting, 0x10u)]
-    [InlineData((uint)OptionType.SharedChallenge, 2u)]
+    [InlineData((uint)OptionType.SharedChallenge, 3u)]
     [InlineData(999u, 0u)]
     public void Options_WithInvalidTypeOrValueThrows(uint optionType, uint value)
     {

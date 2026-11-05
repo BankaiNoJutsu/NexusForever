@@ -4,7 +4,7 @@ using NexusForever.Network.Message;
 namespace NexusForever.Network.World.Message.Model.Option
 {
     // When Type is Casting, NewValue is a bitmask of CastingOptionFlags.
-    // When Type is SharedChallenge, NewValue only indicates whether the player wants to allow shared challenges.
+    // When Type is SharedChallenge, NewValue is a SharedChallengePreference.
     [Message(GameMessageOpcode.ClientOptions)]
     public class ClientOptions : IReadable
     {

@@ -301,6 +301,9 @@ failures and suppresses notices for superseded attempts.
 [Terminal Challenge area timers](CHARACTER_CHALLENGE_LIVE_PRODUCERS.md#terminal-challenge-area-timers)
 clear area grace on completion and active timeout, keeping inactive
 attempts from reporting an area failure.
+[Shared Challenge preference admission](CHARACTER_CHALLENGE_LIVE_PRODUCERS.md#shared-challenge-preference-admission)
+maps the three build 16042 option values into the existing invitation gate.
+Share initiation and automatic acceptance behavior remain open.
 The [configured MySQL gate](DESTINATION_PROVIDER_QUALIFICATION.md#challenge-and-contract-result-publication)
 passes nine original compiled cases, including the Contract companion reload
 and simulated lost commit acknowledgment, on separately migrated schemas.
