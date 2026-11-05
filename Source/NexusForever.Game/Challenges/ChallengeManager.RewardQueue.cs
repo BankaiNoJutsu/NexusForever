@@ -72,7 +72,7 @@ namespace NexusForever.Game.Challenges
                     if (copy.Any(intent => !ReferenceEquals(intent.Owner, owner))) throw new InvalidOperationException("Foreign queued reward intent.");
                     var ticket = owner.HoldRewardQueue();
                     if (quests != null && !quests.TryQueue(this, owner.player)) { ticket.Dispose(); return false; }
-                    if (contract != null && !contract.TryQueue(this, owner.player)) { ticket.Dispose(); return false; }
+                    if (contract != null && !contract.TryQueue(this, owner.player, events)) { ticket.Dispose(); return false; }
                     pending.Enqueue(new(copy, build, delivery, ticket, quests, contract, AfterCommit: afterCommit));
                     Pump(); return true;
                 }

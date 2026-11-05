@@ -57,6 +57,27 @@ evidence is under `artifacts/continuation-20261105/contract-wallet-notice-retry/
 The injected failures occur before enqueue. Deployed network delivery and
 public claim enablement remain separate.
 
+## Original actor during final claim publication
+
+5 November 2026. The queued Character claim and its credit reservation retain
+the original World queue and check the Player bound to the session. If the
+binding changes before live adoption, the retiring Player keeps its old
+balance and sends no item, credit or claim notice. If the balance enqueue
+itself changes the binding, achievement and quest callbacks and the pending
+reward-track reload stop. The durable claim, item and credit settle once.
+The retired actor requires a reload, and its queue leaves the replacement
+session alone.
+
+All four regressions failed against the corrected baseline. The 34-second
+build passed with zero warnings or errors. In the 3-minute 33-second scoped
+run, 345 tests passed and three lifecycle cases failed at admission because
+their fixture installed a session after queue construction. With the session
+attached at setup, the 28-second build kept the same Game DLL hash and all
+22 focused claim and lifecycle cases passed in 17 seconds. Local evidence is
+under `artifacts/continuation-20261105/contract-final-claim-owner/`.
+Public 07CE claims still need actual full-table delivery qualification and
+evidence for reset, earlier unclaimed rewards and excess points.
+
 ## Historical continuation
 
 Latest continuation: [Realm bank persistence and loading](REALM_BANK_CODECS_AND_LOADING.md)

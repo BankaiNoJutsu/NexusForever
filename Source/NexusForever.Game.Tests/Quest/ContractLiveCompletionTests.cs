@@ -676,7 +676,7 @@ public sealed partial class ContractLiveCompletionTests
         internal Fixture(DbContextOptions<CharacterContext> options, uint id = 9880, string fault = null, bool legacy = false, bool customManager = false,
             Func<PersistenceFixture, CharacterContext> rewardContexts = null, bool claimQueue = false,
             Func<NexusForever.Database.Auth.AuthContext> authContexts = null, NexusForever.Database.Auth.AuthDatabase authDatabase = null,
-            IWorldSession worldSession = null)
+            NexusForever.Network.Session.IGameSession worldSession = null)
         {
             Inner = new(options); Entry = ContractBuild16042Fixture.Quests().Single(row => row.Id == id);
             Entry.PushedItemIds = []; Entry.PushedItemCounts = []; // fields absent from the source-only scalar fixture
@@ -733,7 +733,8 @@ public sealed partial class ContractLiveCompletionTests
                 actorSession: worldSession, actorEvents: worldSession?.Events);
             if (worldSession != null)
             {
-                worldSession.Player = Actor.Player;
+                if (worldSession is IWorldSession world)
+                    world.Player = Actor.Player;
                 ((RecordingDispatchProxy<IAccount>)(object)Actor.Player.Account).SetProperty(nameof(IAccount.Session), worldSession);
             }
             ((RecordingDispatchProxy<IAccount>)(object)Actor.Player.Account).SetProperty(nameof(IAccount.RbacManager), RecordingDispatchProxy<IAccountRBACManager>.Create(out _));

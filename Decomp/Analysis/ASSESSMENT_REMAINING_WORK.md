@@ -2016,6 +2016,9 @@ from the changed behavior and dependency surface, including at integration miles
    stops the remaining wallet and claim notices when the World session changes
    its bound Player or queue. [Wallet notice retry](CONTRACT_ACCOUNT_SESSION_SYNC.md#wallet-notice-retry)
    resumes a failed post-commit enqueue before the claimed bit can publish.
+   [Final claim publication](CONTRACT_ACCOUNT_SESSION_SYNC.md#original-actor-during-final-claim-publication)
+   retains the original Player and queue for Character credit adoption and
+   publication, including the callbacks after a balance notice.
    Connect the remaining
    reset/unclaimed/excess policy and complete canonical delivery/recovery gates
    before enabling public07CE. Do not expose a partial set of726 choices or use

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract.Account;
+using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Quest;
@@ -12,6 +13,9 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Network.World.Message.Model.Reward;
+using NexusForever.Shared.Game.Events;
+using NexusForever.WorldServer.Network;
 
 namespace NexusForever.Game.Tests.Quest;
 
@@ -54,6 +58,59 @@ public sealed partial class ContractLiveCompletionTests
         using var read = f.Inner.Context(); Assert.Single(read.CharacterContractRewardClaim); Assert.Equal(2500100ul, read.CharacterCurrency.Single().Amount);
         Assert.Equal(100ul, f.Actor.Player.CurrencyManager.Single().Amount); Assert.Equal(messages, f.Inner.Source.SessionProxy.GetInvocations("EnqueueMessageEncrypted").Count);
         Assert.True(f.Actor.Quests.RequiresAuthoritativeReload); Assert.True(Assert.IsType<CurrencyManager>(f.Actor.Player.CurrencyManager).RequiresContractCurrencyReload);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task RetiringTheWorldActorStopsUnsentFinalClaimNoticesAndCreditEffects(bool duringBalanceNotice, bool replacePlayer)
+    {
+        var world = RecordingDispatchProxy<IWorldSession>.Create(out var session);
+        session.SetProperty(nameof(IGameSession.Events), new EventQueue());
+        var commit = new QueueClaimPause();
+        using var f = new Fixture(options, rewardContexts: inner => inner.Context(commit), claimQueue: true, worldSession: world);
+        f.Inner.Source.PlayerProxy.SetProperty(nameof(IPlayer.Session), world);
+        uint reward = await SeedQueuedClaim(f);
+        var achievements = (RecordingDispatchProxy<ICharacterAchievementManager>)(object)f.Actor.Player.AchievementManager;
+        session.Invocations.Clear();
+        if (duringBalanceNotice)
+            session.SetMethodHandler(nameof(IGameSession.EnqueueMessageEncrypted), args =>
+            {
+                if (args[0] is ServerCombatReward)
+                    RetireActor();
+                return null;
+            });
+
+        Assert.True(f.Actor.Quests.QueueContractRewardClaim(reward, 0));
+        await AwaitClaimGate(f, commit);
+        if (!duringBalanceNotice)
+            RetireActor();
+        commit.Release.TrySetResult(true);
+        await f.Actor.Drain();
+
+        using var read = f.Inner.Context();
+        Assert.Single(read.CharacterContractRewardClaim);
+        Assert.Single(read.Item);
+        Assert.Equal(2500100ul, read.CharacterCurrency.Single().Amount);
+        Assert.Equal(duringBalanceNotice ? 2500100ul : 100ul, f.Actor.Player.CurrencyManager.Single().Amount);
+        var packets = session.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Select(call => call.Arguments[0]).ToArray();
+        Assert.Equal(duringBalanceNotice ? 1 : 0, packets.OfType<ServerItemAdd>().Count());
+        Assert.Equal(duringBalanceNotice ? 1 : 0, packets.OfType<ServerCombatReward>().Count());
+        Assert.Empty(packets.OfType<ServerRewardTracksReload>());
+        Assert.Empty(achievements.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
+        Assert.Empty(session.GetInvocations(nameof(IGameSession.ForceDisconnect)));
+        Assert.True(f.Actor.Quests.RequiresAuthoritativeReload);
+        Assert.False(f.Actor.Challenges.HasPendingRewardOperation);
+
+        void RetireActor()
+        {
+            if (replacePlayer)
+                world.Player = RecordingDispatchProxy<IPlayer>.Create(out _);
+            else
+                session.SetProperty(nameof(IGameSession.Events), new EventQueue());
+        }
     }
 
     private static async Task AwaitClaimGate(Fixture f, QueueClaimPause gate)

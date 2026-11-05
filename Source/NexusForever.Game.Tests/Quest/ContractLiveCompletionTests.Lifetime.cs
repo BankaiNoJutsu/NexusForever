@@ -1,4 +1,3 @@
-using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Entity;
@@ -18,10 +17,9 @@ public sealed partial class ContractLiveCompletionTests
     public async Task NativeDisconnectAndLogoutFlagsRefuseAdmissionAndPreventLateCommittedClaimPublication(string state, bool afterBegin)
     {
         var gate = new QueueClaimPause();
-        using var f = new Fixture(options, rewardContexts: inner => inner.Context(gate), claimQueue: true);
-        var session = new ContractNativeSession(); f.Actor.Set(nameof(Player.Session), session);
+        var session = new ContractNativeSession();
+        using var f = new Fixture(options, rewardContexts: inner => inner.Context(gate), claimQueue: true, worldSession: session);
         f.Inner.Source.PlayerProxy.SetProperty(nameof(IPlayer.Session), session);
-        ((RecordingDispatchProxy<IAccount>)(object)f.Actor.Player.Account).SetProperty(nameof(IAccount.Session), session);
         uint reward = await SeedQueuedClaim(f); int messages = session.Messages.Count;
         if (afterBegin) { Assert.True(f.Actor.Quests.QueueContractRewardClaim(reward, 0)); await AwaitClaimGate(f, gate); }
         if (state == "disconnect") session.ForceDisconnect();

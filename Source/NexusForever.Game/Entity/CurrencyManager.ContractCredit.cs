@@ -8,6 +8,7 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Quest;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
+using NexusForever.Shared.Game.Events;
 
 namespace NexusForever.Game.Entity
 {
@@ -85,6 +86,7 @@ namespace NexusForever.Game.Entity
             private readonly List<Mutation> deferred = [];
             private readonly uint accountId = account.Id;
             private readonly IGameSession accountSession = account.Session;
+            private readonly EventQueue events = session.Events;
             private ulong rollbackShadow = expected.BeforeAmount, commitShadow = expected.AfterAmount;
             private CharacterChallengeRewardCommand command;
             private IInventoryRewardReservation items;
@@ -100,6 +102,7 @@ namespace NexusForever.Game.Entity
                     || session is NetworkSession { IsDisconnecting: true } || manager.player.LogoutManager?.State is LogoutState.Logout or LogoutState.Finished
                     || manager.player.CharacterId != quote.CharacterId || !ReferenceEquals(manager.player.Account, account)
                     || account.Id != accountId || !ReferenceEquals(account.Session, accountSession) || !ReferenceEquals(manager.player.Session, session)
+                    || !ReferenceEquals(session.Events, events) || session is IPlayerSession bound && !ReferenceEquals(bound.Player, manager.player)
                     || registered != manager.currencies.TryGetValue(Type, out var current) || registered && !ReferenceEquals(current, wallet)
                     || wallet.CharacterId != quote.CharacterId || wallet.Entry.Id != (uint)Type || wallet.Entry.CapAmount != quote.Award.CharacterCurrency.CapAmount)
                     throw new InvalidOperationException("Contract credit lost its original live Character/account/session wallet.");
@@ -148,19 +151,19 @@ namespace NexusForever.Game.Entity
                 if (state != 2) return false;
                 try
                 {
-                    // A newly created wallet is now the authoritative member.
-                    if (!ReferenceEquals(manager.contractCredit, this)) throw new InvalidOperationException("Contract credit lost its publication ticket.");
-                    ValidatePublication();
+                    Validate();
                     state = 3; manager.publishingContractCredit = true;
                     session.EnqueueMessageEncrypted(new ServerCombatReward { Stat = (byte)(Type - 1), NewValue = expected.AfterAmount });
+                    Validate();
                     if (expected.Granted != 0)
                     {
-                        ValidatePublication();
                         manager.player.AchievementManager.CheckAchievements(manager.player, AchievementType.CurrencyEarned, (uint)Type, count: ToAchievementCount(expected.Granted));
-                        ValidatePublication();
+                        Validate();
                         CurrencyQuestObjectiveUpdater.OnCurrencyAdded(manager.player, Type, expected.Granted);
                     }
-                    Replay(); manager.contractCredit = null; return true;
+                    Replay();
+                    Validate();
+                    manager.contractCredit = null; return true;
                 }
                 catch { Quarantine(); return false; }
                 finally { manager.publishingContractCredit = false; }
@@ -189,16 +192,6 @@ namespace NexusForever.Game.Entity
                     else manager.ApplyCurrencyAdd(wallet.Entry, mutation.Amount, mutation.Loot);
                 }
                 deferred.Clear();
-            }
-            private void ValidatePublication()
-            {
-                if (manager.contractCurrencyReload || manager.player.CharacterId != quote.CharacterId
-                    || session is NetworkSession { IsDisconnecting: true } || manager.player.LogoutManager?.State is LogoutState.Logout or LogoutState.Finished
-                    || !ReferenceEquals(manager.player.Account, account) || account.Id != accountId || !ReferenceEquals(account.Session, accountSession)
-                    || !ReferenceEquals(manager.player.Session, session)
-                    || wallet.CharacterId != quote.CharacterId || wallet.Entry.Id != (uint)Type || wallet.Entry.CapAmount != quote.Award.CharacterCurrency.CapAmount
-                    || !manager.currencies.TryGetValue(Type, out var current) || !ReferenceEquals(current, wallet))
-                    throw new InvalidOperationException("Contract credit publication lost its original actor.");
             }
             internal void Quarantine()
             {

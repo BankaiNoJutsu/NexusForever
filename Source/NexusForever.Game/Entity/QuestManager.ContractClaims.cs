@@ -7,6 +7,7 @@ using NexusForever.Game.Quest.Reward;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Static;
+using NexusForever.Shared.Game.Events;
 
 namespace NexusForever.Game.Entity
 {
@@ -75,6 +76,7 @@ namespace NexusForever.Game.Entity
             private readonly IAccount account;
             private readonly uint accountId;
             private readonly IGameSession session;
+            private readonly EventQueue events;
             private IDisposable scope;
             private CurrencyManager.ContractCreditReservation credit;
             private IInventoryRewardReservation delivery;
@@ -89,11 +91,13 @@ namespace NexusForever.Game.Entity
                 this.owner = owner; this.challenges = challenges; this.catalog = catalog; this.before = before; this.quote = quote;
                 this.database = database; this.scope = scope; this.census = census;
                 account = owner.player.Account; accountId = account.Id; session = owner.player.Session;
+                events = session.Events;
             }
             private bool Live(bool published = false) => owner.IsContractActorLive() && !invalidated && !owner.questRewardReload && !owner.questRewardInvalidated
                 && ReferenceEquals(owner.contractClaimOperation, this) && ReferenceEquals(owner.player.QuestManager, owner)
                 && ReferenceEquals(owner.player.ChallengeManager, challenges) && ReferenceEquals(owner.player.Account, account)
                 && account.Id == accountId && ReferenceEquals(account.Session, session) && ReferenceEquals(owner.player.Session, session)
+                && ReferenceEquals(session.Events, events) && (session is not IPlayerSession bound || ReferenceEquals(bound.Player, owner.player))
                 && owner.player.CharacterId == quote.CharacterId && (published || ReferenceEquals(owner.committedContractTracks, before));
             internal bool IsPreparingOwner() => phase == 0 && Live() && !challenges.HasPendingRewardOperation;
             internal void Prepare(CharacterChallengeRewardCommand command, IInventoryRewardReservation delivery, CurrencyManager.ContractCreditReservation credit)
@@ -102,9 +106,9 @@ namespace NexusForever.Game.Entity
                     throw new InvalidOperationException("Contract claim preparation lost its actor snapshot.");
                 this.command = command; this.delivery = delivery; this.credit = credit; phase = 1;
             }
-            internal bool TryQueue(object queueOwner, IPlayer player)
+            internal bool TryQueue(object queueOwner, IPlayer player, EventQueue queueEvents)
             {
-                if (phase != 1 || queue != null || !ReferenceEquals(owner.player, player) || !Live()) return false;
+                if (phase != 1 || queue != null || !ReferenceEquals(owner.player, player) || !ReferenceEquals(events, queueEvents) || !Live()) return false;
                 queue = queueOwner; phase = 2; return true;
             }
             internal void Begin(object queueOwner, CharacterChallengeRewardCommand next, string executionDatabase, IInventoryRewardReservation items)
@@ -139,7 +143,7 @@ namespace NexusForever.Game.Entity
                 catch { Quarantine(); return false; }
             }
             internal bool CanPublish() => phase == 4 && Live();
-            internal bool PublishCurrency() => CanPublish() && (credit?.Publish() ?? true);
+            internal bool PublishCurrency() => CanPublish() && (credit?.Publish() ?? true) && CanPublish();
             internal bool Finish(CharacterChallengeRewardExecution result)
             {
                 if (phase != 4 || !Live(published: true) || !Proof(result) || owner.committedContractTracks == null
