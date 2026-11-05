@@ -85,9 +85,10 @@ namespace NexusForever.Game.Housing
         {
             owner.RequireDonationSave(reservation);
             owner.RequirePaidNameSave(reservation);
+            owner.RequireDecorPurchaseSave(reservation);
             owner.RequireRemodelSave(reservation);
             owner.RequireAssociationSave(reservation);
-            if (context.IsSaveRejected || !registered() && !owner.OwnsCommunityRetirement(reservation) && !owner.OwnsDonation(reservation) && !owner.OwnsPaidName(reservation) && !owner.OwnsRemodel(reservation) && !owner.OwnsAssociation(reservation))
+            if (context.IsSaveRejected || !registered() && !owner.OwnsCommunityRetirement(reservation) && !owner.OwnsDonation(reservation) && !owner.OwnsPaidName(reservation) && !owner.OwnsDecorPurchase(reservation) && !owner.OwnsRemodel(reservation) && !owner.OwnsAssociation(reservation))
                 throw new InvalidOperationException("Residence lost its original registered owner or fresh context.");
             CharacterDatabaseIdentity.Require(context, database);
         }
@@ -126,7 +127,7 @@ namespace NexusForever.Game.Housing
             SkyWallpaperId = row.Sky, Flags = row.Flags, ResourceSharing = row.Resource, GardenSharing = row.Garden };
         private ResidencePlotModel Model(Plot row) => row == null ? null : new() { Id = Id, Index = row.Index, PlotInfoId = row.Info,
             PlugItemId = row.Plug, PlugFacing = row.Facing, BuildState = row.State };
-        private ResidenceDecor Model(Decoration row) => row == null ? null : new() { Id = Id, DecorId = row.Id, DecorInfoId = row.Info,
+        internal ResidenceDecor Model(Decoration row) => row == null ? null : new() { Id = Id, DecorId = row.Id, DecorInfoId = row.Info,
             DecorType = row.Type, DecorData = row.Data, HookBagIndex = row.Bag, HookIndex = row.Hook, PlotIndex = row.Plot,
             Scale = row.Scale, X = row.X, Y = row.Y, Z = row.Z, Qx = row.Qx, Qy = row.Qy, Qz = row.Qz, Qw = row.Qw,
             ActivePropUnitId = row.Active, DecorParentId = row.Parent, ColourShiftId = row.Colour };

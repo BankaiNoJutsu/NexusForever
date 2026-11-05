@@ -336,6 +336,7 @@ namespace NexusForever.Game.Housing
                 return Task.WhenAll(stagedSaveUnits.Where(unit => !ReferenceEquals(unit.Key, current)).Select(unit => unit.Value.Task)
                     .Concat(donation is { Prepared: true } ? [donation.Completion.Task] : [])
                     .Concat(paidName != null ? [paidName.Completion] : [])
+                    .Concat(DecorPurchaseSavePending ? [CurrentDecorPurchase.Completion.Task] : [])
                     .Concat(CurrentRemodel?.Prepared == true ? [CurrentRemodel.Completion.Task] : [])
                     .Concat(AssociationSavePending ? [association.Completion.Task] : []));
         }

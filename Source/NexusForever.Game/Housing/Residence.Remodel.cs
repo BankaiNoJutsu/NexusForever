@@ -113,7 +113,7 @@ namespace NexusForever.Game.Housing
                     if (Finished || !ReferenceEquals(owner.CurrentRemodel, this)) return false;
                     if (Prepared) return true;
                     if (!CurrentRoot || !CurrentPlayer || !owner.CanModifyResidence(player)) { Finish(); return false; }
-                    if (owner.stagedSaveUnits.Count != 0 || owner.communitySaveOwner != null || owner.AssociationSavePending || owner.donation != null || owner.paidName != null) return false;
+                    if (owner.stagedSaveUnits.Count != 0 || owner.communitySaveOwner != null || owner.AssociationSavePending || owner.donation != null || owner.paidName != null || owner.DecorPurchaseSavePending) return false;
                     var captured = owner.CapturePersistence();
                     target = captured with { Header = captured.Header with { Roof = roof ?? captured.Header.Roof, Wallpaper = wallpaper ?? captured.Header.Wallpaper,
                         Entry = entry ?? captured.Header.Entry, Door = door ?? captured.Header.Door, Sky = sky ?? captured.Header.Sky,

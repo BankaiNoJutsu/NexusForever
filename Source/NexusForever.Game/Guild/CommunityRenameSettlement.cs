@@ -14,7 +14,7 @@ using NLog;
 
 namespace NexusForever.Game.Guild
 {
-    internal sealed class CommunityRenameSettlement
+    internal sealed class CommunityRenameSettlement : IHousingFeeOperation
     {
         private static readonly Logger log = LogManager.GetCurrentClassLogger();
         private readonly GlobalGuildManager registry;
@@ -124,6 +124,10 @@ namespace NexusForever.Game.Guild
                 residence.Stage(context);
             }
         }
+        CharacterSaveReconciliation IHousingFeeOperation.CreateReceipt(bool primary) => CreateReceipt(primary);
+        void IHousingFeeOperation.Stage(CharacterContext context) => StageNames(context);
+        void IHousingFeeOperation.PrepareEffects() { }
+        void IHousingFeeOperation.ApplyCommittedEffects() { }
         private void PreparePublication()
         {
             registry.ConfirmPaidName(community, name, reservation);

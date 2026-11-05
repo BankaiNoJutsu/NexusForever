@@ -3,6 +3,7 @@ using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Challenges;
 using NexusForever.Game.Guild;
+using NexusForever.Game.Housing;
 using NexusForever.Game.Quest;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network.Session;
@@ -18,7 +19,7 @@ namespace NexusForever.Game.Entity
         internal bool HousingNameCanBegin => housingNameActor == null && bankActor == null && auctionBidActor == null
             && !IsNormalSaveInProgress && !RewardStateRequiresReload && CurrencyManager is CurrencyManager { HasPendingContractCurrency: false };
 
-        internal HousingNameActor BeginHousingName(CommunityRenameSettlement command, CurrencyType type, ulong cost)
+        internal HousingNameActor BeginHousingName(IHousingFeeOperation command, CurrencyType type, ulong cost)
         {
             if (!HousingNameCanBegin || !TryAcquireInventorySave(out var lease)) return null;
             HousingNameActor actor = null;
@@ -39,7 +40,7 @@ namespace NexusForever.Game.Entity
         internal sealed class HousingNameActor
         {
             private readonly Player player;
-            private readonly CommunityRenameSettlement command;
+            private readonly IHousingFeeOperation command;
             private readonly IAccount account;
             private readonly IGameSession session;
             private readonly CurrencyManager currencies;
@@ -53,7 +54,7 @@ namespace NexusForever.Game.Entity
             private IDisposable publication;
             private CurrencyManager.BankCurrencyReservation wallet;
             private NormalRewardSave snapshot;
-            private bool capturing, enrolling, ended, primary = true;
+            private bool capturing, enrolling, ended, committedEffectsPending, primary = true;
             internal bool Retired, CleanupRequested, DisposeRequested;
             internal bool Publishing { get; private set; }
             internal bool ReadyToPublish { get; private set; }
@@ -67,7 +68,7 @@ namespace NexusForever.Game.Entity
                 && session is not NetworkSession { IsDisconnecting: true }
                 && player.LogoutManager?.State is not (LogoutState.Logout or LogoutState.Finished);
 
-            internal HousingNameActor(Player player, CommunityRenameSettlement command, IDisposable lease)
+            internal HousingNameActor(Player player, IHousingFeeOperation command, IDisposable lease)
             {
                 this.player = player; this.command = command; inventoryLease = lease;
                 account = player.Account; session = player.Session; currencies = player.CurrencyManager as CurrencyManager;
@@ -90,6 +91,7 @@ namespace NexusForever.Game.Entity
                 frozen = QuestSaveScope.AcquireFrozen(command, Token, Database, character);
                 if (cost != 0) wallet = currencies.CaptureFrozenCurrency(player, Token,
                     [new(type, cost, true)], Owns, action => action());
+                command.PrepareEffects();
                 CaptureSnapshot();
             }
             private void CaptureSnapshot()
@@ -106,8 +108,8 @@ namespace NexusForever.Game.Entity
             }
             internal Action<CharacterContext> CaptureCurrencies(object token)
                 => wallet == null ? currencies.CaptureNormalSave(token) : primary ? wallet.CaptureHousingPrimarySave(token) : wallet.CaptureNormalSave(token);
-            internal HousingRenameSaveReconciliation CaptureReceipt() => command.CreateReceipt(primary);
-            internal void StageNames(CharacterContext context) { if (primary) command.StageNames(context); }
+            internal CharacterSaveReconciliation CaptureReceipt() => command.CreateReceipt(primary);
+            internal void StageNames(CharacterContext context) { if (primary) command.Stage(context); }
 
             // Both enrollment transitions execute on the retained session queue.
             // SQL continuations only complete a task; they never apply gameplay
@@ -115,6 +117,11 @@ namespace NexusForever.Game.Entity
             internal Task Attempt()
             {
                 if (!Owns() || ReadyToPublish) throw new InvalidOperationException("Paid name has no pending original actor save.");
+                if (committedEffectsPending)
+                {
+                    command.ApplyCommittedEffects();
+                    committedEffectsPending = false;
+                }
                 if (snapshot == null) CaptureSnapshot();
                 var terminal = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                 Task auth;
@@ -140,6 +147,7 @@ namespace NexusForever.Game.Entity
                             if (primary)
                             {
                                 wallet?.PrepareHousingOrdinary(); primary = false;
+                                committedEffectsPending = true;
                                 // Save the adopted wallet and any deferred earning
                                 // effects through the same original full actor.
                             }

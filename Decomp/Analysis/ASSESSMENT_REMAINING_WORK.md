@@ -10,6 +10,16 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Public housing decor purchase settlement](HOUSING_DECOR_PURCHASE_SETTLEMENT.md)
+now freezes the accepted request/fee and commits it with the original Character
+and residence graph before live decor adoption and broadcast. Eleven new/70 final
+scoped cases pass, including real Character/Guild achievement rollback and
+retryable postcommit forwarding. The portable report binds configured-provider
+evidence and source/DLL/review identity. No migration is added. Physical
+cross-guild replay, restart/load, socket/native, actual-table and retail evidence
+remain open. Continue independent economic, Contract and broader gameplay work;
+do not repeat the completed decor integration or infer retail completion.
+
 [GameTable cache preparation](assessment-snapshot/PR-TRIAGE.md#gametable-cache-preparation)
 verifies #576's recovery cases on the fork and keeps each cached load bound
 to the directory whose version was checked.
@@ -2115,8 +2125,11 @@ from the changed behavior and dependency surface, including at integration miles
    gate above. Cross-residence donation now has the later11,797-full/25-MySQL
    settlement and world-update publication gate linked above. Community rename
    fee/name settlement now has the later11,828-full/31-MySQL gate linked above;
-   do not repeat that integration. Continue the remaining housing fee and
-   publication flows. Committed community privacy now has the later
+   do not repeat that integration. Public decor purchasing now has the later
+   [atomic fee/decor settlement](HOUSING_DECOR_PURCHASE_SETTLEMENT.md), with11 new,
+   70 final scoped and12 configured MySQL cases. Do not repeat that integration;
+   durable cross-guild replay and the broader economic/publication queue remain.
+   Committed community privacy now has the later
    11,854-full/26-MySQL gate linked above; do not repeat that integration.
    Community visitor/search directory recovery now has the later11,879-full/
    25-MySQL gate linked above, including creation, ordinary rename and settled

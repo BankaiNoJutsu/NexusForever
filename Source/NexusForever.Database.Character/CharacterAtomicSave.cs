@@ -44,6 +44,10 @@ namespace NexusForever.Database.Character
             Action<CharacterContext> enroll, HousingRenameSaveReconciliation receipt)
             => ExecuteReconciliation(contexts, characterId, enroll, receipt);
 
+        public static Task ExecuteHousingDecorPurchaseReconciliation(Func<CharacterContext> contexts, ulong characterId,
+            Action<CharacterContext> enroll, HousingDecorPurchaseSaveReconciliation receipt)
+            => ExecuteReconciliation(contexts, characterId, enroll, receipt);
+
         public static Task ExecuteResourceConversionReconciliation(Func<CharacterContext> contexts, ulong characterId,
             Action<CharacterContext> enroll, ResourceConversionSaveReconciliation receipt)
             => ExecuteReconciliation(contexts, characterId, enroll, receipt);
@@ -67,6 +71,7 @@ namespace NexusForever.Database.Character
                 }
                 catch (BankReconciliationConflictException) { throw; }
                 catch (HousingRenameConflictException) { throw; }
+                catch (HousingDecorPurchaseConflictException) { throw; }
                 catch (Exception error) when (!entered)
                 {
                     // The actor's persistence enrollment did not run. Context

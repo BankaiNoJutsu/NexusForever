@@ -20,6 +20,33 @@ namespace NexusForever.Game.Achievement
         private readonly IGroupStateManager groupStateManager;
         private readonly IPlayerManager playerManager;
         private readonly IGameTableManager gameTableManager;
+        private List<Action> housingGuildEffects;
+
+        // Character progress joins the frozen purchase save. Its guild belongs
+        // to a separate save owner and must not observe an unpaid purchase.
+        internal IReadOnlyList<Action> PrepareHousingDecorPurchase()
+        {
+            if (housingGuildEffects != null) throw new InvalidOperationException("Housing achievement preparation is already active.");
+            var pending = new List<Action>();
+            housingGuildEffects = pending;
+            try { CheckAchievements(owner, AchievementType.HousingDecorPurchase, 0); }
+            finally { housingGuildEffects = null; }
+            return pending;
+        }
+
+        private void ForwardGuildEffect(IGuild guild, Action effect)
+        {
+            if (housingGuildEffects != null)
+            {
+                var manager = guild.AchievementManager;
+                housingGuildEffects.Add(() =>
+                {
+                    if (guild is NexusForever.Game.Guild.GuildBase { PendingDelete: true } || !ReferenceEquals(guild.AchievementManager, manager)) return;
+                    effect();
+                });
+            }
+            else effect();
+        }
         protected override ulong OwnerId => owner.CharacterId;
         protected override Func<CharacterContext, bool> CharacterSaveOwner => TrySaveExperience;
         private bool TrySaveExperience(CharacterContext context)
@@ -89,7 +116,11 @@ namespace NexusForever.Game.Achievement
         {
             CheckAchievements(target, GetGlobalAchievementManager().GetCharacterAchievements(type), objectId, objectIdAlt, count);
             if (ShouldForwardToGuildAchievements(target, type))
-                target.GuildManager.Guild?.AchievementManager.CheckAchievements(target, type, objectId, objectIdAlt, count);
+            {
+                var guild = target.GuildManager.Guild;
+                var guildAchievements = guild?.AchievementManager;
+                if (guildAchievements != null) ForwardGuildEffect(guild, () => guildAchievements.CheckAchievements(target, type, objectId, objectIdAlt, count));
+            }
         }
 
         /// <summary>
@@ -99,7 +130,11 @@ namespace NexusForever.Game.Achievement
         {
             SetAchievementProgress(target, GetGlobalAchievementManager().GetCharacterAchievements(type), objectId, objectIdAlt, value);
             if (ShouldForwardToGuildAchievements(target, type))
-                target.GuildManager.Guild?.AchievementManager.SetAchievementProgress(target, type, objectId, objectIdAlt, value);
+            {
+                var guild = target.GuildManager.Guild;
+                var guildAchievements = guild?.AchievementManager;
+                if (guildAchievements != null) ForwardGuildEffect(guild, () => guildAchievements.SetAchievementProgress(target, type, objectId, objectIdAlt, value));
+            }
         }
 
         private bool ShouldForwardToGuildAchievements(IPlayer target, AchievementType type)

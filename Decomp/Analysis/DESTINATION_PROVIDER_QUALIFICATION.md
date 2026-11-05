@@ -258,6 +258,27 @@ shared virtual-effect replay, actual tables, sockets and native/retail remain
 open. Entitlement policy is unchanged. No full solution build or full test suite
 was run under the user's scoped-only policy; native client/CUA remain stopped.
 
+### Public housing decor purchase settlement
+
+5 November2026. The [public decor purchase milestone](HOUSING_DECOR_PURCHASE_SETTLEMENT.md)
+passes12 final configured MySQL8.4.13 cases:11 new decor cases and one unchanged
+community rename control. Each case uses a fresh disposable Character schema,
+all49 migrations and `MySqlRetryingExecutionStrategy`; the observed session
+profile is REPEATABLE-READ with TLS required. Fee/decor/Character atomicity,
+either-half rejection, acknowledgement loss, original actor/SQL permission,
+committed publication and Character/Guild achievement rollback/callback retry
+are exercised through the public handler. No migration or original data changes.
+
+The [portable report](coverage/housing-decor-purchase-20261105.json) binds all6344
+Source/Tools inputs,22 changed Source files, matching owning/test/provider DLLs,
+70 final scoped cases and both final zero-finding review axes. The earlier159
+affected cases and11-provider-case candidate retain their pre-correction scope.
+Both provider runs drop all23 owned schemas. The recorded server6896/port53885
+shut down gracefully; its process, listener and final runner/helper are absent.
+Final MySQL run:199.343s. Physical crash/restart, durable cross-guild callback
+replay, deployment/load, socket/native, actual-table and retail remain open.
+Native client/CUA remain stopped; defaults15:1/17:1 and no-auto-grant rules hold.
+
 ### Autonomous crafting account outbox
 
 5 November 2026. WorldServer now registers a background crafting account worker

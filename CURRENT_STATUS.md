@@ -1,5 +1,13 @@
 # NexusForever Feature Restoration - Current Status
 
+[Public housing decor purchases](Decomp/Analysis/HOUSING_DECOR_PURCHASE_SETTLEMENT.md)
+now couple the original Character save, fee and residence decor row, then adopt
+and publish committed state. Eleven new regressions and70 final scoped cases
+pass; the linked portable report records configured-provider evidence and its
+exact candidate boundaries. Deferred guild effects cannot advance an unpaid
+purchase and retain world-update retry after commit. Physical restart/outbox,
+deployment and native/retail qualification remain open.
+
 The [28-case MySQL normal bid and buyout settlement gate](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#normal-bid-and-buyout-sql-settlement)
 covers command-level atomicity, rollback and receipt reconciliation on migrated
 schemas. Public-flow actor publication, other settlement commands, physical

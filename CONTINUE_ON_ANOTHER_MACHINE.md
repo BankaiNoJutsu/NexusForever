@@ -1,5 +1,14 @@
 # Continue on another machine
 
+Latest housing implementation: [public decor purchase settlement](Decomp/Analysis/HOUSING_DECOR_PURCHASE_SETTLEMENT.md)
+couples fee/decor and the original Character graph, with retained SQL recovery
+and committed adoption/publication. Eleven new/70 final scoped cases pass;
+the portable report binds provider evidence, reviews and runtime shutdown.
+Guild forwarding waits for primary commit and retries before ordinary followup;
+physical cross-guild replay is still open. Continue the broader economic,
+Contract and gameplay/evidence queue. Native client/CUA remain stopped and
+the historical handoff verifier keeps its previously retained Source divergence.
+
 Latest provider evidence: [autonomous crafting account outbox](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#autonomous-crafting-account-outbox)
 passes ten new configured MySQL and 61 affected SQLite cases. Paid awards now
 finish without the original session or re-admission; unpaid reservations remain

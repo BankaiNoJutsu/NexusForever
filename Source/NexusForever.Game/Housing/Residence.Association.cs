@@ -143,7 +143,7 @@ namespace NexusForever.Game.Housing
                     if (!Authorized()) { Finish(); return false; }
                     if (!community.AssociationPrerequisitesClear || child.association != null || parent.association != null
                         || child.stagedSaveUnits.Count != 0 || parent.stagedSaveUnits.Count != 0 || child.communitySaveOwner != null || parent.communitySaveOwner != null
-                        || child.donation != null || parent.donation != null || child.paidName != null || parent.paidName != null
+                        || child.donation != null || parent.donation != null || child.paidName != null || parent.paidName != null || child.DecorPurchaseSavePending || parent.DecorPurchaseSavePending
                         || child.CurrentRemodel != null || parent.CurrentRemodel != null) return false;
                     var captured = child.CapturePersistence();
                     var plots = captured.Plots.ToDictionary(row => row.Index);

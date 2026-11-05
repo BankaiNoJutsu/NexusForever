@@ -63,13 +63,13 @@ namespace NexusForever.Game.Entity
             Action<NexusForever.Database.Character.CharacterContext> satchelSnapshot = null,
             Action<NexusForever.Database.Character.CharacterContext> keybindingSnapshot = null,
             NexusForever.Database.Character.BankSaveReconciliation bankReceipt = null,
-            NexusForever.Database.Character.HousingRenameSaveReconciliation housingReceipt = null,
+            NexusForever.Database.Character.CharacterSaveReconciliation housingReceipt = null,
             long taxiFareVersion = 0)
         {
             internal long TaxiFareVersion { get; } = taxiFareVersion;
             internal NexusForever.Database.Character.MarketplaceBidReconciliation BidReceipt { get; private set; } = bidReceipt;
             internal NexusForever.Database.Character.BankSaveReconciliation BankReceipt { get; private set; } = bankReceipt;
-            internal NexusForever.Database.Character.HousingRenameSaveReconciliation HousingReceipt { get; private set; } = housingReceipt;
+            internal NexusForever.Database.Character.CharacterSaveReconciliation HousingReceipt { get; private set; } = housingReceipt;
             internal QuestManager.NormalSaveSnapshot Quests { get; } = questSnapshot;
             internal ChallengeManager.NormalSaveSnapshot Challenges { get; } = challengeSnapshot;
             internal void SaveCurrencies(NexusForever.Database.Character.CharacterContext context)

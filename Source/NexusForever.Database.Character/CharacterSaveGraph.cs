@@ -75,6 +75,7 @@ namespace NexusForever.Database.Character
         internal static void ValidateCharacterOwner(CharacterContext context, EntityEntry entry, bool deleted)
         {
             if (context.HousingRenameOwner?.Authorizes(entry) == true) return;
+            if (context.HousingDecorPurchaseOwner?.Authorizes(entry) == true) return;
             if (entry.Entity is RealmFirstAchievementModel { IsGuild: false, OwnerId: {} winner })
                 Require(winner == context.AtomicCharacterId.Value, "Atomic Character claim belongs to another winner.");
             // A proven bank rollback may leave an Item in its original neutral

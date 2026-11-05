@@ -865,6 +865,13 @@ namespace NexusForever.Game.Map.Instance
                 return;
             }
 
+            if (player is NexusForever.Game.Entity.Player original)
+            {
+                if (residence is not Residence { HasPersistence: true } registered) throw new InvalidPacketValueException();
+                registered.QueueDecorPurchase(this, original, entry, update, currencyType, currencyType.HasValue ? entry.Cost : 0);
+                return;
+            }
+
             IDecor decor = residence.DecorCreate(entry);
             if (currencyType.HasValue)
             {
@@ -1044,15 +1051,26 @@ namespace NexusForever.Game.Map.Instance
         /// <summary>
         /// Used to confirm the position and PlotIndex are valid together when placing Decor
         /// </summary>
-        private bool IsValidPlotForPosition(IResidence residence, DecorInfo update)
+        internal HousingResult ValidateDecorPurchase(Residence residence, ResidencePersistence.Decoration row)
         {
-            if (update.DecorType == DecorType.Crate || update.PlotIndex == int.MaxValue)
+            if (row.Scale < 0) throw new InvalidPacketValueException();
+            ValidateDecorColourShift(row.Colour);
+            return IsValidPlotForPosition(residence, (DecorType)row.Type, row.Plot, new Vector3(row.X, row.Y, row.Z))
+                ? HousingResult.Success : HousingResult.Decor_InvalidPosition;
+        }
+
+        private bool IsValidPlotForPosition(IResidence residence, DecorInfo update)
+            => IsValidPlotForPosition(residence, update.DecorType, update.PlotIndex, update.Position);
+
+        private bool IsValidPlotForPosition(IResidence residence, DecorType type, uint plotIndex, Vector3 position)
+        {
+            if (type == DecorType.Crate || plotIndex == int.MaxValue)
                 return true;
 
-            if (update.PlotIndex > byte.MaxValue)
+            if (plotIndex > byte.MaxValue)
                 return false;
 
-            IPlot plot = residence.GetPlot((byte)update.PlotIndex);
+            IPlot plot = residence.GetPlot((byte)plotIndex);
             if (plot?.PlotInfoEntry == null)
                 return false;
 
@@ -1060,7 +1078,7 @@ namespace NexusForever.Game.Map.Instance
             if (worldSocketEntry?.BoundIds == null || worldSocketEntry.BoundIds.All(bound => bound == 0u))
                 return true;
 
-            Vector3 worldPosition = ResidencePlotWorldOrigin + update.Position;
+            Vector3 worldPosition = ResidencePlotWorldOrigin + position;
 
             (uint gridX, uint gridZ) = MapGrid.GetGridCoord(worldPosition);
             (uint localCellX, uint localCellZ) = MapCell.GetCellCoord(worldPosition);
@@ -1072,7 +1090,7 @@ namespace NexusForever.Game.Map.Instance
                 .DefaultIfEmpty(1u)
                 .Min() - 1u;
 
-            log.Debug($"IsValidPlotForPosition - PlotIndex: {update.PlotIndex}, Range: {minBound}-{maxBound}, Coords: {globalCellX}, {globalCellZ}");
+            log.Debug($"IsValidPlotForPosition - PlotIndex: {plotIndex}, Range: {minBound}-{maxBound}, Coords: {globalCellX}, {globalCellZ}");
 
             return globalCellX >= minBound
                 && globalCellX <= maxBound

@@ -499,7 +499,7 @@ public sealed class HousingRenameFeeRecoveryTests
         }
         Assert.Fail("The rename owner did not settle.");
     }
-    internal async Task<Fixture> Create(IInterceptor interceptor = null, bool zeroFee = false)
+    internal async Task<Fixture> Create(IInterceptor interceptor = null, bool zeroFee = false, bool personalHome = false)
     {
         var source = new OwnerFixture(options); source.Seed();
         var tables = source.Source.Tables; var table = (RecordingDispatchProxy<IGameTableManager>)(object)tables;
@@ -519,6 +519,7 @@ public sealed class HousingRenameFeeRecoveryTests
             seed.Guild.AddRange(Guild(77, 42, "Original"), Guild(88, 43, "Taken"));
             seed.Residence.Add(new() { Id = 100, GuildOwnerId = 77, Name = "Original", PropertyInfoId = (byte)PropertyInfoId.Community,
                 Plot = [new ResidencePlotModel { Id = 100, Index = 0, PlotInfoId = 3 }] });
+            if (personalHome) seed.Residence.Add(new() { Id = 101, OwnerId = 42, Name = "Personal" });
             await seed.SaveChangesAsync();
             database.Initialise(new DatabaseConnectionString { Provider = seed.Database.IsSqlite() ? DatabaseProvider.Sqlite : DatabaseProvider.MySql, ConnectionString = configuredConnection });
         }
@@ -566,6 +567,13 @@ public sealed class HousingRenameFeeRecoveryTests
         GuildMember = [new GuildMemberModel { Id = id, CharacterId = leader, Rank = 0 }] };
     private sealed class InterceptedDatabase(IInterceptor interceptor) : CharacterDatabase
     {
+        public override Task SaveHousingDecorPurchaseReconciliation(ulong characterId, Action<CharacterContext> action, HousingDecorPurchaseSaveReconciliation receipt)
+        {
+            using var context = CreateContext();
+            var config = new DatabaseConnectionString { Provider = context.Database.IsSqlite() ? DatabaseProvider.Sqlite : DatabaseProvider.MySql,
+                ConnectionString = context.Database.GetDbConnection().ConnectionString };
+            return CharacterAtomicSave.ExecuteHousingDecorPurchaseReconciliation(() => new InterceptedContext(config, interceptor), characterId, action, receipt);
+        }
         public override Task SaveHousingRenameReconciliation(ulong characterId, Action<CharacterContext> action, HousingRenameSaveReconciliation receipt)
         {
             using var context = CreateContext();

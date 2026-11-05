@@ -1,0 +1,495 @@
+{
+  "version": 1,
+  "feature": "Atomic public housing decor purchase",
+  "verified_utc": "2026-11-05T12:17:52.701920+00:00",
+  "base_head": "659befaf49bf42d461901db872acca43f5d946b1",
+  "behavior": [
+    "Public personal/community decor creation freezes fee and request; complete Character, fee and original residence graph commit together",
+    "Rollback retains the same actor and graph; acknowledgement loss reconciles the existing receipt without charging or creating decor twice",
+    "Character achievements join the primary unit; captured guild forwarding waits for commit and retries before ordinary followup and publication",
+    "Committed decor adoption and wallet/recipient publication retain original root/map/session identities and resume the failed enqueue cursor",
+    "Typed SQL authorization checks captured parent, community permission and exact new decor row; no schema or migration changes"
+  ],
+  "qualification": {
+    "source_sqlite": [
+      {
+        "file": "artifacts/continuation-20261105/housing-decor-purchase/candidate-effects.trx",
+        "sha256": "95ebe1f50e372d2c76efec0d5215d7b8d404ffdc1eff019d34cf87426ab66dcc",
+        "counts": {
+          "total": "63",
+          "executed": "63",
+          "passed": "63",
+          "failed": "0",
+          "error": "0",
+          "timeout": "0",
+          "aborted": "0",
+          "inconclusive": "0",
+          "passedButRunAborted": "0",
+          "notRunnable": "0",
+          "notExecuted": "0",
+          "disconnected": "0",
+          "warning": "0",
+          "completed": "0",
+          "inProgress": "0",
+          "pending": "0"
+        },
+        "times": {
+          "creation": "2026-11-05T13:10:02.8221830+01:00",
+          "queuing": "2026-11-05T13:10:02.8221954+01:00",
+          "start": "2026-11-05T13:09:58.2552830+01:00",
+          "finish": "2026-11-05T13:10:39.7324071+01:00"
+        }
+      },
+      {
+        "file": "artifacts/continuation-20261105/housing-decor-purchase/candidate-map-controls.trx",
+        "sha256": "d5628eff5fa2b9f6cf157b08de711f003852e352f442d2fb524fb34a2c1585ee",
+        "counts": {
+          "total": "7",
+          "executed": "7",
+          "passed": "7",
+          "failed": "0",
+          "error": "0",
+          "timeout": "0",
+          "aborted": "0",
+          "inconclusive": "0",
+          "passedButRunAborted": "0",
+          "notRunnable": "0",
+          "notExecuted": "0",
+          "disconnected": "0",
+          "warning": "0",
+          "completed": "0",
+          "inProgress": "0",
+          "pending": "0"
+        },
+        "times": {
+          "creation": "2026-11-05T13:14:02.4039521+01:00",
+          "queuing": "2026-11-05T13:14:02.4039642+01:00",
+          "start": "2026-11-05T13:13:59.2104262+01:00",
+          "finish": "2026-11-05T13:14:02.4089138+01:00"
+        }
+      }
+    ],
+    "new_cases": 11,
+    "final_scoped_cases": 70,
+    "configured_mysql": {
+      "Engine": {
+        "Pid": 6896,
+        "Version": "8.4.13",
+        "DataRoot": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261031\\provider-mysql8\\private-00eb166874374f73\\data\\",
+        "Isolation": "REPEATABLE-READ",
+        "TlsRequired": true
+      },
+      "ElapsedSeconds": 198.825354,
+      "Cases": [
+        {
+          "Case": "PublicDecorPurchaseWaitsForTheCommittedFeeAndDecorBeforeAdoptionAndBroadcast:",
+          "Schemas": [
+            "nf_decor_buy_d1e8965b196f_01_c"
+          ],
+          "Passed": true,
+          "BodyError": null,
+          "CleanupError": null,
+          "Strategies": {
+            "nf_decor_buy_d1e8965b196f_01_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+          },
+          "Migrations": {
+            "nf_decor_buy_d1e8965b196f_01_c": 49
+          }
+        },
+        {
+          "Case": "RejectedHalfOfThePurchaseRollsBackTheWholeFeeAndDecorAndRetriesOnce:residence_decor",
+          "Schemas": [
+            "nf_decor_buy_d1e8965b196f_02_c"
+          ],
+          "Passed": true,
+          "BodyError": null,
+          "CleanupError": null,
+          "Strategies": {
+            "nf_decor_buy_d1e8965b196f_02_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+          },
+          "Migrations": {
+            "nf_decor_buy_d1e8965b196f_02_c": 49
+          }
+        },
+        {
+          "Case": "RejectedHalfOfThePurchaseRollsBackTheWholeFeeAndDecorAndRetriesOnce:character_currency",
+          "Schemas": [
+            "nf_decor_buy_d1e8965b196f_03_c"
+          ],
+          "Passed": true,
+          "BodyError": null,
+          "CleanupError": null,
+          "Strategies": {
+            "nf_decor_buy_d1e8965b196f_03_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+          },
+          "Migrations": {
+            "nf_decor_buy_d1e8965b196f_03_c": 49
+          }
+        },
+        {
+          "Case": "PersonalHomeUsesTheSameCoupledPurchaseWithoutCommunityPermission:",
+          "Schemas": [
+            "nf_decor_buy_d1e8965b196f_04_c"
+          ],
+          "Passed": true,
+          "BodyError": null,
+          "CleanupError": null,
+          "Strategies": {
+            "nf_decor_buy_d1e8965b196f_04_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+          },
+          "Migrations": {
+            "nf_decor_buy_d1e8965b196f_04_c": 49
+          }
+        },
+        {
+          "Case": "RejectedPurchaseKeepsCharacterAchievementAtomicAndDefersGuildProgressUntilCommit:",
+          "Schemas": [
+            "nf_decor_buy_d1e8965b196f_05_c"
+          ],
+          "Passed": true,
+          "BodyError": null,
+          "CleanupError": null,
+          "Strategies": {
+            "nf_decor_buy_d1e8965b196f_05_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+          },
+          "Migrations": {
+            "nf_decor_buy_d1e8965b196f_05_c": 49
+          }
+        },
+        {
+          "Case": "RejectedCommittedGuildEffectResumesWithoutRepeatingThePaidPurchase:",
+          "Schemas": [
+            "nf_decor_buy_d1e8965b196f_06_c"
+          ],
+          "Passed": true,
+          "BodyError": null,
+          "CleanupError": null,
+          "Strategies": {
+            "nf_decor_buy_d1e8965b196f_06_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+          },
+          "Migrations": {
+            "nf_decor_buy_d1e8965b196f_06_c": 49
+          }
+        },
+        {
+          "Case": "LostPrimaryAcknowledgementCannotChargeOrCreateDecorTwice:",
+          "Schemas": [
+            "nf_decor_buy_d1e8965b196f_07_c"
+          ],
+          "Passed": true,
+          "BodyError": null,
+          "CleanupError": null,
+          "Strategies": {
+            "nf_decor_buy_d1e8965b196f_07_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+          },
+          "Migrations": {
+            "nf_decor_buy_d1e8965b196f_07_c": 49
+          }
+        },
+        {
+          "Case": "FailedDecorPublicationResumesWithoutAnotherFeeOrDecor:",
+          "Schemas": [
+            "nf_decor_buy_d1e8965b196f_08_c"
+          ],
+          "Passed": true,
+          "BodyError": null,
+          "CleanupError": null,
+          "Strategies": {
+            "nf_decor_buy_d1e8965b196f_08_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+          },
+          "Migrations": {
+            "nf_decor_buy_d1e8965b196f_08_c": 49
+          }
+        },
+        {
+          "Case": "AReplacementPlayerBeforePreparationCannotSpendTheOldActorsMoney:",
+          "Schemas": [
+            "nf_decor_buy_d1e8965b196f_09_c"
+          ],
+          "Passed": true,
+          "BodyError": null,
+          "CleanupError": null,
+          "Strategies": {
+            "nf_decor_buy_d1e8965b196f_09_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+          },
+          "Migrations": {
+            "nf_decor_buy_d1e8965b196f_09_c": 49
+          }
+        },
+        {
+          "Case": "MutableRequestAndLaterTemplatePriceDoNotChangeTheAcceptedPurchase:",
+          "Schemas": [
+            "nf_decor_buy_d1e8965b196f_10_c"
+          ],
+          "Passed": true,
+          "BodyError": null,
+          "CleanupError": null,
+          "Strategies": {
+            "nf_decor_buy_d1e8965b196f_10_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+          },
+          "Migrations": {
+            "nf_decor_buy_d1e8965b196f_10_c": 49
+          }
+        },
+        {
+          "Case": "SqlPermissionLossBeforeEnrollmentCannotBeBypassedByTheCachedRank:",
+          "Schemas": [
+            "nf_decor_buy_d1e8965b196f_11_c"
+          ],
+          "Passed": true,
+          "BodyError": null,
+          "CleanupError": null,
+          "Strategies": {
+            "nf_decor_buy_d1e8965b196f_11_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+          },
+          "Migrations": {
+            "nf_decor_buy_d1e8965b196f_11_c": 49
+          }
+        },
+        {
+          "Case": "SuccessfulRenameReplyCannotPrecedeTheCommittedFeeAndBothNames",
+          "Schemas": [
+            "nf_decor_buy_d1e8965b196f_12_c"
+          ],
+          "Passed": true,
+          "BodyError": null,
+          "CleanupError": null,
+          "Strategies": {
+            "nf_decor_buy_d1e8965b196f_12_c": "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+          },
+          "Migrations": {
+            "nf_decor_buy_d1e8965b196f_12_c": 49
+          }
+        }
+      ]
+    },
+    "full_solution_or_full_suite": "Not run; scoped-only user policy",
+    "native_client_and_computer_use": "Remain stopped",
+    "entitlements": "15:1/17:1 unchanged; no automatic44 or seven baseline Character grants",
+    "boundary": "Logical trigger rejection, injected acknowledgement loss and enqueue failure; no physical crash, deployment, socket/native or retail qualification"
+  },
+  "source": {
+    "inputs": 6344,
+    "normalized_git_blob_manifest_sha256": "1ca71872332fb7744954d863b7fba2032a5a06b7e8a666de7057e8d0272c3a8f",
+    "manifest_algorithm": "sha256 of sorted path NUL normalized-Git-blob-SHA1 LF records",
+    "changed_files": [
+      {
+        "path": "Source/NexusForever.Database.Character/CharacterAtomicSave.cs",
+        "sha256": "1cbeb51c7c7500fed177cadb5a56d6ce34967243a9c7a71d49e0643e4c63d3a2"
+      },
+      {
+        "path": "Source/NexusForever.Database.Character/CharacterDatabase.cs",
+        "sha256": "000414e30d3c1c6db33d51977b2339dc5af7cc36c9baaf2a971c475b910511b5"
+      },
+      {
+        "path": "Source/NexusForever.Database.Character/CharacterSaveGraph.cs",
+        "sha256": "99c228371dcb07809f7d245fc705b02ca8012596d844df63e96174af445727f7"
+      },
+      {
+        "path": "Source/NexusForever.Database.Character/HousingDecorPurchaseSaveReconciliation.cs",
+        "sha256": "cc41eb91ffee3a5bfb5ad1c066b6b49bdb7c98b3928eee157db3c24a2a050e8f"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Housing/HousingDecorPurchaseTests.cs",
+        "sha256": "61e3810e1deb3ead0cfbf794250da6ef0a86a0cc54e8b43c6e99aca79613e8bc"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Housing/HousingRenameFeeRecoveryTests.cs",
+        "sha256": "e1911f8db7100253c5ed0019a3677a13da35abe90c2a0f4e55828d2ac41badf4"
+      },
+      {
+        "path": "Source/NexusForever.Game/Achievement/CharacterAchievementManager.cs",
+        "sha256": "c5b7c97df18f1cf2be8f2f0db8a2760a4d5b59418610b9664a0e928d8377bd31"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/Player.HousingRename.cs",
+        "sha256": "e997fe0cc4895898c6d446470252c80ee6e9f5b0f4b81e5ceba92dbbfc048c77"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/Player.NormalRewardSave.cs",
+        "sha256": "97309a2b2868922bb91212dabb1bb8cff74799fd6a0df4f7dc3d2e50d1abd559"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/Player.cs",
+        "sha256": "f8c5e2117f501c9719ba777b1488986d95f4b7134591fc9b3663bfb48ca582f2"
+      },
+      {
+        "path": "Source/NexusForever.Game/Guild/CommunityRenameSettlement.cs",
+        "sha256": "b04c5ae35c0e1c5e9f76bfe451ec30f2f1748acd49164801a2cd58f163ecec14"
+      },
+      {
+        "path": "Source/NexusForever.Game/Housing/GlobalResidenceManager.DecorPurchase.cs",
+        "sha256": "eeeed13d14ca5fc6c476520ebd643eb30d84c7fa08f3f3bd426253b62fcd3812"
+      },
+      {
+        "path": "Source/NexusForever.Game/Housing/GlobalResidenceManager.cs",
+        "sha256": "0917020e242fd2f352eb260b92853ead670b704eb53ce4cb12fec07d4dc4fc5f"
+      },
+      {
+        "path": "Source/NexusForever.Game/Housing/IHousingFeeOperation.cs",
+        "sha256": "cc1246c0da7690247b342f6d2523fb5dfe480d221419ee7fbdcd33bcf26d6531"
+      },
+      {
+        "path": "Source/NexusForever.Game/Housing/Residence.Association.cs",
+        "sha256": "d4db92705a14e5c5351af36a03805e94690e2b5f037681d0d77530ab66862e49"
+      },
+      {
+        "path": "Source/NexusForever.Game/Housing/Residence.DecorPurchase.cs",
+        "sha256": "347c10a6e08bff341d1cc41ab6db0bfeacfb6062c07dcfe4adbae44827819645"
+      },
+      {
+        "path": "Source/NexusForever.Game/Housing/Residence.Donation.cs",
+        "sha256": "a3fc5de5ff83ff25f59d35177a80a40ab5235b7cddee29c5ee2cdd258d183309"
+      },
+      {
+        "path": "Source/NexusForever.Game/Housing/Residence.PaidName.cs",
+        "sha256": "485419c2bff8cd0a79534682ce8e736405648f1f0303ab71a451356ef2b7bafa"
+      },
+      {
+        "path": "Source/NexusForever.Game/Housing/Residence.Remodel.cs",
+        "sha256": "35ad7713862a78c97c42f5073525df3a341983a80794270cdb1a4f0f1a3d488a"
+      },
+      {
+        "path": "Source/NexusForever.Game/Housing/Residence.cs",
+        "sha256": "0e81802d37679d5023bd476a25b51d50d9ab97ff8535b10209e397420a9dd4b8"
+      },
+      {
+        "path": "Source/NexusForever.Game/Housing/ResidencePersistence.cs",
+        "sha256": "124cc9fec5c68e8abaa937671c7893fe3d3ada2a8d9c21133fa73d9964f29878"
+      },
+      {
+        "path": "Source/NexusForever.Game/Map/Instance/ResidenceMapInstance.cs",
+        "sha256": "0681da5a51e0ae598260c746d3c9ef1fa5df6e21d849c89b8ffd6e27e526d6ab"
+      }
+    ]
+  },
+  "binaries": [
+    {
+      "name": "NexusForever.Game.dll",
+      "sha256": "d1b86103aac1dbe0fc874ec0a2bbc2d52d0db91bbf62869697556d5b49be7f54",
+      "owner_test_provider_match": true
+    },
+    {
+      "name": "NexusForever.Database.Character.dll",
+      "sha256": "fe801c9ab95b578071cb7c1c2a615989772dbe1c48b254bda97348b6b126e94b",
+      "owner_test_provider_match": true
+    },
+    {
+      "name": "NexusForever.WorldServer.dll",
+      "sha256": "2d8230c53f748f21483e92bf174a349bad1279d5535d867b904c9b8e68337f2e",
+      "owner_test_provider_match": true
+    },
+    {
+      "name": "NexusForever.Game.Tests.dll",
+      "sha256": "bf4c4d2282bc4c9b78118109ef64d425a714749e8ba5a617c865abc4e3606ad1",
+      "owner_test_provider_match": true
+    }
+  ],
+  "evidence": {
+    "local_root": "artifacts/continuation-20261105/housing-decor-purchase",
+    "baseline": {
+      "file": "artifacts/continuation-20261105/housing-decor-purchase/baseline.trx",
+      "sha256": "d186202c62ad5bbdae281ba4dfdfe101cf64b23f6d965f68abb78e910bde0e00",
+      "counts": {
+        "total": "1",
+        "executed": "1",
+        "passed": "0",
+        "failed": "1",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "times": {
+        "creation": "2026-11-05T12:39:12.3697066+01:00",
+        "queuing": "2026-11-05T12:39:12.3697171+01:00",
+        "start": "2026-11-05T12:39:05.2624892+01:00",
+        "finish": "2026-11-05T12:39:12.3764476+01:00"
+      }
+    },
+    "retained_failures": [
+      "baseline-build.log: incorrect fixture currency accessor",
+      "baseline-build-fixed.log: disk full",
+      "candidate-build.log: missing Player namespace qualification",
+      "candidate-expanded.trx: interceptor missing from decor fixture route",
+      "test-build-achievements.log: protected achievement accessor"
+    ],
+    "intermediate_scope": "159 affected cases passed before the committed-effect retry correction; final70 cases cover that correction and map controls. Earlier11-case MySQL candidate retained separately, superseded by final12-case gate.",
+    "reviews_sha256": "9f36c5be75db6f1e230a8dceb83f40542bfada524aa20776805d7a3fd46bdd9b",
+    "provider_results_sha256": "4787b0cc599822317c0dbf74980f17c5da99f5b40df5c34b345b94bb95442b77"
+  },
+  "review": {
+    "standards_remaining": 0,
+    "spec_remaining": 0,
+    "fixed": [
+      "Precommit guild achievement forwarding",
+      "Postcommit effect failure stranded actor"
+    ]
+  },
+  "cleanup": {
+    "At": "2026-11-05T12:17:12.324459Z",
+    "ServerAbsent": true,
+    "ListenerAbsent": true,
+    "RunnerAbsent": true,
+    "HelperAbsent": true,
+    "Port": 53885,
+    "ServerPid": 6896,
+    "RunnerPid": 24524,
+    "HelperPid": 10492,
+    "SchemaDrops": 23
+  },
+  "upstream": {
+    "observedUtc": "2026-11-05T12:04:45.971Z",
+    "createdSince": "2026-10-29",
+    "latest": [
+      {
+        "number": 609,
+        "url": "https://github.com/NexusForever/NexusForever/pull/609"
+      },
+      {
+        "number": 608,
+        "url": "https://github.com/NexusForever/NexusForever/pull/608"
+      }
+    ],
+    "rows": [
+      {
+        "number": 604,
+        "state": "open",
+        "merged": false,
+        "head": "36b59aaaaebbcd0ec3e23a94fd3cf9de8975923b",
+        "base": "d8e43d2c3cc5a05f03e56dfc388288a4126c7ed9",
+        "url": "https://github.com/NexusForever/NexusForever/pull/604"
+      },
+      {
+        "number": 608,
+        "state": "open",
+        "merged": false,
+        "head": "7db12d9a7c694bc5e66d9e0f4cdbc1b82155e69b",
+        "base": "3588ca5f578387928e6593e3808bf15f6192b094",
+        "url": "https://github.com/NexusForever/NexusForever/pull/608"
+      },
+      {
+        "number": 609,
+        "state": "closed",
+        "merged": false,
+        "head": "f9b6f7356798a41beea0768ff1f6b5a758ffeca3",
+        "base": "d8e43d2c3cc5a05f03e56dfc388288a4126c7ed9",
+        "url": "https://github.com/NexusForever/NexusForever/pull/609"
+      }
+    ]
+  },
+  "historical_handoff_verification": "Previously retained expected Source divergence; historical checkpoint not rerun or altered",
+  "remaining": [
+    "Durable cross-guild effect/outbox replay across physical restart; current retained guild callbacks are in-memory",
+    "Physical process/connection failure, deployed restart/load, socket/native and actual-table/retail qualification",
+    "Broader economic, Contract, progression/gameplay and evidence work in the canonical roadmap"
+  ]
+}

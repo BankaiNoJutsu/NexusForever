@@ -50,6 +50,9 @@ namespace NexusForever.Database.Character
         public virtual Task SaveHousingRenameReconciliation(ulong characterId, Action<CharacterContext> action, HousingRenameSaveReconciliation receipt)
             => CharacterAtomicSave.ExecuteHousingRenameReconciliation(CreateContext, characterId, action, receipt);
 
+        public virtual Task SaveHousingDecorPurchaseReconciliation(ulong characterId, Action<CharacterContext> action, HousingDecorPurchaseSaveReconciliation receipt)
+            => CharacterAtomicSave.ExecuteHousingDecorPurchaseReconciliation(CreateContext, characterId, action, receipt);
+
         public virtual Task SaveResourceConversionReconciliation(ulong characterId, Action<CharacterContext> action, ResourceConversionSaveReconciliation receipt)
             => CharacterAtomicSave.ExecuteResourceConversionReconciliation(CreateContext, characterId, action, receipt);
 
