@@ -602,9 +602,8 @@ namespace NexusForever.Game.Entity
                     return;
                 }
 
-                int pendingSpellCount = pendingSpells.Count;
-                CastSpell(state.TriggerSpell4Id, CreateProcSpellParameters(state, resolvedTarget));
-                if (pendingSpells.Count <= pendingSpellCount)
+                CastResult castResult = TryCastSpell(state.TriggerSpell4Id, CreateProcSpellParameters(state, resolvedTarget));
+                if (castResult != CastResult.Ok)
                 {
                     SpellEffectDiagnostics.TraceProcDispatch(this, eventName, phase, observedTriggerEvent, source?.Guid ?? 0u, target?.Guid ?? 0u, resolvedTarget.Guid, effectId, state.Spell4Id, state.CastingId, state.TriggerEvent, state.TriggerSpell4Id, state.Chance, state.TargetData, state.CooldownMsOrSentinel, state.CooldownRemainingSeconds, "none", "cast-rejected");
                     return;

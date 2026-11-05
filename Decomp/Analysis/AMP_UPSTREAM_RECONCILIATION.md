@@ -177,6 +177,18 @@ errors. All 198 scoped tests passed in 3 seconds. Local source and input evidenc
 Automatic application, trigger-child lifetime and retail behavior for proc
 AMPs remain open.
 
+### Triggered cast cooldown
+
+A proc now starts its cooldown only when its own triggered cast succeeds.
+An action proc can admit a nested spell before the outer spell fails target
+validation. The pending queue grew in the failing baseline and incorrectly
+started both cooldowns. The regression keeps the nested spell and its cooldown
+in both cases and checks that the outer cooldown starts only on admission.
+The owning build took 19 seconds with zero warnings and errors. All 213
+scoped cases passed in 3 seconds with the updated Game DLL. Local baseline
+and scoped verification are under
+`artifacts/continuation-20261105/proc-dispatch-result/`.
+
 ## Original reconciliation
 
 2026-10-29. Fork: `legacy-di-storefront-hardening`.

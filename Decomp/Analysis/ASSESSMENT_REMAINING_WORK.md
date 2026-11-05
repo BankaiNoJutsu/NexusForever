@@ -286,8 +286,10 @@ would be needed to activate the retained item-unlock path.
 now preserves a same-spell replacement that reuses the AMP's numeric effect
 and casting IDs. Proc and mixed AMP ownership and row evidence remain open.
 [Proc registration lifetime](AMP_UPSTREAM_RECONCILIATION.md#proc-registration-lifetime)
-keeps the currently installed proc when an earlier cast ends. Automatic proc
-AMP application and trigger-child lifetime remain open.
+keeps the currently installed proc when an earlier cast ends.
+[Triggered cast cooldown](AMP_UPSTREAM_RECONCILIATION.md#triggered-cast-cooldown)
+starts from that proc's own cast result even when a nested cast also succeeds.
+Automatic proc AMP application and trigger-child lifetime remain open.
 
 [Confirmed Challenge medal and completion results](CHARACTER_CHALLENGE_LIVE_PRODUCERS.md#confirmed-medal-and-completion-results)
 publish after the original Character or Contract transaction confirms.

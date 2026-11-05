@@ -238,6 +238,33 @@ public class UnitEntityDamageResultTests
         Assert.Equal(1f, getScale(), precision: 3);
     }
 
+    [Theory]
+    [InlineData(4u, false)]
+    [InlineData(9u, true)]
+    public void ProbeProcEvent_StartsCooldownOnlyForTheCastItTriggered(uint targetData, bool outerCastAccepted)
+    {
+        TestUnitEntity unit = new(CreateScaleMovementManager(out _));
+        unit.SetIdentityForTest(guid: 1001u, position: Vector3.Zero);
+        unit.SetHealthForTest(maxHealth: 1000u, health: 1000u);
+        TestUnitEntity invisibleTarget = new();
+        invisibleTarget.SetIdentityForTest(guid: 1002u, position: Vector3.Zero);
+
+        IGameTableManager gameTableManager = CreateOverdriveSpellGameTableManager();
+        var globalSpellManager = new GlobalSpellManager(gameTableManager);
+        globalSpellManager.Initialise();
+        unit.InitialiseSpellRuntimeForTest(globalSpellManager, gameTableManager, CreateScriptManager());
+        unit.AddProc(1u, 42908u, 10u, ProcTriggerEventCandidate.KillTarget, 46867u, 1f, targetData, 1000u, 1u, 0u, 0u, 0u, 0u);
+        unit.AddProc(2u, 46867u, 11u, ProcTriggerEventCandidate.ActionCastAny, 42908u, 1f, 9u, 3000u, 1u, 0u, 0u, 0u, 0u);
+
+        unit.ProbeProcEvent("kill-target", ProcTriggerEventCandidate.KillTarget, unit, invisibleTarget, null, null, null, "test");
+
+        Assert.NotNull(unit.GetActiveSpell(spell => spell.Parameters.SpellInfo.Entry.Id == 42908u));
+        Assert.Equal(outerCastAccepted, unit.GetActiveSpell(spell => spell.Parameters.SpellInfo.Entry.Id == 46867u) != null);
+        Assert.Collection(unit.CreateProcRegistrationSnapshot(),
+            outerProc => Assert.Equal(outerCastAccepted ? 1d : 0d, outerProc.CooldownRemainingSeconds),
+            nestedProc => Assert.Equal(3d, nestedProc.CooldownRemainingSeconds));
+    }
+
     [Fact]
     public void Update_DoesNotRegenerateHealthWhileInCombat()
     {
