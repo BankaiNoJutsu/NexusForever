@@ -1,5 +1,11 @@
 # NexusForever Feature Restoration - Current Status
 
+[STS token-key static transition](Decomp/Analysis/STS_TOKEN_KEY_TRANSITION_EVIDENCE.md)
+maps direct signature inputs, premaster format, notification dispatch and local
+RC4 filter construction. Twenty byte anchors/12 ranges and both reviews pass.
+This is Mapped; Source is unchanged and optional authentication remains blocked
+on accepted traffic and the remaining trust/derivation/grammar contracts.
+
 [Confirmed support ticket writes](Decomp/Analysis/SUPPORT_TICKET_PERSISTENCE.md)
 now precede success acknowledgement, with original-owner reply retry and partial
 append recovery. Twelve new/57 scoped cases pass. Database case workflow,

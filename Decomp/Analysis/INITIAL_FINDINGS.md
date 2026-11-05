@@ -1,5 +1,14 @@
 # Client64 Initial Reverse-Engineering Findings
 
+Latest static result: [STS token-key validation and local cipher transition](STS_TOKEN_KEY_TRANSITION_EVIDENCE.md)
+maps the actual signature inputs, premaster shape, TokenKeyData notification and
+local RC4 filter construction. REA identifies the pinned DLL; standalone Ghidra
+and LLVM agree on selected bytes. This is Mapped, with no server behavior change:
+trust provisioning, complete derivation/direction, wire grammar and an accepted
+optional-route transcript still gate implementation. The historical source
+checkpoint below retains its original scope; use the canonical roadmap for
+later completed foundations and current work.
+
 Latest continuation: [Realm bank persistence and loading](REALM_BANK_CODECS_AND_LOADING.md)
 qualifies checkpoint10277: **10,277 full tests**,18 new/207 focused,1,796 MySQL
 cases (530 configured-strategy cases), four Auth race probes, four model gates and
@@ -762,13 +771,15 @@ Seventh follow-up (F-001 token crypto pass, 2026-05-22):
   `StsConn_SendRequestToken` (`180004c40`, txn `0x20`) sends `UserId` + `AppId`;
   `StsConn_SendAssociateMyExternalAccount` sends `AuthnToken` upstream;
   `StsConn_OnAuthnTokenResponse` reads reply `AuthnToken` only.
-- **Not verified / security blockers:** RSA key format and length, signature
-  algorithm and trust anchor, exact premaster derivation, `TokenKeyData` server
-  reply fields and post-handshake session/crypto transition, and any
-  `LoginToken` (`0x36`) follow-on. No retail STS startup capture in-repo.
-  **Do not implement** `/Auth/LoginTokenStart` or `/Auth/TokenKeyData` until
-  Verified with captures plus decompile of `FUN_180012de0` and
-  `CTokenKeyDataTxnNotify`.
+- **Not verified / security blockers:** accepted key values/length policy and
+  trust provisioning, server private-key/padding behavior, complete derivation
+  and cipher-direction/state-advance rules, exact wire reply grammar and startup
+  ordering, and any `LoginToken` (`0x36`) follow-on. No retail STS startup capture
+  is available. The later [static transition map](STS_TOKEN_KEY_TRANSITION_EVIDENCE.md)
+  decompiles the validator and `CTokenKeyDataTxnNotify`, narrowing those former
+  unknowns without proving interoperability. **Do not implement**
+  `/Auth/LoginTokenStart` or `/Auth/TokenKeyData` until the remaining contracts
+  are Verified with accepted traffic and the required server-side evidence.
 
 ### World network send path
 

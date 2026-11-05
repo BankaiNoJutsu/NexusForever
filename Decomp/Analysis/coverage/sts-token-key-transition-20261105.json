@@ -1,0 +1,478 @@
+{
+  "version": 1,
+  "feature": "STS token-key validation and local cipher transition",
+  "verified_utc": "2026-11-05T13:19:36.600175+00:00",
+  "base_head": "a33866ee95ed017812b7b5bbe2c997a8ceca3393",
+  "disposition": "Mapped static client behavior; optional server authentication remains blocked",
+  "input": {
+    "binary": "StsConnLib64.MT.dll",
+    "sha256": "aa0ef5888d17eb65da28b1cbef178d1650a837303c10a6fafc9f3c646c2f3fd1",
+    "bytes": 1899520,
+    "image_base": "0x180000000"
+  },
+  "rea": {
+    "version": "6.8.0",
+    "operation": "inspect_pe_imports",
+    "evidence_id": "ev_dba29958b64299b3a64c41214e66af69697b23182238084a321fdaace185b187",
+    "authority": "shipped-artifact",
+    "coverage": {
+      "delay_imports": 0,
+      "examined_dlls": 6,
+      "imports": 182,
+      "reason": null,
+      "status": "complete"
+    },
+    "limitations": [
+      "Rows reproduce the PE import and delay-load directories; they do not establish that an import is bound, forwarded or reachable at runtime.",
+      "Bound import snapshots, the import address table as loaded, and export-forward resolution in another DLL remain unobserved."
+    ],
+    "bundle_sha256": "3cef76878a106590908799758fd2a78b92019069574b5a46164f189e8862350f",
+    "boundary": "Fresh identity/import inspection only; standalone Ghidra output is not REA decompiler output. Evidence exported; REA closed."
+  },
+  "inspectors": {
+    "ghidra": "Existing standalone12.0.4/JDK21, owned project copy, read-only and analysis disabled",
+    "llvm": "22.1.6",
+    "llvm_sha256": "3ae6715601f2eb0c1d0839929c46089906ba0f1e5e032fe519656a40c936b863",
+    "target_execution": false,
+    "computer_use": false,
+    "original_artifact_modified": false,
+    "configuration_changed": false
+  },
+  "mapped": {
+    "validation": "Staged caller RSA key transforms ServerSignature;16-byte digest comparison directly hashes ServerPublicKey, not ServerRand",
+    "premaster": {
+      "bytes": 48,
+      "prefix_hex": "0303",
+      "filler_requested_bytes": 46,
+      "native_random_output_observed": false
+    },
+    "key_layout": {
+      "algorithm_id": 4,
+      "prefix_bytes_each": 16,
+      "rc4_key_bytes_each": 128,
+      "trailing_bytes_each": 0,
+      "key_block_bytes": 288
+    },
+    "callback": {
+      "notify_table": "0x180124a38",
+      "observed_table_bytes": 48,
+      "selected_slot_offset": 24,
+      "callback": "0x18000c340",
+      "completion": "0x18000ac30",
+      "boundary": "No application reply-field reads in selected completion; generic reply validation/dispatch still applies. Not proof an empty wire reply is accepted."
+    },
+    "filter": "Two Crypt::CKeyRc4 instances; selected object receives filter through virtual slot0x50 after size/pointer checks",
+    "native_error_values": {
+      "bad_derivation": 4,
+      "null_filter": 48,
+      "filter_installed": 0
+    },
+    "key_direction": "Unassigned; second-derived key object at filter+0x10 and first-derived at+0x18; first object also receives an unassigned virtual operation"
+  },
+  "verification": {
+    "passed": true,
+    "code_ranges": [
+      {
+        "address": "0x180012de0",
+        "scope": "observed chained exception group",
+        "has_unwind_entry": true,
+        "ranges": [
+          {
+            "start": "0x180012de0",
+            "end_exclusive": "0x180012ea8",
+            "file_offset": 74208,
+            "bytes": 200,
+            "sha256": "ae58d34f45d9b96ab8bb4732634bcd92fd07f157c807c4b7e7a40ee7e5bb7f09"
+          }
+        ]
+      },
+      {
+        "address": "0x18000a730",
+        "scope": "observed chained exception group",
+        "has_unwind_entry": true,
+        "ranges": [
+          {
+            "start": "0x18000a730",
+            "end_exclusive": "0x18000ac2b",
+            "file_offset": 39728,
+            "bytes": 1275,
+            "sha256": "33ae79f21a9bfc74a5cba44c1f9ea683c9408fbb0155caf9aa53687bd47f1418"
+          }
+        ]
+      },
+      {
+        "address": "0x18000ac30",
+        "scope": "observed chained exception group",
+        "has_unwind_entry": true,
+        "ranges": [
+          {
+            "start": "0x18000ac30",
+            "end_exclusive": "0x18000adc0",
+            "file_offset": 41008,
+            "bytes": 400,
+            "sha256": "59f18cf2528e5e03fce5cfdaf39e47329e80ed2f48ce7424c9ef90a108783573"
+          }
+        ]
+      },
+      {
+        "address": "0x18000c340",
+        "scope": "observed chained exception group",
+        "has_unwind_entry": true,
+        "ranges": [
+          {
+            "start": "0x18000c340",
+            "end_exclusive": "0x18000c36e",
+            "file_offset": 46912,
+            "bytes": 46,
+            "sha256": "f972edb34eca8173518c218634b1061ae08a3964de2ea9effc281f407f3b020d"
+          }
+        ]
+      },
+      {
+        "address": "0x180012f50",
+        "scope": "observed chained exception group",
+        "has_unwind_entry": true,
+        "ranges": [
+          {
+            "start": "0x180012f50",
+            "end_exclusive": "0x180012f8e",
+            "file_offset": 74576,
+            "bytes": 62,
+            "sha256": "bd761bb160e0283bab5d97b2481ab33328900ea8e6acf420b1d51f5a7129f887"
+          }
+        ]
+      },
+      {
+        "address": "0x180012da0",
+        "scope": "selected disassembly window through next known function entry; no exception metadata",
+        "has_unwind_entry": false,
+        "ranges": [
+          {
+            "start": "0x180012da0",
+            "end_exclusive": "0x180012de0",
+            "file_offset": 74144,
+            "bytes": 64,
+            "sha256": "1a134c4412f8b421050f1d382415967afa2fb076865a67c0db891deacc5dcb27"
+          }
+        ]
+      },
+      {
+        "address": "0x1800131f0",
+        "scope": "observed chained exception group",
+        "has_unwind_entry": true,
+        "ranges": [
+          {
+            "start": "0x1800131f0",
+            "end_exclusive": "0x180013426",
+            "file_offset": 75248,
+            "bytes": 566,
+            "sha256": "566804398eece2639b47a8f6291f3805b57f9bdb506569c9526ee351c7d3cb00"
+          }
+        ]
+      },
+      {
+        "address": "0x18003a860",
+        "scope": "observed chained exception group",
+        "has_unwind_entry": true,
+        "ranges": [
+          {
+            "start": "0x18003a860",
+            "end_exclusive": "0x18003a8ed",
+            "file_offset": 236640,
+            "bytes": 141,
+            "sha256": "7c4b0398cddb249f0caa50e54a221ab4686f6e837ba1bbf0b44dd67d84c3e034"
+          }
+        ]
+      },
+      {
+        "address": "0x1800f73e0",
+        "scope": "observed chained exception group",
+        "has_unwind_entry": true,
+        "ranges": [
+          {
+            "start": "0x1800f73e0",
+            "end_exclusive": "0x1800f741e",
+            "file_offset": 1009632,
+            "bytes": 62,
+            "sha256": "27fe702786bb8baf66431cb9b8c21fef6079e68f9df8fe78e4044a965f9afada"
+          }
+        ]
+      },
+      {
+        "address": "0x1800f7320",
+        "scope": "observed chained exception group",
+        "has_unwind_entry": true,
+        "ranges": [
+          {
+            "start": "0x1800f7320",
+            "end_exclusive": "0x1800f73d2",
+            "file_offset": 1009440,
+            "bytes": 178,
+            "sha256": "7f3c5e9b88835569cff7169ad36389beff5738f85cefc4fe93d7286fff0c5609"
+          }
+        ]
+      },
+      {
+        "address": "0x180012f90",
+        "scope": "observed chained exception group",
+        "has_unwind_entry": true,
+        "ranges": [
+          {
+            "start": "0x180012f90",
+            "end_exclusive": "0x1800131e4",
+            "file_offset": 74640,
+            "bytes": 596,
+            "sha256": "cee1b32fa0b613e6ae7a1b110a6094546e41cf14248cd664b36cce894a58ab9a"
+          }
+        ]
+      },
+      {
+        "address": "0x18003a670",
+        "scope": "observed chained exception group",
+        "has_unwind_entry": true,
+        "ranges": [
+          {
+            "start": "0x18003a670",
+            "end_exclusive": "0x18003a6f1",
+            "file_offset": 236144,
+            "bytes": 129,
+            "sha256": "830d0e7e4ca2146cbf6979ffcf3407e1e2906a46a4260bdbf1c626e6e92b317f"
+          }
+        ]
+      }
+    ],
+    "anchors": [
+      {
+        "name": "sender-validates-key",
+        "address": "0x18000a917",
+        "bytes_hex": "e8c4840000",
+        "destination": "0x180012de0"
+      },
+      {
+        "name": "validator-constructs-staged-key",
+        "address": "0x180012e1f",
+        "bytes_hex": "e88c4e0200",
+        "destination": "0x180037cb0"
+      },
+      {
+        "name": "validator-hashes-public-key",
+        "address": "0x180012e60",
+        "bytes_hex": "e80b780200",
+        "destination": "0x18003a670"
+      },
+      {
+        "name": "validator-compares-digest",
+        "address": "0x180012e75",
+        "bytes_hex": "e886290000",
+        "destination": "0x180015800"
+      },
+      {
+        "name": "sender-builds-premaster-after-gate",
+        "address": "0x18000a989",
+        "bytes_hex": "e8c2850000",
+        "destination": "0x180012f50"
+      },
+      {
+        "name": "premaster-fills46-bytes",
+        "address": "0x180012f89",
+        "bytes_hex": "e922360200",
+        "destination": "0x1800365b0"
+      },
+      {
+        "name": "token-notify-tailcalls-completion",
+        "address": "0x18000c369",
+        "bytes_hex": "e9c2e8ffff",
+        "destination": "0x18000ac30"
+      },
+      {
+        "name": "completion-derives-keys",
+        "address": "0x18000acd5",
+        "bytes_hex": "e816850000",
+        "destination": "0x1800131f0"
+      },
+      {
+        "name": "completion-builds-filter",
+        "address": "0x18000ad30",
+        "bytes_hex": "e82bfb0200",
+        "destination": "0x18003a860"
+      },
+      {
+        "name": "rc4-factory-tailcalls-ksa",
+        "address": "0x1800f7419",
+        "bytes_hex": "e902ffffff",
+        "destination": "0x1800f7320"
+      },
+      {
+        "name": "digest-compare16",
+        "address": "0x180012e6f",
+        "bytes_hex": "41b810000000"
+      },
+      {
+        "name": "public-key-registers-to-hash",
+        "address": "0x180012e56",
+        "bytes_hex": "488d4c24484d8bc48bd5"
+      },
+      {
+        "name": "premaster-length48",
+        "address": "0x180012f59",
+        "bytes_hex": "ba3000000041b830000000"
+      },
+      {
+        "name": "premaster-prefix-and-random-length",
+        "address": "0x180012f74",
+        "bytes_hex": "b92e000000c60203c64201034883c202"
+      },
+      {
+        "name": "derivation-mode4",
+        "address": "0x18000ac8e",
+        "bytes_hex": "c744243004000000"
+      },
+      {
+        "name": "install-filter-slot50",
+        "address": "0x18000ad50",
+        "bytes_hex": "ff5050"
+      },
+      {
+        "name": "filter-allocation-error30",
+        "address": "0x18000ad3d",
+        "bytes_hex": "c787d800000030000000"
+      },
+      {
+        "name": "derivation-error4",
+        "address": "0x18000ad5c",
+        "bytes_hex": "c787d800000004000000"
+      },
+      {
+        "name": "token-callback-slot",
+        "address": "0x180124a50",
+        "bytes_hex": "40c3008001000000"
+      },
+      {
+        "name": "key-layout-mode4",
+        "address": "0x180129b18",
+        "bytes_hex": "0400000010800000"
+      }
+    ],
+    "data": [
+      {
+        "name": "login-start-notify",
+        "address": "0x180124a00",
+        "file_offset": 1195520,
+        "bytes_hex": "506d0080010000007015038001000000003d00800100000030c3008001000000503d008001000000103d008001000000",
+        "values": [
+          6442478928,
+          6442653040,
+          6442466560,
+          6442500912,
+          6442466640,
+          6442466576
+        ]
+      },
+      {
+        "name": "token-key-notify",
+        "address": "0x180124a38",
+        "file_offset": 1195576,
+        "bytes_hex": "506d0080010000007015038001000000003d00800100000040c3008001000000503d008001000000103d008001000000",
+        "values": [
+          6442478928,
+          6442653040,
+          6442466560,
+          6442500928,
+          6442466640,
+          6442466576
+        ]
+      },
+      {
+        "name": "key-layout-table",
+        "address": "0x180129b10",
+        "file_offset": 1216272,
+        "bytes_hex": "00000000000000000400000010800000",
+        "values": null
+      },
+      {
+        "name": "key-factory-source",
+        "address": "0x18014eca0",
+        "file_offset": 1368224,
+        "bytes_hex": "2e2e5c2e2e5c2e2e5c53657276696365735c43727970745c4370745263342e6370700000",
+        "values": null
+      }
+    ],
+    "mapping_csv_validation": "5016 existing rows across7 unchanged files pass; format consistency only",
+    "source_tools_unchanged": true,
+    "csharp_build_or_tests": "Not run; no Source/Tools changes",
+    "retained_failures": [
+      "Initial multi-directory script argument rejected before project open; corrected to one script directory",
+      "Initial PE coverage assertion found a leaf without unwind metadata; explicit selected-window scope retained instead of inventing metadata"
+    ],
+    "scope": "Static byte/register/branch consistency; not native execution, complete protocol grammar, server acceptance or retail interoperability"
+  },
+  "review": {
+    "standards_remaining": 0,
+    "spec_remaining": 0,
+    "raw_report_sha256": "bcb7ce6c564086015dfb07aaecce08d99ae60e295d0f4bcf2baf40ea066cd8a0"
+  },
+  "upstream": {
+    "recordedUtc": "2026-11-05T13:18:15.345Z",
+    "query": "repo:NexusForever/NexusForever updated:>2026-11-05T12:51:40Z",
+    "issues": [],
+    "boundary": "Incremental query returned no changes; prior reviewed608/609 heads reused rather than a new all-state inventory."
+  },
+  "labels_and_mapping": "Read-only pass applies no labels or applied-label inventory. No opcode/layout/Source/live evidence change; existing CSV bindings retained.",
+  "evidence": {
+    "local_root": "artifacts/continuation-20261105/sts-trust-boundary",
+    "files": [
+      {
+        "path": "inspect-pe.py",
+        "sha256": "406d0f7169861a0886d050c5cc124b32dd09f0f972ca6fdf77059f7b34f59015"
+      },
+      {
+        "path": "verify-boundaries.py",
+        "sha256": "5c8c0049ef69f6de51e8c7ecf450c09ee126e391d65bc597acd1beb9e2923625"
+      },
+      {
+        "path": "TraceStsTrust.java",
+        "sha256": "c950960d44ed2fd54bc9a08121f8537825bc1436d862180c8a12338f670785d0"
+      },
+      {
+        "path": "VerifyStsTrustBoundary.java",
+        "sha256": "12c55d43b7291389101174977c93166e718455261d3418b174870bdaa7c88510"
+      },
+      {
+        "path": "decompile-console.log",
+        "sha256": "d26b8e829075f818c4e68d35045c39402e3bdfd630e946006f066f09c5ab72f0"
+      },
+      {
+        "path": "trace-console.log",
+        "sha256": "b9e53224cec6bb11eb72fbcfd182898ecc7142dd6cf735bc4de3cb39cdffaf0c"
+      },
+      {
+        "path": "callback-console.log",
+        "sha256": "dea005451f0af7e30f5e64e2b5c59c6a878908a0fd4b28a626bcc8f03af6f61b"
+      },
+      {
+        "path": "cipher-console.log",
+        "sha256": "18ea373d86fba19de34698ff177015ead2dff576249021ecf2781538c7311e61"
+      },
+      {
+        "path": "key-derive-console.log",
+        "sha256": "2973de2e70a7bdc8a9c25182af3bcb6f9f70e0bca010d81277684e4f09849445"
+      },
+      {
+        "path": "verify-console.log",
+        "sha256": "9a58ba98d5a6f939e77e936156af19eecb3dc5b317dcd0820677eb1176f9c84d"
+      },
+      {
+        "path": "mapping-validation.log",
+        "sha256": "6c449fe28c05ec5cf85f6e1c0a881a98061ce858a58b84d93ff17c310dc5ae31"
+      }
+    ]
+  },
+  "constraints": "Native client/CUA remain stopped; defaults15:1/17:1 unchanged; no automatic44 or seven baseline Character grants",
+  "remaining": [
+    "Trusted key value and provisioning, server inverse/private-key and padding/output-length/malformed-input policy",
+    "Complete derivation, key directions and state-advance rules; actual generic XML/status/reply/cardinality/transaction grammar",
+    "Accepted optional-route transcript, startup order, deployed/native/retail interoperability",
+    "All broader assessment and implementation requirements in the canonical roadmap"
+  ],
+  "historical_handoff_verification": "Previously retained expected Source divergence; not rerun or altered"
+}

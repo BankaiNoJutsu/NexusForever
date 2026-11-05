@@ -1,5 +1,13 @@
 # Assessment follow-through goal
 
+[STS token-key validation and local cipher transition](STS_TOKEN_KEY_TRANSITION_EVIDENCE.md)
+narrows the signature-input and notification unknowns using fresh REA identity
+and separate read-only Ghidra/LLVM evidence. Twenty anchors/12 ranges match, both
+reviews are clear, and Source/Tools remain unchanged. Continue static derivation,
+filter direction/state and generic grammar work; accepted traffic/trust/server
+contracts still gate optional authentication. Do not repeat the mapped callback
+or infer empty-reply acceptance or retail interoperability.
+
 [Confirmed support ticket storage](SUPPORT_TICKET_PERSISTENCE.md) fixes an
 executed premature-success baseline. Twelve new/57 scoped cases and both final
 Source reviews pass. Completion follows append/flush/close; failures return false,

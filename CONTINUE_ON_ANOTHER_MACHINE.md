@@ -1,5 +1,12 @@
 # Continue on another machine
 
+Latest static result: [STS token-key transition](Decomp/Analysis/STS_TOKEN_KEY_TRANSITION_EVIDENCE.md)
+maps signature inputs, premaster shape, the selected notification and local RC4
+filter construction. REA identity plus standalone Ghidra/LLVM byte checks pass;
+both reviews are clear. This is Mapped, with Source unchanged. Continue static
+derivation/filter direction and grammar work; accepted traffic/trust/server-side
+contracts still gate optional authentication. Native client/CUA stay stopped.
+
 Latest Support implementation: [confirmed ticket storage](Decomp/Analysis/SUPPORT_TICKET_PERSISTENCE.md)
 acknowledges only after the file writer confirms completion;12 new/57 scoped
 cases and both Source reviews pass. Reply retry does not append another record.
