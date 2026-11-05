@@ -52,6 +52,8 @@ namespace NexusForever.Game.Quest.Reward
             && player.CharacterId == characterId && player.Identity.RealmId == realm && ReferenceEquals(player.Account, account)
             && account.Id == accountId && account.WorldSessionEpoch == epoch && ReferenceEquals(account.CurrencyManager, wallets)
             && ReferenceEquals(account.Session, session) && ReferenceEquals(player.Session, session)
+            && (events == null || ReferenceEquals(session.Events, events))
+            && (session is not IPlayerSession bound || ReferenceEquals(bound.Player, player))
             && ReferenceEquals(player.ChallengeManager, challenges) && ReferenceEquals(player.QuestManager, quests) && !quests.RequiresAuthoritativeReload
             && session is not NetworkSession { IsDisconnecting: true } && player.LogoutManager?.State is not (LogoutState.Logout or LogoutState.Finished);
 
@@ -61,7 +63,8 @@ namespace NexusForever.Game.Quest.Reward
 
         internal void Start(string database, EventQueue queue, Action completed, Action onFailure)
         {
-            if (phase != 0 || !Live() || string.IsNullOrEmpty(database)) throw new InvalidOperationException("Contract account synchronization has no original queue owner.");
+            if (phase != 0 || !Live() || queue == null || !ReferenceEquals(session.Events, queue) || string.IsNullOrEmpty(database))
+                throw new InvalidOperationException("Contract account synchronization has no original queue owner.");
             characterDatabase = database; events = queue; ready = completed; failed = onFailure; phase = 1;
             events.EnqueueEvent(new TaskGenericEvent<ContractAccountIntent[][]>(Task.Run(ReadPlan), plan =>
             {
@@ -148,7 +151,7 @@ namespace NexusForever.Game.Quest.Reward
                 events.EnqueueEvent(new TaskEvent(refresh.Completion, () =>
                 {
                     if (phase == 4) return;
-                    if (!Live() || !refresh.TryPublish()) { Fail(); return; }
+                    if (!Live() || !refresh.TryPublish(Live)) { Fail(); return; }
                     refresh.Dispose(); refresh = null; ++group; StartGroup();
                 }, Fail));
             }

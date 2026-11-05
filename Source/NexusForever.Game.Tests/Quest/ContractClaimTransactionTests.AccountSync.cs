@@ -21,6 +21,8 @@ using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Reward;
 using NexusForever.Network.Session;
+using NexusForever.Shared.Game.Events;
+using NexusForever.WorldServer.Network;
 using Actor = NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.Actor;
 
 namespace NexusForever.Game.Tests.Quest;
@@ -129,7 +131,7 @@ public sealed partial class ContractClaimTransactionTests
     }
 
     [Theory]
-    [InlineData("logout")] [InlineData("finished")] [InlineData("session")] [InlineData("final")]
+    [InlineData("logout")] [InlineData("finished")] [InlineData("session")] [InlineData("queue")] [InlineData("final")]
     public async Task ClosingOrReplacedActorsDoNotPublishLateAccountCreditsAndFinalDisposalNeedsNoSessionPolling(string state)
     {
         using var f = new AccountSyncFixture(characterOptions, authOptions); uint reward = await ContractLiveCompletionTests.SeedQueuedClaim(f.Live, final: false);
@@ -141,6 +143,8 @@ public sealed partial class ContractClaimTransactionTests
             var session = RecordingDispatchProxy<IGameSession>.Create(out replacement); f.Actor.Set(nameof(Player.Session), session);
             ((RecordingDispatchProxy<IAccount>)(object)f.Actor.Player.Account).SetProperty(nameof(IAccount.Session), session);
         }
+        else if (state == "queue")
+            f.Live.Inner.Source.SessionProxy.SetProperty(nameof(IGameSession.Events), new EventQueue());
         else if (state == "final") { f.Actor.Quests.InvalidateRewardOperations(true); f.Actor.Challenges.InvalidateRewardOperations(true); }
         else f.Actor.Player.LogoutManager.State = state == "logout" ? LogoutState.Logout : LogoutState.Finished;
         gate.Release.TrySetResult(); await observation.WaitAsync(TimeSpan.FromSeconds(20));
@@ -148,8 +152,48 @@ public sealed partial class ContractClaimTransactionTests
         Assert.False(f.Actor.Challenges.HasPendingRewardOperation); Assert.Equal(100ul, f.Wallets.GetCurrencyAmount(AccountCurrencyType.ProtostarPromissoryNote));
         Assert.Equal(packets, f.Live.Inner.Source.SessionProxy.GetInvocations("EnqueueMessageEncrypted").Count);
         if (replacement != null) Assert.Empty(replacement.GetInvocations(nameof(IGameSession.ForceDisconnect)));
+        if (state == "queue") Assert.Empty(f.Live.Inner.Source.SessionProxy.GetInvocations(nameof(IGameSession.ForceDisconnect)));
         using var read = f.Live.Inner.Context(); Assert.True(read.CharacterContractAccountOutbox.Single().Delivered); Assert.Equal(5ul, read.CharacterContractRewardTrack.Single().Revision);
         using var auth = f.Auth(); Assert.Equal(105ul, auth.AccountCurrency.Single().Amount); Assert.Single(auth.AccountCurrencyOperation);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RebindingDuringWalletGrantSuppressesTheRemainingContractNotices(bool replacePlayer)
+    {
+        var world = RecordingDispatchProxy<IWorldSession>.Create(out var session);
+        session.SetProperty(nameof(IGameSession.Events), new EventQueue());
+        using var f = new AccountSyncFixture(characterOptions, authOptions, worldSession: world);
+        uint reward = await ContractLiveCompletionTests.SeedQueuedClaim(f.Live, final: false);
+        int firstGrants = 0, trailingNotices = 0;
+        session.SetMethodHandler(nameof(IGameSession.EnqueueMessageEncrypted), args =>
+        {
+            if (args[0] is ServerAccountCurrencyGrant)
+            {
+                firstGrants++;
+                if (replacePlayer)
+                    world.Player = RecordingDispatchProxy<IPlayer>.Create(out _);
+                else
+                    session.SetProperty(nameof(IGameSession.Events), new EventQueue());
+            }
+            else if (firstGrants != 0 && args[0] is ServerWalletUpdate or ServerRewardTracksReload)
+                trailingNotices++;
+            return null;
+        });
+
+        Assert.True(f.Actor.Quests.QueueContractRewardClaim(reward, 2));
+        await f.Actor.Drain();
+
+        Assert.Equal(1, firstGrants);
+        Assert.Equal(0, trailingNotices);
+        Assert.Empty(session.GetInvocations(nameof(IGameSession.ForceDisconnect)));
+        Assert.True(f.Actor.Challenges.RequiresAuthoritativeReload);
+        using var read = f.Live.Inner.Context();
+        Assert.True(Assert.Single(read.CharacterContractAccountOutbox).Delivered);
+        using var auth = f.Auth();
+        Assert.Equal(105ul, auth.AccountCurrency.Single().Amount);
+        Assert.Single(auth.AccountCurrencyOperation);
     }
 
     [Theory]
@@ -305,7 +349,8 @@ public sealed partial class ContractClaimTransactionTests
         private readonly AuthDatabase database;
         internal IInterceptor AuthFault { get; set; }
         internal IInterceptor CharacterFault { get; set; }
-        internal AccountSyncFixture(DbContextOptions<CharacterContext> characterOptions, DbContextOptions<AuthContext> authOptions, bool enabled = true)
+        internal AccountSyncFixture(DbContextOptions<CharacterContext> characterOptions, DbContextOptions<AuthContext> authOptions, bool enabled = true,
+            IWorldSession worldSession = null)
         {
             Directory.CreateDirectory(directory);
             this.authOptions = authOptions ?? new DbContextOptionsBuilder<AuthContext>().UseSqlite($"Data Source={Path.Combine(directory, "auth.sqlite")};Pooling=False").Options;
@@ -320,7 +365,7 @@ public sealed partial class ContractClaimTransactionTests
             cp.SetProperty(nameof(IConnectionString.ConnectionString), identity.Database.GetDbConnection().ConnectionString);
             database = new AuthDatabase(); database.Initialise(config);
             Live = new(characterOptions, claimQueue: true, rewardContexts: inner => inner.Context(CharacterFault),
-                authContexts: enabled ? () => Auth() : null, authDatabase: database);
+                authContexts: enabled ? () => Auth() : null, authDatabase: database, worldSession: worldSession);
             SetWallet();
         }
         private void SetWallet()

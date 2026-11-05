@@ -2000,7 +2000,9 @@ from the changed behavior and dependency surface, including at integration miles
    outbox rows and recovery from simulated commit uncertainty. The
    [claimed-bit publication gate](CONTRACT_ACCOUNT_SESSION_SYNC.md#claimed-bit-after-account-settlement)
    keeps the displayed claim pending through Auth credit and source
-   acknowledgement. Connect the remaining
+   acknowledgement. [Original actor publication](CONTRACT_ACCOUNT_SESSION_SYNC.md#original-actor-during-wallet-publication)
+   stops the remaining wallet and claim notices when the World session changes
+   its bound Player or queue. Connect the remaining
    reset/unclaimed/excess policy and complete canonical delivery/recovery gates
    before enabling public07CE. Do not expose a partial set of726 choices or use
    synthetic item/stacking metadata as full-table delivery evidence. The reset

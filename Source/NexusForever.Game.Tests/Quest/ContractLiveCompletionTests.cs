@@ -27,6 +27,7 @@ using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Quest.Reward;
 using NexusForever.Network.World.Message.Model.Reward;
 using NexusForever.Network.World.Message.Model.Challenges;
+using NexusForever.WorldServer.Network;
 using Actor = NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.Actor;
 using PersistenceFixture = NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.Fixture;
 
@@ -674,7 +675,8 @@ public sealed partial class ContractLiveCompletionTests
         private readonly Quest2RewardEntry[] rewards;
         internal Fixture(DbContextOptions<CharacterContext> options, uint id = 9880, string fault = null, bool legacy = false, bool customManager = false,
             Func<PersistenceFixture, CharacterContext> rewardContexts = null, bool claimQueue = false,
-            Func<NexusForever.Database.Auth.AuthContext> authContexts = null, NexusForever.Database.Auth.AuthDatabase authDatabase = null)
+            Func<NexusForever.Database.Auth.AuthContext> authContexts = null, NexusForever.Database.Auth.AuthDatabase authDatabase = null,
+            IWorldSession worldSession = null)
         {
             Inner = new(options); Entry = ContractBuild16042Fixture.Quests().Single(row => row.Id == id);
             Entry.PushedItemIds = []; Entry.PushedItemCounts = []; // fields absent from the source-only scalar fixture
@@ -727,7 +729,13 @@ public sealed partial class ContractLiveCompletionTests
             var prerequisites = RecordingDispatchProxy<IPrerequisiteManager>.Create(out var pre); pre.SetMethodHandler(nameof(IPrerequisiteManager.Meets), args => Eligibility((uint)args[1]));
             Actor = new(Inner, prerequisites, rewardContexts: rewardContexts == null ? null : () => rewardContexts(Inner), questTables: tables,
                 contracts: customManager ? RecordingDispatchProxy<IContractManager>.Create(out _) : contracts, characterDatabase: database,
-                rewardTables: claimQueue ? tables : null, authContexts: authContexts, authDatabase: authDatabase);
+                rewardTables: claimQueue ? tables : null, authContexts: authContexts, authDatabase: authDatabase,
+                actorSession: worldSession, actorEvents: worldSession?.Events);
+            if (worldSession != null)
+            {
+                worldSession.Player = Actor.Player;
+                ((RecordingDispatchProxy<IAccount>)(object)Actor.Player.Account).SetProperty(nameof(IAccount.Session), worldSession);
+            }
             ((RecordingDispatchProxy<IAccount>)(object)Actor.Player.Account).SetProperty(nameof(IAccount.RbacManager), RecordingDispatchProxy<IAccountRBACManager>.Create(out _));
             var assets = RecordingDispatchProxy<IAssetManager>.Create(out var ap); ap.SetMethodReturn(nameof(IAssetManager.GetRewardPropertiesForTier), ImmutableList<RewardPropertyPremiumModifierEntry>.Empty);
             Properties = new(Actor.Player.Account, assets, tables); ((RecordingDispatchProxy<IAccount>)(object)Actor.Player.Account).SetProperty(nameof(IAccount.RewardPropertyManager), Properties);

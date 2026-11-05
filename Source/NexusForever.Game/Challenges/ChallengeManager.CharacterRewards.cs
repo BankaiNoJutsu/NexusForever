@@ -33,9 +33,13 @@ namespace NexusForever.Game.Challenges
             characterRewardLoadRequired = true;
             characterRewardCatalog = new(gameTableManager);
             var session = player.Session;
+            var events = session?.Events;
             rewardQueue = new(this, contexts, new CharacterChallengeRewardExecutor(contexts, characterRewardCatalog, gameTableManager),
-                player.Session?.Events, AdoptCharacterRewards, () =>
+                events, AdoptCharacterRewards, () =>
                 {
+                    if (!ReferenceEquals(player.Session, session) || !ReferenceEquals(session?.Events, events)
+                        || (session is IPlayerSession bound && !ReferenceEquals(bound.Player, player)))
+                        return;
                     try { session?.ForceDisconnect(); } catch { }
                 });
         }

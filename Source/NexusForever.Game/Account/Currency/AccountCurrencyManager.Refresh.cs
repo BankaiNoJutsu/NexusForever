@@ -43,7 +43,7 @@ namespace NexusForever.Game.Account.Currency
                 && ReferenceEquals(manager.account.Session, session) && session is not NetworkSession { IsDisconnecting: true }
                 && manager.currencies.TryGetValue(wallet.CurrencyId, out var current) && ReferenceEquals(current, wallet);
 
-            internal bool TryPublish()
+            internal bool TryPublish(Func<bool> ownsPublication = null)
             {
                 lock (manager.currencyGate)
                 {
@@ -51,14 +51,15 @@ namespace NexusForever.Game.Account.Currency
                     // A premature poll is harmless; a completed failed read or
                     // changed owner quarantines the cache instead of guessing.
                     if (Completion?.IsCompleted != true) return false;
+                    bool CanPublish() => Live() && (ownsPublication?.Invoke() ?? true);
                     try
                     {
-                        if (!Live() || !reservation.TryAdopt()) throw new InvalidOperationException("Wallet refresh cannot adopt this completion.");
+                        if (!CanPublish() || !reservation.TryAdopt()) throw new InvalidOperationException("Wallet refresh cannot adopt this completion.");
                         publishing = true;
                         session.EnqueueMessageEncrypted(new NexusForever.Network.World.Message.Model.ServerAccountCurrencyGrant { AccountCurrency = wallet.Build() });
-                        if (!Live()) throw new InvalidOperationException("Wallet publication lost its session.");
+                        if (!CanPublish()) throw new InvalidOperationException("Wallet publication lost its session.");
                         session.EnqueueMessageEncrypted(new NexusForever.Network.World.Message.Model.ServerWalletUpdate((uint)wallet.CurrencyId));
-                        if (!Live()) throw new InvalidOperationException("Wallet publication lost its session.");
+                        if (!CanPublish()) throw new InvalidOperationException("Wallet publication lost its session.");
                         return true;
                     }
                     catch { reservation.Quarantine(); return false; }

@@ -22,6 +22,23 @@ The retained six-table audit supplies quote effects for 726 choices, including
 checked destination and archived checkout. Actual Item2 stack and delivery
 qualification, retail reset policy and public 07CE routing remain open.
 
+## Original actor during wallet publication
+
+5 November 2026. Contract account recovery checks the original reward queue
+and the Player bound to the World session. The wallet refresh checks that
+ownership before adoption and after each enqueue. Rebinding during the first
+wallet packet suppresses the trailing wallet packet and reward-track reload.
+The retired queue releases its work without disconnecting the replacement.
+The Auth receipt and Character acknowledgement still settle exactly once.
+
+The baseline adopted the wallet on a retired queue and emitted both trailing
+notices when the first enqueue replaced that queue. The owning build took
+38 seconds with zero warnings or errors. All 96 scoped tests passed in 61
+seconds, including queue replacement and a World session rebound to a
+different Player. Local evidence is under
+`artifacts/continuation-20261105/contract-queue-ownership/`.
+Retail reset, public claim routing, and deployed session recovery remain open.
+
 ## Historical continuation
 
 Latest continuation: [Realm bank persistence and loading](REALM_BANK_CODECS_AND_LOADING.md)
