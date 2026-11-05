@@ -79,6 +79,9 @@ membership, and preserves scoreboard identity after the player departs.
 [Member delivery failure](../../CURRENT_STATUS.md#public-event-member-delivery-failure)
 keeps objective credit, teammate notices, and event cleanup moving when an
 individual member enqueue fails.
+[Event finalization and enrollment](../../CURRENT_STATUS.md#public-event-finalization-and-enrollment)
+keeps the match-finish callback from completing the same event twice and
+rejects map arrivals during and after event completion.
 The [Character rollback probe](../../CURRENT_STATUS.md#public-event-character-save-recovery)
 reproduced early quest updates and loss of unsaved credit on the World save
 failure path. [Committed quest notices](../../CURRENT_STATUS.md#committed-public-event-quest-notices)

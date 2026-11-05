@@ -8,6 +8,8 @@ using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
+using NexusForever.Game.Abstract.Map.Instance;
+using NexusForever.Game.Abstract.Matching.Match;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.PublicEvent;
 using NexusForever.Game.Static.Achievement;
@@ -18,6 +20,7 @@ using NexusForever.GameTable.Model;
 using NexusForever.Network.World.Message.Model.PublicEvent;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Script;
+using NexusForever.Script.Instance;
 using NexusForever.WorldServer.Network;
 using EventTeam = NexusForever.Game.Static.PublicEvent.PublicEventTeam;
 using RuntimeEvent = NexusForever.Game.PublicEvent.PublicEvent;
@@ -143,6 +146,56 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
         Assert.True(publicEvent.IsFinalised);
         Assert.Single(actor.Packets.OfType<ServerPublicEventLeave>());
         Assert.Single(mapProxy.GetInvocations(nameof(IBaseMap.OnPublicEventFinish)));
+        Assert.Empty(publicEvent.GetTeams().SelectMany(team => team.GetMembers()));
+    }
+
+    [Fact]
+    public void ObjectiveCompletionNotifiesTheMapOnceWhenMatchFinishCallsBack()
+    {
+        var (script, publicEvent, actor, map) = CreateContentEvent();
+        var match = RecordingDispatchProxy<IMatch>.Create(out var matchProxy);
+        map.SetProperty(nameof(IContentMapInstance.Match), match);
+        bool matchFinished = false;
+        matchProxy.SetMethodHandler(nameof(IMatch.MatchFinish), _ =>
+        {
+            // MatchFinish sets its status before dispatching OnMatchFinish.
+            if (!matchFinished)
+            {
+                matchFinished = true;
+                script.OnMatchFinish();
+            }
+            return null;
+        });
+
+        publicEvent.UpdateObjective(201u, 1);
+
+        Assert.True(publicEvent.IsFinalised);
+        Assert.Single(map.GetInvocations(nameof(IBaseMap.OnPublicEventFinish)));
+        Assert.Single(matchProxy.GetInvocations(nameof(IMatch.MatchFinish)));
+        AssertCredit(actor, 201u);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ContentMapDoesNotJoinArrivalsToAnEndingEvent(bool arrivesDuringEndNotice)
+    {
+        var (script, publicEvent, actor, _) = CreateContentEvent();
+        var late = new Actor(publicEvent.Map, 43ul, 200u);
+        if (arrivesDuringEndNotice)
+            actor.Session.SetMethodHandler(nameof(IWorldSession.EnqueueMessageEncrypted), args =>
+            {
+                if (args[0] is ServerPublicEventEnd)
+                    script.OnAddToMap(late.Player);
+                return null;
+            });
+
+        publicEvent.UpdateObjective(201u, 1);
+        if (!arrivesDuringEndNotice)
+            script.OnAddToMap(late.Player);
+
+        Assert.True(publicEvent.IsFinalised);
+        Assert.Empty(late.Packets.OfType<ServerPublicEventStart>());
         Assert.Empty(publicEvent.GetTeams().SelectMany(team => team.GetMembers()));
     }
 
@@ -405,6 +458,32 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
         public override Task TransactionCommittedAsync(DbTransaction transaction, TransactionEndEventData eventData,
             CancellationToken cancellationToken = default)
             => afterCommit ? Task.FromException(new IOException("Owned public event acknowledgement loss.")) : Task.CompletedTask;
+    }
+
+    private sealed class ContentEventScript(uint eventId) : EventBaseContentMapScript
+    {
+        public override uint PublicEventId => eventId;
+    }
+
+    private static (ContentEventScript, RuntimeEvent, Actor, RecordingDispatchProxy<IContentMapInstance>) CreateContentEvent()
+    {
+        var map = RecordingDispatchProxy<IContentMapInstance>.Create(out var mapProxy);
+        var actor = new Actor(map, 42ul, 100u);
+        var players = RecordingDispatchProxy<IPlayerManager>.Create(out var registry);
+        registry.SetMethodReturn(nameof(IPlayerManager.GetPlayer), actor.Player);
+        var publicEvent = CreateEvent(players, map, 201u, 501u);
+        var events = RecordingDispatchProxy<IPublicEventManager>.Create(out var eventsProxy);
+        eventsProxy.SetMethodReturn(nameof(IPublicEventManager.CreateEvent), publicEvent);
+        mapProxy.SetProperty(nameof(IContentMapInstance.PublicEventManager), events);
+        var script = new ContentEventScript(publicEvent.Id);
+        mapProxy.SetMethodHandler(nameof(IBaseMap.OnPublicEventFinish), args =>
+        {
+            script.OnPublicEventFinish((IPublicEvent)args[0], (IPublicEventTeam)args[1]);
+            return null;
+        });
+        script.OnLoad(map);
+        script.OnAddToMap(actor.Player);
+        return (script, publicEvent, actor, mapProxy);
     }
 
     private static RuntimeEvent CreateEvent(IPlayerManager players, IBaseMap map, uint objectiveId, uint objectId)

@@ -22119,6 +22119,25 @@ passed, including the three fault cases. Local results are in
 `artifacts/continuation-20261105/public-event-member-enqueue/`.
 Replay to the failed recipient and deployed socket behavior remain open.
 
+#### Public event finalization and enrollment
+
+5 November 2026. An event closes enrollment when it starts sending the end
+scoreboard. It clears membership and removes its entities, then marks itself
+final before notifying the map. When the primary event causes the content map
+to finish its match, the synchronous match callback leaves the primary event
+finished and can still finish the linked child events. Later arrivals cannot
+start the finished event through the map script's retained reference.
+
+Three baseline cases reproduced a duplicate map callback, an enumeration
+failure when a player joined during the end notice, and an event-start
+packet sent to an arrival after completion. The owning build passed with zero
+warnings or errors, and 290 scoped public-event, content-map, Tempest Refuge,
+and Hycrest tests passed. The initial build ran out of disk space. The retry
+followed cleanup of older generated test-host logs. Build logs, test results,
+and matching runtime/test assembly hashes are under
+`artifacts/continuation-20261105/public-event-finalization/`.
+Deployed socket and native client behavior remain open.
+
 #### Public event Character save recovery
 
 5 November 2026. A real public-event objective advanced an enrolled Player's

@@ -41,6 +41,7 @@ namespace NexusForever.Game.PublicEvent
 
         private double elapsedTimer;
         private UpdateTimer liveStatsTimer;
+        private bool isFinishing;
 
         #region Dependency Injection
 
@@ -200,6 +201,9 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public void JoinEvent(IPlayer player, Static.PublicEvent.PublicEventTeam team)
         {
+            if (IsFinalised || isFinishing)
+                return;
+
             /*if (player.Level < template.Entry.MinPlayerLevel)
                 return;*/
 
@@ -469,9 +473,33 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public void Finish(Static.PublicEvent.PublicEventTeam? winnerTeam)
         {
-            if (IsFinalised)
+            if (IsFinalised || isFinishing)
                 return;
 
+            isFinishing = true;
+            try
+            {
+                FinishTeams(winnerTeam);
+                entityFactory.RemoveEntities();
+                IsFinalised = true;
+            }
+            finally
+            {
+                isFinishing = false;
+            }
+
+            IPublicEventTeam winner = null;
+            if (winnerTeam.HasValue)
+                winner = GetTeam(winnerTeam.Value);
+
+            // A content map can finish its match here, which calls Finish on this event again.
+            Map.OnPublicEventFinish(this, winner);
+
+            log.LogTrace($"Public event {Guid} has finished.");
+        }
+
+        private void FinishTeams(Static.PublicEvent.PublicEventTeam? winnerTeam)
+        {
             var teamStats = teams.Values
                 .Select(t => t.BuildTeamStats())
                 .ToList();
@@ -504,18 +532,6 @@ namespace NexusForever.Game.PublicEvent
 
             foreach (ulong characterId in toRemove)
                 RemoveCharacter(characterId);
-
-            entityFactory.RemoveEntities();
-
-            IPublicEventTeam winner = null;
-            if (winnerTeam.HasValue)
-                winner = GetTeam(winnerTeam.Value);
-
-            Map.OnPublicEventFinish(this, winner);
-
-            IsFinalised = true;
-
-            log.LogTrace($"Public event {Guid} has finished.");
         }
 
         /// <summary>
