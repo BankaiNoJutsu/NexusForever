@@ -3241,7 +3241,7 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            target.AddProc(
+            info.ProcInstance = target.AddProc(
                 info.EffectId,
                 spell.Parameters.SpellInfo.Entry.Id,
                 spell.CastingId,

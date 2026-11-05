@@ -159,6 +159,24 @@ Local evidence is in
 `artifacts/continuation-20261104/amp-property-ownership/`. Actual proc and mixed
 AMP families still require row evidence and safe effect-lifetime ownership.
 
+## Proc registration lifetime
+
+5 November 2026. Spell expiry and cancellation now remove the exact proc
+instance installed by that effect. A replacement with the same spell, casting
+and effect IDs keeps its registration and buff. An effect whose registration
+was rejected cannot remove a later proc. The current registration can still
+be removed once through its own lifetime.
+
+Both baseline cases removed the replacement. The regression uses the retained
+registration fields for node 148, holder 59126 and effect 141788, with a
+deliberately missing trigger spell in the rejection case. The retained
+feasibility inventory also identifies node 50, holder 59154 and effect
+141824. The owning build completed in 32 seconds with zero warnings and
+errors. All 198 scoped tests passed in 3 seconds. Local source and input evidence is under
+`artifacts/continuation-20261105/proc-lifetime-ownership/`.
+Automatic application, trigger-child lifetime and retail behavior for proc
+AMPs remain open.
+
 ## Original reconciliation
 
 2026-10-29. Fork: `legacy-di-storefront-hardening`.

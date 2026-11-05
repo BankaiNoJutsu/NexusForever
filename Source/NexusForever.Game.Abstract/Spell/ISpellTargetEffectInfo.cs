@@ -11,6 +11,7 @@ namespace NexusForever.Game.Abstract.Spell
         IDamageDescription Damage { get; }
         bool DropEffect { get; set; }
         bool LifetimeEnded { get; set; }
+        ISpellProcInstance ProcInstance { get; set; }
         List<ICombatLog> CombatLogs { get; }
         IReadOnlyCollection<IGridEntity> CreatedEntities { get; }
 

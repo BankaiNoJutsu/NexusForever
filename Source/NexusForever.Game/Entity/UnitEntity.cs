@@ -217,8 +217,9 @@ namespace NexusForever.Game.Entity
             public uint DataBits07 { get; init; }
         }
 
-        private sealed class ProcState : TrackedSpellState
+        private sealed class ProcState : TrackedSpellState, ISpellProcInstance
         {
+            public uint EffectId { get; init; }
             public uint TriggerEvent { get; init; }
             public uint TriggerSpell4Id { get; init; }
             public float Chance { get; init; }
@@ -471,10 +472,11 @@ namespace NexusForever.Game.Entity
             return delayDeathStates.Remove(effectId);
         }
 
-        public void AddProc(uint effectId, uint spell4Id, uint castingId, uint triggerEvent, uint triggerSpell4Id, float chance, uint targetData, uint cooldownMsOrSentinel, uint dataBits05, uint dataBits06, uint dataBits07, uint dataBits08, uint dataBits09)
+        public ISpellProcInstance AddProc(uint effectId, uint spell4Id, uint castingId, uint triggerEvent, uint triggerSpell4Id, float chance, uint targetData, uint cooldownMsOrSentinel, uint dataBits05, uint dataBits06, uint dataBits07, uint dataBits08, uint dataBits09)
         {
-            procStates[effectId] = new ProcState
+            var state = new ProcState
             {
+                EffectId             = effectId,
                 Spell4Id             = spell4Id,
                 CastingId            = castingId,
                 TriggerEvent         = triggerEvent,
@@ -488,11 +490,14 @@ namespace NexusForever.Game.Entity
                 DataBits08           = dataBits08,
                 DataBits09           = dataBits09
             };
+            procStates[effectId] = state;
+            return state;
         }
 
-        public bool RemoveProc(uint effectId)
+        public bool RemoveProc(ISpellProcInstance instance)
         {
-            return procStates.Remove(effectId);
+            return instance != null && procStates.TryGetValue(instance.EffectId, out ProcState current)
+                && ReferenceEquals(current, instance) && procStates.Remove(instance.EffectId);
         }
 
         public IReadOnlyCollection<ProcRegistrationSnapshot> CreateProcRegistrationSnapshot()

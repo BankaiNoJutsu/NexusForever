@@ -2334,12 +2334,12 @@ namespace NexusForever.Game.Spell
                             SendRemoveBuff(target.Guid);
                     };
                 case SpellEffectType.Proc:
-                    if (effect.Proc == null)
+                    if (effect.Proc == null || info.ProcInstance is not { } procInstance)
                         return null;
 
                     return () =>
                     {
-                        bool removed = target.RemoveProc(info.EffectId);
+                        bool removed = target.RemoveProc(procInstance);
                         SpellEffectDiagnostics.TraceProc(this, target, effect.Proc, false, removed, null);
 
                         if (removed)
