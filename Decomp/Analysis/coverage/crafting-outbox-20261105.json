@@ -1,0 +1,289 @@
+{
+  "version": 1,
+  "feature": "Autonomous crafting account outbox",
+  "verified_utc": "2026-11-05T11:01:33.232802+00:00",
+  "base_head": "8742e1c0efaf8451e08087b0f83a57da40a5419a",
+  "behavior": [
+    "WorldServer registers an immediate32-row pass after World startup and repeats every30 seconds",
+    "A missing Character source leaves an unpaid Auth reservation untouched; only a committed paid source or existing cancellation fence may complete",
+    "A bounded keyset cursor advances across unavailable or malformed rows without starving the next paid award",
+    "Existing delivery receipts finish interrupted Auth or Character acknowledgement without recreating consumed items or rewinding wallets",
+    "Only fresh route-pinned private contexts cross the worker boundary; the background worker publishes no actor packets or cache state",
+    "An original live actor can adopt and publish once after the worker wins the settlement race"
+  ],
+  "qualification": {
+    "source_sqlite": "61 affected cases passed, including10 new cases",
+    "configured_mysql": "10 new cases passed with configured retries on separate disposable MySQL8.4.13 Auth/Character schemas",
+    "migrations": "42 Auth and49 Character migrations per schema; no migration history changes during each flow",
+    "profile": {
+      "Pid": 15944,
+      "Version": "8.4.13",
+      "DataRoot": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261031\\provider-mysql8\\private-00eb166874374f73\\data\\",
+      "Isolation": "REPEATABLE-READ",
+      "TlsRequired": true
+    },
+    "strategies": [
+      "Microsoft.EntityFrameworkCore.MySqlRetryingExecutionStrategy"
+    ],
+    "fault_boundary": "Injected acknowledgement rejection and logical worker restart; not a physical process/connection failure",
+    "foreign_factory_control": "Reconfiguration cases replace the original factory with a separately initialized SQLite database; prior same-provider foreign Auth control remains in crafting-account-mysql-20261105.json",
+    "native_client_and_computer_use": "Remain stopped",
+    "full_solution_or_full_suite": "Not run; user-directed scoped checks only",
+    "entitlement_defaults": "15:1 and17:1 unchanged; no automatic44 or seven baseline Character grants",
+    "deployment_socket_actual_table_retail": "Not qualified"
+  },
+  "cases": [
+    {
+      "name": "simple,account,outbox",
+      "passed": true,
+      "migrations": {
+        "nf_craft_out_30d3047f1a4d_01_c": 49,
+        "nf_craft_out_30d3047f1a4d_01_a": 42
+      }
+    },
+    {
+      "name": "auto,account-cosmic,outbox",
+      "passed": true,
+      "migrations": {
+        "nf_craft_out_30d3047f1a4d_02_c": 49,
+        "nf_craft_out_30d3047f1a4d_02_a": 42
+      }
+    },
+    {
+      "name": "simple,account,outbox-race",
+      "passed": true,
+      "migrations": {
+        "nf_craft_out_30d3047f1a4d_03_c": 49,
+        "nf_craft_out_30d3047f1a4d_03_a": 42
+      }
+    },
+    {
+      "name": "BoundedPassesSkipUnpaidAndMalformedRowsWithoutStarvingTheNextPaidAward:",
+      "passed": true,
+      "migrations": {
+        "nf_craft_out_30d3047f1a4d_04_c": 49,
+        "nf_craft_out_30d3047f1a4d_04_a": 42
+      }
+    },
+    {
+      "name": "RestartCompletesInterruptedAcknowledgementWithoutRegrantingConsumedAwards:False",
+      "passed": true,
+      "migrations": {
+        "nf_craft_out_30d3047f1a4d_05_c": 49,
+        "nf_craft_out_30d3047f1a4d_05_a": 42
+      }
+    },
+    {
+      "name": "RestartCompletesInterruptedAcknowledgementWithoutRegrantingConsumedAwards:True",
+      "passed": true,
+      "migrations": {
+        "nf_craft_out_30d3047f1a4d_06_c": 49,
+        "nf_craft_out_30d3047f1a4d_06_a": 42
+      }
+    },
+    {
+      "name": "ExistingAdmissionFenceCanFinishItsAuthAcknowledgementWithoutCreatingAnAward:",
+      "passed": true,
+      "migrations": {
+        "nf_craft_out_30d3047f1a4d_07_c": 49,
+        "nf_craft_out_30d3047f1a4d_07_a": 42
+      }
+    },
+    {
+      "name": "IndependentWorkersDeliverOnePaidBundleOnce:",
+      "passed": true,
+      "migrations": {
+        "nf_craft_out_30d3047f1a4d_08_c": 49,
+        "nf_craft_out_30d3047f1a4d_08_a": 42
+      }
+    },
+    {
+      "name": "ReconfiguredOwnedFactoriesCannotDeliverToAnotherDatabase:False",
+      "passed": true,
+      "migrations": {
+        "nf_craft_out_30d3047f1a4d_09_c": 49,
+        "nf_craft_out_30d3047f1a4d_09_a": 42
+      }
+    },
+    {
+      "name": "ReconfiguredOwnedFactoriesCannotDeliverToAnotherDatabase:True",
+      "passed": true,
+      "migrations": {
+        "nf_craft_out_30d3047f1a4d_10_c": 49,
+        "nf_craft_out_30d3047f1a4d_10_a": 42
+      }
+    }
+  ],
+  "source": [
+    {
+      "path": "Source/NexusForever.Game/Crafting/CraftingAccountOutbox.cs",
+      "sha256": "4B6C41609C394BF91C4C9C1FC23BF6C985362691780ED152DF7BAB8C716B6767"
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/Service/CraftingAccountOutboxHostedService.cs",
+      "sha256": "208F215D345778DF31487CF65592DE123A8A19FBF83FFB75B401484E32B1EC5E"
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/WorldServer.cs",
+      "sha256": "48F39E93DC637E35268B596C1C1D4D133FF7B2A6452D282EF225B201C8DBBDAA"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Crafting/CraftingSettlementTests.cs",
+      "sha256": "45F1EF6076C4A7AAD209E71EFDEAD9610A242AB658900DF6111806EC0B0EA3A2"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Crafting/CraftingAccountOutboxTests.cs",
+      "sha256": "818BE1CA2ADA7B9760F63D508CC73731109E1ECA87DD4B1B3FBBD83D06237FA3"
+    }
+  ],
+  "assemblies": [
+    {
+      "name": "NexusForever.Game.Tests",
+      "sha256": "690FBE788BA7E80ED74B86B520C68749A29C8CD5E9B8126A51101AB9F1A6880D"
+    },
+    {
+      "name": "NexusForever.Game",
+      "sha256": "E28B3FF5044D9293D8ACA4D8A99E472D8DBEC10EB30F36F2B30F2AEB7BB7A814"
+    },
+    {
+      "name": "NexusForever.WorldServer",
+      "sha256": "4F33BF6EFE3CA7C8F0B353C99D39E29CC1B24B227F8DE79D5DB0FB8339EC853C"
+    },
+    {
+      "name": "NexusForever.Database.Auth",
+      "sha256": "A44015855DD5A231B8A7F60F49846DAF3CB0A217F6E8CED279FB44AFFD0283D0"
+    },
+    {
+      "name": "NexusForever.Database.Character",
+      "sha256": "2F18EDF24B38F92C005B522C209C1264E20B83AC543EAEBEB42D41A7FB762C11"
+    },
+    {
+      "name": "NexusForever.Database.Sqlite.Migrations",
+      "sha256": "70D9090FF06C7B573B7654B2E0276AF858FDF2B2779410D09D63DE3F7C4AF4E0"
+    }
+  ],
+  "runner_sha256": "485E47D0C7ACA99E217BEC67D40E138FF2CAB3147B658A1F903D66CF3E2630F3",
+  "artifacts": [
+    {
+      "path": "artifacts/continuation-20261105/crafting-outbox/owning-build.log",
+      "sha256": "D559D73E66F768E8D33305A26BFB436A7F5D1D4C923EC0A909FBC4B0E35EAF9E"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-outbox/test-build.log",
+      "sha256": "91799EF1BDACF630D2A8F5CCA2F3A6254054427A8EA732AA018254CCF5F67A9C"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-outbox/test-build-fixed.log",
+      "sha256": "0F3A6E433361B1F682EC9DFC86F987AC5D35FD4AF2D92FFDFEE8E35A7472535E"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-outbox/outbox-scoped.trx",
+      "sha256": "17A7157D8275FBD0DC62EAD4805B1C2E16D7AEE6C56D1DFBE3CCC16DB0F45D62"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-outbox/provider-build.log",
+      "sha256": "A31EC2286368AF39F05CFD6A0D300C486CC1E8160B23CF230ABD70E55043EEAB"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-outbox/review.md",
+      "sha256": "53AA7C9FC9B4361F2CF9EA23A46AFFFBE5386C3BA5C459A105CD305CF56A68A2"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-outbox/provider/inputs.json",
+      "sha256": "8FE20A2AF6944FE39E53B72D33B26FF30573C320A5C38E911D04C0872871ED8F"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-outbox/provider/Program.cs",
+      "sha256": "0C86F4CCEC0762D69FC50351C2816E3A253F747D2F4517E4090ADFA68E6DF38C"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-outbox/provider/results.json",
+      "sha256": "688F452CE8AE22BCCEB9F6DF29F7337E9359659DD2250EA59E1F81906AD48E33"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-outbox/provider/native-run-state.json",
+      "sha256": "8376C59B23E384775C20BEF29F83AB9DDAED0B2D0D68BCCF36598B1EF5BDC232"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-outbox/provider/engine-observation.json",
+      "sha256": "B1085233D4EDE2898F8698340388918895A9BD370141C34C2313A6ACC6E1C66B"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-outbox/provider-finish/owned-schema-verification.json",
+      "sha256": "3CA0A1B584399735FDD5F261E3593C3472EF2517E11FC5E56C6401D22B5DE8A1"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-outbox/provider-finish/shutdown-request.json",
+      "sha256": "C367A8FF243E0C7A1B1054AF96C52C95DCED7E8BEB155D71FF785F1FA9649210"
+    },
+    {
+      "path": "artifacts/continuation-20261105/crafting-outbox/shutdown-observation.json",
+      "sha256": "A76548C5D196AAD76A90D7514736FBCE1728BE5FA977E6585C5EE9357118BE59"
+    }
+  ],
+  "verification_commands": {
+    "owning_build": "dotnet build Source/NexusForever.WorldServer/NexusForever.WorldServer.csproj --no-restore -v minimal --nologo",
+    "test_build": "dotnet build Source/NexusForever.Game.Tests/NexusForever.Game.Tests.csproj --no-restore -p:BuildProjectReferences=false -v minimal --nologo",
+    "scoped_filter": "FullyQualifiedName~CraftingAccountOutboxTests|FullyQualifiedName~CraftingSettlementTests",
+    "provider": "Compiled3 new public handler/hosted/race cases and7 worker cases from the same test DLL; isolated direct-reference runner, no broad suite"
+  },
+  "observed_seconds": {
+    "owning_build": 40.54,
+    "initial_test_build_rejected_namespace_collision": 13.86,
+    "test_build_corrected": 15.12,
+    "scoped_sqlite61": 58,
+    "provider_runner_build": 4.56,
+    "owned_mysql_startup_until_runner": 124.360871,
+    "mysql10": 255.9840703
+  },
+  "failure_retained": "Initial test-only compile hit the existing Tests.Item namespace instead of Entity.Item; qualified the fixture reference, preserved failed build log, then build and61 scoped cases passed. No weakened assertions.",
+  "evidence_reuse": "Existing settlement engine and intent source files are unchanged from8742e1c0. The prior29-case MySQL gate is retained at its original candidate; this new gate runs only the10 added outbox cases. The51 unchanged affected source controls are included in the61-case run.",
+  "review": {
+    "spec_findings": 0,
+    "standards_required_findings": 0,
+    "standards_optional_maintenance_observations": 2,
+    "artifact": "artifacts/continuation-20261105/crafting-outbox/review.md",
+    "disposition": "Retained existing expectation lists and the small local retry test strategy; no unrelated test framework refactor"
+  },
+  "cleanup": {
+    "final_schema_drops": 20,
+    "owned_schema_prefix_remaining": [],
+    "graceful_shutdown": {
+      "Pid": 15944,
+      "At": "2026-11-05T11:00:27.9467113Z",
+      "Graceful": true
+    },
+    "observation": {
+      "At": "2026-11-05T11:00:40.0482499Z",
+      "ServerAbsent": true,
+      "ListenerAbsent": true,
+      "RunnerAbsent": true,
+      "HelperAbsent": true,
+      "Port": 57637,
+      "ServerPid": 15944,
+      "RunnerPid": 27236,
+      "HelperPid": 6756
+    }
+  },
+  "upstream": {
+    "newest_created": [
+      609,
+      608
+    ],
+    "reviewed_heads_unchanged": {
+      "606": "4ffa050ba994a82e0fb52f0b5b733c94b139367e",
+      "607": "7f044aad0a20419a788b8140d263ac83fcd93217",
+      "608": "7db12d9a7c694bc5e66d9e0f4cdbc1b82155e69b",
+      "609": "f9b6f7356798a41beea0768ff1f6b5a758ffeca3"
+    },
+    "states": "606/607/608 open;609 closed, not merged; prior reconciliation reused"
+  },
+  "historical_handoff_verification": "Previously retained expected Source divergence from2938422 is not repeated or altered to pass",
+  "remaining": [
+    "Physical process/connection failure and deployed restart/load",
+    "Backup, database-route and Loyalty catalog migration",
+    "Durable shared virtual-event replay",
+    "Actual recipe/material/modifier data, socket/native and retail qualification",
+    "All remaining Contract, gameplay, reverse-engineering and broader assessment requirements in the canonical roadmap"
+  ]
+}

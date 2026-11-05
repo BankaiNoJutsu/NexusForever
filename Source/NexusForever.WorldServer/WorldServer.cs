@@ -60,6 +60,7 @@ namespace NexusForever.WorldServer
 
                     // register world server service first since it needs to execute before the web host
                     sc.AddHostedService<HostedService>();
+                    sc.AddHostedService<CraftingAccountOutboxHostedService>();
                     sc.AddHostedService<NetworkInternalHandlerHostedService>();
                     sc.AddHostedService<OnlineHostedService>();
 

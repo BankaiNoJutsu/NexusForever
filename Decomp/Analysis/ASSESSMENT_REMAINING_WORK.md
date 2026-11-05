@@ -586,9 +586,15 @@ affected SQLite controls and three retry-enabled regressions that fail against
 the pre-fix Game DLL. The 59 final schema drops and owned graceful shutdown are
 verified; the portable gate retains the failed provider replay and final bindings.
 This is configured-provider qualification, not retail closure.
-Continue autonomous paid-outbox processing without re-admission, then physical
-process/connection failure and backup/route/
-catalog migration. Shared virtual-effect replay, material/modifier validation,
+The later [autonomous crafting outbox](DESTINATION_PROVIDER_QUALIFICATION.md#autonomous-crafting-account-outbox)
+closes delivery without re-admission: a registered bounded worker requires
+committed Character proof, leaves unpaid reservations untouched and preserves
+original actor publication. All 61 affected SQLite and ten new configured MySQL
+cases pass, including offline wallet/item/Cosmic delivery, concurrent workers and
+interrupted acknowledgements; all twenty schemas are removed and owned workloads stopped.
+Continue the broader progression/gameplay/evidence queue. Physical process/
+connection failure and backup/route/catalog migration remain open alongside
+shared virtual-effect replay, material/modifier validation,
 actual-table, crafting socket and native/retail qualification remain open. Keep
 the original rollback negative as superseded evidence rather than an open Source
 defect. Do not infer retail economics or full recipe completion from the fixtures.

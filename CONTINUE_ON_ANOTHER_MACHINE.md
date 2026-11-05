@@ -1,9 +1,10 @@
 # Continue on another machine
 
-Latest provider evidence: [crafting account settlement](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#crafting-account-settlement)
-passes 29 configured MySQL cases after fixing whole-transaction retry ownership;
-its portable report binds the retained failures, passing candidate and stopped
-owned workloads. Autonomous paid-outbox delivery is next. Physical-failure,
+Latest provider evidence: [autonomous crafting account outbox](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#autonomous-crafting-account-outbox)
+passes ten new configured MySQL and 61 affected SQLite cases. Paid awards now
+finish without the original session or re-admission; unpaid reservations remain
+protected. Its portable report binds the candidate, reviews and stopped owned
+workloads. Continue the broader progression/gameplay/evidence queue. Physical-failure,
 actual-table, socket/native and retail gates remain open. The earlier
 [listing concurrency qualification](Decomp/Analysis/MARKETPLACE_CONDITIONAL_LISTING_WRITES.md#actual-mysql-qualification---3-november-2026)
 retains its own unchanged Source/DLL bindings. Use scoped validation only.

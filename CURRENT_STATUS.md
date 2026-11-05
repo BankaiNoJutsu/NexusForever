@@ -21175,9 +21175,19 @@ graceful shutdown. Both source reviews have no required findings. The
 [portable provider result](Decomp/Analysis/coverage/crafting-account-mysql-20261105.json)
 retains the negative replay, final bindings and qualification limits.
 
-Full recipe qualification remains open. Inactive-owner/interrupted cases can
-remain pending until Realm admission; an autonomous paid-outbox drain is still
-needed. Physical connection/process failure, backup/route/catalog
+The [autonomous outbox](Decomp/Analysis/DESTINATION_PROVIDER_QUALIFICATION.md#autonomous-crafting-account-outbox)
+now finishes committed awards without the original session or another Realm
+admission. World startup registers an immediate bounded pass and a 30-second
+background cadence. Unpaid reservations remain untouched; existing committed
+fences can finish cancellation acknowledgement. Failed rows advance the cursor,
+while currency/item/Cosmic receipts keep delivery idempotent. The worker has no
+session/cache publication; the original actor can still publish once if the
+worker wins the settlement race. The owning build, 61 affected SQLite cases and
+ten new MySQL cases pass, with all twenty schemas removed and owned workloads
+stopped. The [portable result](Decomp/Analysis/coverage/crafting-outbox-20261105.json)
+binds this integration and its qualification limits. No full suite was run.
+
+Full recipe qualification remains open. Physical connection/process failure, backup/route/catalog
 migration, actual-table material/modifier economics, crafting socket and native/
 retail gates remain open. Shared virtual-event effects still lack durable replay
 after an uncertain save or process loss. Native client/CUA launch remain stopped.

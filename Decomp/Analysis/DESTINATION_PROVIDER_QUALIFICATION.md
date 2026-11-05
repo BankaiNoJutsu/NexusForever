@@ -258,6 +258,45 @@ shared virtual-effect replay, actual tables, sockets and native/retail remain
 open. Entitlement policy is unchanged. No full solution build or full test suite
 was run under the user's scoped-only policy; native client/CUA remain stopped.
 
+### Autonomous crafting account outbox
+
+5 November 2026. WorldServer now registers a background crafting account worker
+after migrations, realm and game tables initialize. It runs immediately and then
+every 30 seconds, reading at most 32 unfinished receipts per pass. Its keyset
+cursor advances across unpaid, malformed or failed rows so they cannot starve
+later paid awards. Discovery alone never cancels an unpaid reservation. A matching
+committed Character source authorizes the existing bundle delivery; a committed
+admission fence can finish its cancellation acknowledgement without a grant.
+
+The worker owns fresh route-pinned contexts and performs no session/cache
+publication. Three public recipe cases prove wallet/item and Cosmic/Loyalty
+delivery after session replacement, before another admission, and one original
+success publication when the worker finishes before the save callback returns.
+Seven worker cases cover bounded fairness, both interrupted acknowledgement
+positions, consumed-item/wallet preservation after logical worker restart,
+existing cancellation fences, concurrent workers and factory reconfiguration.
+
+The owning WorldServer build passed without warnings/errors in 41 seconds;
+the corrected test-only build took 15 seconds and all 61 affected SQLite cases
+passed in 58 seconds. An initial fixture namespace collision is retained in its
+failed compile log. All ten new cases passed on configured MySQL 8.4.13 in
+256 seconds after 124 seconds of startup. Each main schema applied 42 Auth or
+49 Character migrations with the configured retry strategy. Reconfigured
+factory controls use a separate valid SQLite destination; the earlier
+same-provider foreign-Auth control retains its own qualification above.
+All twenty schema drops succeeded and the owned server, listener, runner and
+helper stopped after graceful shutdown. Both reviews found no required changes.
+The [portable result](coverage/crafting-outbox-20261105.json) binds the five
+source files, scoped/provider results, review and owned shutdown. Local evidence
+is under `artifacts/continuation-20261105/crafting-outbox/`.
+
+This closes the autonomous committed-source delivery integration. Physical
+process/connection failure, deployed restart/load, backup/route/catalog migration,
+shared virtual-effect replay, actual recipe/material/modifier data, sockets and
+native/retail qualification remain open. Projected tables and fixture World sends
+do not establish retail behavior. No full solution build or full test suite was
+run; native client/CUA remain stopped and entitlement policy is unchanged.
+
 ### Vendor repair settlement
 
 5 November 2026. All seven compiled repair cases passed on separate disposable

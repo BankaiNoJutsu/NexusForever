@@ -45,6 +45,7 @@ using NexusForever.WorldServer.Crafting;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Crafting;
 using NexusForever.WorldServer.Network.Message.Handler.Authentication;
+using NexusForever.WorldServer.Service;
 using Actor = NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.Actor;
 using Fixture = NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.Fixture;
 
@@ -129,6 +130,9 @@ public sealed class CraftingSettlementTests
     [InlineData("simple", "account-cosmic", "auth-rollback")]
     [InlineData("simple", "account-cosmic", "rollback")]
     [InlineData("simple", "account-cosmic", "loyalty-cap")]
+    [InlineData("simple", "account", "outbox")]
+    [InlineData("auto", "account-cosmic", "outbox")]
+    [InlineData("simple", "account", "outbox-race")]
     public async Task CraftingPublishesItsFrozenInventoryAndResultAfterTheCharacterSave(string request, string output, string outcome)
     {
         using var f = new Fixture(providerCharacters, output == "virtual" ? new QuestObjectiveEntry
@@ -289,6 +293,9 @@ public sealed class CraftingSettlementTests
             else auth.Initialise(new DatabaseConnectionString
                 { Provider = DatabaseProvider.Sqlite, ConnectionString = $"Data Source={foreignAuthPath};Pooling=False" });
         };
+        if (outcome == "outbox-race") database.Committed = () =>
+            Assert.Equal(1, new CraftingAccountOutbox(database.CreateContext, auth.CreateContext, 1, f.Source.Tables)
+                .DrainAsync().GetAwaiter().GetResult());
         try
         {
             switch (request)
@@ -348,7 +355,16 @@ public sealed class CraftingSettlementTests
             if (output == "virtual") Assert.Equal(1u, pending.CharacterQuestObjective.Single().Progress);
             if (output == "satchel") Assert.Equal((ushort)2, pending.CharacterTradeskillMaterial.Single().Amount);
             else Assert.Equal(2u, pending.Item.Single().StackCount);
-            if (outcome == "replacement") session.Player = RecordingDispatchProxy<IPlayer>.Create(out _);
+            if (outcome == "outbox")
+            {
+                var worker = new CraftingAccountOutbox(database.CreateContext, auth.CreateContext, 1, f.Source.Tables);
+                Assert.Equal(0, await worker.DrainAsync());
+                using var waiting = auth.CreateContext();
+                var receipt = waiting.AccountCraftingReceipt.Single();
+                Assert.False(receipt.Delivered); Assert.False(receipt.Cancelled); Assert.False(receipt.Completed);
+                Assert.Empty(pending.CharacterCraftingAccountOutbox);
+            }
+            if (outcome is "replacement" or "outbox") session.Player = RecordingDispatchProxy<IPlayer>.Create(out _);
             if (outcome == "late-account-items")
             {
                 laterItems.Add(actor.Player.Account.InventoryManager.AddItem(1101, notify: false));
@@ -388,6 +404,37 @@ public sealed class CraftingSettlementTests
         }
         finally { database.Release.TrySetResult(); }
         await actor.Drain(allowErrors: outcome is "rollback" or "lost" or "auth-rollback" or "ack-rollback" or "admission-before-character");
+        if (outcome == "outbox")
+        {
+            using (var before = auth.CreateContext())
+            {
+                Assert.False(before.AccountCraftingReceipt.Single().Delivered);
+                Assert.Equal(1ul, before.AccountWorldSession.Single().Epoch);
+            }
+            var databases = RecordingDispatchProxy<IDatabaseManager>.Create(out var databaseProxy);
+            databaseProxy.SetMethodHandler(nameof(IDatabaseManager.GetDatabase), (method, _) =>
+                method.GetGenericArguments()[0] == typeof(AuthDatabase) ? auth : database);
+            var realm = RecordingDispatchProxy<IRealmContext>.Create(out var realmProxy);
+            realmProxy.SetProperty(nameof(IRealmContext.RealmId), (ushort)1);
+            using var service = new CraftingAccountOutboxHostedService(databases, realm, f.Source.Tables,
+                NullLogger<CraftingAccountOutboxHostedService>.Instance);
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            await service.StartAsync(timeout.Token);
+            try
+            {
+                while (true)
+                {
+                    using var delivered = auth.CreateContext();
+                    if (delivered.AccountCraftingReceipt.Single().Completed) break;
+                    await Task.Delay(10, timeout.Token);
+                }
+            }
+            finally { await service.StopAsync(timeout.Token); }
+            Assert.True(service.ExecuteTask.IsCompletedSuccessfully);
+            using var observed = auth.CreateContext();
+            Assert.Equal(1ul, observed.AccountWorldSession.Single().Epoch);
+            Assert.Empty(queue);
+        }
         if (outcome == "auth-route-replacement")
         {
             if (providerForeignAuth == null) Assert.False(File.Exists(foreignAuthPath));
@@ -409,15 +456,15 @@ public sealed class CraftingSettlementTests
         if (auth != null)
         {
             using var awarded = auth.CreateContext();
-            bool delivered = outcome is "commit" or "auth-lost" or "ack-lost" or "ack-rollback" or "late-account-items" or "late-loot-retry" or "late-wallet" or "pending-spend" or "admission-replacement";
+            bool delivered = outcome is "commit" or "auth-lost" or "ack-lost" or "ack-rollback" or "late-account-items" or "late-loot-retry" or "late-wallet" or "pending-spend" or "admission-replacement" or "outbox" or "outbox-race";
             Assert.Equal((delivered && walletOutput ? 7ul : 0ul, delivered && itemOutput ? 1 : 0),
                 (awarded.AccountCurrency.SingleOrDefault(row => row.CurrencyId == 14)?.Amount ?? 0ul, awarded.AccountInventory.Count()));
             Assert.Empty(awarded.AccountEntitlement);
             var receipt = Assert.Single(awarded.AccountCraftingReceipt);
             Assert.Equal(delivered, receipt.Delivered);
             Assert.Equal(outcome == "admission-before-character", receipt.Cancelled);
-            Assert.Equal(outcome is "commit" or "auth-lost" or "ack-lost" or "late-account-items" or "late-loot-retry" or "late-wallet" or "pending-spend" or "admission-replacement" or "admission-before-character", receipt.Completed);
-            if (committed) Assert.Equal(outcome is "commit" or "auth-lost" or "ack-lost" or "late-account-items" or "late-loot-retry" or "late-wallet" or "pending-spend" or "admission-replacement", stored.CharacterCraftingAccountOutbox.Single().Delivered);
+            Assert.Equal(outcome is "commit" or "auth-lost" or "ack-lost" or "late-account-items" or "late-loot-retry" or "late-wallet" or "pending-spend" or "admission-replacement" or "admission-before-character" or "outbox" or "outbox-race", receipt.Completed);
+            if (committed) Assert.Equal(outcome is "commit" or "auth-lost" or "ack-lost" or "late-account-items" or "late-loot-retry" or "late-wallet" or "pending-spend" or "admission-replacement" or "outbox" or "outbox-race", stored.CharacterCraftingAccountOutbox.Single().Delivered);
             else if (outcome == "admission-before-character") Assert.True(stored.CharacterCraftingAccountOutbox.Single().Cancelled);
             else Assert.Empty(stored.CharacterCraftingAccountOutbox);
             if (cosmicOutput && delivered)
@@ -426,7 +473,7 @@ public sealed class CraftingSettlementTests
                 Assert.Equal(800ul, awarded.AccountLoyalty.Single().EarnedPoints);
                 Assert.Single(awarded.AccountPendingItem);
                 Assert.Single(awarded.AccountLoyaltySlot.Where(row => row.Claimed));
-                Assert.Equal(800ul, actor.Player.Account.CurrencyManager.GetCurrencyAmount(AccountCurrencyType.CosmicReward));
+                Assert.Equal(outcome == "outbox" ? 0ul : 800ul, actor.Player.Account.CurrencyManager.GetCurrencyAmount(AccountCurrencyType.CosmicReward));
             }
             else if (cosmicOutput)
             {
@@ -454,7 +501,7 @@ public sealed class CraftingSettlementTests
                 Assert.Equal(3, awarded.AccountInventory.Count());
             }
         }
-        bool liveSession = outcome is "commit" or "auth-lost" or "ack-lost" or "late-account-items" or "late-loot-retry" or "late-wallet" or "pending-spend" or "map-replacement" or "map-readmission" or "event-replacement";
+        bool liveSession = outcome is "commit" or "auth-lost" or "ack-lost" or "late-account-items" or "late-loot-retry" or "late-wallet" or "pending-spend" or "map-replacement" or "map-readmission" or "event-replacement" or "outbox-race";
         if (liveSession)
         {
             var finish = Assert.Single(queue, packet => InnerOpcode(packet) == GameMessageOpcode.ServerCraftingFinish);
