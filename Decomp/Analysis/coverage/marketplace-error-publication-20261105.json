@@ -1,0 +1,184 @@
+{
+  "version": 1,
+  "feature": "Public marketplace posting and cancellation rejection reply recovery",
+  "verified_utc": "2026-11-05T12:38:59.333411+00:00",
+  "base_head": "34ab969d0701893e2168dd329d5150b3cf78fe0b",
+  "behavior": [
+    "Auction and commodity posting/cancellation now retain rejected replies on their original actor queue",
+    "Shared private reply code serves five real public request routes and two concrete payload types",
+    "Frozen auction views recalculate their countdown; commodity views preserve absolute FILETIME values",
+    "Financial reservations stay released and retry starts no save, debit or new settlement",
+    "Successful callbacks retain their existing coordinator authority and order"
+  ],
+  "qualification": {
+    "baseline": {
+      "path": "artifacts/continuation-20261105/marketplace-error-publication/baseline.trx",
+      "sha256": "292d5737064f9d00458ab7e0c095bff5fa497eb57f85bbede61286346f029d89",
+      "counters": {
+        "total": "4",
+        "executed": "4",
+        "passed": "0",
+        "failed": "4",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "times": {
+        "creation": "2026-11-05T13:33:59.0685710+01:00",
+        "queuing": "2026-11-05T13:33:59.0685846+01:00",
+        "start": "2026-11-05T13:33:50.3502266+01:00",
+        "finish": "2026-11-05T13:33:59.2706379+01:00"
+      }
+    },
+    "focused": {
+      "path": "artifacts/continuation-20261105/marketplace-error-publication/candidate-rejections.trx",
+      "sha256": "a7c96a4b4e33bcc623a7bfaf565bcabacf2d146284e9a70c68855ddd32d02566",
+      "counters": {
+        "total": "4",
+        "executed": "4",
+        "passed": "4",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "times": {
+        "creation": "2026-11-05T13:36:04.0986831+01:00",
+        "queuing": "2026-11-05T13:36:04.0986962+01:00",
+        "start": "2026-11-05T13:35:53.3997064+01:00",
+        "finish": "2026-11-05T13:36:04.1058902+01:00"
+      }
+    },
+    "affected": {
+      "path": "artifacts/continuation-20261105/marketplace-error-publication/candidate-affected.trx",
+      "sha256": "41f603c769092c329ea247291f8132b4a3c26105dc1feab4cb9e0205af65f0a1",
+      "counters": {
+        "total": "203",
+        "executed": "203",
+        "passed": "203",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "times": {
+        "creation": "2026-11-05T13:37:15.0076040+01:00",
+        "queuing": "2026-11-05T13:37:15.0076188+01:00",
+        "start": "2026-11-05T13:37:04.8835182+01:00",
+        "finish": "2026-11-05T13:38:30.1985572+01:00"
+      }
+    },
+    "new_cases": 4,
+    "baseline_boundary": "Three error enqueues escaped to the event queue; auction posting lost its final reply after the rejected enqueue",
+    "owning_build": "Game project passed,33.33s,0warnings/errors",
+    "test_compile": "21.47s,0warnings/errors",
+    "configured_provider": "Not rerun: publication-only correction with no SQL/model/migration changes; prior provider bindings retained",
+    "full_suite": "Not run; scoped-only user policy",
+    "native_client_computer_use": "Remain stopped; no runtime services started",
+    "entitlements": "15:1/17:1 unchanged; no automatic44 or seven baseline Character grants",
+    "boundary": "Injected enqueue rejection before acceptance in private SQLite public-handler fixtures; no physical socket, deployed restart or retail proof"
+  },
+  "source": {
+    "inputs": 6345,
+    "normalized_git_blob_manifest_sha256": "725270bf5f4c9c6fdefb585c06330a0bd104bff8c66e0ff6f93ceca38c862d6c",
+    "manifest_algorithm": "sha256 of sorted path NUL normalized-Git-blob-SHA1 LF records",
+    "changed_files": [
+      {
+        "path": "Source/NexusForever.Game.Tests/Marketplace/AuctionCancellationCoordinatorTests.cs",
+        "sha256": "69c7757e1b1e247adadd9ab525f6f4067f1095f6fe9a1bbfc671064de00ec8ad"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Marketplace/AuctionPostingCoordinatorTests.cs",
+        "sha256": "ec83c7274b1b77d2eaf63f5b7c9f45d1b549e7a2a404ebedf2b38b392c318b5c"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Marketplace/CommodityPostingCoordinatorTests.cs",
+        "sha256": "508cb08e91ec44076f231ac0c7124655661736c36567ef453f454e95b908043a"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Marketplace/CommodityReturnCoordinatorTests.cs",
+        "sha256": "2ccd5c24e49fa3ec90531061dbe4f5f995d2fa1ccc2b465495338e3814e29d18"
+      },
+      {
+        "path": "Source/NexusForever.Game/Marketplace/GlobalMarketplaceManager.AuctionPosting.cs",
+        "sha256": "7538d653cd5b26b7885996d076f468883d98f16c7982dd5579efaf07f52a1a73"
+      },
+      {
+        "path": "Source/NexusForever.Game/Marketplace/GlobalMarketplaceManager.AuctionSettlement.cs",
+        "sha256": "3cd43c942f431493fcdc599bf576ef01413ff5e3a3e90199ddd1bd344ebc83a9"
+      },
+      {
+        "path": "Source/NexusForever.Game/Marketplace/GlobalMarketplaceManager.CommodityPosting.cs",
+        "sha256": "5f6f3df13523e0c3835dfc65abc813cc215d15b56f5567faaae8928dc84f9bc5"
+      },
+      {
+        "path": "Source/NexusForever.Game/Marketplace/GlobalMarketplaceManager.CommodityReturns.cs",
+        "sha256": "ade6de519952cd380605c9417ebc3c1cf0e73d06fb5fa512cf33954d7cd2b1cc"
+      },
+      {
+        "path": "Source/NexusForever.Game/Marketplace/GlobalMarketplaceManager.RejectedReplies.cs",
+        "sha256": "a80baf73406b3b0dead07ebf39b9ff0ff15b6044568aadb1cd485ad4ee83a40c"
+      }
+    ]
+  },
+  "binaries": [
+    {
+      "name": "NexusForever.Game.dll",
+      "sha256": "3671952b1aa8ed158c0eb1086e838e77a398a0b2f59bc1daa9cb21d8c24e14cd",
+      "owner_test_match": true
+    },
+    {
+      "name": "NexusForever.WorldServer.dll",
+      "sha256": "2d8230c53f748f21483e92bf174a349bad1279d5535d867b904c9b8e68337f2e",
+      "owner_test_match": true
+    },
+    {
+      "name": "NexusForever.Game.Tests.dll",
+      "sha256": "d8b287e3f3c9fcb243d724b77605b80e7580fc92c1aec6872c7586880b58c16f",
+      "owner_test_match": true
+    }
+  ],
+  "review": {
+    "standards_remaining": 0,
+    "spec_remaining": 0,
+    "raw_report_sha256": "0f6f5662a995ef2bfa66fa38838d387f65f2d072f003bc5e32da69a36e95c9ec"
+  },
+  "upstream": {
+    "observedUtc": "2026-11-05T12:35:28.291Z",
+    "query": "repo:NexusForever/NexusForever updated:>2026-11-05T12:27:41Z",
+    "issues": [],
+    "prior": "artifacts/continuation-20261105/auction-error-publication/upstream-refresh.json"
+  },
+  "historical_handoff_verification": "Previously retained expected Source divergence; not rerun or altered",
+  "remaining": [
+    "Legacy/transient fallback errors and physical failure/cross-process/deployed socket/native qualification",
+    "Broader economic, Contract, progression/gameplay and reverse-engineering work in canonical roadmap"
+  ]
+}

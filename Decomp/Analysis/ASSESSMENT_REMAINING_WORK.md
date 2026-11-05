@@ -10,6 +10,14 @@ builds and scoped tests only. No automatic full-solution milestone gate; another
 full suite requires an explicit user request. Historical full results below
 retain their original scope. See the [execution policy](ASSESSMENT_CONTINUATION_GOAL_PROMPT.md).
 
+[Public marketplace posting/cancellation rejection replies](NORMAL_AUCTION_BID_TRANSACTION.md#posting-and-cancellation-rejection-replies)
+now join the purchase rejection path. Four reproduced failures are fixed;
+four new/203 scoped cases and both final review axes pass. Five real Player-backed
+public routes share original-actor retry with fresh wire-specific snapshots,
+without another financial operation. Legacy/transient, physical socket,
+cross-process/deployment and retail remain separate. Continue broader economic,
+Contract and progression/gameplay work rather than repeating this integration.
+
 [Rejected public auction purchase replies](NORMAL_AUCTION_BID_TRANSACTION.md#recovery-for-rejected-public-purchase-replies)
 now retry admission/preparation/settlement failures on their original Player
 queue without financial reservations or another save. Five executed baseline

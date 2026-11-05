@@ -20,6 +20,7 @@ namespace NexusForever.Game.Marketplace
             Action<GenericError, AuctionInfo> reply, Func<bool> publicationAllowed = null)
         {
             if (player is not Player original || TryGetCharacterDatabase() == null) return false;
+            reply = RetainRejectedAuctionReply(original, reply, publicationAllowed);
             var item = original.Inventory.GetItem(guid);
             if (item?.Info == null) { reply(GenericError.ItemBadId, new()); return true; }
             if (!CanPostAuctionItem(original, item)) { reply(GenericError.AuctionCannotFillOrder, new()); return true; }

@@ -1,5 +1,35 @@
 # Normal auction bid transaction
 
+## Posting and cancellation rejection replies
+
+5 November2026. The real Player-backed public auction posting/cancellation and
+commodity posting/cancellation routes now retain rejected result callbacks.
+Together with the purchase correction below, five public routes share one private
+actor/retry implementation. Two concrete payload adapters retain their existing
+wire semantics: auction expiry is recalculated from a captured deadline, while
+commodity FILETIME timestamps are copied unchanged. Each failed-send attempt gets
+a fresh DTO. Successful replies keep each coordinator's authority and ordering.
+
+Four real public-handler baselines failed after an enqueue rejected before
+acceptance: three exceptions reached the event queue, while auction posting lost
+its final rejection. The new cases exercise posting rollback, auction and
+commodity custody conflicts, and insufficient funds. They mutate the failed DTO
+and verify the retry is isolated, with account locks released and the existing
+financial/custody assertions retained. All four new cases and203 selected cases
+across the five coordinator suites pass, with zero failures/skips. Both final
+review axes have zero findings. Game build:33.33s; test compile:21.47s; final
+scoped execution:82s. These are observed validation times, not performance claims.
+
+The [portable report](coverage/marketplace-error-publication-20261105.json) binds
+the nine changed Source files, all6345 Source/Tools inputs, matching owning/test
+DLLs, baseline/final scoped results, reviews and incremental upstream refresh.
+Local evidence: `artifacts/continuation-20261105/marketplace-error-publication/`.
+No SQL/model/migration changed, no service was started and no new configured
+provider or full-suite run is claimed. Legacy/transient fallback errors,
+physical socket failures, cross-process replay, deployed behavior and retail
+remain separate. Client/CUA stay stopped; entitlement defaults/no-auto-grants
+remain unchanged. Continue the broader roadmap after this grouped integration.
+
 ## Recovery for rejected public purchase replies
 
 5 November2026. Public bid/buyout errors now retain their reply after an enqueue

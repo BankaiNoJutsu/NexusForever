@@ -1,5 +1,8 @@
 # Commodity posting and fill settlement
 
+The later [public rejection reply recovery](NORMAL_AUCTION_BID_TRANSACTION.md#posting-and-cancellation-rejection-replies)
+retains posting errors without another debit and preserves commodity timestamps.
+
 ## Retry for the committed posting result
 
 4 November 2026. If the successful commodity post result cannot enqueue, the

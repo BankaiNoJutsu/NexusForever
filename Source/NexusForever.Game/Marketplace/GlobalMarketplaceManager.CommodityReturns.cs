@@ -33,6 +33,7 @@ namespace NexusForever.Game.Marketplace
             Action<GenericError, CommodityOrder> reply, Func<bool> publicationAllowed = null)
         {
             if (player is not Player owner || TryGetCharacterDatabase() == null) return false;
+            reply = RetainRejectedCommodityReply(owner, reply, publicationAllowed);
             MarketplaceCommodityOrder record;
             lock (syncRoot)
             {

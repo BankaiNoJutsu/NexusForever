@@ -31,6 +31,7 @@ namespace NexusForever.Game.Marketplace
             Func<bool> publicationAllowed = null)
         {
             if (player is not Player owner || TryGetCharacterDatabase() == null) return false;
+            reply = RetainRejectedCommodityReply(owner, reply, publicationAllowed);
             CommodityPostingOperation operation;
             lock (syncRoot)
             {

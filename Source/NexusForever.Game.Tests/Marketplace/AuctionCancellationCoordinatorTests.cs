@@ -38,6 +38,10 @@ namespace NexusForever.Game.Tests.Marketplace;
 
 public sealed class AuctionCancellationCoordinatorTests
 {
+    [Fact]
+    public Task RejectedAuctionCancellationReplyRetriesAfterCustodyConflict()
+        => PublicCancellationReturnsOriginalItemAndRefundsHeldBidThroughOriginalActors(false, true, false, false, false, "error-retry");
+
     [Theory]
     [InlineData(true, true, true, false, false, "none")]
     [InlineData(true, true, false, false, false, "none")]
@@ -66,6 +70,8 @@ public sealed class AuctionCancellationCoordinatorTests
         bool heldBid, bool receiverOnline, bool bidderOnline, bool mailed, bool missingWallet, string fault)
     {
         bool storedSockets = fault.StartsWith("stored-sockets", StringComparison.Ordinal);
+        bool rejectErrorReply = fault == "error-retry";
+        if (rejectErrorReply) fault = "custody-move";
         if (fault == "stored-sockets-rollback") fault = "ordinary-rollback";
         using var f = new Fixture(null); f.Seed();
         ((RecordingDispatchProxy<IGameTableManager>)(object)f.Source.Tables).SetProperty(nameof(IGameTableManager.CurrencyType),
@@ -219,6 +225,13 @@ public sealed class AuctionCancellationCoordinatorTests
                 returned++; return null;
             }
             replyAttempts++;
+            if (rejectErrorReply)
+            {
+                Assert.False(cleanup.IsAccountLocked(actor.Player.Account));
+                Assert.NotEqual(999ul, cancel.Auction.AuctionId);
+                if (replyAttempts == 1) { cancel.Auction.AuctionId = 999; throw new IOException("Owned auction cancellation rejection before acceptance."); }
+                Assert.Equal(2, replyAttempts);
+            }
             Assert.Equal(fault == "custody-move" ? GenericError.DbFailure : GenericError.Ok, cancel.Result);
             if (replyAttempts == 1 && fault is "reply-retry" or "reply-rebind")
             {

@@ -1,5 +1,8 @@
 # Whole-Item auction posting
 
+The later [public rejection reply recovery](NORMAL_AUCTION_BID_TRANSACTION.md#posting-and-cancellation-rejection-replies)
+covers rollback errors with fresh payloads and released financial ownership.
+
 ## Recovering the committed inventory removal and post result
 
 4 November 2026. The public sell handler could lose the successful post

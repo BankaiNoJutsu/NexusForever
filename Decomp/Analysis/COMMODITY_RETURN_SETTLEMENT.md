@@ -1,5 +1,8 @@
 # Commodity cancellation and expiry settlement
 
+The later [public rejection reply recovery](NORMAL_AUCTION_BID_TRANSACTION.md#posting-and-cancellation-rejection-replies)
+covers cancellation custody errors after account/order ownership releases.
+
 ## Committed cancellation notices and mailbox handoff
 
 4 November 2026. Public commodity cancellation now shares the guarded expiry

@@ -43,6 +43,10 @@ namespace NexusForever.Game.Tests.Marketplace;
 
 public sealed class CommodityPostingCoordinatorTests
 {
+    [Fact]
+    public Task RejectedCommodityPostReplyRetriesWithoutAnotherDebit()
+        => PublicSubmitSettlesWalletInventoryAndMatchingBeforeSuccess(true, true, false, "error-retry");
+
     [Theory]
     [InlineData(true, false, false, "none")]
     [InlineData(false, false, false, "none")]
@@ -98,6 +102,9 @@ public sealed class CommodityPostingCoordinatorTests
     [InlineData(true, false, true, "expiry-lookup")]
     public async Task PublicSubmitSettlesWalletInventoryAndMatchingBeforeSuccess(bool buy, bool immediate, bool match, string fault)
     {
+        bool rejectErrorReply = fault == "error-retry";
+        if (rejectErrorReply) fault = "missing-cash";
+        int errorAttempts = 0;
         bool full = fault.StartsWith("reuse", StringComparison.Ordinal) || fault == "consume-full";
         bool later = fault is "later" or "replace" or "retire" or "satchel-later";
         bool failFill = fault is "fill-refresh" or "fill-replace";
@@ -269,6 +276,13 @@ public sealed class CommodityPostingCoordinatorTests
             if (fault == "competing" && response.Result == GenericError.DbFailure) { rejected++; return null; }
             if (refused)
             {
+                if (rejectErrorReply)
+                {
+                    Assert.False(cleanup.IsAccountLocked(actor.Player.Account));
+                    Assert.NotEqual(999u, response.OrderPosted.Quantity);
+                    if (++errorAttempts == 1) { response.OrderPosted.Quantity = 999; throw new IOException("Owned commodity post rejection before acceptance."); }
+                    Assert.Equal(2, errorAttempts);
+                }
                 Assert.Equal(fault == "missing-items" ? GenericError.ItemBadId : GenericError.VendorNotEnoughCash, response.Result);
                 using var refusal = f.Context(); Check(refusal); replied = true; return null;
             }

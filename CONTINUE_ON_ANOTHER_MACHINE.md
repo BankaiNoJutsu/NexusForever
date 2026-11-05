@@ -1,5 +1,11 @@
 # Continue on another machine
 
+Latest grouped marketplace implementation: [posting/cancellation rejection replies](Decomp/Analysis/NORMAL_AUCTION_BID_TRANSACTION.md#posting-and-cancellation-rejection-replies)
+passes four new/203 scoped cases and both final reviews. Five public routes now
+retain original-actor rejection replies without restarting financial work.
+Source/DLL and qualification boundaries are in the portable report. Continue
+the broader roadmap; native client/CUA stay stopped.
+
 Latest auction implementation: [rejected public purchase reply recovery](Decomp/Analysis/NORMAL_AUCTION_BID_TRANSACTION.md#recovery-for-rejected-public-purchase-replies)
 passes six new/112 scoped cases with both final reviews. Reply retry retains
 original actor/queue ownership and performs no further financial save. The

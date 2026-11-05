@@ -1,5 +1,10 @@
 # NexusForever Feature Restoration - Current Status
 
+[Public marketplace rejection replies](Decomp/Analysis/NORMAL_AUCTION_BID_TRANSACTION.md#posting-and-cancellation-rejection-replies)
+now cover auction/commodity posting and cancellation alongside purchases.
+Four new/203 scoped cases pass; financial cleanup and successful publication
+remain intact. Physical/deployed/native and retail gates remain open.
+
 [Public auction rejection replies](Decomp/Analysis/NORMAL_AUCTION_BID_TRANSACTION.md#recovery-for-rejected-public-purchase-replies)
 retain failed admission/preparation/settlement replies on the original buyer
 queue; six new/112 scoped cases pass. Successful settlement behavior is preserved.

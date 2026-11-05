@@ -36,6 +36,10 @@ namespace NexusForever.Game.Tests.Marketplace;
 
 public sealed class AuctionPostingCoordinatorTests
 {
+    [Fact]
+    public Task RejectedAuctionPostReplyRetriesAfterRollback()
+        => PublicPostPersistsEscrowAndWholeCharacterBeforePublication(true, "error-retry");
+
     [Theory]
     [InlineData(true, "none")]
     [InlineData(false, "none")]
@@ -61,6 +65,8 @@ public sealed class AuctionPostingCoordinatorTests
     [InlineData(true, "delete-return")]
     public async Task PublicPostPersistsEscrowAndWholeCharacterBeforePublication(bool checkItemPublication, string fault)
     {
+        bool rejectErrorReply = fault == "error-retry";
+        if (rejectErrorReply) fault = "rollback";
         bool timed = fault.StartsWith("expiry-", StringComparison.Ordinal), metadata = fault == "held-metadata";
         bool rollback = fault is "rollback" or "expiry-rollback", custody = fault is "custody" or "ordinary-custody";
         bool suppressed = fault is "retire" or "replace" or "packet-replace" or "reply-rebind";
@@ -140,7 +146,7 @@ public sealed class AuctionPostingCoordinatorTests
             }));
         manager.Initialise();
         bool replied = false, publishedBeforeSql = false, successBeforeOrdinary = false, scopeDisposed = false, successBeforeDisposal = false;
-        bool competed = false; int replacedAt = -1, rejected = 0;
+        bool competed = false; int replacedAt = -1, rejected = 0, errorAttempts = 0;
         Exception itemMutation = null, inventoryMutation = null;
         Exception durabilityEdit = null, codecEdit = null, runeEdit = null, touchEdit = null;
         GenericError? replyResult = null;
@@ -183,6 +189,13 @@ public sealed class AuctionPostingCoordinatorTests
             }
             if (args[0] is ServerAuctionPostResult response)
             {
+                if (rejectErrorReply && response.Result != GenericError.Ok)
+                {
+                    Assert.False(cleanup.IsAccountLocked(actor.Player.Account));
+                    Assert.NotEqual(999ul, response.Auction.AuctionId);
+                    if (++errorAttempts == 1) { response.Auction.AuctionId = 999; throw new IOException("Owned auction post rejection before acceptance."); }
+                    Assert.Equal(2, errorAttempts);
+                }
                 if (fault == "competing" && response.Result == GenericError.DbFailure) { rejected++; return null; }
                 if (response.Result == GenericError.Ok)
                 {

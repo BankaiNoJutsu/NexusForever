@@ -40,6 +40,10 @@ namespace NexusForever.Game.Tests.Marketplace;
 
 public sealed class CommodityReturnCoordinatorTests
 {
+    [Fact]
+    public Task RejectedCommodityCancellationReplyRetriesAfterCustodyConflict()
+        => PublicCancellationAndRealExpiryReturnEscrowAndFungibleItems(false, false, true, false, "error-retry");
+
     [Theory]
     [InlineData(true, false, true, false, "none")]
     [InlineData(true, false, true, true, "none")]
@@ -87,6 +91,9 @@ public sealed class CommodityReturnCoordinatorTests
     [InlineData(false, false, true, false, "wallet-item-rune-publish")]
     public async Task PublicCancellationAndRealExpiryReturnEscrowAndFungibleItems(bool buy, bool expiry, bool online, bool absent, string fault)
     {
+        bool rejectErrorReply = fault == "error-retry";
+        if (rejectErrorReply) fault = "custody-main";
+        int errorAttempts = 0;
         using var f = new Fixture(null); f.Seed();
         bool failNotice = fault is "notice-retry" or "notice-replace";
         bool addLaterCurrency = fault != "none" && !failNotice;
@@ -210,6 +217,13 @@ public sealed class CommodityReturnCoordinatorTests
             }
             if (args[0] is ServerCommodityOrderResult failed)
             {
+                if (rejectErrorReply)
+                {
+                    Assert.False(cleanup.IsAccountLocked(actor.Player.Account));
+                    Assert.NotEqual(999u, failed.OrderPosted.Quantity);
+                    if (++errorAttempts == 1) { failed.OrderPosted.Quantity = 999; throw new IOException("Owned commodity cancellation rejection before acceptance."); }
+                    Assert.Equal(2, errorAttempts);
+                }
                 Assert.True(custodyConflict); Assert.Equal(GenericError.DbFailure, failed.Result);
                 using var failedRead = f.Context(); Check(failedRead); packets++; return null;
             }

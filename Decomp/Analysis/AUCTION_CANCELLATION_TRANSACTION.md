@@ -1,5 +1,8 @@
 # Auction cancellation settlement
 
+The later [public rejection reply recovery](NORMAL_AUCTION_BID_TRANSACTION.md#posting-and-cancellation-rejection-replies)
+covers failed cancellation errors after custody reconciliation.
+
 ## Recovering the committed item return and cancellation result
 
 4 November 2026. The public cancel handler now recovers an enqueue failure
