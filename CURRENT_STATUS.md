@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[PvP cooldown save retry](Decomp/Analysis/PVP_COOLDOWN_SAVE_RETRY.md) now retains
+pending expiry/cancellation across unconfirmed Character saves and preserves later
+requests. Eleven baseline failures are fixed;183 scoped SQLite,24 final PvP and16
+configured MySQL cases pass. All33 leased schemas are absent; original engines
+remain. Atomic dirty-mask updates preserve independent owners. F-015, full deferred
+lifecycle, physical/socket/native/retail and the broader Goal remain unfinished.
+
 [Q3741 supply collection](Decomp/Analysis/Q3741_ACCEPTED_SUPPLY_COLLECTION.md)
 now retains refused/satisfied pickups and retries original-object removal after
 accepted credit. Seven baseline failures are fixed;11 new/103 scoped and11

@@ -1,0 +1,429 @@
+{
+  "Date": "2026-11-06",
+  "BaseHEAD": "7bec78cb7b2271679e59e1745b54671c95df43b4",
+  "Outcome": "PvP cooldown save/retry implemented; full restoration unfinished",
+  "Source": [
+    {
+      "Path": "Source/NexusForever.Game/Entity/Player.cs",
+      "SHA256": "001E01A23CD23E891DE00837F8D79ECCBE7707C025B4A70BFD268E336156B354"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Entity/Player.MapAdmission.cs",
+      "SHA256": "E3F2111EBB06175FCE249639A0DC97506817A96971CF80E8779615EEA60F7E68"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Entity/Player.PvpPersistence.cs",
+      "SHA256": "96B31FB0799617A751CE05E6B063E337271E738B984C2074A9E5A1633565C5F3"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Entity/Player.SaveMask.cs",
+      "SHA256": "57E285A1C823A214A1ED9706C7370C3351B1E7045B812966BF642829A431BA1F"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Pvp/PvpFlagCooldownTests.cs",
+      "SHA256": "D0E41FE6848C097A76E9E6D93C2744D302541783ADE7C4648C0EFDDE70A471F0"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Pvp/PvpFlagCooldownTests.Persistence.cs",
+      "SHA256": "71AF914CD49D491F773A46793E0C8B160E1F9BA7C9355925F7AB657674BEA67B"
+    }
+  ],
+  "Binaries": [
+    {
+      "Path": "Source/NexusForever.Game/bin/Debug/net10.0/NexusForever.Game.dll",
+      "SHA256": "5D21D86D60BC435D62157EB3FF8324A100954B0B31559D5C86D5806F093452C1"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.dll",
+      "SHA256": "5D21D86D60BC435D62157EB3FF8324A100954B0B31559D5C86D5806F093452C1"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+      "SHA256": "9954371056862F7EB92350F82F8FD04A7441A00E3CC04686C21158355C035BDA"
+    },
+    {
+      "Path": "artifacts/pvp-cooldown-save/provider-runner/bin/Debug/net10.0/NexusForever.Game.dll",
+      "SHA256": "5D21D86D60BC435D62157EB3FF8324A100954B0B31559D5C86D5806F093452C1"
+    },
+    {
+      "Path": "artifacts/pvp-cooldown-save/provider-runner/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+      "SHA256": "9954371056862F7EB92350F82F8FD04A7441A00E3CC04686C21158355C035BDA"
+    }
+  ],
+  "Evidence": [
+    {
+      "Path": "artifacts/pvp-cooldown-save/baseline/pvp-baseline.trx",
+      "SHA256": "FC26139C573B12EAF83255209B413E3D8C2F7811FD3B33D4E101EDC8EF95F5F3"
+    },
+    {
+      "Path": "artifacts/pvp-cooldown-save/integrated/pvp-integrated.trx",
+      "SHA256": "594E9338CD110AEEDAF843DB2DA250DE2CD3AD38ED487488AAEFC4E13CC849F2"
+    },
+    {
+      "Path": "artifacts/pvp-cooldown-save/bound-session/pvp-bound-session.trx",
+      "SHA256": "45B7358CC7F6F2A13BC8B839596E535476BE7746BC066DF3F205651A0CDDB410"
+    },
+    {
+      "Path": "artifacts/pvp-cooldown-save/mysql-01/failure.json",
+      "SHA256": "881B217C8784B04E77D0CCE46713D23ABED1DC28286B7F325425E851D9DAF803"
+    },
+    {
+      "Path": "artifacts/pvp-cooldown-save/mysql-01/cleanup.json",
+      "SHA256": "F585FA4D4DD600F77410744CD7A9292A15BF3B35483D8358E8DF096E7F88FA8C"
+    },
+    {
+      "Path": "artifacts/pvp-cooldown-save/mysql-02/results.json",
+      "SHA256": "0425E437B4FAF740BDC34C77847A2FC8B869011A2D549FEE4E967071193E7C97"
+    },
+    {
+      "Path": "artifacts/pvp-cooldown-save/mysql-03/results.json",
+      "SHA256": "0A9E58A44EC71BD58146E4A0E9A992BDBE3742CACBF33AC6F030587B5A24E0F2"
+    },
+    {
+      "Path": "artifacts/pvp-cooldown-save/mysql-03/profile.json",
+      "SHA256": "3BDD01BDB4ACD5B4041ABD675D8189B13CECED41E8C1C0FE9AEA61B49D831F36"
+    },
+    {
+      "Path": "artifacts/pvp-cooldown-save/mysql-03/completed.json",
+      "SHA256": "1774B97E26DD7CB4BC3E86D7A6994CC54D0B82C258EF5C603037ADF6971DCFF1"
+    },
+    {
+      "Path": "artifacts/pvp-cooldown-save/mysql-03/cleanup.json",
+      "SHA256": "779B8EB14B3A650507F7E0F535D2F1AFE211AA8DE0642B8751FC39B3B57997EC"
+    },
+    {
+      "Path": "artifacts/pvp-cooldown-save/independent-cleanup-final.json",
+      "SHA256": "FD470E3382F5CF4547DFEA72C06F6BED6C1F3A8868F7F9BE9521C21F95CD1F17"
+    },
+    {
+      "Path": "artifacts/pvp-cooldown-save/owning-final-build.log",
+      "SHA256": "C5002CF885EDAA5AA5262A09261E9D4F931A72C1539D6AFB33CD68C6712E6D54"
+    },
+    {
+      "Path": "artifacts/pvp-cooldown-save/provider-runner/Program.cs",
+      "SHA256": "424FDD60C5962F350BA1EE8F294473449971C9FF8E1965E5CD6C9A93A3E41B47"
+    }
+  ],
+  "Results": {
+    "IndependentlyAbsentSchemas": 33,
+    "FinalBoundSessionPvpSQLite": 24,
+    "NewPersistenceCases": 16,
+    "ScopedSQLite": 183,
+    "FinalConfiguredMySql": 16,
+    "MigrationsPerSchema": 49,
+    "BaselineFailed": 11,
+    "BaselinePassed": 1
+  },
+  "ProviderProfile": {
+    "Version": "8.0.46",
+    "Server": "127.0.0.1",
+    "Port": 3306,
+    "ConfiguredRetries": true
+  },
+  "AppliedMigrations": [
+    "20200229014638_HelloWorld",
+    "20200331222803_CharacterXp",
+    "20200404023142_CharacterTradeskillMaterials",
+    "20200413023902_CharacterLastOnline",
+    "20200704001002_CharacterReputation",
+    "20210102050727_Guilds",
+    "20210118051339_CharacterNet5Migration",
+    "20210219004038_ChatChannels",
+    "20210305042232_GuildAchievements",
+    "20210717152515_Communities",
+    "20210906140425_StartingLocations",
+    "20210906140942_PlayerRotation",
+    "20230524231831_BaseProperties",
+    "20241208062241_BoneIndexFix",
+    "20250805092649_CharacterOnline",
+    "20260516125523_CostumeMessageChanges",
+    "20260517120000_ItemSoulbound",
+    "20260518000000_CharacterTradeskill",
+    "20260518120000_CharacterSchematicArchive",
+    "20260522091203_ResidenceNeighbors",
+    "20260522114611_MarketplacePersistence",
+    "20260522180000_RealmBankItems",
+    "20260522190000_CharacterChallenges",
+    "20260522191000_LeaderboardScores",
+    "20260523125655_CharacterMatchingPenalty",
+    "20260527191317_CharacterPathMissionState",
+    "20260531224115_ItemMicrochipIdsAndRuneSlots",
+    "20260603120000_MailContentType",
+    "20260603153000_CharacterPvpFlagDisableCooldown",
+    "20260604130000_CostumeMessageSemantics",
+    "20260714083313_CharacterBonusAbilityTierPoints",
+    "20260726061619_StatData",
+    "20261029120419_CharacterBind",
+    "20261029122531_CharacterTaxiNode",
+    "20261029215652_CharacterChallengeRewardTracks",
+    "20261030230416_ContractQuestAcceptance",
+    "20261030234801_ContractCompletionReceipts",
+    "20261031030109_ContractRewardSelections",
+    "20261031033000_RepairLegacyCharacterColumns",
+    "20261031043515_ContractRewardClaims",
+    "20261031055232_ContractClaimDelivery",
+    "20261031085420_RealmBankItemCodecs",
+    "20261101100717_MarketplaceBidReceipts",
+    "20261102061753_AlignNullableItemAndLeaderboardColumns",
+    "20261102073206_RepairCostumeTimestampGeneration",
+    "20261102182000_BankReconciliationReceipts",
+    "20261103170256_RealmFirstClaims",
+    "20261104102636_CharacterBonusAmpPower",
+    "20261105080127_CraftingAccountAwards"
+  ],
+  "ProviderCases": [
+    {
+      "Passed": true,
+      "Expiry": {
+        "Id": 42,
+        "PvpFlagDisableUntilUtc": "2026-11-06T17:26:27"
+      },
+      "Arguments": [
+        false,
+        "rollback"
+      ],
+      "Method": "PublicToggleCooldownRetriesAfterUnconfirmedCharacterSave",
+      "Schema": "nexus_assessment_20261106_pvp_b972f2e953"
+    },
+    {
+      "Passed": true,
+      "Expiry": {
+        "Id": 42,
+        "PvpFlagDisableUntilUtc": "2026-11-06T17:26:31"
+      },
+      "Arguments": [
+        false,
+        "dispose"
+      ],
+      "Method": "PublicToggleCooldownRetriesAfterUnconfirmedCharacterSave",
+      "Schema": "nexus_assessment_20261106_pvp_f2b07e1557"
+    },
+    {
+      "Passed": true,
+      "Expiry": {
+        "Id": 42,
+        "PvpFlagDisableUntilUtc": "2026-11-06T17:26:35"
+      },
+      "Arguments": [
+        false,
+        "reject"
+      ],
+      "Method": "PublicToggleCooldownRetriesAfterUnconfirmedCharacterSave",
+      "Schema": "nexus_assessment_20261106_pvp_249aec784c"
+    },
+    {
+      "Passed": true,
+      "Expiry": {
+        "Id": 42,
+        "PvpFlagDisableUntilUtc": "2026-11-06T17:26:40"
+      },
+      "Arguments": [
+        false,
+        "unflushed"
+      ],
+      "Method": "PublicToggleCooldownRetriesAfterUnconfirmedCharacterSave",
+      "Schema": "nexus_assessment_20261106_pvp_054a4bef9e"
+    },
+    {
+      "Passed": true,
+      "Expiry": {
+        "Id": 42,
+        "PvpFlagDisableUntilUtc": "2026-11-06T17:26:44"
+      },
+      "Arguments": [
+        false,
+        "savepoint"
+      ],
+      "Method": "PublicToggleCooldownRetriesAfterUnconfirmedCharacterSave",
+      "Schema": "nexus_assessment_20261106_pvp_92302686c4"
+    },
+    {
+      "Passed": true,
+      "Expiry": {
+        "Id": 42,
+        "PvpFlagDisableUntilUtc": null
+      },
+      "Arguments": [
+        true,
+        "rollback"
+      ],
+      "Method": "PublicToggleCooldownRetriesAfterUnconfirmedCharacterSave",
+      "Schema": "nexus_assessment_20261106_pvp_466bd721d0"
+    },
+    {
+      "Passed": true,
+      "Expiry": {
+        "Id": 42,
+        "PvpFlagDisableUntilUtc": null
+      },
+      "Arguments": [
+        true,
+        "dispose"
+      ],
+      "Method": "PublicToggleCooldownRetriesAfterUnconfirmedCharacterSave",
+      "Schema": "nexus_assessment_20261106_pvp_d9960d5d2b"
+    },
+    {
+      "Passed": true,
+      "Expiry": {
+        "Id": 42,
+        "PvpFlagDisableUntilUtc": null
+      },
+      "Arguments": [
+        true,
+        "reject"
+      ],
+      "Method": "PublicToggleCooldownRetriesAfterUnconfirmedCharacterSave",
+      "Schema": "nexus_assessment_20261106_pvp_87485804fa"
+    },
+    {
+      "Passed": true,
+      "Expiry": {
+        "Id": 42,
+        "PvpFlagDisableUntilUtc": null
+      },
+      "Arguments": [
+        true,
+        "unflushed"
+      ],
+      "Method": "PublicToggleCooldownRetriesAfterUnconfirmedCharacterSave",
+      "Schema": "nexus_assessment_20261106_pvp_3389b9e72d"
+    },
+    {
+      "Passed": true,
+      "Expiry": {
+        "Id": 42,
+        "PvpFlagDisableUntilUtc": null
+      },
+      "Arguments": [
+        true,
+        "savepoint"
+      ],
+      "Method": "PublicToggleCooldownRetriesAfterUnconfirmedCharacterSave",
+      "Schema": "nexus_assessment_20261106_pvp_dee02f070d"
+    },
+    {
+      "Passed": true,
+      "Expiry": {
+        "Id": 42,
+        "PvpFlagDisableUntilUtc": "2026-11-06T17:32:10"
+      },
+      "Arguments": [],
+      "Method": "LaterCooldownRequestRemainsDirtyAfterOlderSaveCommits",
+      "Schema": "nexus_assessment_20261106_pvp_80068074df"
+    },
+    {
+      "Passed": true,
+      "Expiry": {
+        "Id": 42,
+        "PvpFlagDisableUntilUtc": "2026-11-06T17:27:14"
+      },
+      "Arguments": [],
+      "Method": "SuppressedCooldownWriteRemainsPending",
+      "Schema": "nexus_assessment_20261106_pvp_7cdcc27df0"
+    },
+    {
+      "Passed": true,
+      "Expiry": {
+        "Id": 42,
+        "PvpFlagDisableUntilUtc": "2026-11-06T17:27:19"
+      },
+      "Arguments": [],
+      "Method": "SuccessfulFlushedCooldownIsAcknowledged",
+      "Schema": "nexus_assessment_20261106_pvp_18531b4c91"
+    },
+    {
+      "Passed": true,
+      "Expiry": {
+        "Id": 42,
+        "PvpFlagDisableUntilUtc": null
+      },
+      "Arguments": [],
+      "Method": "LaterRequestAndCancellationRetainTheirOwnIntentWhenExpiryReturnsToNull",
+      "Schema": "nexus_assessment_20261106_pvp_33256231fb"
+    },
+    {
+      "Passed": true,
+      "Expiry": {
+        "Id": 42,
+        "PvpFlagDisableUntilUtc": "2026-11-06T17:27:27"
+      },
+      "Arguments": [
+        false
+      ],
+      "Method": "BusyMapAdmissionDoesNotBlockCooldownEnrollmentOrSettlement",
+      "Schema": "nexus_assessment_20261106_pvp_7d976b9ea7"
+    },
+    {
+      "Passed": true,
+      "Expiry": {
+        "Id": 42,
+        "PvpFlagDisableUntilUtc": "2026-11-06T17:27:31"
+      },
+      "Arguments": [
+        true
+      ],
+      "Method": "BusyMapAdmissionDoesNotBlockCooldownEnrollmentOrSettlement",
+      "Schema": "nexus_assessment_20261106_pvp_452e1e4e88"
+    }
+  ],
+  "Cleanup": {
+    "AllIndependentlyAbsent": true,
+    "OriginalMySqlPids": [
+      2648,
+      6016
+    ],
+    "Schemas": [
+      "nexus_assessment_20261106_pvp_97145a7d465148e3acbdec7170d6bb0b",
+      "nexus_assessment_20261106_pvp_1f94a71990",
+      "nexus_assessment_20261106_pvp_1f5e74630c",
+      "nexus_assessment_20261106_pvp_c61e67db59",
+      "nexus_assessment_20261106_pvp_223309b4a3",
+      "nexus_assessment_20261106_pvp_908cd25cfd",
+      "nexus_assessment_20261106_pvp_c98a70b6a6",
+      "nexus_assessment_20261106_pvp_1ae0dfc02b",
+      "nexus_assessment_20261106_pvp_ec82ddc7d7",
+      "nexus_assessment_20261106_pvp_febec4f67a",
+      "nexus_assessment_20261106_pvp_0f0aab1f56",
+      "nexus_assessment_20261106_pvp_2a82470548",
+      "nexus_assessment_20261106_pvp_336f4744cd",
+      "nexus_assessment_20261106_pvp_34347a2a79",
+      "nexus_assessment_20261106_pvp_2dbc5bc614",
+      "nexus_assessment_20261106_pvp_ef87c17e03",
+      "nexus_assessment_20261106_pvp_26ebe34f1b",
+      "nexus_assessment_20261106_pvp_b972f2e953",
+      "nexus_assessment_20261106_pvp_f2b07e1557",
+      "nexus_assessment_20261106_pvp_249aec784c",
+      "nexus_assessment_20261106_pvp_054a4bef9e",
+      "nexus_assessment_20261106_pvp_92302686c4",
+      "nexus_assessment_20261106_pvp_466bd721d0",
+      "nexus_assessment_20261106_pvp_d9960d5d2b",
+      "nexus_assessment_20261106_pvp_87485804fa",
+      "nexus_assessment_20261106_pvp_3389b9e72d",
+      "nexus_assessment_20261106_pvp_dee02f070d",
+      "nexus_assessment_20261106_pvp_80068074df",
+      "nexus_assessment_20261106_pvp_7cdcc27df0",
+      "nexus_assessment_20261106_pvp_18531b4c91",
+      "nexus_assessment_20261106_pvp_33256231fb",
+      "nexus_assessment_20261106_pvp_7d976b9ea7",
+      "nexus_assessment_20261106_pvp_452e1e4e88"
+    ]
+  },
+  "Reviews": {
+    "Spec": "Primary-agent self-review; no remaining actionable finding",
+    "Standards": "Primary-agent self-review; no remaining actionable finding"
+  },
+  "Commands": [
+    "dotnet build Source/NexusForever.Game/NexusForever.Game.csproj --no-restore -v minimal --nologo",
+    "dotnet test Source/NexusForever.Game.Tests/NexusForever.Game.Tests.csproj --no-restore --filter FullyQualifiedName~PvpFlagCooldownTests",
+    "Integrated filter: PvpFlagCooldownTests|PvpCombatBoundaryTests|PlayerTaxiDiscoveryTests|RewardNormalSaveSnapshotTests|CharacterSaveCompletionTests|CharacterSaveValidationTests|WorldMapAdmissionLifecycleTests"
+  ],
+  "Limits": [
+    "prepared Player/account/session and Character save boundary",
+    "no full deferred Auth/Character lifecycle proof",
+    "no physical process/database failure, hosted/socket/native or retail qualification",
+    "other scalar acknowledgement policies remain unchanged",
+    "earlier hosted record retains its frozen Game DLL boundary"
+  ],
+  "RawRoot": "artifacts/pvp-cooldown-save/"
+}

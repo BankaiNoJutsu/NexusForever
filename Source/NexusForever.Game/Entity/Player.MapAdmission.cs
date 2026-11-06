@@ -74,7 +74,7 @@ public partial class Player : IPlayerMapAdmission
         lock (mapAdmission.SyncRoot)
         {
             mapLocationVersion++;
-            saveMask |= PlayerSaveMask.Location;
+            MarkPlayerSave(PlayerSaveMask.Location);
         }
     }
 
@@ -125,7 +125,7 @@ public partial class Player : IPlayerMapAdmission
                     && mapAdmission.Generation == location.Admission && !mapAdmission.HasUnconfirmedLocation
                     && Map?.Entry?.Id == location.World && Zone?.Id == location.Zone
                     && Position == location.Position && Rotation == location.Rotation)
-                    saveMask &= ~PlayerSaveMask.Location;
+                    ClearPlayerSave(PlayerSaveMask.Location);
             }
             finally { Monitor.Exit(mapAdmission.SyncRoot); }
         });

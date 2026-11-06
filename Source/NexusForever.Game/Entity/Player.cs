@@ -205,7 +205,7 @@ namespace NexusForever.Game.Entity
             {
                 (AppearanceManager as AppearanceManager)?.AssertAppearanceMutationAllowed();
                 sex = value;
-                saveMask |= PlayerSaveMask.Sex;
+                MarkPlayerSave(PlayerSaveMask.Sex);
 
                 SetVisualEmit(true);
             }
@@ -220,7 +220,7 @@ namespace NexusForever.Game.Entity
             {
                 (AppearanceManager as AppearanceManager)?.AssertAppearanceMutationAllowed();
                 race = value;
-                saveMask |= PlayerSaveMask.Race;
+                MarkPlayerSave(PlayerSaveMask.Race);
 
                 SetVisualEmit(true);
             }
@@ -236,7 +236,7 @@ namespace NexusForever.Game.Entity
             set
             {
                 flags = value;
-                saveMask |= PlayerSaveMask.Flags;
+                MarkPlayerSave(PlayerSaveMask.Flags);
             }
         }
         private CharacterFlag flags;
@@ -250,7 +250,7 @@ namespace NexusForever.Game.Entity
             {
                 path = value;
                 PathActivatedTime = DateTime.UtcNow;
-                saveMask |= PlayerSaveMask.Path;
+                MarkPlayerSave(PlayerSaveMask.Path);
             }
         }
         private Path path;
@@ -263,7 +263,7 @@ namespace NexusForever.Game.Entity
             set
             {
                 inputKeySet = value;
-                saveMask |= PlayerSaveMask.InputKeySet;
+                MarkPlayerSave(PlayerSaveMask.InputKeySet);
             }
         }
         private InputSets inputKeySet;
@@ -274,7 +274,7 @@ namespace NexusForever.Game.Entity
             set
             {
                 innateIndex = value;
-                saveMask |= PlayerSaveMask.Innate;
+                MarkPlayerSave(PlayerSaveMask.Innate);
             }
         }
         private byte innateIndex;
@@ -285,7 +285,7 @@ namespace NexusForever.Game.Entity
             set
             {
                 castingOptions = value;
-                saveMask |= PlayerSaveMask.Options;
+                MarkPlayerSave(PlayerSaveMask.Options);
             }
         }
         private CastingOptionFlags castingOptions;
@@ -298,7 +298,7 @@ namespace NexusForever.Game.Entity
             set
             {
                 sharedChallengeEnabled = value;
-                saveMask |= PlayerSaveMask.Options;
+                MarkPlayerSave(PlayerSaveMask.Options);
             }
         }
         private bool sharedChallengeEnabled;
@@ -309,7 +309,7 @@ namespace NexusForever.Game.Entity
             set
             {
                 disableOtherPlayersCombatLogs = value;
-                saveMask |= PlayerSaveMask.Options;
+                MarkPlayerSave(PlayerSaveMask.Options);
             }
         }
         private bool disableOtherPlayersCombatLogs;
@@ -320,7 +320,7 @@ namespace NexusForever.Game.Entity
             set
             {
                 combatLogDisableFlags = value;
-                saveMask |= PlayerSaveMask.Options;
+                MarkPlayerSave(PlayerSaveMask.Options);
             }
         }
         private CombatLogOptions combatLogDisableFlags;
@@ -345,7 +345,7 @@ namespace NexusForever.Game.Entity
 
                 RetainQuestLevelForVisibility(value);
                 base.Level = value;
-                saveMask |= PlayerSaveMask.Level;
+                MarkPlayerSave(PlayerSaveMask.Level);
 
                 CalculateDefaultProperties();
                 SetBaseCharacterProperties();
@@ -705,7 +705,7 @@ namespace NexusForever.Game.Entity
             }
 
             if (resolvedLevel != model.Level)
-                saveMask |= PlayerSaveMask.Level;
+                MarkPlayerSave(PlayerSaveMask.Level);
 
             //SetStat(Stat.Health, 1);
             SetStat(Stat.Sheathed, 1u);
@@ -1322,13 +1322,10 @@ namespace NexusForever.Game.Entity
                 }
 
                 if ((saveMask & PlayerSaveMask.PvP) != 0)
-                {
-                    model.PvpFlagDisableUntilUtc = pvpFlagDisableUntilUtc;
-                    entity.Property(p => p.PvpFlagDisableUntilUtc).IsModified = true;
-                }
+                    StagePvPCooldownSave(context, entity);
 
-                // Staging is not a commit. Location is acknowledged by its terminal save observer.
-                saveMask &= PlayerSaveMask.Location;
+                // Staging is not a commit. These owners acknowledge their own flushed settlement.
+                ClearPlayerSave(~(PlayerSaveMask.Location | PlayerSaveMask.PvP));
             }
 
             model.TimePlayedLevel = (uint)TimePlayedLevel;
@@ -3499,9 +3496,8 @@ namespace NexusForever.Game.Entity
             if ((PvPFlag & PvPFlag.Enabled) == 0)
                 return;
 
-            pvpFlagDisableUntilUtc = DateTime.UtcNow.AddMilliseconds(cooldownMs);
+            SetPvPCooldownExpiry(DateTime.UtcNow.AddMilliseconds(cooldownMs));
             pvpFlagDisableTimer = new UpdateTimer(TimeSpan.FromMilliseconds(cooldownMs));
-            saveMask |= PlayerSaveMask.PvP;
             Session.EnqueueMessageEncrypted(new ServerPvpCooldownUpdate
             {
                 CooldownRemaining = cooldownMs
@@ -3539,9 +3535,8 @@ namespace NexusForever.Game.Entity
             uint remainingMs = GetPvPFlagDisableRemainingMilliseconds(utcExpiry);
             if (remainingMs == 0u)
             {
-                pvpFlagDisableUntilUtc = null;
+                SetPvPCooldownExpiry(null);
                 PvPFlag &= PvPFlag.Forced;
-                saveMask |= PlayerSaveMask.PvP;
                 return;
             }
 
@@ -3580,8 +3575,7 @@ namespace NexusForever.Game.Entity
                 return;
 
             pvpFlagDisableTimer    = null;
-            pvpFlagDisableUntilUtc = null;
-            saveMask |= PlayerSaveMask.PvP;
+            SetPvPCooldownExpiry(null);
         }
 
         private static uint GetPvPFlagDisableRemainingMilliseconds(DateTime disableUntilUtc)

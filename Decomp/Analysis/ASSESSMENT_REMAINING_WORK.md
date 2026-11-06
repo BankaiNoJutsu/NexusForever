@@ -1,5 +1,14 @@
 # Assessment follow-through goal
 
+[PvP cooldown save retry](PVP_COOLDOWN_SAVE_RETRY.md) retains requests and
+cancellations until flushed Character settlement, preserving later intent and
+using atomic shared dirty-mask updates. Eleven baseline failures are fixed;
+183 scoped SQLite cases,24 final bound-session PvP cases and16 configured MySQL
+cases pass with exact49 migrations per schema. All33 fixture schemas across
+retained attempts are independently absent; original engines remain. Other scalar
+acknowledgement, full deferred lifecycle, physical failure/socket/native/retail
+remain separate. F-015 and broader Goal stay unfinished; native/CUA stopped.
+
 [Q3741 accepted supply collection](Q3741_ACCEPTED_SUPPLY_COLLECTION.md) completes
 the first queued quest's refusal/removal producer boundary. Seven baseline
 failures are fixed;11 new/103 scoped and the same11 actual-catalog cases pass.

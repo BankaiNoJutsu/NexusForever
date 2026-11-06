@@ -20,7 +20,7 @@ using Microting.EntityFrameworkCore.MySql.Infrastructure;
 
 namespace NexusForever.Game.Tests.Pvp;
 
-public class PvpFlagCooldownTests
+public partial class PvpFlagCooldownTests
 {
     [Fact]
     public void ToggleOff_RequestsPendingDisableWithoutClearingFlagImmediately()
