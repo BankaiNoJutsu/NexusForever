@@ -1,5 +1,13 @@
 # Client Binary Decompile Continuation Guide
 
+[Proc AMP lifecycle](AMP_UPSTREAM_RECONCILIATION.md#owned-unfiltered-proc-augmentations)
+now applies/removes the supported seven actual-catalog spells through original
+cast handles and selected-node state. All23 new/241 scoped cases and seven
+actual typed-handle probes pass; clean builds and both final reviews qualify
+the isolated Source candidate. Foreign interface/effect-handler hunks remain
+excluded. Other211 pure-proc entries and child/provider/native/retail behavior
+remain unqualified. Reuse completed checks; client/CUA stopped.
+
 [Scientist scanner lifecycle](SCIENTIST_SCANBOT_LIFECYCLE.md) now keeps queued
 admission, dismiss/removal and retained state tied to the original object and
 owner context. Stale scanners stop before Player visibility. Eleven new/243

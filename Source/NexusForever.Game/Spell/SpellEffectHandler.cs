@@ -3256,6 +3256,9 @@ namespace NexusForever.Game.Spell
                 proc.DataBits08,
                 proc.DataBits09);
 
+            if (spell.Parameters is AugmentationSpellParameters augmentation && ReferenceEquals(target, spell.Caster))
+                augmentation.ProcInstances.Add(info.ProcInstance);
+
             SpellEffectDiagnostics.TraceProc(spell, target, proc, true, false, null);
         }
 

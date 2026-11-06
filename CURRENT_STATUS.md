@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[Owned proc AMPs](Decomp/Analysis/AMP_UPSTREAM_RECONCILIATION.md#owned-unfiltered-proc-augmentations)
+now apply seven supported actual-catalog spells through existing selected-node
+lifecycle and remove only original-cast registrations. Twelve baseline failures
+and the callback enrollment defect are fixed;23 new/all241 scoped cases, seven
+actual registration probes, clean builds and both reviews pass. Other211 pure
+proc spells, child gameplay/provider/native/retail remain open; client/CUA stopped.
+
 [Scientist scanner lifecycle](Decomp/Analysis/SCIENTIST_SCANBOT_LIFECYCLE.md)
 now preserves the original object/owner through queued admission, dismiss and
 removal. Stale adds stop before concrete Player visibility; rejected state

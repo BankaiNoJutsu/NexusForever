@@ -1,5 +1,99 @@
 # AMP prerequisite and lifecycle reconciliation
 
+## Owned unfiltered proc augmentations
+
+6 November 2026. Existing login, active-spec/node changes and bounded retry now
+apply supported permanent self-target proc AMPs through the normal cast/effect
+producer. Full/section/single respec and spec changes remove only registrations
+created by that AMP cast. Shared selected spells retain one installation;
+pre-existing same-spell registrations are neither recast nor claimed.
+
+The effect handler enrolls its actual AddProc return in an internal per-cast
+parameter record only when the target is the original caster. This protects an
+external registration inserted during a cast callback, including one sharing
+the numeric casting ID. Removal uses the existing reference-checked handle.
+Later replacements remain external. Reentrant respec retires an accepted old
+installation; newly eligible reentrant work can use the existing one-second
+retry. Existing property/cooldown, learned spells, grants and child-cast rules
+remain. No schema or entitlement default changes.
+
+### Actual catalog and limits
+
+The owning reader qualifies all218 pure-proc augmentation spells. Of these,
+69 pass zero-timing, passive group, permanent-caster and existing dispatch
+screening. Seven also match the established Source fixture's raw tail pattern
+DataBits05=1 and DataBits06..09=0:
+
+| Spell4 | AMP node | Triggered Spell4 |
+| --- | --- | --- |
+| 43219 | 572 | 43220 |
+| 57161 | 370 | 57162 |
+| 57336 | 498 | 57337 |
+| 58984 | 718 | 79899 |
+| 59126 | 148 | 60979 |
+| 59142 | 163 | 60992 |
+| 59154 | 50 | 60941 |
+
+Existing allocation/class/prerequisite checks remain the authority for selected
+nodes; catalog eligibility does not grant or activate an unallocated node.
+The other62 structural candidates have additional uninterpreted tail data.
+The other149 pure-proc spells fail that structural screening. These counts
+classify Source-compatible eligibility; they do not assign retail meaning to
+the opaque fields or qualify every triggered child's gameplay.
+
+All seven admitted actual effects register through SpellHandler on a concrete
+Unit, enroll the exact cast-owned handle, and pass identity/duplicate-removal
+controls. Raw node148/effect141788 and its owning-reader38483 outer projection
+also drive login/spec/respec and Character save/reload regressions with a
+prepared player/cast adapter. The other six have actual catalog/registration
+qualification, separate from full live ability execution.
+
+### Validation
+
+The qualified baseline has12 failures and10 controls, with the read-only
+capture API present and automatic proc reconciliation still unchanged. An
+earlier same-result fixture used a stale outer base; it is retained separately.
+The review's callback-insertion defect is reproduced in one further regression,
+then fixed by per-cast enrollment. The earlier240-pass candidate is retained
+without being promoted to the final ownership claim.
+
+Final owning/test builds are clean in12.31/13.92seconds. All23 new/all241
+selected AMP, action-set, proc, cooldown and Unit combat cases pass; the scoped
+runner reports14seconds. The standalone actual-catalog build takes2.50seconds.
+No full solution or full suite ran. Game.Abstract/Game/World owning DLLs match
+the tested copies; the actual probe uses the same Game DLL. Game/World/test
+DLLs differ from the baseline, so this is not a same-test-DLL comparison.
+
+The isolated candidate contains published HEAD plus seven owned Source paths
+and eight historical project/filter or BOM/newline variants. Foreign personal
+damage/healing interface and effect-handler hunks are retained in the shared
+working tree and excluded from this commit/candidate. The
+[portable record](coverage/proc-amp-lifecycle-20261106.json) binds Source/binary
+identity, complete scoped results, actual catalog inputs and review. Local
+logs are under artifacts/continuation-20261106/proc-amp-lifecycle/.
+Raw-header/probe-access setup errors remain separate from behavior failures.
+
+### Standards
+
+One original cast-enrollment finding was reproduced and resolved. Final review:
+zero remaining actionable findings. Only original-cast-enrolled handles are
+owned; callback-inserted same-spell registrations survive. All seven isolated
+candidate identities match; foreign hunks are excluded. Inspection only.
+
+### Spec
+
+Final review: zero remaining findings. Enrollment is tied to the original
+cast/caster and existing selected-node lifecycle. All seven candidate hashes
+match. The exact parameter-type regression assertion uses the new concrete
+parameter type, and final build/test and actual-row executions pass.
+
+Broader proc tails, mixed/timed/conditional AMPs, exact chance/cooldown/recursion
+retail ordering and triggered-child semantics remain open. No fresh configured
+provider, copied upgrade, physical restart, hosted socket, native UI or retail
+qualification is claimed. Client/CUA remain stopped. Defaults15:1/17:1 remain;
+no44/seven baseline grants. Continue independent gameplay/progression; the
+overall Goal remains active.
+
 ## Activated item ownership
 
 4 November 2026. Activated item use retains the player and inventory that

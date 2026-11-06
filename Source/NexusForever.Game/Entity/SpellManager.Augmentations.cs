@@ -9,18 +9,18 @@ namespace NexusForever.Game.Entity
     {
         private readonly Dictionary<uint, IReadOnlyCollection<ISpellPropertyInstance>> augmentationProperties = [];
         private readonly Dictionary<uint, HashSet<SpellCooldownModifier>> augmentationCooldowns = [];
+        private readonly Dictionary<uint, IReadOnlyCollection<ISpellProcInstance>> augmentationProcs = [];
         private double augmentationRetryTime;
+        private bool refreshingAugmentations;
 
-        private void RefreshAugmentations()
-        {
-            if (!initialised)
-                return;
-
-            HashSet<uint> desired = ActiveActionSet < ActionSet.MaxActionSets
+        private HashSet<uint> GetDesiredAugmentations()
+            => ActiveActionSet < ActionSet.MaxActionSets
                 ? actionSets[ActiveActionSet].Amps.Select(a => a.Entry.Spell4IdAugment)
                     .Where(id => AugmentationSpellRules.IsSupported(id, GetGameTableManager())).ToHashSet()
                 : [];
 
+        private void RetireAugmentations(HashSet<uint> desired)
+        {
             foreach (uint id in augmentationProperties.Keys.Where(id => !desired.Contains(id)).ToArray())
             {
                 foreach (var instance in augmentationProperties[id])
@@ -36,36 +36,65 @@ namespace NexusForever.Game.Entity
                 augmentationCooldowns.Remove(id);
             }
 
-            if (!player.InWorld || !player.IsAlive)
+            foreach (uint id in augmentationProcs.Keys.Where(id => !desired.Contains(id)).ToArray())
+            {
+                foreach (var instance in augmentationProcs[id])
+                    player.RemoveProc(instance);
+                augmentationProcs.Remove(id);
+            }
+        }
+
+        private void RefreshAugmentations()
+        {
+            if (!initialised || refreshingAugmentations)
                 return;
 
-            foreach (uint id in desired)
+            refreshingAugmentations = true;
+            try
             {
-                // A modifier from another source may have replaced our instance. Never
-                // overwrite or claim that source, even when it uses the same spell.
-                var existing = player.GetSpellPropertyInstances(id);
-                var existingCooldowns = GetSpellCooldownModifiers().Where(m => m.Spell4Id == id).ToArray();
-                if (augmentationCooldowns.TryGetValue(id, out var ownedCooldowns))
-                    ownedCooldowns.IntersectWith(existingCooldowns);
-                if (existing.Count != 0 || existingCooldowns.Length != 0)
-                    continue;
+                HashSet<uint> desired = GetDesiredAugmentations();
+                RetireAugmentations(desired);
+                if (!player.InWorld || !player.IsAlive)
+                    return;
 
-                CastResult result = player.TryCastSpell(id, new SpellParameters
+                foreach (uint id in desired)
                 {
-                    PrimaryTargetId = player.Guid,
-                    UserInitiatedSpellCast = false,
-                    IgnoreGlobalCooldown = true,
-                    ClientRequestSource = nameof(SpellManager) + ".Augmentation"
-                });
-                if (result == CastResult.Ok)
-                {
-                    augmentationProperties[id] = player.CaptureSpellPropertyInstances(id);
-                    // Records are immutable but can be replaced with value-equal
-                    // instances. Only the actual objects installed by this cast
-                    // belong to this AMP, never a replacement from another owner.
-                    augmentationCooldowns[id] = new HashSet<SpellCooldownModifier>(
-                        GetSpellCooldownModifiers().Where(m => m.Spell4Id == id), ReferenceEqualityComparer.Instance);
+                    // A cast callback may have changed the active nodes/spec.
+                    if (!player.InWorld || !player.IsAlive || !GetDesiredAugmentations().Contains(id))
+                        continue;
+                    // A modifier from another source may have replaced our instance. Never
+                    // overwrite or claim that source, even when it uses the same spell.
+                    var existing = player.GetSpellPropertyInstances(id);
+                    var existingCooldowns = GetSpellCooldownModifiers().Where(m => m.Spell4Id == id).ToArray();
+                    var existingProcs = player.CaptureSpellProcInstances(id) ?? [];
+                    if (augmentationCooldowns.TryGetValue(id, out var ownedCooldowns))
+                        ownedCooldowns.IntersectWith(existingCooldowns);
+                    if (existing.Count != 0 || existingCooldowns.Length != 0 || existingProcs.Count != 0)
+                        continue;
+
+                    var parameters = new AugmentationSpellParameters
+                    {
+                        PrimaryTargetId = player.Guid,
+                        UserInitiatedSpellCast = false,
+                        IgnoreGlobalCooldown = true,
+                        ClientRequestSource = nameof(SpellManager) + ".Augmentation"
+                    };
+                    CastResult result = player.TryCastSpell(id, parameters);
+                    if (result == CastResult.Ok)
+                    {
+                        augmentationProperties[id] = player.CaptureSpellPropertyInstances(id);
+                        // Only the actual objects installed by this cast belong to
+                        // this AMP, never a later replacement from another source.
+                        augmentationCooldowns[id] = new HashSet<SpellCooldownModifier>(
+                            GetSpellCooldownModifiers().Where(m => m.Spell4Id == id), ReferenceEqualityComparer.Instance);
+                        augmentationProcs[id] = parameters.ProcInstances.ToArray();
+                    }
                 }
+            }
+            finally
+            {
+                try { RetireAugmentations(GetDesiredAugmentations()); }
+                finally { refreshingAugmentations = false; }
             }
         }
 

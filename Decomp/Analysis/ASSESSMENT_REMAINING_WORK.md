@@ -1,5 +1,16 @@
 # Assessment follow-through goal
 
+[Owned unfiltered proc AMPs](AMP_UPSTREAM_RECONCILIATION.md#owned-unfiltered-proc-augmentations)
+complete selected-node login/spec/respec/retry/save integration for the supported
+permanent caster-only family. All218 pure-proc rows are classified;69 satisfy
+structural/current dispatch gates and seven match the established raw tail.
+Twelve baseline failures and the review callback-enrollment defect are fixed;
+23 new/all241 scoped cases and seven actual cast-handle registration/removal
+probes pass, with clean builds and both final reviews. Other149 structural
+exclusions/62 extra-tail candidates, child gameplay, exact retail ordering and
+provider/socket/native/retail remain open. Do not repeat this closed Source
+slice; continue independent progression/gameplay. Client/CUA remain stopped.
+
 [Scientist scanner lifecycle](SCIENTIST_SCANBOT_LIFECYCLE.md) completes the
 public request/dismiss original-object boundary, stale queued-add visibility
 suppression and fresh retained state replies. Original six-failure baseline

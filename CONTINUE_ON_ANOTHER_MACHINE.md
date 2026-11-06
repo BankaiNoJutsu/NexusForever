@@ -1,5 +1,13 @@
 # Continue on another machine
 
+Latest AMP Source result:
+[owned proc lifecycle](Decomp/Analysis/AMP_UPSTREAM_RECONCILIATION.md#owned-unfiltered-proc-augmentations)
+integrates seven supported actual spells with selected-node login/spec/respec,
+retry and save/reload. All23 new/241 scoped cases and seven actual cast-handle
+probes, clean builds and both final reviews pass. Preserve foreign interface/
+effect-handler edits; commit/candidate include only owned hunks. Other211 pure
+proc entries, child gameplay/provider/native/retail remain open. Client/CUA stopped.
+
 Latest Scientist Source result:
 [scanner lifecycle](Decomp/Analysis/SCIENTIST_SCANBOT_LIFECYCLE.md) fixes original
 object removal, stale queued visibility and rejected state cleanup/retry.

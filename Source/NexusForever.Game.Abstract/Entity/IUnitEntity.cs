@@ -66,6 +66,11 @@ namespace NexusForever.Game.Abstract.Entity
         bool RemoveProc(ISpellProcInstance instance);
 
         /// <summary>
+        /// Capture installed proc registrations for identity-checked ownership and removal.
+        /// </summary>
+        IReadOnlyCollection<ISpellProcInstance> CaptureSpellProcInstances(uint spell4Id) => [];
+
+        /// <summary>
         /// Create a snapshot of active proc registrations for debugging and evidence capture.
         /// </summary>
         IReadOnlyCollection<ProcRegistrationSnapshot> CreateProcRegistrationSnapshot();
