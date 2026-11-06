@@ -43,7 +43,7 @@ using NexusForever.WorldServer.Network.Message.Handler.Entity.Vehicle;
 
 namespace NexusForever.Game.Tests.Transport;
 
-public class TransportHandlerTests
+public partial class TransportHandlerTests
 {
     private const uint RapidTransportSpellGameFormulaId = 0x051Bu;
     private const uint RapidTransportSpell4Id         = 82922u;

@@ -1,5 +1,7 @@
 using System.Numerics;
 using System.Threading;
+using Microsoft.EntityFrameworkCore;
+using NexusForever.Database.Character;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Static.Entity;
@@ -63,7 +65,20 @@ public partial class Player : IPlayerMapAdmission
         && LogoutManager?.State is not (LogoutState.Logout or LogoutState.Finished)
         && Session is not NetworkSession { IsDisconnecting: true };
 
-    private (ushort World, ushort Zone, Vector3 Position, Vector3 Rotation)? CaptureMapLocationForSave(long? capturedTaxiFareVersion)
+    private long mapLocationVersion;
+    private readonly record struct SavedMapLocation(ulong Character, ushort World, ushort Zone,
+        Vector3 Position, Vector3 Rotation, long Version, ulong Admission);
+
+    private void MarkMapLocationDirty()
+    {
+        lock (mapAdmission.SyncRoot)
+        {
+            mapLocationVersion++;
+            saveMask |= PlayerSaveMask.Location;
+        }
+    }
+
+    private SavedMapLocation? CaptureMapLocationForSave(long? capturedTaxiFareVersion)
     {
         var admission = mapAdmission;
         // A Character transaction must not wait on map callbacks that can schedule persistence.
@@ -75,9 +90,45 @@ public partial class Player : IPlayerMapAdmission
                 || Map?.Entry is not { } world || Zone is not { } zone)
                 return null;
 
-            return ((ushort)world.Id, (ushort)zone.Id, Position, Rotation);
+            return new(CharacterId, (ushort)world.Id, (ushort)zone.Id, Position, Rotation,
+                mapLocationVersion, admission.Generation);
         }
         finally { Monitor.Exit(admission.SyncRoot); }
+    }
+
+    private void TrackMapLocationSave(CharacterContext context, SavedMapLocation location)
+    {
+        bool flushed = false;
+        // SavedChanges precedes CharacterContext's implicit terminal settlement.
+        // Read SQL through this transaction so a suppressed or altered write cannot
+        // acknowledge the live location merely because some other fields flushed.
+        bool MatchesSql() => !context.HasSavepointRollback && context.Character.AsNoTracking().Any(row =>
+                row.Id == location.Character && row.WorldId == location.World && row.WorldZoneId == location.Zone
+                && row.LocationX == location.Position.X && row.LocationY == location.Position.Y && row.LocationZ == location.Position.Z
+                && row.RotationX == location.Rotation.X && row.RotationY == location.Rotation.Y && row.RotationZ == location.Rotation.Z);
+        EventHandler<SavedChangesEventArgs> onFlushed = (_, _) => flushed = MatchesSql();
+        context.SavedChanges += onFlushed;
+        context.OnSaveValidation(phase =>
+        {
+            if (phase == CharacterSaveValidationPhase.BeforeExplicitCommit && flushed)
+                flushed = MatchesSql();
+        });
+        context.OnSaveSettled(committed =>
+        {
+            context.SavedChanges -= onFlushed;
+            // Settlement must not wait for a map callback that is itself waiting
+            // for persistence. A later save can safely acknowledge this location.
+            if (!committed || !flushed || !Monitor.TryEnter(mapAdmission.SyncRoot)) return;
+            try
+            {
+                if (CharacterId == location.Character && mapLocationVersion == location.Version
+                    && mapAdmission.Generation == location.Admission && !mapAdmission.HasUnconfirmedLocation
+                    && Map?.Entry?.Id == location.World && Zone?.Id == location.Zone
+                    && Position == location.Position && Rotation == location.Rotation)
+                    saveMask &= ~PlayerSaveMask.Location;
+            }
+            finally { Monitor.Exit(mapAdmission.SyncRoot); }
+        });
     }
 
     public override void OnEnqueueAddToMap()

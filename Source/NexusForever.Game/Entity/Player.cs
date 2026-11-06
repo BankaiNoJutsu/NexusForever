@@ -1258,6 +1258,8 @@ namespace NexusForever.Game.Entity
 
                     model.WorldZoneId = current.Zone;
                     entity.Property(p => p.WorldZoneId).IsModified = true;
+
+                    TrackMapLocationSave(context, current);
                 }
 
                 if ((saveMask & PlayerSaveMask.Path) != 0 && experiencePathOwner == null)
@@ -1325,8 +1327,8 @@ namespace NexusForever.Game.Entity
                     entity.Property(p => p.PvpFlagDisableUntilUtc).IsModified = true;
                 }
 
-                // Keep location dirty when this save only staged the other character fields.
-                saveMask = location.HasValue ? PlayerSaveMask.None : saveMask & PlayerSaveMask.Location;
+                // Staging is not a commit. Location is acknowledged by its terminal save observer.
+                saveMask &= PlayerSaveMask.Location;
             }
 
             model.TimePlayedLevel = (uint)TimePlayedLevel;
@@ -1475,7 +1477,7 @@ namespace NexusForever.Game.Entity
         public override void OnRelocate(Vector3 vector)
         {
             base.OnRelocate(vector);
-            saveMask |= PlayerSaveMask.Location;
+            MarkMapLocationDirty();
 
             ZoneMapManager.OnRelocate(vector);
             PathManager.CompleteCurrentExplorerExploreZoneMission();

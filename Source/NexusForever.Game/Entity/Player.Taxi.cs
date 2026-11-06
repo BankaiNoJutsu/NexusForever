@@ -176,7 +176,7 @@ namespace NexusForever.Game.Entity
             }
             flight.Admitted = true;
             Interlocked.Increment(ref taxiFareVersion);
-            saveMask |= PlayerSaveMask.Location;
+            MarkMapLocationDirty();
             bool learned = false;
             try { learned = TryLearnTaxiNode(flight.DestinationNode); }
             catch (Exception exception) { log.Warn(exception, "Failed to record taxi node discovery after fare settlement."); }

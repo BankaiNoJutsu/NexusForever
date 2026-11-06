@@ -1,5 +1,13 @@
 # NexusForever Feature Restoration - Current Status
 
+[Transport location save retry](Decomp/Analysis/TRANSPORT_LOCATION_SAVE_RETRY.md)
+retains admitted location across failed SQL settlement and preserves later
+movement intent. Six baseline failures are fixed;11 new/90 selected transport
+cases and714 actual-table flight quotes pass, including fare/node/location
+rollback and fresh-save recovery. This reconstructs the missing paused candidate;
+its old-parent passes are separate. Provider/physical travel/loss/socket/native/
+retail remain open. Overall Goal active; character-list hosted wire rows are next.
+
 [ICComm socket and explicit reconnect qualification](Decomp/Analysis/ICCOMM_SOCKET_RECONNECT_QUALIFICATION.md) passes Global and
 prepared-Guild runs on the frozen ownership candidate: seven sessions, 55 wire
 frames and 18 message attempts per scope; 66 scoped tests pass. Normal and

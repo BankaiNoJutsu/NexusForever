@@ -1,0 +1,118 @@
+{
+  "Date": "2026-11-06",
+  "BaseHEAD": "9a31e9769e69f034e1c65eaba44685ad8a7c025f",
+  "Outcome": "Reconstructed transport location retry Source/SQLite verified; overall restoration unfinished",
+  "Source": [
+    {
+      "Path": "Source/NexusForever.Game/Entity/Player.cs",
+      "SHA256": "6AE5F18EB8A6E29FD37D47ED063065ED2A12AABABA1B78E9E4CD3E9FAF9EC88A"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Entity/Player.MapAdmission.cs",
+      "SHA256": "D205CECBE78F85CF48D73E42CCD4C5BDE1ECE1C18D930EB68DD13A9A2109B767"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Entity/Player.Taxi.cs",
+      "SHA256": "DE45577D98E1ADB99E30AF3326BA0FDA42F969C4EFDF93ACEFE8B7F79B6CED51"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Transport/TransportHandlerTests.cs",
+      "SHA256": "57CA5815D20A08451569D49CE7E741EE88D7AF2BCFF1D9611A0E32874B166FB9"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Transport/TransportHandlerTests.ActualCatalog.cs",
+      "SHA256": "82F60CBD95E2A695A94CDC983CDBB5F0C7C2D051FAEED9541685F1DF88667D12"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Transport/PlayerMapLocationPersistenceTests.cs",
+      "SHA256": "FA7698FD2A05BE44E4707110A4AFFEBBC073EC37915CFFC2C50920809E5AA2DE"
+    }
+  ],
+  "Binaries": [
+    {
+      "Path": "Source/NexusForever.Game/bin/Debug/net10.0/NexusForever.Game.dll",
+      "SHA256": "1000BED8058A1080A8D14F86B7F300C92E7BE0FF20BC787BB755F2A59763353D"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.dll",
+      "SHA256": "1000BED8058A1080A8D14F86B7F300C92E7BE0FF20BC787BB755F2A59763353D"
+    },
+    {
+      "Path": "Source/NexusForever.WorldServer/bin/Debug/net10.0/NexusForever.Game.dll",
+      "SHA256": "1000BED8058A1080A8D14F86B7F300C92E7BE0FF20BC787BB755F2A59763353D"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+      "SHA256": "1ED7DB26944830A26E06BE06186182E5AEF2DFC32CD6C27C15CF54C663D3764C"
+    }
+  ],
+  "Evidence": [
+    {
+      "Path": "artifacts/location-save-retry/baseline/location-baseline.trx",
+      "SHA256": "902CD0E559DBB922C2975C200EE3E30CD75F4329B7A08A4CF12E4C1DFD2FF0FB"
+    },
+    {
+      "Path": "artifacts/location-save-retry/scoped/location-scoped.trx",
+      "SHA256": "EBE98118C170D567997CACC180F7A648EC789C1290B3AD395BE8DBEEAFC966F5"
+    },
+    {
+      "Path": "artifacts/location-save-retry/final/location-final.trx",
+      "SHA256": "EC775D99D4FDAB322FDE0D64E63BFBB67674D8777F3F4B3B26EFF845983153D7"
+    },
+    {
+      "Path": "artifacts/location-save-retry/corrected/location-corrected.trx",
+      "SHA256": "A5D4513D231AFD98915C7668DDA33578E2425AD4E3CE29D0A0051F75CE1C1A4A"
+    },
+    {
+      "Path": "artifacts/location-save-retry/catalog-build/location-catalog-build.trx",
+      "SHA256": "348D2A14B1D0C35F4A0134E120AC715E7F12A8DED5EE95C6BA3A7F3924DF031D"
+    },
+    {
+      "Path": "artifacts/location-save-retry/actual-catalog/result.json",
+      "SHA256": "A9DAF3BAF3677523F65D61A9E14C56179574D4E3B3DF35B9A5849FCC1C5AD102"
+    },
+    {
+      "Path": "artifacts/location-save-retry/upstream-refresh.json",
+      "SHA256": "693FFB93DE312061FBFF3CBB84AF568B4D44AB497109951062C026EF3F431768"
+    }
+  ],
+  "Results": {
+    "NewLocationCases": 11,
+    "FinalTransport": 90,
+    "InitialFixedAffected": 317,
+    "ActualFlightQuotes": 714,
+    "ReviewedAffected": {
+      "Passed": 319,
+      "FixtureFailures": 1
+    },
+    "CorrectedTaxiLocation": 39,
+    "Baseline": {
+      "Failed": 6,
+      "Passed": 2
+    }
+  },
+  "ActualInputs": {
+    "tbl/TaxiRoute.tbl": "E1E59C1DA7649B8A67DD3D51C503DF0E1AD402A851E41C2B85FE1C20F6C27702",
+    "tbl/TaxiNode.tbl": "6DEB1C040E19563A14DADCC239B7FB3005AE75F87DF0882CB783D786D251A99A",
+    "tbl/WorldLocation2.tbl": "791E6397008A8C930066E86C763BE2BA7C1D11B8B85A13EFE3097BF296B56E74",
+    "tbl/World.tbl": "55D6A26501E8DA8ADCBB7CF250206D97875F507E2FA5DC33A0F26C7BEDE27B7B"
+  },
+  "AssetInventorySHA256": "295132FD25CD57BD95BDBB6CC1A9364E0F061AB4F2E1E0BA083CF837E1492E4B",
+  "Reviews": {
+    "Spec": "Primary-agent self-review; no remaining finding",
+    "Standards": "Primary-agent self-review; no remaining finding"
+  },
+  "Commands": [
+    "dotnet build Source/NexusForever.Game/NexusForever.Game.csproj --no-restore -v minimal --nologo",
+    "dotnet test Source/NexusForever.Game.Tests/NexusForever.Game.Tests.csproj --no-restore --filter FullyQualifiedName~TransportHandlerTests|FullyQualifiedName~PlayerTaxiDiscoveryTests",
+    "TransportHandlerTests.RunActualCatalog(assetRoot, newOutputDirectory)"
+  ],
+  "OpenGates": [
+    "configured provider",
+    "physical process loss/travel",
+    "hosted/socket",
+    "native/retail",
+    "character-list hosted wire-row witness"
+  ],
+  "RawRoot": "artifacts/location-save-retry/"
+}

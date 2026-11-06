@@ -1,5 +1,15 @@
 # Assessment follow-through goal
 
+[Transport location save retry](TRANSPORT_LOCATION_SAVE_RETRY.md) reconstructs
+the unavailable paused candidate against integrated parent9a31e976. Location
+stays dirty until flushed terminal settlement; later movement/admission retains
+its own intent. Six baseline failures are fixed; all11 new/90 selected transport
+cases and714 actual-table flight quotes pass. Earlier317 controls and reviewed319
+passes retain their separate candidate/fixture limits. Single fare/node/location
+rollback and fresh-save recovery pass. Configured provider, physical travel/loss,
+socket/native/retail remain open. Next qualify character-list wire rows on the
+changed hosted candidate; broader Goal active, native/CUA stopped.
+
 [ICComm socket and explicit reconnect qualification](ICCOMM_SOCKET_RECONNECT_QUALIFICATION.md) passes Global and
 prepared-Guild runs on the frozen ownership candidate: seven sessions, 55 wire
 frames and 18 message attempts per scope; 66 scoped tests pass. Normal and
