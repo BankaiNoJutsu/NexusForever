@@ -30,8 +30,8 @@ T-series, content inventory), plus raw-table censuses ([RAW_TABLE_EXTRACTION_202
 
 | Item | Blocking gate | Exact missing input |
 |---|---|---|
-| Public 07CE (Contract types 0/1) | Retail witness | Reset edge rules (unclaimed milestones, excess points) and which of the three choice slots a player receives; native timing/UI |
-| Quest reward type 10 (86 rows) | Retail witness | Which essence currency (15 to 18) is credited; server rule or a type-10 completion capture |
+| Public 07CE (Contract types 0/1) | Retail witness | Reset edge rules (unclaimed milestones, excess points); native `nChoiceIdx` mapping to the table's three columns; native timing. Choice policy is now evidenced as player-selected by index (CLIENT_LUA_CONTRACT_AND_REWARD_EVIDENCE_20261107.md) |
+| Quest reward type 10 (86 rows) | Retail witness | Which essence currency (15 to 18) is credited; server rule or a type-10 completion capture. Client UI does not render type 10 and holds no currency mapping |
 | Type 12 achievements (842 rows) | Per-script witness | Which content script credits each achievement; requires reading/porting each encounter's script behavior |
 | Other unmapped achievement types (87/88/96/61/94/102, 109/112/114/83, etc.) | Producer witness | Credited actor and trigger (e.g. type 109 inviter vs invitee); PvP producers (kills, arena rating) also do not exist yet (LeaderboardScoreIngestion has no callers) |
 | 2,478 unhandled spell-effect rows (FacilityModification 771, UnlockInlaidAugment 281, ChangeDisplayName 268, ...) | Retail witness | Per-type DataBits semantics and observable result; the client holds name strings only |

@@ -1,5 +1,10 @@
 # Assessment follow-through goal
 
+[Client Lua and Ghidra evidence](CLIENT_LUA_CONTRACT_AND_REWARD_EVIDENCE_20261107.md) (2026-11-07): the Contracts UI offers all reward choices and sends the
+player's selected `nChoiceIdx` to `ClaimRewardPoint`, so the 07CE choice policy is player-selected (the reset edge rules remain
+without evidence; 07CE stays unwired). Type-10 quest rewards are not rendered by the client UI. Ghidra 12.1.4 analysis of
+`WildStar64.exe` completed; its string cross-references yield names only, not server semantics.
+
 [Fresh MySQL 8.0.46 migration qualification](MYSQL_8_0_FRESH_MIGRATION_QUALIFICATION_20261107.md) (2026-11-07): the current source's
 migrations apply cleanly to seven fresh disposable schemas (Character 49, Auth 42, World 17, Group 1, Chat 1, Friendship 2, Query 1),
 schemas dropped afterwards. Forward migration only on one 8.0 minor; no copied-upgrade, public-flow, recovery, socket or load run.
