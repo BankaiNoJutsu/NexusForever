@@ -1,5 +1,13 @@
 # NexusForever Feature Restoration - Current Status
 
+[Confirmed physical BOP loot](Decomp/Analysis/LOOT_BOUND_PICKUP.md) now binds
+before ItemAdd and keeps prior unbound stacks unchanged. Bound physical capacity
+and the original inventory lease prevent refused pickups becoming Delivered.
+Four baseline failures are fixed;6 new/all136 scoped cases,clean builds and both
+reviews pass. Public confirmation and legacy paths remain. Broader loot packet
+failure/partial/restart/native qualification stays open; the Goal continues.
+
+
 [Achievement packet timestamps](Decomp/Analysis/PROVIDER_PACKET_HOSTED_RESTART_HANDOFF.md)
 now pass12 configured Character/MySQL cases and166 scoped SQLite cases.
 Committed Guild/Character updates, fresh initial packets and legacy Build bytes

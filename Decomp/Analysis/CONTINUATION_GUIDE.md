@@ -1,5 +1,12 @@
 # Client Binary Decompile Continuation Guide
 
+[Physical BOP loot](LOOT_BOUND_PICKUP.md) now uses existing bound creation
+before publication and excludes unbound/satchel capacity. Four baseline faults
+are fixed;6 new/all136 scoped cases,clean builds and both reviews pass. Reuse the
+Source/SQLite proof; feedback-failure/partial delivery/provider/socket/native
+and retail remain separate. No new schema,policy or entitlement changed.
+
+
 [Achievement packet timestamps](PROVIDER_PACKET_HOSTED_RESTART_HANDOFF.md)
 are qualified for12 configured Character/MySQL/166 scoped SQLite cases through
 committed updates,fresh initial packets and legacy serialization. Stored dates

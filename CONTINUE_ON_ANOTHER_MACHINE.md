@@ -1,5 +1,14 @@
 # Continue on another machine
 
+Latest [physical BOP loot result](Decomp/Analysis/LOOT_BOUND_PICKUP.md):
+supported Inventory binds before first ItemAdd,does not merge into unbound
+stacks,and retains refused capacity/save-lease pickups. Four baseline faults
+are fixed;6 new/all136 scoped cases,clean builds and both reviews pass. Full
+Player SQLite failure/retry/reload passes. Broader loot delivery/publication,
+provider/native/retail remain open. The Goal continues; hosted assets are still
+absent at recorded paths and native-client/CUA remain stopped.
+
+
 The user resumed the Goal on6 November. [Achievement packet timestamp
 qualification](Decomp/Analysis/PROVIDER_PACKET_HOSTED_RESTART_HANDOFF.md) is now
 complete:12 configured Character/MySQL and166 scoped SQLite cases, clean builds

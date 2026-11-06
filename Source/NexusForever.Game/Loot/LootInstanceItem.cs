@@ -471,28 +471,8 @@ namespace NexusForever.Game.Loot
                     player.CurrencyManager.CurrencyAddAmount((CurrencyType)StaticId, Amount, isLoot: true);
                     break;
                 case LootItemType.StaticItem:
-                    if (!CanDeliverStaticItem(player, StaticId, Amount, itemManager, out bool inventoryFull))
-                    {
-                        if (inventoryFull)
-                        {
-                            log.Trace($"Loot static item delivery failed for player {player.CharacterId}, ownerUnit={OwnerUnitId}, lootUnitId={Id}, item={StaticId}, amount={Amount}: inventory full.");
-                            player.Session.EnqueueMessageEncrypted(new ServerItemError
-                            {
-                                ErrorCode = GenericError.ItemInventoryFull
-                            });
-                        }
-                        else
-                        {
-                            log.Warn($"Failed to validate static loot item {StaticId} for player {player.CharacterId}.");
-                        }
-
+                    if (!TryDeliverStaticItem(player))
                         return false;
-                    }
-
-                    SoulbindDeliveredStaticItems(player, () =>
-                    {
-                        player.Inventory.ItemCreate(InventoryLocation.Inventory, StaticId, Amount, ItemUpdateReason.Loot);
-                    });
                     break;
                 case LootItemType.VirtualItem:
                     player.QuestManager.ObjectiveUpdate(QuestObjectiveType.VirtualCollect, StaticId, Amount);
@@ -508,6 +488,54 @@ namespace NexusForever.Game.Loot
 
             if (sendAsGrant)
                 SendGrant(player);
+            return true;
+        }
+
+        private bool TryDeliverStaticItem(IPlayer player)
+        {
+            IInventory inventory = player.Inventory;
+            IItemInfo info = itemManager?.GetItemInfo(StaticId);
+            if (info?.Entry != null && (info.Entry.BindFlags & ItemBindFlags.BindOnPickup) != 0
+                && inventory?.SupportsSoulboundItemCreation == true)
+            {
+                // Physical BOP capacity excludes unbound stacks and satchel quantities.
+                // Hold the original inventory against a simultaneous save refusal.
+                if (!inventory.TryAcquireMutationLease(out IDisposable lease))
+                    return false;
+                using (lease)
+                {
+                    if (!ReferenceEquals(player.Inventory, inventory))
+                        return false;
+                    if (inventory.TryCreateSoulboundItem(InventoryLocation.Inventory, info, Amount,
+                        out GenericError error, ItemUpdateReason.Loot))
+                        return true;
+                    player.Session.EnqueueMessageEncrypted(new ServerItemError { ErrorCode = error });
+                    return false;
+                }
+            }
+
+            if (!CanDeliverStaticItem(player, StaticId, Amount, itemManager, out bool inventoryFull))
+            {
+                if (inventoryFull)
+                {
+                    log.Trace($"Loot static item delivery failed for player {player.CharacterId}, ownerUnit={OwnerUnitId}, lootUnitId={Id}, item={StaticId}, amount={Amount}: inventory full.");
+                    player.Session.EnqueueMessageEncrypted(new ServerItemError
+                    {
+                        ErrorCode = GenericError.ItemInventoryFull
+                    });
+                }
+                else
+                {
+                    log.Warn($"Failed to validate static loot item {StaticId} for player {player.CharacterId}.");
+                }
+
+                return false;
+            }
+
+            SoulbindDeliveredStaticItems(player, () =>
+            {
+                player.Inventory.ItemCreate(InventoryLocation.Inventory, StaticId, Amount, ItemUpdateReason.Loot);
+            });
             return true;
         }
 
@@ -598,6 +626,14 @@ namespace NexusForever.Game.Loot
             IItemInfo itemInfo = itemManager?.GetItemInfo(staticId);
             if (itemInfo == null)
                 return false;
+
+            if ((itemInfo.Entry.BindFlags & ItemBindFlags.BindOnPickup) != 0
+                && player.Inventory.SupportsSoulboundItemCreation)
+            {
+                bool accepted = player.Inventory.CanCreateSoulboundItem(InventoryLocation.Inventory, itemInfo, amount, out GenericError error);
+                inventoryFull = !accepted && error == GenericError.ItemInventoryFull;
+                return accepted;
+            }
 
             ulong remainingCount = amount;
             if (player.SupplySatchelManager?.TryGetAutoStoreCapacity(itemInfo, out uint satchelCapacity) == true)

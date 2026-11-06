@@ -1,5 +1,16 @@
 # Assessment follow-through goal
 
+[Confirmed physical BOP loot](LOOT_BOUND_PICKUP.md) completes the supported
+Inventory binding/capacity boundary through public GiveLoot:bound initial
+ItemAdd,compatible bound-stack merge,prior unbound-stack preservation and
+original inventory mutation lease. Four baseline failures are fixed;6 new/
+all136 scoped cases,clean owning/test builds and both reviews pass. Full real
+Player SQLite save failure/retry/reload retains bound Items. Existing prompt,
+legacy custom inventory and other loot paths remain. Complete feedback failure/
+reentrant/partial delivery,restart/provider/socket/native/retail remain open.
+Hosted runtime paths are still absent; continue independent actionable work.
+
+
 [Achievement timestamp qualification](PROVIDER_PACKET_HOSTED_RESTART_HANDOFF.md)
 completes the retained packet prerequisite:12 configured Character/MySQL and166
 scoped SQLite cases pass. Actual committed/update/initial/legacy wire fields
