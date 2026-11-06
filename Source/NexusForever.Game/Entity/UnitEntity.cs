@@ -679,7 +679,7 @@ namespace NexusForever.Game.Entity
             if (spell4Id == 0u)
                 return null;
 
-            Spell4Entry spell4Entry = GetGameTableManager().Spell4.GetEntry(spell4Id);
+            Spell4Entry spell4Entry = GetGameTableManager().Spell4?.GetEntry(spell4Id);
             if (spell4Entry == null)
                 return null;
 
@@ -1908,7 +1908,7 @@ namespace NexusForever.Game.Entity
             {
                 foreach (KeyValuePair<uint, SpellPropertyState> state in prop.Value)
                 {
-                    Spell4Entry spell4Entry = GetGameTableManager().Spell4.GetEntry(state.Value.Spell4Id);
+                    Spell4Entry spell4Entry = GetGameTableManager().Spell4?.GetEntry(state.Value.Spell4Id);
                     if (spell4Entry == null || spell4Entry.Spell4StackGroupId != stackGroupId)
                         continue;
 
@@ -2116,7 +2116,7 @@ namespace NexusForever.Game.Entity
             if (!IsAlive)
                 return RefuseClientCast(parameters, spell4Id, CastResult.CasterCannotBeDead);
 
-            Spell4Entry spell4Entry = GetGameTableManager().Spell4.GetEntry(spell4Id);
+            Spell4Entry spell4Entry = GetGameTableManager().Spell4?.GetEntry(spell4Id);
             if (spell4Entry == null)
                 throw new ArgumentOutOfRangeException();
 
@@ -2674,7 +2674,7 @@ namespace NexusForever.Game.Entity
             if (!IsAlive)
                 return;
 
-            if (GetGameTableManager().Spell4.GetEntry(spell4Id) == null)
+            if (GetGameTableManager().Spell4?.GetEntry(spell4Id) == null)
                 return;
 
             SpellEffectDiagnostics.TraceDelayDeathTriggerCast(this, spell4Id, sourceGuid);
