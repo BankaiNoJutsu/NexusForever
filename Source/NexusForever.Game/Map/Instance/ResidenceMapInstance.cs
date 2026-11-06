@@ -615,7 +615,7 @@ namespace NexusForever.Game.Map.Instance
 
         private HousingResult PlugPlaceOrRotate(IPlayer player, IPlot plot, ClientHousingPlugUpdate housingPlugUpdate)
         {
-            HousingPlugItemEntry entry = gameTableManager.HousingPlugItem.GetEntry(housingPlugUpdate.HousingPlugItemId);
+            HousingPlugItemEntry entry = gameTableManager.HousingPlugItem?.GetEntry(housingPlugUpdate.HousingPlugItemId);
             if (entry == null)
                 return HousingResult.Plug_InvalidPlug;
 
@@ -833,7 +833,7 @@ namespace NexusForever.Game.Map.Instance
 
         private void DecorCreate(IResidence residence, IPlayer player, DecorInfo update)
         {
-            HousingDecorInfoEntry entry = gameTableManager.HousingDecorInfo.GetEntry(update.DecorInfoId);
+            HousingDecorInfoEntry entry = gameTableManager.HousingDecorInfo?.GetEntry(update.DecorInfoId);
             if (entry == null)
                 throw new InvalidPacketValueException();
 

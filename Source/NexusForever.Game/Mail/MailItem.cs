@@ -323,6 +323,12 @@ namespace NexusForever.Game.Mail
             lock (persistence.Gate)
             {
                 AssertNoCashReceipt();
+                // Validate the caller's slot before any attachment is marked deleted; list positions shift after a removal.
+                if (index >= mailAttachments.Count)
+                    throw new ArgumentOutOfRangeException(nameof(index), index, "Mail attachment index is outside the current attachment list.");
+                if (!ReferenceEquals(mailAttachments[(int)index], mailAttachment))
+                    throw new ArgumentException("Mail attachment index does not identify the supplied attachment.", nameof(mailAttachment));
+
                 mailAttachment.EnqueueDelete();
 
                 mailAttachments.RemoveAt((int)index);

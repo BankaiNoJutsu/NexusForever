@@ -117,6 +117,36 @@ public class MailItemTransactionTests
         Assert.Single(attachmentProxy.GetInvocations(nameof(IMailAttachment.Save)));
     }
 
+    [Fact]
+    public void AttachmentDelete_MismatchedIndex_RejectsWithoutMutatingAnyAttachment()
+    {
+        MailItem mailItem = new(MailModel(id: 4ul));
+        IMailAttachment first = RecordingDispatchProxy<IMailAttachment>.Create(out RecordingDispatchProxy<IMailAttachment> firstProxy);
+        IMailAttachment second = RecordingDispatchProxy<IMailAttachment>.Create(out RecordingDispatchProxy<IMailAttachment> secondProxy);
+        mailItem.AttachmentAdd(first);
+        mailItem.AttachmentAdd(second);
+
+        Assert.ThrowsAny<ArgumentException>(() => mailItem.AttachmentDelete(first, 1u));
+
+        Assert.Same(first, mailItem.GetAttachment(0u));
+        Assert.Same(second, mailItem.GetAttachment(1u));
+        Assert.Empty(firstProxy.GetInvocations(nameof(IMailAttachment.EnqueueDelete)));
+        Assert.Empty(secondProxy.GetInvocations(nameof(IMailAttachment.EnqueueDelete)));
+    }
+
+    [Fact]
+    public void AttachmentDelete_OutOfRangeIndex_RejectsBeforeMarkingTheAttachmentDeleted()
+    {
+        MailItem mailItem = new(MailModel(id: 5ul));
+        IMailAttachment attachment = RecordingDispatchProxy<IMailAttachment>.Create(out RecordingDispatchProxy<IMailAttachment> proxy);
+        mailItem.AttachmentAdd(attachment);
+
+        Assert.ThrowsAny<ArgumentException>(() => mailItem.AttachmentDelete(attachment, 7u));
+
+        Assert.Same(attachment, mailItem.GetAttachment(0u));
+        Assert.Empty(proxy.GetInvocations(nameof(IMailAttachment.EnqueueDelete)));
+    }
+
     private static CharacterMailModel MailModel(
         ulong id = 1ul,
         ulong recipientId = 100ul,

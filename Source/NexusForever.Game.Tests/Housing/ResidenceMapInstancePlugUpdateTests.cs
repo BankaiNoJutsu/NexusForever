@@ -131,6 +131,35 @@ public class ResidenceMapInstancePlugUpdateTests
         Assert.Empty(achievementProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PlugUpdate_UnknownPlugOrMissingPlugTable_ReportsInvalidPlugWithoutMutation(bool tableMissing)
+    {
+        ResidenceMapInstance map = CreateResidenceMapInstance(
+            CreateSharedConfiguration(),
+            out RecordingDispatchProxy<IGameTableManager> gameTableProxy,
+            out RecordingDispatchProxy<IEntityFactory> entityFactoryProxy);
+
+        HousingPlugItemEntry plugEntry = CreateDefaultPlugEntry();
+        if (!tableMissing)
+            gameTableProxy.SetProperty(nameof(IGameTableManager.HousingPlugItem), CreateGameTable(new HousingPlugItemEntry { Id = DefaultPlugId + 1u }));
+
+        IPlot plot = CreatePlot(plugEntry, out RecordingDispatchProxy<IPlot> plotProxy, out _);
+        InitialiseResidence(map, plot, out _);
+        IPlayer player = CreatePlayer(
+            out RecordingDispatchProxy<ICharacterAchievementManager> achievementProxy,
+            out RecordingDispatchProxy<IGameSession> sessionProxy);
+
+        map.PlugUpdate(player, CreatePlugUpdate());
+
+        ServerHousingResult result = Assert.Single(GetEncryptedMessages<ServerHousingResult>(sessionProxy));
+        Assert.Equal(HousingResult.Plug_InvalidPlug, result.Result);
+        Assert.Empty(plotProxy.GetInvocations(nameof(IPlot.SetPlug)));
+        Assert.Empty(entityFactoryProxy.GetInvocations(nameof(IEntityFactory.CreateEntity)));
+        Assert.Empty(achievementProxy.GetInvocations(nameof(ICharacterAchievementManager.CheckAchievements)));
+    }
+
     private static HousingPlugItemEntry CreateDefaultPlugEntry()
     {
         return new HousingPlugItemEntry

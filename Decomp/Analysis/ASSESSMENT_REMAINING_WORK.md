@@ -1,5 +1,11 @@
 # Assessment follow-through goal
 
+[Source robustness fixes](SOURCE_ROBUSTNESS_FIXES_20261107.md) (2026-11-07): three independent gaps from the matrix triage were reproduced
+and fixed: mail attachment delete validation, missing TradeskillTier table, missing housing plug/decor tables. Source/SQLite only:
+3 failing-first tests, plus 343 Mail, 1,108 Tradeskill/Prerequisite/Crafting and 388 Housing cases pass (separate scopes).
+This supersedes the earlier statement that no actionable independent source slice remained; the UnitEntity Spell4 guards
+and a RavelSignal pin are still open micro-slices.
+
 [Stopping-condition statement](STOPPING_CONDITION_20261107.md) (2026-11-07): after the full ledger and raw-table passes no
 actionable independent source slice remains; each remaining item is gated on a retail/native witness, a producer witness,
 a schema decision, or the MySQL adapter harness, with the exact missing input listed. This is the prompt's stopping

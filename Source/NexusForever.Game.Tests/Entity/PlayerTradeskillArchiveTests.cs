@@ -73,6 +73,28 @@ public class PlayerTradeskillArchiveTests
     }
 
     [Fact]
+    public void AddTradeskillXp_WithoutTradeskillTierTable_StillGrantsXpAndDoesNotThrow()
+    {
+        var gameTableManager = new GameTableManager(Options.Create(new GameTableConfig { GameTablePath = string.Empty }));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.TradeskillSchematic2), CreateGameTable<TradeskillSchematic2Entry>());
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out _);
+        IQuestManager questManager = RecordingDispatchProxy<IQuestManager>.Create(out _);
+        var player = CreatePlayer(session, questManager, gameTableManager: gameTableManager);
+        AddTradeskillState(player, new CharacterTradeskillModel
+        {
+            Id = 42ul,
+            TradeskillId = (uint)TradeskillType.Armorer,
+            TradeskillXp = 10u,
+            IsActive = 1u
+        });
+
+        uint gained = player.AddTradeskillXp(TradeskillType.Armorer, 25u);
+
+        Assert.Equal(25u, gained);
+        Assert.Equal(0u, player.AddTradeskillXpForTier(1u, 5u));
+    }
+
+    [Fact]
     public void LearnTradeskill_ReactivatingArchivedSkillDoesNotReawardTierAchievements()
     {
         GameTableManager gameTableManager = CreateGameTableManager(

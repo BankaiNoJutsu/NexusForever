@@ -74,7 +74,7 @@ namespace NexusForever.Game.Prerequisite
                 return 0u;
 
             uint xp = player.GetTradeskillXp(tradeskillId);
-            return gameTableManager.TradeskillTier.Entries
+            return (gameTableManager.TradeskillTier?.Entries ?? [])
                 .Where(entry => entry.TradeSkillId == (uint)tradeskillId && entry.RequiredXp <= xp)
                 .Select(entry => entry.Tier)
                 .DefaultIfEmpty(0u)

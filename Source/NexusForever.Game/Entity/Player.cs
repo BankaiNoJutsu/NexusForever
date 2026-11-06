@@ -2535,7 +2535,7 @@ namespace NexusForever.Game.Entity
 
         private void CheckTradeskillTierAchievements(TradeskillType tradeskillId, uint previousXp, uint currentXp)
         {
-            foreach (TradeskillTierEntry tierEntry in gameTableManager.TradeskillTier.Entries
+            foreach (TradeskillTierEntry tierEntry in (gameTableManager.TradeskillTier?.Entries ?? [])
                 .Where(entry => entry.TradeSkillId == (uint)tradeskillId
                     && entry.RequiredXp <= currentXp
                     && (entry.RequiredXp == 0u ? previousXp == 0u : entry.RequiredXp > previousXp)))
@@ -2547,7 +2547,7 @@ namespace NexusForever.Game.Entity
             if (amount == 0u)
                 return 0u;
 
-            TradeskillTierEntry tierEntry = gameTableManager.TradeskillTier.GetEntry(tradeskillTierId);
+            TradeskillTierEntry tierEntry = gameTableManager.TradeskillTier?.GetEntry(tradeskillTierId);
             if (tierEntry == null || tierEntry.TradeSkillId == 0u)
                 return 0u;
 
