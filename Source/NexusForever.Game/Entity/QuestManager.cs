@@ -12,6 +12,7 @@ using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Crafting;
 using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.Loot;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Static.Reputation;
 using NexusForever.Game.Static.Tutorial;
@@ -950,7 +951,7 @@ namespace NexusForever.Game.Entity
 
             if (retainPublication)
             {
-                SaveOrdinaryQuestMutation(owner, session, () =>
+                bool Complete()
                 {
                     if (acceptWithCompletion)
                     {
@@ -965,7 +966,16 @@ namespace NexusForever.Game.Entity
 
                     CompleteOrdinaryQuest(quest, selectedReward, communicator);
                     return true;
-                }, communicator ? null : closeDialog);
+                }
+                bool accountReward = completionInfo.Rewards.Values.Any(row => row.Flags == 0
+                    && (QuestRewardType)row.Quest2RewardTypeId == QuestRewardType.AccountCurrency)
+                    || selectedReward != null && (QuestRewardType)selectedReward.Quest2RewardTypeId == QuestRewardType.AccountCurrency;
+                if (accountReward)
+                {
+                    if (!owner.TrySaveQuestRewards(session, Complete, communicator ? null : closeDialog))
+                        throw new QuestException("Quest account rewards could not retain their original settlement owner.");
+                }
+                else SaveOrdinaryQuestMutation(owner, session, Complete, communicator ? null : closeDialog);
                 return true;
             }
 
@@ -1279,7 +1289,8 @@ namespace NexusForever.Game.Entity
                     if (currencyEntry != null)
                     {
                         var currencyType = (AccountCurrencyType)currencyEntry.Id;
-                        player.Account.CurrencyManager.CurrencyAddAmount(currencyType, entry.ObjectAmount);
+                        if (player is not Player accountOwner || !accountOwner.RetainCraftingAccountAward(LootItemType.AccountCurrency, entry.ObjectId, entry.ObjectAmount))
+                            player.Account.CurrencyManager.CurrencyAddAmount(currencyType, entry.ObjectAmount);
                         AccountCurrencyAchievementUpdater.Update(player, currencyType, entry.ObjectAmount);
                     }
                     else

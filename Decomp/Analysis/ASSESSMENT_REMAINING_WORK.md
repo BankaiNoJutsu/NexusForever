@@ -1,5 +1,17 @@
 # Assessment follow-through goal
 
+[Ordinary quest account currency](QUEST_ACCOUNT_CURRENCY_SETTLEMENT.md) fixes
+the reproduced Auth-before-Character payout gap for save-bound public turn-ins.
+The existing paired award engine/outbox is reused without DDL. Two baseline
+failures are fixed;five new/152 related and eight recovered-account-row cases
+pass, including held Character refusal, Auth refusal/worker recovery, original
+actor publication, spent replay and unready save-owner rejection. Full quest
+eligibility/remaining rewards, mixed/selected/auto-complete and Cosmic variants,
+post-flush/physical/provider/restart/socket/native and legacy/direct entry points
+remain open. Contract public/reset policy and Primal debit are still gated.
+F-022/full Goal unfinished; continue independent integrated gameplay and the
+recorded remaining gates, with native/CUA stopped.
+
 [Original duel participants](DUEL_PARTICIPANT_OWNERSHIP.md) bind parsed requests,
 combat permission, defeat/forfeit/cancellation and fanout to the original Player,
 character/realm, account/session/queue/map admission. Sixteen original baseline

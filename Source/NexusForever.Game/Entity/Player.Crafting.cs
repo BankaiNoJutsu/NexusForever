@@ -30,6 +30,17 @@ namespace NexusForever.Game.Entity
         }
 
         public bool TrySaveCrafting(GameSession session, Func<bool> craft)
+            => TrySaveAccountAwardMutation(session, craft, null);
+
+        // The existing paid-source/account-award protocol carries a generic
+        // bounded award bundle. Its historical table/receipt names stay stable.
+        internal bool TrySaveQuestRewards(GameSession session, Func<bool> reward, Action afterCommit)
+        {
+            if (ChallengeManager is not Challenges.ChallengeManager { NormalSaveIdentity: not null }) return false;
+            return TrySaveAccountAwardMutation(session, reward, afterCommit);
+        }
+
+        private bool TrySaveAccountAwardMutation(GameSession session, Func<bool> craft, Action afterCommit)
         {
             var inventory = Inventory;
             var satchel = SupplySatchelManager;
@@ -97,7 +108,7 @@ namespace NexusForever.Game.Entity
                     finally { craftingAccountAwards = null; }
                 }
                 return crafted;
-            }, afterCommit: null, ownsMutation: Owns, beforePublication: publish =>
+            }, afterCommit: afterCommit, ownsMutation: Owns, beforePublication: publish =>
             {
                 if (awards == null) { publish(); return; }
                 if (!Owns()) return;
