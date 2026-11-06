@@ -15,6 +15,7 @@ namespace NexusForever.Game.Entity
         private List<CraftingAccountAward> craftingAccountAwards;
         private CraftingAccountIntent craftingAccountIntent;
         private bool craftingAccountDeliveryPending;
+        internal bool IsRetainingPairedAccountAwards => craftingAccountAwards != null;
 
         internal bool RetainCraftingAccountAward(LootItemType type, uint id, uint amount)
         {

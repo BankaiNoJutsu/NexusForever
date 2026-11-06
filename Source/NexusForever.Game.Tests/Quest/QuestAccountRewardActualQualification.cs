@@ -35,16 +35,17 @@ public static class QuestAccountRewardActualQualification
         Assert.Equal(new uint[] { 15, 16, 17 }, rewardRows.Skip(1).Select(row => row.ObjectId));
         var results = new List<object>();
         foreach (var rows in rewardRows.GroupBy(row => row.Quest2Id))
+            foreach (string variant in new[] { "ordinary", "direct" })
             foreach (string outcome in new[] { "commit", "rollback", "auth-refusal", "replacement" })
             {
-                await QuestAccountRewardSettlementTests.Run(outcome, tables, rows.ToArray());
-                results.Add(new { Quest = rows.Key, Outcome = outcome, Result = "Passed" });
+                await QuestAccountRewardSettlementTests.Run(outcome, tables, rows.ToArray(), variant);
+                results.Add(new { Quest = rows.Key, Variant = variant, Outcome = outcome, Result = "Passed" });
             }
         await File.WriteAllTextAsync(Path.Combine(outputDirectory, "result.json"), JsonSerializer.Serialize(new
         {
             Pins = pins, Rows = rewardRows.Select(row => new { row.Id, row.Quest2Id, row.Quest2RewardTypeId, row.ObjectId, row.ObjectAmount, row.Flags }),
             Results = results,
-            Boundary = "Actual account-currency reward rows and currency definitions through parsed public turn-in and real Auth/Character settlement. Quest eligibility, objectives, remaining rewards and world/socket/native flows are fixture adapters."
+            Boundary = "Actual account-currency reward rows and currency definitions through parsed public turn-in or concrete direct completion and real Auth/Character settlement. Quest eligibility, objectives, remaining rewards and world/socket/native flows are fixture adapters."
         }, new JsonSerializerOptions { WriteIndented = true }));
     }
 }

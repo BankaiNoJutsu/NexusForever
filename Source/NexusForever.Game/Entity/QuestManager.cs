@@ -880,7 +880,12 @@ namespace NexusForever.Game.Entity
 
             var owner = player as Player;
             var session = player.Session as GameSession;
-            bool retainPublication = publishOnSave && !questInfo.IsContract() && owner != null && session != null;
+            bool accountCompletion = HasAccountCurrencyRewards(questInfo);
+            if (accountCompletion && owner != null && session != null && IsOrdinaryCompletionMutationInProgress
+                && !owner.IsRetainingPairedAccountAwards)
+                throw new QuestException("Nested quest account rewards require their enclosing paired settlement owner.");
+            bool retainPublication = (publishOnSave || accountCompletion && !IsOrdinaryCompletionMutationInProgress)
+                && !questInfo.IsContract() && owner != null && session != null;
             if (retainPublication && (questRewardReload || questRewardInvalidated || QuestCompletionBusy(owner)))
                 throw new QuestException("Quest completion cannot overlap pending or quarantined character work.");
 
@@ -996,6 +1001,15 @@ namespace NexusForever.Game.Entity
         }
 
         private List<Action> ordinaryCompletionPublications;
+
+        private static bool HasAccountCurrencyRewards(IQuestInfo info) => info?.Rewards != null && !info.IsContract()
+            && info.Rewards.Values.Any(row => (QuestRewardType)row.Quest2RewardTypeId == QuestRewardType.AccountCurrency);
+
+        internal bool HasAchievedAccountCurrencyRewards(ushort id)
+        {
+            var quest = GetQuest(id, GetQuestFlags.Active);
+            return quest?.State == QuestState.Achieved && HasAccountCurrencyRewards(quest.Info);
+        }
         internal bool IsOrdinaryCompletionMutationInProgress => ordinaryCompletionPublications != null;
 
         internal void RetainOrdinaryCompletionPublication(Action publish) => ordinaryCompletionPublications.Add(publish);

@@ -1,0 +1,547 @@
+{
+  "Date": "2026-11-06",
+  "BaseHEAD": "1b71c5dc09ead9d5f11cee2385cc227ef1264c87",
+  "Outcome": "Concrete direct ordinary quest account completion and starter-tutorial recovery use paired settlement; full quests/F-022/restoration unfinished",
+  "PriorRecord": "quest-account-currency-settlement-20261106.json",
+  "Source": [
+    {
+      "Path": "Source/NexusForever.Game/Entity/Player.cs",
+      "Bytes": 177456,
+      "SHA256": "d8fd5e1a4b1de2b488595ea4a6d599d92808c73a3eb14c394e0e91a61535047d"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Entity/Player.Crafting.cs",
+      "Bytes": 10779,
+      "SHA256": "10718f692b9750a01f651106b6443060180a0a73678a90d08ce6b21a4ded3a29"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Entity/QuestManager.cs",
+      "Bytes": 71768,
+      "SHA256": "02ef7c80bfda32aee4f361872b09295cac7c2283f7a8f048a74d8898ef10d2a0"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Quest/QuestAccountRewardSettlementTests.cs",
+      "Bytes": 24573,
+      "SHA256": "374710c27963ab2d1cfd43f16256da03f10000d6b8fe15ca1faf209adc649f41"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Quest/QuestAccountRewardActualQualification.cs",
+      "Bytes": 3426,
+      "SHA256": "9e611331ce9f8ae2f2e299b4ad39475e6da3047490b7769264f6ed1d8f04c900"
+    }
+  ],
+  "UnchangedDependencies": [
+    {
+      "Path": "Source/NexusForever.Game/Crafting/CraftingAccountIntent.cs",
+      "Bytes": 10847,
+      "SHA256": "4bf80f0ccd1ec7df1d9cd86f498ecd7a41ecedf9c22ea84423ae91354f5cb2be"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Crafting/CraftingAccountDelivery.cs",
+      "Bytes": 29518,
+      "SHA256": "a4cdbdd40ca25ba5b918e5d520344b12b9b099e4479e6e7873bc1f15fdeede94"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Crafting/CraftingAccountOutbox.cs",
+      "Bytes": 5738,
+      "SHA256": "5d55eef31e1fc34cd25880345b1f7c8d27aa899e13b2de533947912bf6021ac5"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Entity/Player.NormalRewardSave.cs",
+      "Bytes": 18503,
+      "SHA256": "1490eaed89d298de68b51107adb751b01587ce53dd93ab61d8a9d8fdf8382e36"
+    },
+    {
+      "Path": "Source/NexusForever.WorldServer/Network/Message/Handler/Quest/ClientQuestCompleteHandler.cs",
+      "Bytes": 2415,
+      "SHA256": "097144de5ff8e9a208fbf8b0edf3398115953b12926f5a0d78ae1ecb93cdb700"
+    }
+  ],
+  "Assemblies": [
+    {
+      "Project": "NexusForever.Game",
+      "Tested": {
+        "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.dll",
+        "Bytes": 4942848,
+        "SHA256": "35b5d0a9c9d233fa6ee5b361392e020e92ab3a68bd3285a82604d2f50c9e955b"
+      },
+      "Owning": {
+        "Path": "Source/NexusForever.Game/bin/Debug/net10.0/NexusForever.Game.dll",
+        "Bytes": 4942848,
+        "SHA256": "35b5d0a9c9d233fa6ee5b361392e020e92ab3a68bd3285a82604d2f50c9e955b"
+      }
+    },
+    {
+      "Project": "NexusForever.WorldServer",
+      "Tested": {
+        "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+        "Bytes": 882176,
+        "SHA256": "54e6360c399c84b045bedd52657e96e50207eae153c0e1093b4472a723b1cf47"
+      },
+      "Owning": {
+        "Path": "Source/NexusForever.WorldServer/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+        "Bytes": 882176,
+        "SHA256": "54e6360c399c84b045bedd52657e96e50207eae153c0e1093b4472a723b1cf47"
+      }
+    },
+    {
+      "Project": "NexusForever.GameTable",
+      "Tested": {
+        "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.GameTable.dll",
+        "Bytes": 273920,
+        "SHA256": "ab27033167470e040c364136adda89dd58fcd69b7aaeaab43ebe292d94f0b08c"
+      },
+      "Owning": {
+        "Path": "Source/NexusForever.GameTable/bin/Debug/net10.0/NexusForever.GameTable.dll",
+        "Bytes": 273920,
+        "SHA256": "ab27033167470e040c364136adda89dd58fcd69b7aaeaab43ebe292d94f0b08c"
+      }
+    },
+    {
+      "Project": "NexusForever.Game.Tests",
+      "Tested": {
+        "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+        "Bytes": 10128896,
+        "SHA256": "94eaa50cc9245a64c82bf76ebd6d027f1a725baf9c251f6ece5046e416fce921"
+      }
+    }
+  ],
+  "Runs": [
+    {
+      "Name": "Initial variant baseline; includes fixture adapter failures",
+      "Artifact": {
+        "Path": "artifacts/quest-account-variants/baseline/baseline.trx",
+        "Bytes": 79376,
+        "SHA256": "bfb1e6e5ed92ddf44db7a3a17c96b55729253fcab853d3d7961b576947f43829"
+      },
+      "Counters": {
+        "total": "16",
+        "executed": "16",
+        "passed": "8",
+        "failed": "8",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "AccountSettlementCases": 16,
+      "Failures": [
+        {
+          "Test": "NexusForever.Game.Tests.Quest.QuestAccountRewardSettlementTests.CompletionVariantsShareTheirCharacterAndAccountBoundary(variant: \"auto\", outcome: \"replacement\")",
+          "Message": "System.ArgumentNullException : Value cannot be null. (Parameter 'source')"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Quest.QuestAccountRewardSettlementTests.CompletionVariantsShareTheirCharacterAndAccountBoundary(variant: \"direct\", outcome: \"rollback\")",
+          "Message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [AccountCurrencyModel { Account = null, Amount = 10, CurrencyId = 14, Id = 12 }]"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Quest.QuestAccountRewardSettlementTests.CompletionVariantsShareTheirCharacterAndAccountBoundary(variant: \"tutorial\", outcome: \"rollback\")",
+          "Message": "System.NullReferenceException : Object reference not set to an instance of an object."
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Quest.QuestAccountRewardSettlementTests.CompletionVariantsShareTheirCharacterAndAccountBoundary(variant: \"auto\", outcome: \"commit\")",
+          "Message": "System.ArgumentNullException : Value cannot be null. (Parameter 'source')"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Quest.QuestAccountRewardSettlementTests.CompletionVariantsShareTheirCharacterAndAccountBoundary(variant: \"tutorial\", outcome: \"commit\")",
+          "Message": "System.NullReferenceException : Object reference not set to an instance of an object."
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Quest.QuestAccountRewardSettlementTests.CompletionVariantsShareTheirCharacterAndAccountBoundary(variant: \"auto\", outcome: \"rollback\")",
+          "Message": "System.ArgumentNullException : Value cannot be null. (Parameter 'source')"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Quest.QuestAccountRewardSettlementTests.CompletionVariantsShareTheirCharacterAndAccountBoundary(variant: \"direct\", outcome: \"commit\")",
+          "Message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [AccountCurrencyModel { Account = null, Amount = 10, CurrencyId = 14, Id = 12 }]"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Quest.QuestAccountRewardSettlementTests.CompletionVariantsShareTheirCharacterAndAccountBoundary(variant: \"auto\", outcome: \"auth-refusal\")",
+          "Message": "System.ArgumentNullException : Value cannot be null. (Parameter 'source')"
+        }
+      ]
+    },
+    {
+      "Name": "Ready-adapter parent baseline; four direct/tutorial early-credit failures",
+      "Artifact": {
+        "Path": "artifacts/quest-account-variants/baseline-ready/baseline-ready.trx",
+        "Bytes": 67949,
+        "SHA256": "3692bb136ec63c3b783c59416187fce4453833aaafb0af4a9d7863ce5f175fd4"
+      },
+      "Counters": {
+        "total": "16",
+        "executed": "16",
+        "passed": "12",
+        "failed": "4",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "AccountSettlementCases": 16,
+      "Failures": [
+        {
+          "Test": "NexusForever.Game.Tests.Quest.QuestAccountRewardSettlementTests.CompletionVariantsShareTheirCharacterAndAccountBoundary(variant: \"tutorial\", outcome: \"commit\")",
+          "Message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [AccountCurrencyModel { Account = null, Amount = 10, CurrencyId = 14, Id = 12 }]"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Quest.QuestAccountRewardSettlementTests.CompletionVariantsShareTheirCharacterAndAccountBoundary(variant: \"direct\", outcome: \"commit\")",
+          "Message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [AccountCurrencyModel { Account = null, Amount = 10, CurrencyId = 14, Id = 12 }]"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Quest.QuestAccountRewardSettlementTests.CompletionVariantsShareTheirCharacterAndAccountBoundary(variant: \"direct\", outcome: \"rollback\")",
+          "Message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [AccountCurrencyModel { Account = null, Amount = 10, CurrencyId = 14, Id = 12 }]"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Quest.QuestAccountRewardSettlementTests.CompletionVariantsShareTheirCharacterAndAccountBoundary(variant: \"tutorial\", outcome: \"rollback\")",
+          "Message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [AccountCurrencyModel { Account = null, Amount = 10, CurrencyId = 14, Id = 12 }]"
+        }
+      ]
+    },
+    {
+      "Name": "Initial direct/tutorial fix",
+      "Artifact": {
+        "Path": "artifacts/quest-account-variants/variants/variants.trx",
+        "Bytes": 75569,
+        "SHA256": "51ab67cbb2e4217d1f6b3874153c9f3124267cdf0e33651187e655a523fe1f3a"
+      },
+      "Counters": {
+        "total": "21",
+        "executed": "21",
+        "passed": "21",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "AccountSettlementCases": 21,
+      "Failures": []
+    },
+    {
+      "Name": "Fresh-admission and transaction-fault follow-through",
+      "Artifact": {
+        "Path": "artifacts/quest-account-variants/recovery/recovery.trx",
+        "Bytes": 89880,
+        "SHA256": "caa2424d91d4bb7125d36917dd2bbb2a345e6054fa7af0d2a0584133b23d6a19"
+      },
+      "Counters": {
+        "total": "25",
+        "executed": "25",
+        "passed": "25",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "AccountSettlementCases": 25,
+      "Failures": []
+    },
+    {
+      "Name": "Final related scope including all 27 focused cases",
+      "Artifact": {
+        "Path": "artifacts/quest-account-variants/related/related.trx",
+        "Bytes": 1385839,
+        "SHA256": "db8615ae2a4cdb2f1bffbe3f731740f14417e51ca7bf6872221862dc479adca0"
+      },
+      "Counters": {
+        "total": "496",
+        "executed": "496",
+        "passed": "496",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "AccountSettlementCases": 27,
+      "Failures": []
+    }
+  ],
+  "RelatedFilter": "FullyQualifiedName~QuestAccountRewardSettlementTests|FullyQualifiedName~CraftingSettlementTests|FullyQualifiedName~CraftingAccountOutboxTests|FullyQualifiedName~Q5597RewardPersistenceTests|FullyQualifiedName~QuestRewardCaptureTests|FullyQualifiedName~QuestTests|FullyQualifiedName~StarterTutorial|FullyQualifiedName~TutorialQuestChainRoutingTests|FullyQualifiedName~TutorialCommunicatorCheckpointTests",
+  "Commands": [
+    "dotnet test Source/NexusForever.Game.Tests/NexusForever.Game.Tests.csproj --no-restore --filter \"FullyQualifiedName~QuestAccountRewardSettlementTests|FullyQualifiedName~CraftingSettlementTests|FullyQualifiedName~CraftingAccountOutboxTests|FullyQualifiedName~Q5597RewardPersistenceTests|FullyQualifiedName~QuestRewardCaptureTests|FullyQualifiedName~QuestTests|FullyQualifiedName~StarterTutorial|FullyQualifiedName~TutorialQuestChainRoutingTests|FullyQualifiedName~TutorialCommunicatorCheckpointTests\" --logger \"trx;LogFileName=related.trx\" --results-directory artifacts/quest-account-variants/related -v minimal --nologo",
+    "dotnet run --project artifacts/quest-account-awards/runner/runner.csproj -- Source/NexusForever.Game.Tests/bin/Debug/net10.0 <prepared-asset-root> <fresh-output-directory>"
+  ],
+  "Actual": {
+    "Pins": {
+      "Quest2Reward.tbl": "52B60741C14E79B6516F39BC0EFD6BEF434E16E885E24E88CD14C959A4BF13E7",
+      "AccountCurrencyType.tbl": "51B1AA86D32EDD02CCFF95CE81DECB93396239516CCEE738E0FAA5DE26624417"
+    },
+    "Rows": [
+      {
+        "Id": 9494,
+        "Quest2Id": 10525,
+        "Quest2RewardTypeId": 7,
+        "ObjectId": 6,
+        "ObjectAmount": 1,
+        "Flags": 0
+      },
+      {
+        "Id": 9849,
+        "Quest2Id": 10600,
+        "Quest2RewardTypeId": 7,
+        "ObjectId": 15,
+        "ObjectAmount": 100,
+        "Flags": 0
+      },
+      {
+        "Id": 9850,
+        "Quest2Id": 10600,
+        "Quest2RewardTypeId": 7,
+        "ObjectId": 16,
+        "ObjectAmount": 100,
+        "Flags": 0
+      },
+      {
+        "Id": 9851,
+        "Quest2Id": 10600,
+        "Quest2RewardTypeId": 7,
+        "ObjectId": 17,
+        "ObjectAmount": 100,
+        "Flags": 0
+      }
+    ],
+    "Results": [
+      {
+        "Quest": 10525,
+        "Variant": "ordinary",
+        "Outcome": "commit",
+        "Result": "Passed"
+      },
+      {
+        "Quest": 10525,
+        "Variant": "ordinary",
+        "Outcome": "rollback",
+        "Result": "Passed"
+      },
+      {
+        "Quest": 10525,
+        "Variant": "ordinary",
+        "Outcome": "auth-refusal",
+        "Result": "Passed"
+      },
+      {
+        "Quest": 10525,
+        "Variant": "ordinary",
+        "Outcome": "replacement",
+        "Result": "Passed"
+      },
+      {
+        "Quest": 10525,
+        "Variant": "direct",
+        "Outcome": "commit",
+        "Result": "Passed"
+      },
+      {
+        "Quest": 10525,
+        "Variant": "direct",
+        "Outcome": "rollback",
+        "Result": "Passed"
+      },
+      {
+        "Quest": 10525,
+        "Variant": "direct",
+        "Outcome": "auth-refusal",
+        "Result": "Passed"
+      },
+      {
+        "Quest": 10525,
+        "Variant": "direct",
+        "Outcome": "replacement",
+        "Result": "Passed"
+      },
+      {
+        "Quest": 10600,
+        "Variant": "ordinary",
+        "Outcome": "commit",
+        "Result": "Passed"
+      },
+      {
+        "Quest": 10600,
+        "Variant": "ordinary",
+        "Outcome": "rollback",
+        "Result": "Passed"
+      },
+      {
+        "Quest": 10600,
+        "Variant": "ordinary",
+        "Outcome": "auth-refusal",
+        "Result": "Passed"
+      },
+      {
+        "Quest": 10600,
+        "Variant": "ordinary",
+        "Outcome": "replacement",
+        "Result": "Passed"
+      },
+      {
+        "Quest": 10600,
+        "Variant": "direct",
+        "Outcome": "commit",
+        "Result": "Passed"
+      },
+      {
+        "Quest": 10600,
+        "Variant": "direct",
+        "Outcome": "rollback",
+        "Result": "Passed"
+      },
+      {
+        "Quest": 10600,
+        "Variant": "direct",
+        "Outcome": "auth-refusal",
+        "Result": "Passed"
+      },
+      {
+        "Quest": 10600,
+        "Variant": "direct",
+        "Outcome": "replacement",
+        "Result": "Passed"
+      }
+    ],
+    "Boundary": "Actual account-currency reward rows and currency definitions through parsed public turn-in or concrete direct completion and real Auth/Character settlement. Quest eligibility, objectives, remaining rewards and world/socket/native flows are fixture adapters."
+  },
+  "ActualResultArtifact": {
+    "Path": "artifacts/quest-account-variants/actual-final/result.json",
+    "Bytes": 3158,
+    "SHA256": "e6760fce9cb3960ba071f6eceae4b4b45d03603c1e6ac05b0e2e414668905692"
+  },
+  "OwningBuilds": [
+    {
+      "Project": "NexusForever.Game",
+      "Result": "Passed; zero warnings/errors",
+      "Artifact": {
+        "Path": "artifacts/quest-account-variants/build-NexusForever.Game.log",
+        "Bytes": 2432,
+        "SHA256": "c2a0b0d743a98becca1ecf0569f85611cfea40f3d0b6ebc5e1bf10321f57503b"
+      }
+    },
+    {
+      "Project": "NexusForever.WorldServer",
+      "Result": "Passed; zero warnings/errors",
+      "Artifact": {
+        "Path": "artifacts/quest-account-variants/build-NexusForever.WorldServer.log",
+        "Bytes": 3407,
+        "SHA256": "71e3645d81281b10764d50d993c0aa4eece42c2a2ff59eafad7732ae90a58bf1"
+      }
+    }
+  ],
+  "OtherArtifacts": [
+    {
+      "Path": "artifacts/quest-account-variants/related.log",
+      "Bytes": 7398,
+      "SHA256": "dc141969d179ac306ac6e2f9f71dc0d776a589fc3cd9e08510f1432eefb50172"
+    },
+    {
+      "Path": "artifacts/quest-account-variants/actual-final.log",
+      "Bytes": 86,
+      "SHA256": "8652c0109ffb99f5ec6d5d6f2303e13f747ff25ccc32334e5a5bb37781f383e7"
+    },
+    {
+      "Path": "artifacts/quest-account-awards/runner/Program.cs",
+      "Bytes": 846,
+      "SHA256": "611ebf7920330fa0182aef036cb734a779c99c52ddabb431ec7bb13835a99e9a"
+    },
+    {
+      "Path": "artifacts/quest-account-awards/runner/runner.csproj",
+      "Bytes": 271,
+      "SHA256": "ea8cf2c4a3252591c05db3745fdd303746e56138b1870a1e13e9e0add6391ba8"
+    }
+  ],
+  "Review": [
+    {
+      "Axis": "Behavior/specification",
+      "Reviewer": "Primary agent; no delegation",
+      "FinalFindings": 0,
+      "Scope": "Concrete direct save-bound routing, paired nesting/unpaired rejection, known tutorial caller, selected/mixed/auto boundaries, fresh epoch admission cancellation/retry, real SQL rollback and post-commit acknowledgement loss, original recipient publication and spent replay; Contract path unchanged."
+    },
+    {
+      "Axis": "Repository/standards",
+      "Reviewer": "Primary agent; no delegation",
+      "FinalFindings": 0,
+      "Scope": "Small owning changes reuse unchanged receipt/outbox/recovery without DDL or duplicate framework; no authoring/runtime access or entitlements changed; final owning/test DLL parity; no client bodies/config/secrets in tracked evidence."
+    }
+  ],
+  "Upstream": [
+    {
+      "Number": 608,
+      "State": "open",
+      "Merged": false,
+      "Head": "7db12d9a7c694bc5e66d9e0f4cdbc1b82155e69b",
+      "Base": "3588ca5f578387928e6593e3808bf15f6192b094",
+      "Artifact": {
+        "Path": "artifacts/quest-account-variants/pr-608.json",
+        "Bytes": 4344,
+        "SHA256": "e41fbbae49a4e6b2f40ef8455990d0833da04f15ff498e90175e36073ee98f3a"
+      }
+    },
+    {
+      "Number": 609,
+      "State": "closed",
+      "Merged": false,
+      "Head": "f9b6f7356798a41beea0768ff1f6b5a758ffeca3",
+      "Base": "d8e43d2c3cc5a05f03e56dfc388288a4126c7ed9",
+      "Artifact": {
+        "Path": "artifacts/quest-account-variants/pr-609.json",
+        "Bytes": 10712,
+        "SHA256": "7644778d0c20ade69d3a8b6e96f7ac756f731d5c0b90ed3ad88a39013303f47c"
+      }
+    }
+  ],
+  "QualificationFailures": [
+    "First baseline 8 failures includes missing tutorial/auto fixture adapters; excluded from payout-defect count",
+    "Ready-adapter baseline 4 failures are direct/tutorial Auth-before-held-Character payout; 12 variants already passed",
+    "Final related run includes 27 focused cases, not an additional independent focused run; existing ASPIRE010 test graph warning"
+  ],
+  "Limits": [
+    "SQLite disposable source qualification; no configured-provider/copied-upgrade proof for these callers",
+    "Fresh worker and fresh Player/session/account-epoch admission are in-process; no new physical process loss/restart",
+    "Actual account-reward components only; full quest eligibility/objectives/receiver/other rewards are fixture adapters",
+    "Tutorial reward metadata, mixed item definition and selected/auto variants are synthetic controls, not actual complete quest catalogs",
+    "Cosmic/Loyalty catalogs, arbitrary callbacks/non-concrete adapters and unknown enclosing script integrations remain open; unpaired nesting is rejected",
+    "Prior provider/hosted protocol evidence retains its frozen boundaries; no new socket/native/retail proof",
+    "Contract public/reset and Primal allocation/debit stay gated; no entitlement changes",
+    "No full solution build or full suite; native client and Computer Use remain stopped"
+  ]
+}

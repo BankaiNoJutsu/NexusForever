@@ -3079,16 +3079,26 @@ namespace NexusForever.Game.Entity
                     }
 
                     starterTutorialCompletionInFlight = true;
-                    quests.SaveOrdinaryQuestMutation(this, session, () =>
+                    bool Recover()
                     {
                         bool changed = RecoverQuests(strictCompletion: true);
                         if (updatedObjectives || changed) SyncStarterTutorialEntityVisibility();
                         return changed;
-                    }, () =>
+                    }
+                    void FinishRecovery()
                     {
                         starterTutorialCompletionInFlight = false;
                         if (RecoverCombatTransition()) SyncStarterTutorialEntityVisibility();
-                    });
+                    }
+                    if (ReceiverlessQuestIds.Any(quests.HasAchievedAccountCurrencyRewards))
+                    {
+                        if (!TrySaveQuestRewards(session, Recover, FinishRecovery))
+                        {
+                            starterTutorialCompletionInFlight = false;
+                            QueueStarterTutorialRecovery(quests, session, recovery);
+                        }
+                    }
+                    else quests.SaveOrdinaryQuestMutation(this, session, Recover, FinishRecovery);
                 }
                 else
                 {

@@ -1,14 +1,16 @@
 # Assessment follow-through goal
 
-[Ordinary quest account currency](QUEST_ACCOUNT_CURRENCY_SETTLEMENT.md) fixes
-the reproduced Auth-before-Character payout gap for save-bound public turn-ins.
-The existing paired award engine/outbox is reused without DDL. Two baseline
-failures are fixed;five new/152 related and eight recovered-account-row cases
-pass, including held Character refusal, Auth refusal/worker recovery, original
-actor publication, spent replay and unready save-owner rejection. Full quest
-eligibility/remaining rewards, mixed/selected/auto-complete and Cosmic variants,
-post-flush/physical/provider/restart/socket/native and legacy/direct entry points
-remain open. Contract public/reset policy and Primal debit are still gated.
+[Ordinary quest account currency](QUEST_ACCOUNT_CURRENCY_SETTLEMENT.md) now
+extends paired settlement to concrete direct completion and starter-tutorial
+recovery. Four further baseline payout failures are fixed;22 new/27 focused,
+496 related and 16 recovered-account-component cases pass. Synthetic mixed,
+selected and auto-complete variants, fresh-admission cancellation/retry,
+post-flush SQLite rollback and lost Character acknowledgement recovery pass.
+Unpaired nesting is rejected before payout. Both owning builds are clean; the
+existing award engine/outbox is reused without DDL. Full quest eligibility/other
+rewards, Cosmic/Loyalty catalogs, unknown enclosing callbacks/non-concrete
+adapters and physical/provider/restart/socket/native gates remain open.
+Contract public/reset policy and Primal debit are still gated.
 F-022/full Goal unfinished; continue independent integrated gameplay and the
 recorded remaining gates, with native/CUA stopped.
 

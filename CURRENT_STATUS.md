@@ -1,12 +1,13 @@
 # NexusForever Feature Restoration - Current Status
 
 [Ordinary quest account currency](Decomp/Analysis/QUEST_ACCOUNT_CURRENCY_SETTLEMENT.md)
-now uses the existing paired Character-source/Auth-award protocol. Two baseline
-cases showed Auth credit before the held Character unit; the public turn-in
-now withholds credit/notices until settlement and supports outbox recovery.
-Five new/152 related cases and eight recovered-account-row cases pass; both
-owning builds are clean. Full quest eligibility, mixed/other variants, fresh
-provider/restart/socket/native and F-022 remain open; the broader Goal continues.
+now pairs concrete direct completion and starter-tutorial recovery as well as
+public turn-in. Four further baseline payout failures are fixed;22 new/27 focused,
+496 related and 16 recovered-account-component cases pass, with clean owning
+builds. Synthetic mixed/selected/auto-complete, fresh-admission retry, post-flush
+SQLite rollback and lost-ack recovery pass. Full quests, Cosmic/Loyalty catalogs,
+unknown enclosing adapters and provider/restart/socket/native/F-022 remain open;
+the broader Goal continues.
 
 [Original duel participants](Decomp/Analysis/DUEL_PARTICIPANT_OWNERSHIP.md) now
 own parsed requests, combat permission, cancellation and results across session,

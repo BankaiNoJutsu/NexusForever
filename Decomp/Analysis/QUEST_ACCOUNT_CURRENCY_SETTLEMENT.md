@@ -7,6 +7,11 @@ deliver them through the existing paired account-award protocol. Previously,
 Auth and then attempted Character. A failed Character unit could therefore
 leave the reward paid while the stored quest remained achieved.
 
+The [completion lifecycle follow-through](#completion-lifecycle-follow-through)
+below extends the original public-only milestone to concrete direct completion
+and tutorial recovery and qualifies additional variants and failure boundaries.
+The original milestone and its portable evidence retain their frozen scope.
+
 Two executed baseline cases observed Auth balance 10 while the Character save
 was held and the stored quest was still achieved. These are Source/SQLite
 failures on published parent `6d4cef26`, not retail-client observations.
@@ -39,11 +44,11 @@ failures on published parent `6d4cef26`, not retail-client observations.
   worker can settle the original account. Repeated turn-in and receipt delivery
   do not regrant a spent award.
 
-The ordinary path without account rewards is preserved. This does not enable
-public Contract claims/reset, Primal allocation, unsupported quest reward types,
-or arbitrary script-only completion entry points. In particular, this changes
-the save-bound public turn-in route; legacy/direct completion adapters outside
-that boundary retain their existing behavior.
+The ordinary path without account rewards is preserved. The original milestone
+did not enable public Contract claims/reset, Primal allocation, unsupported
+quest reward types or arbitrary script-only completion entry points. Its
+save-bound public turn-in boundary did not yet cover legacy/direct completion;
+the follow-through below integrates the concrete direct route and known caller.
 
 ## Executed qualification
 
@@ -94,16 +99,67 @@ Upstream #608 remains open at `7db12d9a7c694bc5e66d9e0f4cdbc1b82155e69b`;
 #609 remains closed/unmerged at `f9b6f7356798a41beea0768ff1f6b5a758ffeca3`.
 Their reviewed unchanged diffs are reused; no upstream merge or PR is made.
 
+## Completion lifecycle follow-through
+
+On published parent `1b71c5dc`, four executed baseline cases reproduced early
+Auth credit through concrete direct `QuestComplete` and starter-tutorial
+recovery, for both eventual Character success and refusal. Twelve mixed,
+selected and auto-complete controls already passed. Earlier baseline adapter
+failures are retained separately and are not evidence of payout defects.
+
+Direct ordinary account-reward completion on a concrete Player/WorldSession
+now enters the existing paired save boundary. An already paired enclosing quest
+mutation retains the award in that unit; an unpaired nested completion is
+rejected before mutation or payout. The known starter-tutorial recovery caller
+selects paired settlement when its achieved receiverless quests carry account
+awards. Its visibility and combat-transition publication stays behind settlement.
+The non-account tutorial path and Contract boundary retain their existing flow.
+No receipt format, database schema or settlement service changes.
+
+Twenty-two new cases join the original five. The final related scope passes
+496 cases, including all 27 account-settlement cases, crafting settlement/outbox,
+Q5597 public lifecycle/loopback, quest capture/core and tutorial controls:
+
+- Direct completion and tutorial recovery preserve unpaid Auth and withheld
+  completion notices while Character is held. Tutorial Auth refusal and actor
+  replacement are recovered by a fresh worker without stale foreground notices.
+- Mixed physical-item/account awards, selected account awards and auto-complete
+  acceptance/turn-in pass commit, Character refusal, Auth refusal and replacement.
+  The mixed item uses real Inventory/Item persistence with a fixture item
+  definition; these are synthetic variants, not full actual-catalog quests.
+- A refused public turn-in is loaded at a new account epoch through actual
+  `CraftingAccountRecovery` admission. The unpaid reservation is cancelled and
+  source-fenced; a fresh Player/session retries once and receives one payout.
+  This is fresh in-process admission, not a physical restart.
+- Transaction interceptors observe flushed SQL completion and its source inside
+  the real SQLite Character transaction. Refusal before commit rolls both back
+  and leaves Auth unpaid. Lost acknowledgement after commit leaves the durable
+  source recoverable by a fresh worker, with no stale completion notice.
+
+Sixteen actual account-reward component cases pass: both previously pinned
+10525/10600 bundles now run through parsed public and concrete direct completion,
+each with success/spent replay, Character refusal, Auth refusal/recovery and
+replacement/recovery. Eligibility, objectives, receiver and other rewards remain
+fixture adapters. Both owning Game/World builds pass with zero warnings/errors;
+the scoped test graph retains its existing ASPIRE010 warning. No full solution
+or full suite was run. The final related run takes 27 seconds.
+
+The [follow-through portable record](coverage/quest-account-completion-lifecycle-20261106.json)
+contains final source/DLL identities, baseline and final results, table pins and
+both primary-agent review axes. Raw logs remain in ignored
+`artifacts/quest-account-variants/`; prepared client table bodies stay outside Git.
+Upstream #608 and #609 metadata was refreshed with unchanged heads, bases and
+states; their reviewed unchanged diffs are reused.
+
 ## Remaining gates
 
 Configured-provider/copied-upgrade, physical process-loss/restart and deployed
 socket/native qualification of this new public route remain open. Prior crafting
 protocol qualification retains its original frozen source boundaries; it does
-not automatically qualify this new caller. The Character failure here is an
-owned save-unit refusal, not a new post-flush SQL rollback or lost-ack proof.
-Mixed item/account bundles, selected/auto-complete variants, Cosmic/Loyalty
-catalogs, fresh-admission retry after Character refusal, arbitrary deferred
-callbacks and legacy/script completion entry points need their own applicable
-qualification or integration. Full quests, F-022 and restoration remain open.
+not automatically qualify these callers. Cosmic/Loyalty catalogs, complete
+actual quests (including their remaining rewards), arbitrary deferred callbacks,
+non-concrete adapters and unknown enclosing script mutations need their own
+applicable qualification or integration. Unpaired nesting is rejected rather
+than silently crediting Auth. Full quests, F-022 and restoration remain open.
 Native client launch and Computer Use remain stopped; continue independent
 integrated gameplay and the recorded remaining gates.
