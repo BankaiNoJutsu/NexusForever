@@ -1,5 +1,16 @@
 # Assessment follow-through goal
 
+[Normal auction bid physical producer loss](NORMAL_AUCTION_BID_TRANSACTION.md#physical-producer-loss-and-fresh-character-reload)
+now qualifies the representative parsed public bid over SQLite at preflight,
+financial, reconciliation and pre-result boundaries. One control/six kills,
+independent reload/retry/duplicate and seven fresh actor-load audits pass.
+All 36 qualified generations/temp directories are absent; seven DB integrity
+checks, scoped controls and both reviews pass. Complete recorded receipt/wallet/
+listing/escrow/Quest state survives as appropriate without another debit.
+This is headless prepared-actor qualification; hosted World/Auth/socket,
+other settlements/providers/catalogs/deployment/native/retail remain required.
+Continue independent gameplay/progression; do not repeat this closed probe.
+
 [Synchronous marketplace fallback replies](NORMAL_AUCTION_BID_TRANSACTION.md#synchronous-fallback-rejection-replies)
 complete original-actor rejected-result retention for the five public real-Player
 fallback routes after durable admission declines. Seven clean baseline failures

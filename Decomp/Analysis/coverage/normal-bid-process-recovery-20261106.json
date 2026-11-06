@@ -1,0 +1,467 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-06T05:24:56.780396+00:00",
+  "baseCommit": "f1b2ef766c5ae65fce3046f32ed76dff6b8fbfb5",
+  "milestone": "Public normal auction bid producer loss and independent Character reload/retry",
+  "classification": "Headless Source/SQLite physical-process qualification of supported normal bid; no production correction or hosted World restart qualification; overall Goal remains open",
+  "sources": [
+    {
+      "path": "Source/NexusForever.Game.Tests/Marketplace/NormalBidProcessRecovery.cs",
+      "sha256": "d6059b585415c6d9c4613f57b8c1e8e3cf874e0b8b02e6765290fb79250cf740",
+      "gitBlob": "ac06020f7d2c60d765eb52e625b613b54b14b6a0"
+    }
+  ],
+  "sourceBoundary": {
+    "base": "f1b2ef766c5ae65fce3046f32ed76dff6b8fbfb5",
+    "trackedSourceFiles": 6291,
+    "differences": [
+      {
+        "path": "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+        "head": "9b4e604e08391bf229552fa04081ecf9c74fec4d",
+        "candidate": "7de92fafe0c2474ba8428ca9ceee883d39138b46"
+      },
+      {
+        "path": "Source/NexusForever.ClientConnector/packages.config",
+        "head": "fa4b77dc45783358023c1cd38e6ff9bad122aea4",
+        "candidate": "8ab13a9023dec3cf548ee61ba183013bd098a297"
+      },
+      {
+        "path": "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+        "head": "64769a2266f7feab861fcc61cd2b00a0a05da8c4",
+        "candidate": "74272fd6bf29afac14c5d62cb172e81b4edee19a"
+      },
+      {
+        "path": "Source/NexusForever.Database/NexusForever.Database.csproj",
+        "head": "61f9d5326c59ec7018164eba605a01f4081dfded",
+        "candidate": "163c4f01e198e71066afcd9089a367c78b4c3de6"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+        "head": "1ffaefc3cf8c1eb7c5b0534d4d91f28eb7001347",
+        "candidate": "6c145b847fa7316e7982ab44cfa404f4e1e7fc70"
+      },
+      {
+        "path": "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj",
+        "head": "74f0ec9ebbf4894dd7ef64f379a773a9e4ce1295",
+        "candidate": "ecd970da6d0d220f3caaf6780656c1809e18a9af"
+      }
+    ],
+    "newOwned": [
+      "Source/NexusForever.Game.Tests/Marketplace/NormalBidProcessRecovery.cs"
+    ]
+  },
+  "candidates": {
+    "initial": {
+      "source": {
+        "path": "artifacts/continuation-20261106/normal-bid-process-recovery/initial-probe.cs.txt",
+        "sha256": "cd2d370a4f57f11490c19fd9578b23770ea74da17c8c1cccf73655e0c606674d"
+      },
+      "sourceIdentity": {
+        "path": "artifacts/continuation-20261106/normal-bid-process-recovery/initial-source.json",
+        "sha256": "841e31cdcbe4adb6944ee15d114baa41065a4473a36631229f061e05a94dcaf9"
+      },
+      "binaries": {
+        "path": "artifacts/continuation-20261106/normal-bid-process-recovery/initial-inputs.json",
+        "sha256": "d93778e9305edc2037dcd324a77895376f6d8cf3692869b73de9192847787115"
+      },
+      "testBuild": {
+        "path": "artifacts/continuation-20261106/normal-bid-process-recovery/initial-test-build.log",
+        "sha256": "bb619f718fc441490f260e8a5ecb704ddacd961f95ccf9e1655475f5b1f307c4",
+        "seconds": 14.71,
+        "warnings": 0,
+        "errors": 0
+      },
+      "runnerBuild": {
+        "path": "artifacts/continuation-20261106/normal-bid-process-recovery/initial-runner-build.log",
+        "sha256": "f2ab29147aa00df2853eea9c9217cd0243e6b234bd3c3403a91a840b1cdff7c0",
+        "seconds": 2.65,
+        "warnings": 0,
+        "errors": 0
+      },
+      "scope": "Seven physical cases and six existing default controls"
+    },
+    "final": {
+      "binaries": {
+        "path": "artifacts/continuation-20261106/normal-bid-process-recovery/final-inputs.json",
+        "sha256": "353379cc6f66e7110c54c838f33571989c368db63abf26cfcd3a32550d98d013"
+      },
+      "testBuild": {
+        "path": "artifacts/continuation-20261106/normal-bid-process-recovery/test-build.log",
+        "sha256": "7442e5fa80ce62060dfb0669706d721aff9e14e2b1434bf67b8a75e44c0f2e23",
+        "seconds": 14.4,
+        "warnings": 0,
+        "errors": 0
+      },
+      "runnerBuild": {
+        "path": "artifacts/continuation-20261106/normal-bid-process-recovery/runner-build.log",
+        "sha256": "ae2362687bd4faaa9fd8e51d91f02009f9c72e8e1ad29d49a85863d768baf2f9",
+        "seconds": 2.64,
+        "warnings": 0,
+        "errors": 0
+      },
+      "scope": "Seven additional fresh actor-load wallet/result audits and current helper cleanup control"
+    },
+    "onlyTestDllChangedBetweenCandidates": true,
+    "productionDllsUnchangedFromPublishedParent": true,
+    "dependencyDlls": 138,
+    "allRunnerCopiesExact": true,
+    "finalDifference": "Move result observer before fixture actor.Load, assert fresh loaded wallet against SQL, add no-reseed audit mode. Producer, command and transaction behavior unchanged."
+  },
+  "physical": {
+    "path": "artifacts/continuation-20261106/normal-bid-process-recovery/cases-03/results.json",
+    "sha256": "dd031a8d1bd443e68baf2d11949e037047ade36e9197b3726fc1efe7b726ee35",
+    "elapsedSeconds": 110.23824849999801,
+    "cases": [
+      {
+        "window": "control",
+        "gate": {
+          "Mode": "produce",
+          "Window": "control",
+          "Replies": 1,
+          "Result": 0,
+          "ScopeDisposed": true,
+          "BeforeSha256": "b487d58db70070427c3c2672ea676ea5d9185b7fe6b30a2456cff1565f10ac21",
+          "After": "{\r\n  \"Listing\": {\r\n    \"Id\": 1,\r\n    \"Owner\": 100,\r\n    \"Item\": 1000,\r\n    \"MinimumBid\": 1,\r\n    \"Buyout\": 0,\r\n    \"Bid\": 10,\r\n    \"Bidder\": 42,\r\n    \"Expiration\": 1794028439,\r\n    \"Definition\": 7001,\r\n    \"Quantity\": 1,\r\n    \"Requirement\": 0,\r\n    \"Circuit\": 0,\r\n    \"Glyph\": 0,\r\n    \"Threshold\": 0,\r\n    \"Unknown\": 0,\r\n    \"Microchips\": \"\"\r\n  },\r\n  \"Escrow\": {\r\n    \"Id\": 1000,\r\n    \"Owner\": null,\r\n    \"Definition\": 7001,\r\n    \"Location\": 65535,\r\n    \"Bag\": 0,\r\n    \"Quantity\": 1,\r\n    \"Charges\": 0,\r\n    \"Durability\": 0,\r\n    \"Expiration\": 0,\r\n    \"Bound\": false,\r\n    \"Microchips\": \"\",\r\n    \"Runes\": \"\"\r\n  },\r\n  \"Wallets\": [\r\n    {\r\n      \"Id\": 42,\r\n      \"CurrencyId\": 1,\r\n      \"Amount\": 110\r\n    }\r\n  ],\r\n  \"Quests\": [\r\n    {\r\n      \"Id\": 42,\r\n      \"QuestId\": 9001,\r\n      \"State\": 1,\r\n      \"Flags\": 0,\r\n      \"Timer\": null\r\n    }\r\n  ],\r\n  \"Objectives\": [\r\n    {\r\n      \"Id\": 42,\r\n      \"QuestId\": 9001,\r\n      \"Index\": 0,\r\n      \"Progress\": 2,\r\n      \"Timer\": 2000\r\n    }\r\n  ],\r\n  \"Receipts\": [\r\n    {\r\n      \"Id\": \"56f963f5efa4420c8869c3fec2708113\",\r\n      \"PayloadSha256\": \"b7f22f9680ebd6fa35c5d4e43c0ccc624a64f0f2ed96546dbf5533f2a272536e\",\r\n      \"CreatedUtc\": \"2026-11-06T05:14:02.406203\"\r\n    },\r\n    {\r\n      \"Id\": \"db8cbaabf81c44e6886bae6490f6fdee\",\r\n      \"PayloadSha256\": \"a3c3b43bea81d42070084942aa9e3d26345a2699271a11f90daec325686f0711\",\r\n      \"CreatedUtc\": \"2026-11-06T05:14:02.028541\"\r\n    }\r\n  ],\r\n  \"Mail\": 0,\r\n  \"Links\": 0\r\n}",
+          "AfterSha256": "89398b2e071cf9490428d150dcc23c347480c2136484f63d9cd5819430ea9ef5",
+          "ActorCredits": 110,
+          "AlreadyBid": false
+        },
+        "reloadedCredits": 110,
+        "reloadedQuestProgress": 2,
+        "reloadedReceiptCount": 2,
+        "retryResult": 1,
+        "alreadyBid": true,
+        "retryAfterSha256": "89398b2e071cf9490428d150dcc23c347480c2136484f63d9cd5819430ea9ef5",
+        "freshVerifyAfterSha256": "89398b2e071cf9490428d150dcc23c347480c2136484f63d9cd5819430ea9ef5"
+      },
+      {
+        "window": "preflight-before",
+        "gate": {
+          "Window": "preflight-before",
+          "Phase": "preflight",
+          "AfterCommit": false,
+          "ProcessId": 47260,
+          "Receipts": [],
+          "Wallets": [
+            {
+              "Id": 42,
+              "Amount": 120
+            }
+          ]
+        },
+        "reloadedCredits": 100,
+        "reloadedQuestProgress": 1,
+        "reloadedReceiptCount": 0,
+        "retryResult": 0,
+        "alreadyBid": false,
+        "retryAfterSha256": "dd88db0c48ada459085b45113d8bfd15e6494ff530cffbe2c89f4f02c3df6ff4",
+        "freshVerifyAfterSha256": "dd88db0c48ada459085b45113d8bfd15e6494ff530cffbe2c89f4f02c3df6ff4"
+      },
+      {
+        "window": "financial-before",
+        "gate": {
+          "Window": "financial-before",
+          "Phase": "financial",
+          "AfterCommit": false,
+          "ProcessId": 48072,
+          "Receipts": [
+            {
+              "Id": "f5cf5850ea3c4c7aa0c90db87a24b676",
+              "PayloadSha256": "ec79f616c0f8820d79bb115bab908c48f20fee092cd3ba961d2cd474fa3ea390"
+            }
+          ],
+          "Wallets": [
+            {
+              "Id": 42,
+              "Amount": 110
+            }
+          ]
+        },
+        "reloadedCredits": 120,
+        "reloadedQuestProgress": 2,
+        "reloadedReceiptCount": 0,
+        "retryResult": 0,
+        "alreadyBid": false,
+        "retryAfterSha256": "3d49d945fae488ec2a34270eb2d289e6eb689673d4e2c332b9d50f9f37f3b458",
+        "freshVerifyAfterSha256": "3d49d945fae488ec2a34270eb2d289e6eb689673d4e2c332b9d50f9f37f3b458"
+      },
+      {
+        "window": "financial-after",
+        "gate": {
+          "Window": "financial-after",
+          "Phase": "financial",
+          "AfterCommit": true,
+          "ProcessId": 39740,
+          "Receipts": [
+            {
+              "Id": "f2a46e99d6bb42c79fe128920bcd5a40",
+              "PayloadSha256": "32b71895e7274cead22589904277c276aae8b167227684fa567a7393bd9fbb52"
+            }
+          ],
+          "Wallets": [
+            {
+              "Id": 42,
+              "Amount": 110
+            }
+          ]
+        },
+        "reloadedCredits": 110,
+        "reloadedQuestProgress": 2,
+        "reloadedReceiptCount": 1,
+        "retryResult": 1,
+        "alreadyBid": true,
+        "retryAfterSha256": "9e2baf0348c8acebefb73f25d539247d5b802d7b9e01c07e9732a07ec3a37b67",
+        "freshVerifyAfterSha256": "9e2baf0348c8acebefb73f25d539247d5b802d7b9e01c07e9732a07ec3a37b67"
+      },
+      {
+        "window": "reconcile-before",
+        "gate": {
+          "Window": "reconcile-before",
+          "Phase": "reconcile",
+          "AfterCommit": false,
+          "ProcessId": 25776,
+          "Receipts": [
+            {
+              "Id": "594399ce8e5447d39a5e321f6384dea4",
+              "PayloadSha256": "0a5e875888cb32fe2606ef4675314d296014302c1999f957b9b57013a209fa94"
+            }
+          ],
+          "Wallets": []
+        },
+        "reloadedCredits": 110,
+        "reloadedQuestProgress": 2,
+        "reloadedReceiptCount": 1,
+        "retryResult": 1,
+        "alreadyBid": true,
+        "retryAfterSha256": "52043dc6eac28f967e5dfc6387d06a80ad3c5e072da00327951d14baf182f48c",
+        "freshVerifyAfterSha256": "52043dc6eac28f967e5dfc6387d06a80ad3c5e072da00327951d14baf182f48c"
+      },
+      {
+        "window": "reconcile-after",
+        "gate": {
+          "Window": "reconcile-after",
+          "Phase": "reconcile",
+          "AfterCommit": true,
+          "ProcessId": 42048,
+          "Receipts": [
+            {
+              "Id": "b23f2c93ef904309b9ed7b665a3abea1",
+              "PayloadSha256": "1dc8d95372a6c839c77a6468def827613d86c28e41c559ba316d872a93c1cd74"
+            }
+          ],
+          "Wallets": []
+        },
+        "reloadedCredits": 110,
+        "reloadedQuestProgress": 2,
+        "reloadedReceiptCount": 2,
+        "retryResult": 1,
+        "alreadyBid": true,
+        "retryAfterSha256": "88278c47c33de436aa00ac7235f1186280d7ed686240837a27036119a6bc1c67",
+        "freshVerifyAfterSha256": "88278c47c33de436aa00ac7235f1186280d7ed686240837a27036119a6bc1c67"
+      },
+      {
+        "window": "before-result",
+        "gate": {
+          "Window": "before-result",
+          "Phase": "publication",
+          "ProcessId": 17204,
+          "ResultAccepted": false
+        },
+        "reloadedCredits": 110,
+        "reloadedQuestProgress": 2,
+        "reloadedReceiptCount": 2,
+        "retryResult": 1,
+        "alreadyBid": true,
+        "retryAfterSha256": "230c88eb7cae49012e72e35f08dbed2a80d8219684d96bfab3d65e8109c1009a",
+        "freshVerifyAfterSha256": "230c88eb7cae49012e72e35f08dbed2a80d8219684d96bfab3d65e8109c1009a"
+      }
+    ],
+    "processes": {
+      "path": "artifacts/continuation-20261106/normal-bid-process-recovery/cases-03/processes.json",
+      "sha256": "caa863e1bdb3eeab4cc0da5131231166a6a2086b8031a02da28864c1d1cc29f4"
+    },
+    "cleanup": {
+      "path": "artifacts/continuation-20261106/normal-bid-process-recovery/cases-03/cleanup.json",
+      "sha256": "b9b5fd4fd722f4f61225f81c09b3c5d722d083e370c6cb8af74cdd7c08f5ecdf"
+    },
+    "producerKills": 6,
+    "childGenerations": 28,
+    "mechanism": "EF committing/committed interception pauses or public result callback pause; original owned process generation is killed. No synthetic commit success, lost-ack exception or chosen resolution."
+  },
+  "additionalFreshAudit": {
+    "path": "artifacts/continuation-20261106/normal-bid-process-recovery/audit-01/results.json",
+    "sha256": "884d46da82a64ae0c06a4c4dadb662c3a22fe52dc111a2b6e14cf6c193ccaf79",
+    "elapsedSeconds": 24.198777300000074,
+    "cases": 7,
+    "processes": {
+      "path": "artifacts/continuation-20261106/normal-bid-process-recovery/audit-01/processes.json",
+      "sha256": "ddead162b88400abb7d170a212154c70a2edcaabd1de46a049a2ca0bf213f77f"
+    },
+    "cleanup": {
+      "path": "artifacts/continuation-20261106/normal-bid-process-recovery/audit-01/cleanup.json",
+      "sha256": "150a46a352bfcc66f05a49b9afe7cf6fd3478ff28ee935866ce2fe34768338e7"
+    },
+    "childGenerations": 7
+  },
+  "helperCleanupControl": {
+    "log": {
+      "path": "artifacts/continuation-20261106/normal-bid-process-recovery/cleanup-control-02.log",
+      "sha256": "35bc4a17296f061dcc6fba1b54e0c6c42bab7f87a430d4274994dc92f2b06885"
+    },
+    "processes": {
+      "path": "artifacts/continuation-20261106/normal-bid-process-recovery/cleanup-control-02/processes.json",
+      "sha256": "a3634466f87ce2c790b376afad78ea341b3dc93390f4224f42fd773cf5a37c4a"
+    },
+    "cleanup": {
+      "path": "artifacts/continuation-20261106/normal-bid-process-recovery/cleanup-control-02/cleanup.json",
+      "sha256": "79c08a7f0cdf7888893d61da69dbca784cc517fe0a4ccd1f7a8861bda72c0b17"
+    },
+    "injectedFailure": {
+      "path": "artifacts/continuation-20261106/normal-bid-process-recovery/cleanup-control-02/injected-failure.json",
+      "sha256": "b1a6b79a8b3ef6015599910df0874153e9c338e77c3615e8f3e582684a5ffc78"
+    },
+    "seconds": 4.833,
+    "childGenerations": 1,
+    "scope": "Post-launch exception at a pinned live producer; guarded original-handle cleanup stops it."
+  },
+  "independentVerification": {
+    "path": "artifacts/continuation-20261106/normal-bid-process-recovery/independent-verification.json",
+    "sha256": "0d629f3d55ade261d4543a9a6f8a28a89fd471ac0fd28e4f5b8291d2f8ff86e8",
+    "qualifiedChildGenerations": 36,
+    "liveOriginalGenerations": [],
+    "historicalFixtureOrSupersededHelperGenerationsAbsent": 3,
+    "temporaryDirectoriesAbsent": 36,
+    "databases": [
+      {
+        "path": "artifacts/continuation-20261106/normal-bid-process-recovery/cases-03/00-control/character.sqlite",
+        "integrity": "ok",
+        "receipts": 2,
+        "buyerCredits": 110
+      },
+      {
+        "path": "artifacts/continuation-20261106/normal-bid-process-recovery/cases-03/01-preflight-before/character.sqlite",
+        "integrity": "ok",
+        "receipts": 2,
+        "buyerCredits": 90
+      },
+      {
+        "path": "artifacts/continuation-20261106/normal-bid-process-recovery/cases-03/02-financial-before/character.sqlite",
+        "integrity": "ok",
+        "receipts": 2,
+        "buyerCredits": 110
+      },
+      {
+        "path": "artifacts/continuation-20261106/normal-bid-process-recovery/cases-03/03-financial-after/character.sqlite",
+        "integrity": "ok",
+        "receipts": 1,
+        "buyerCredits": 110
+      },
+      {
+        "path": "artifacts/continuation-20261106/normal-bid-process-recovery/cases-03/04-reconcile-before/character.sqlite",
+        "integrity": "ok",
+        "receipts": 1,
+        "buyerCredits": 110
+      },
+      {
+        "path": "artifacts/continuation-20261106/normal-bid-process-recovery/cases-03/05-reconcile-after/character.sqlite",
+        "integrity": "ok",
+        "receipts": 2,
+        "buyerCredits": 110
+      },
+      {
+        "path": "artifacts/continuation-20261106/normal-bid-process-recovery/cases-03/06-before-result/character.sqlite",
+        "integrity": "ok",
+        "receipts": 2,
+        "buyerCredits": 110
+      }
+    ],
+    "all138RunnerCopiesExact": true,
+    "onlyTestDllChangedBetweenProbeCandidates": true
+  },
+  "existingControls": {
+    "path": "artifacts/continuation-20261106/normal-bid-process-recovery/controls.trx",
+    "sha256": "d2e61e2d92550aac9c5b5acf8b59300bf027c4a4d882d4851f8b0007bee3a359",
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0,
+    "reportedSeconds": 12,
+    "candidate": "initial",
+    "filter": "FullyQualifiedName~NormalBidCoordinatorTests.AdmissionRejectionRetriesItsFrozenPublicReplyWithoutStartingACharacterSave|FullyQualifiedName~NormalBidCoordinatorTests.RejectedPublicBidResultRetriesOnItsOriginalActorAfterSettlementReleases"
+  },
+  "excludedFixtureRuns": [
+    {
+      "failure": {
+        "path": "artifacts/continuation-20261106/normal-bid-process-recovery/cases-01/failure.json",
+        "sha256": "bec5eedf09a449663a75f27596362f12df493a86f6666aecdfdff3bae9a76d43"
+      },
+      "log": {
+        "path": "artifacts/continuation-20261106/normal-bid-process-recovery/cases-01/00-control/produce.log",
+        "sha256": "2accc06a41be39c1c6d592323bf958bafb2dfa85f452ff7736cc3f1050fa3bd9"
+      },
+      "cleanup": {
+        "path": "artifacts/continuation-20261106/normal-bid-process-recovery/cases-01/cleanup.json",
+        "sha256": "36f86fd6533d3a1c745c06e2ef7996921d646acc0d24a5eead56b162b57bc716"
+      },
+      "reason": "ProbeDatabase.GetCharacters requires initialized connection configuration; failed before public dispatch."
+    },
+    {
+      "failure": {
+        "path": "artifacts/continuation-20261106/normal-bid-process-recovery/cases-02/failure.json",
+        "sha256": "4a554b06a9ca9f211843a8dec553e426ef186a93db0a3fb302489aa4f609d9b4"
+      },
+      "log": {
+        "path": "artifacts/continuation-20261106/normal-bid-process-recovery/cases-02/00-control/produce.log",
+        "sha256": "14fb726d0707f532e44be1cc6e859ff8d5b0980e75a3031e5d1bf67fe53beefd"
+      },
+      "cleanup": {
+        "path": "artifacts/continuation-20261106/normal-bid-process-recovery/cases-02/cleanup.json",
+        "sha256": "4f132c9659ba84807c85da987f31137581677665af7f110c7bc21dd30fb2b2cb"
+      },
+      "reason": "SQLite cannot order ulong in SQL; snapshot switched to client ordering before public dispatch."
+    }
+  ],
+  "verificationOracleCorrection": {
+    "path": "artifacts/continuation-20261106/normal-bid-process-recovery/independent-oracle-note.json",
+    "sha256": "90b9ae3861113ef833e072d7172282c8dca113a58a116595c0abfdf387be0f18"
+  },
+  "reviews": {
+    "path": "artifacts/continuation-20261106/normal-bid-process-recovery/reviews.json",
+    "sha256": "090e43c418fcc3474d69d8e557688c4cbaa0efd5fcfa7ff1adfd4ea4dd40dcfe",
+    "specFindings": 0,
+    "standardsFindings": 0
+  },
+  "upstream": {
+    "path": "artifacts/continuation-20261106/normal-bid-process-recovery/upstream-refresh.json",
+    "sha256": "72f92dcc256c70ffd648b5d45cb061d5a9ea307b2eb09edd5b7d8e7eb8bc4216",
+    "latestPrs": 20,
+    "headsBasesStatesUnchanged": true,
+    "pr608": "open",
+    "pr609": "closed/unmerged"
+  },
+  "preserved": {
+    "productionSourceOrSchemaChanged": false,
+    "fullSolutionOrFullSuiteRun": false,
+    "configuredMySqlRun": false,
+    "actualCatalogQualification": false,
+    "nativeClientAndComputerUseStopped": true,
+    "entitlements": "15:1/17:1; no automatic44/seven grants"
+  },
+  "limits": [
+    "Prepared real Player type, proxy account/session/registry/metadata, existing actor fixture, synthetic source/catalog and seeded listing/escrow. Producer enters parsed public handler in a real DI scope/event queue; it is not full Auth/character selection or native gameplay.",
+    "Fresh loading uses CharacterDatabase.GetCharacters, real CurrencyManager and marketplace Initialise. It is not an autonomous hosted World restart, broker reconnect, socket/client relog or persisted old coordinator resurrection.",
+    "Normal bid10 with no prior bidder is the representative path. Other auction outcomes, buyout/cancellation/expiry, multi-party refund/proceeds and alternate provider/process profiles remain separately required.",
+    "Financial-after/reconcile-before retain one original financial receipt; fresh duplicate admission does not invent the killed actor reconciliation receipt. All original receipt identities/payload hashes remain in the snapshot.",
+    "Preflight-before correctly loses uncommitted ordinary +20 credits/Quest progress; explicit retry debits10 from original100, ending90. Other committed/preflight cases end110. Unsaved preflight intent is not silently replayed.",
+    "SQLite process loss is not database-server/connection failure, copied upgrade, configured MySQL, actual item-catalog delivery, deployment/load or native/retail qualification. Existing Contract process gates were not repeated."
+  ]
+}

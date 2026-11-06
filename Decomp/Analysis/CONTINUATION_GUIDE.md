@@ -1,5 +1,12 @@
 # Client Binary Decompile Continuation Guide
 
+[Normal-bid producer loss](NORMAL_AUCTION_BID_TRANSACTION.md#physical-producer-loss-and-fresh-character-reload)
+passes seven public-flow cases, seven stronger fresh wallet/result audits and
+guarded helper cleanup. All 36 qualified generations/temp directories are absent;
+SQLite integrity and both reviews pass. Production DLLs are unchanged. Fresh
+fixture Character load is separate from hosted World/Auth/socket/provider/
+catalog/deployment/native qualification. Client/CUA remain stopped.
+
 [Marketplace fallback rejection publication](NORMAL_AUCTION_BID_TRANSACTION.md#synchronous-fallback-rejection-replies)
 now uses original-actor retained snapshots for all five real-Player fallback
 routes. Seven baseline failures are fixed; nine new/292 unique scoped cases,

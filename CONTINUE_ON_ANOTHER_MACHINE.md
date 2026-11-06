@@ -1,5 +1,13 @@
 # Continue on another machine
 
+Latest marketplace qualification:
+[public normal-bid process loss](Decomp/Analysis/NORMAL_AUCTION_BID_TRANSACTION.md#physical-producer-loss-and-fresh-character-reload)
+passes one control/six producer kills, fresh reload/public retries and seven
+stronger wallet/result audits. All 36 qualified generations/temp directories
+are absent; seven retained SQLite DBs pass integrity and both reviews are clear.
+Production is unchanged; hosted World/Auth/socket/other settlements/providers/
+catalog/deployment/native/retail remain open. Client/CUA stopped.
+
 Latest marketplace Source result:
 [fallback rejection replies](Decomp/Analysis/NORMAL_AUCTION_BID_TRANSACTION.md#synchronous-fallback-rejection-replies)
 retain all five real-Player public fallback errors through enqueue refusal,

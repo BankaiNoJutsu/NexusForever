@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[Public normal-bid process loss](Decomp/Analysis/NORMAL_AUCTION_BID_TRANSACTION.md#physical-producer-loss-and-fresh-character-reload)
+passes one control/six real producer terminations, fresh reload/public retries
+and seven stronger wallet/result audits. All 36 qualified generations/temp
+directories are absent; seven SQLite integrity checks and both reviews pass.
+Production behavior is unchanged. Hosted World/Auth/socket/provider/catalog/
+native/retail gates remain open; client/CUA stopped.
+
 [Marketplace fallback replies](Decomp/Analysis/NORMAL_AUCTION_BID_TRANSACTION.md#synchronous-fallback-rejection-replies)
 now retain all five real-Player fallback rejections on the original actor queue.
 Seven baseline failures are fixed; nine new/292 unique scoped cases, clean builds

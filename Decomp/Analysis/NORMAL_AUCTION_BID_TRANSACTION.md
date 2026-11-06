@@ -1,5 +1,70 @@
 # Normal auction bid transaction
 
+## Physical producer loss and fresh Character reload
+
+6 November 2026, parent f1b2ef766c5ae65fce3046f32ed76dff6b8fbfb5.
+The supported normal bid now has a headless physical-process qualification through
+the parsed public handler, a real DI scope and original Player event queue.
+One control and six terminated producer windows preserve the complete recorded
+listing, escrow, wallet, ordinary Quest and receipt graph. Production Source,
+schema, settlement and routing are unchanged.
+
+| Producer boundary | Fresh state before explicit retry | Public retry outcome |
+| --- | --- | --- |
+| Completed control |110 credits, Quest progress 2, two receipts | Rejected duplicate; unchanged graph |
+| Before ordinary preflight commit |100 credits, progress 1, no receipts/bid | One 10-credit debit; ends 90/progress 1 |
+| Before financial commit |120 credits, progress 2, no financial receipt/bid | One 10-credit debit; ends 110 |
+| After financial commit |110 credits, progress 2, one financial receipt | Rejected duplicate; original graph retained |
+| Before reconciliation commit |110 credits, progress 2, one financial receipt | Rejected duplicate; original graph retained |
+| After reconciliation commit |110 credits, progress 2, two receipts | Rejected duplicate; unchanged graph |
+| Before result acceptance |110 credits, progress 2, two receipts | Rejected duplicate; unchanged graph |
+
+Each case has independent reload, explicit public retry and another fresh
+duplicate-request process. A final seven-process audit observes results before
+fixture actor loading, asserts the loaded wallet against SQL, and repeats the
+rejected duplicate with exact snapshot/hash equality. Earlier producer results
+remain bound to their original candidate; only observer placement, assertions
+and the no-reseed audit mode change in the final test candidate.
+
+Transaction interceptors pause real committing/committed callbacks; publication
+pauses before result acceptance. The parent pins each original process handle,
+creation time and executable identity before terminating that generation.
+It does not throw simulated lost acknowledgements or choose commit outcomes.
+Receipt IDs and payload hashes stay stable across rejected retries. The two
+post-financial/pre-reconciliation windows retain one financial receipt: fresh
+loading does not fabricate the killed actor's reconciliation receipt.
+Uncommitted ordinary credit/Quest intent is correctly absent after preflight loss.
+
+All seven cases pass in 110.317s across 28 children, and seven fresh audits pass
+in 24.221s. The current helper's injected post-launch exception cleanup passes
+in 4.833s. All 36 qualified generations and their 36 owned temporary directories
+are independently absent. All seven retained SQLite databases pass integrity
+checks; three earlier fixture/superseded-helper generations are also absent.
+Two setup failures (connection configuration and ulong SQL ordering) are retained
+separately. A later blanket two-receipt audit assumption was corrected to the
+already-enforced phase-specific receipt counts; it was not a production fault.
+
+The initial test/runner builds are clean in 14.71s/2.65s; final builds are clean
+in 14.40s/2.64s. Six existing default public bid controls pass in 12s against the
+initial candidate. The linked record holds exact build times and both 138-DLL
+manifests; only the test DLL changes between candidates. No owning production
+build, full solution or full suite was repeated. The 6291 tracked Source comparison
+retains only eight historical candidate variants, plus this new test entry.
+Both final review axes have zero findings.
+
+The [portable record](coverage/normal-bid-process-recovery-20261106.json) binds
+the new test Source, process gates/identities, both candidates, state results,
+cleanup control, independent absence/integrity checks and reviews. Raw evidence
+is under artifacts/continuation-20261106/normal-bid-process-recovery/.
+
+This uses prepared real Player/session/registry/metadata collaborators and seeded
+synthetic catalogs/listing, with CharacterDatabase.GetCharacters, CurrencyManager
+and marketplace Initialise on fresh processes. It does not qualify autonomous
+hosted World restart, Auth/character selection, socket/client relog, actual
+catalog delivery, MySQL/copied upgrade, database-server loss, other auction
+settlements, broker/deployment/load or native/retail behavior. Client launch and
+Computer Use remain stopped. Continue the broader gameplay/progression queue.
+
 ## Synchronous fallback rejection replies
 
 6 November 2026, parent 8240e77735cdeb85c9f41553071ceade21045505.
