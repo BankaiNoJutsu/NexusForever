@@ -125,13 +125,13 @@ namespace NexusForever.Game.Account.Reward
                 ],
                 Blockers =
                 [
-                    "Only the request index range below seven is evidence-backed for client-originated refresh requests.",
+                    "Client 0x07CC is a refresh request carrying one 32-bit content-type index in range 0-6; it does not authorize reward grants.",
                     "Schedule rows from GameTableRewardRotationRefreshProvider use correlated global-catalog selection until per-content reward mapping is verified.",
-                    "Account grant persistence is required before sending non-empty entry-state arrays; 0x07CD registration has no static apply helper, so Flag and throttle-slot assignment remain blocked until capture or dynamic dispatch proof."
+                    "Item/currency delivery still needs authoritative completion, reward linkage, schedule and durable settlement; 0x07CD/0x07D3 belong to reward tracks."
                 ],
                 Notes =
                 [
-                    "Empty schedule/state arrays are skipped until live reward rotation evidence is captured.",
+                    "Empty schedule/state arrays are skipped except for the existing index0 storefront placeholder.",
                     "If a future provider injects non-placeholder rows, this report automatically records packet payloads plus structured row diagnostics for review before runtime behavior changes."
                 ]
             };

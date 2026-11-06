@@ -1,5 +1,16 @@
 # Assessment follow-through goal
 
+[Reward Rotation refresh authority](REWARD_ROTATION_REFRESH_AUTHORITY.md)
+corrects the unsupported trailing claim extension: native07CC is one uint32
+refresh index, not a grant request. All three fabricated lanes previously
+persisted Auth/SQLite grants without awards. Five failures are fixed;8 new/
+all56 scoped cases, exact-hash native spans, actual8-table catalog inputs,
+clean builds and both reviews pass. Existing schedules/grant readback and
+internal services remain.35content/6item/20essence/16modifier rows do not supply
+the missing content/reward join or schedule. Completion ownership and durable
+delivery/recovery remain gated; do not enable modulo-selected awards.
+Continue independent gameplay/progression; client/CUA remain stopped.
+
 [Owned unfiltered proc AMPs](AMP_UPSTREAM_RECONCILIATION.md#owned-unfiltered-proc-augmentations)
 complete selected-node login/spec/respec/retry/save integration for the supported
 permanent caster-only family. All218 pure-proc rows are classified;69 satisfy

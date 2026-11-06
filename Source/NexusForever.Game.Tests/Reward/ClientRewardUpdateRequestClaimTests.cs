@@ -1,6 +1,4 @@
 using System.Net.Sockets;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using NexusForever.Shared.Game.Events;
 using NexusForever.WorldServer.Network;
 using NexusForever.Database.Auth;
@@ -18,7 +16,6 @@ using NexusForever.Game.Abstract.RBAC;
 using NexusForever.Game.Account.Reward;
 using NexusForever.Game.Static;
 using NexusForever.Game.Static.Reward;
-using NexusForever.GameTable;
 using NexusForever.Network.Session;
 using NexusForever.GameTable.Model;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -31,75 +28,8 @@ using NexusForever.WorldServer.Network.Message.Handler.Reward;
 
 namespace NexusForever.Game.Tests.Reward;
 
-public class ClientRewardUpdateRequestClaimTests
+public partial class ClientRewardUpdateRequestClaimTests
 {
-    [Fact]
-    public void Read_WithTrailingClaimFields_PopulatesClaimProperties()
-    {
-        byte[] packetData;
-        using (var packetStream = new MemoryStream())
-        {
-            using (var writer = new GamePacketWriter(packetStream))
-            {
-                writer.Write(2u);
-                writer.Write(15u);
-                writer.Write((byte)RewardRotationScheduleBuilder.RewardTypeItem);
-                writer.FlushBits();
-            }
-
-            packetData = packetStream.ToArray();
-        }
-
-        using var stream = new MemoryStream(packetData);
-        using var reader = new GamePacketReader(stream);
-        var request = new ClientRewardUpdateRequest();
-        request.Read(reader);
-
-        Assert.Equal(2u, request.RewardRotationIndex);
-        Assert.Equal(15u, request.ClaimContentId);
-        Assert.Equal(RewardRotationScheduleBuilder.RewardTypeItem, request.ClaimRewardType);
-        Assert.True(request.HasClaimRequest);
-    }
-
-    [Fact]
-    public void HandleMessage_WithClaimPayload_RecordsGrantAndSendsUpsert()
-    {
-        RewardRotationContentContextSources sources = CreateSources();
-        SetEntries(sources.RewardRotationContent,
-            new RewardRotationContentEntry { Id = 15u, ContentTypeEnum = 1u });
-        SetEntries(sources.RewardRotationItem,
-            new RewardRotationItemEntry { Id = 50u, Count = 1u, MinPlayerLevel = 1u });
-        SetEntries(sources.RewardRotationEssence,
-            new RewardRotationEssenceEntry { Id = 60u, MinPlayerLevel = 1u });
-        SetEntries(sources.RewardRotationModifier,
-            new RewardRotationModifierEntry { Id = 70u, ModifierValue = 1f, MinPlayerLevel = 1u });
-
-        ServerRewardRotationScheduleArray schedule = RewardRotationScheduleBuilder.Build(sources, 1u, new List<uint> { 15u });
-
-        const uint accountId = 42u;
-        var account = new ClaimStubAccount(accountId);
-        var grantManager = new AccountRewardRotationGrantManager(account, new AccountModel { Id = accountId });
-        account.AttachGrantManager(grantManager);
-        var session = new ClaimTestWorldSession(account);
-        var handler = new ClientRewardUpdateRequestHandler(
-            NullLogger<ClientRewardUpdateRequestHandler>.Instance,
-            new NoOpGlobalStorefrontManager(),
-            new FixedScheduleRefreshProvider(schedule));
-
-        handler.HandleMessage(session, BuildClaimRequest(1u, 15u, RewardRotationScheduleBuilder.RewardTypeItem));
-
-        Assert.Contains(session.EncryptedMessages, message => message is ServerRewardRotationEntryStateUpsert);
-        var messageManager = new MessageManager(NullLogger<MessageManager>.Instance);
-        messageManager.RegisterMessage(typeof(ServerRewardRotationEntryStateUpsert));
-        Assert.Equal((GameMessageOpcode)0x07CB, messageManager.GetOpcode(session.EncryptedMessages.OfType<ServerRewardRotationEntryStateUpsert>().Single()));
-        ServerRewardRotationEntryStateArray entryState = session.EncryptedMessages
-            .OfType<ServerRewardRotationEntryStateArray>()
-            .Last();
-        Assert.Single(entryState.Entries);
-        Assert.Equal(15u, entryState.Entries[0].ContentId);
-        Assert.Equal(50u, entryState.Entries[0].RewardTypeId);
-    }
-
     private static ClientRewardUpdateRequest BuildClaimRequest(uint rewardRotationIndex, uint contentId, byte rewardType)
     {
         byte[] packetData;
@@ -121,32 +51,6 @@ public class ClientRewardUpdateRequestClaimTests
         var request = new ClientRewardUpdateRequest();
         request.Read(reader);
         return request;
-    }
-
-    private static void SetEntries<T>(GameTable<T> table, params T[] entries) where T : class, new()
-    {
-        PropertyInfo property = typeof(GameTable<T>).GetProperty(nameof(GameTable<T>.Entries), BindingFlags.Instance | BindingFlags.Public);
-        property?.SetValue(table, entries);
-    }
-
-    private static RewardRotationContentContextSources CreateSources()
-    {
-        return new RewardRotationContentContextSources
-        {
-            RewardRotationContent = CreateTable<RewardRotationContentEntry>(),
-            RewardRotationItem = CreateTable<RewardRotationItemEntry>(),
-            RewardRotationEssence = CreateTable<RewardRotationEssenceEntry>(),
-            RewardRotationModifier = CreateTable<RewardRotationModifierEntry>(),
-            WorldZone = CreateTable<WorldZoneEntry>(),
-            World = CreateTable<WorldEntry>(),
-            PublicEvent = CreateTable<PublicEventEntry>(),
-            MatchTypeRewardRotationContent = CreateTable<MatchTypeRewardRotationContentEntry>()
-        };
-    }
-
-    private static GameTable<T> CreateTable<T>() where T : class, new()
-    {
-        return (GameTable<T>)RuntimeHelpers.GetUninitializedObject(typeof(GameTable<T>));
     }
 
     private sealed class ClaimStubAccount(uint id) : IAccount

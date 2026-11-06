@@ -1,5 +1,13 @@
 # Continue on another machine
 
+Latest Rotation Source result:
+[refresh authority](Decomp/Analysis/REWARD_ROTATION_REFRESH_AUTHORITY.md) removes
+the invented trailing claim path while preserving schedule/existing-grant
+readback. Five baseline failures are fixed;8 new/all56 scoped cases and both
+reviews pass. Native shape and actual8-table inputs have portable evidence.
+Delivery still needs association/completion/schedule/settlement; no guessed
+award is enabled. Reuse completed checks; client/CUA remain stopped.
+
 Latest AMP Source result:
 [owned proc lifecycle](Decomp/Analysis/AMP_UPSTREAM_RECONCILIATION.md#owned-unfiltered-proc-augmentations)
 integrates seven supported actual spells with selected-node login/spec/respec,

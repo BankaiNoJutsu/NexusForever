@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using NexusForever.Game.Abstract.Account.Reward;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Storefront;
 using NexusForever.Game.Account.Reward;
@@ -72,27 +71,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Reward
 
             EnqueueScheduleArrayIfNotEmpty(session, refresh);
 
-            if (TryProcessClaimRequest(session, rewardUpdateRequest, refresh, out ServerRewardRotationEntryStateArray.EntryStateRow claimedRow))
-            {
-                ServerRewardRotationEntryStateUpsert upsert = RewardRotationGrantClaimService.BuildUpsert(claimedRow);
-                if (upsert != null)
-                    session.EnqueueMessageEncrypted(upsert);
-
-                IAccountRewardRotationGrantManager grantManager = session.Account.RewardRotationGrantManager;
-                if (grantManager != null)
-                {
-                    ServerRewardRotationEntryStateArray entryState = grantManager.BuildEntryState(rewardUpdateRequest.RewardRotationIndex);
-                    EnqueueEntryStateArrayIfNotEmpty(session, refresh, entryState);
-                }
-                else
-                {
-                    EnqueueEntryStateArrayIfNotEmpty(session, refresh, refresh.EntryStateArray);
-                }
-            }
-            else
-            {
-                EnqueueEntryStateArrayIfNotEmpty(session, refresh, refresh.EntryStateArray);
-            }
+            EnqueueEntryStateArrayIfNotEmpty(session, refresh, refresh.EntryStateArray);
             RewardRotationRuntimeEvidenceCollector.RecordRequestIfArmed(
                 session.Player,
                 rewardUpdateRequest.RewardRotationIndex,
@@ -173,27 +152,5 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Reward
                 RewardRotationScheduleBuilder.DefaultPlayerLevel);
         }
 
-        private static bool TryProcessClaimRequest(
-            IWorldSession session,
-            ClientRewardUpdateRequest rewardUpdateRequest,
-            RewardRotationRefresh refresh,
-            out ServerRewardRotationEntryStateArray.EntryStateRow entryStateRow)
-        {
-            entryStateRow = null;
-            if (!rewardUpdateRequest.HasClaimRequest)
-                return false;
-
-            IAccountRewardRotationGrantManager grantManager = session.Account?.RewardRotationGrantManager;
-            if (grantManager == null)
-                return false;
-
-            return RewardRotationGrantClaimService.TryRecordClaimFromScheduleRow(
-                grantManager,
-                rewardUpdateRequest.RewardRotationIndex,
-                refresh.ScheduleArray,
-                rewardUpdateRequest.ClaimContentId,
-                rewardUpdateRequest.ClaimRewardType,
-                out entryStateRow);
-        }
     }
 }

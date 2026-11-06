@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[Reward Rotation refresh](Decomp/Analysis/REWARD_ROTATION_REFRESH_AUTHORITY.md)
+now reads the native one-word07CC request without accepting synthetic grant
+authority. Three forged lanes no longer persist grants with no award; existing
+grant readback remains. Five baseline failures are fixed;8 new/all56 scoped
+cases, actual8-table inputs, clean builds and both reviews pass. Association/
+schedule/completion/settlement still gate delivery; client/CUA stopped.
+
 [Owned proc AMPs](Decomp/Analysis/AMP_UPSTREAM_RECONCILIATION.md#owned-unfiltered-proc-augmentations)
 now apply seven supported actual-catalog spells through existing selected-node
 lifecycle and remove only original-cast registrations. Twelve baseline failures

@@ -1,0 +1,1664 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-06T07:02:31.515935+00:00",
+  "baseCommit": "fbca92687028be541d8127cddc7297a08c2922d9",
+  "milestone": "Reward Rotation refresh cannot authorize synthetic claims",
+  "classification": "Implemented Source public-packet correction; Auth/SQLite regression and actual catalog/static wire qualification; reward delivery remains gated and overall Goal active",
+  "behavior": [
+    "Registered07CC decoder reads only its mapped uint32 index and leaves extra frame bytes neutral. Invented ClaimContentId/ClaimRewardType/HasClaimRequest fields are removed.",
+    "The public refresh handler publishes schedule and existing entry-state snapshots without calling claim-record helpers or creating grant upserts. Existing stored grant readback remains.",
+    "Internal explicit GrantClaimService APIs and persistence models remain for future qualified completion/delivery; no row migration/deletion or reward selection policy is introduced.",
+    "Runtime evidence no longer misassigns07CD/07D3 to Rotation or treats mapped throttle slots as missing. Missing actual authority/association/schedule/settlement remains stated."
+  ],
+  "sources": [
+    {
+      "path": "Source/NexusForever.Network.World/Message/Model/ClientRewardUpdateRequest.cs",
+      "sha256": "bb264c3eab03195bff98ef09e4cf4a17ada849fc1fdb0e8709f3139688eeb3cd",
+      "gitBlob": "502e1e9cfe19008c3176e09137da93737f72ccf8"
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/Network/Message/Handler/Reward/ClientRewardUpdateRequestHandler.cs",
+      "sha256": "cffe22e2a115f53c8f1d0813c5587bf3a91aa8b4814a611507a1389b7428de12",
+      "gitBlob": "1cac043a4af4d0a1537df7dbe08c845664be15ed"
+    },
+    {
+      "path": "Source/NexusForever.Game/Account/Reward/RewardRotationRuntimeEvidenceCollector.cs",
+      "sha256": "8ebebecc80c30c8850332711b726c76da4d73450554b0796530bce851289ec39",
+      "gitBlob": "3acf4723aa72de8c23fbca60a565e10692d19b27"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Reward/ClientRewardUpdateRequestClaimTests.cs",
+      "sha256": "48a54462075879d5884742a73dcaba6ed982ffb2e7c29c35c62d6dddac2aba80",
+      "gitBlob": "c1c81b9d1ea460b88304a2326bbf86f9b9c56b5b"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Reward/ClientRewardUpdateRequestClaimTests.RefreshOnly.cs",
+      "sha256": "9c3e211d2d6afaf4fd26b587fb29487863705cdf524da12db1224f1d6bedf2a7",
+      "gitBlob": "0f630cadb247286757d94926bf0a67333fa89710"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Reward/RewardRotationRuntimeEvidenceTests.cs",
+      "sha256": "c290f1ffc736ec0f1524671496fe60e3e7b74e8efe2c9306548a95eaf4c8e0e4",
+      "gitBlob": "79c06e33edea82414c8024aa7f9890eb28c5251e"
+    }
+  ],
+  "sourceBoundary": {
+    "base": "fbca92687028be541d8127cddc7297a08c2922d9",
+    "trackedSourceFiles": 6297,
+    "differences": [
+      {
+        "path": "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+        "head": "9b4e604e08391bf229552fa04081ecf9c74fec4d",
+        "candidate": "7de92fafe0c2474ba8428ca9ceee883d39138b46"
+      },
+      {
+        "path": "Source/NexusForever.ClientConnector/packages.config",
+        "head": "fa4b77dc45783358023c1cd38e6ff9bad122aea4",
+        "candidate": "8ab13a9023dec3cf548ee61ba183013bd098a297"
+      },
+      {
+        "path": "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+        "head": "64769a2266f7feab861fcc61cd2b00a0a05da8c4",
+        "candidate": "74272fd6bf29afac14c5d62cb172e81b4edee19a"
+      },
+      {
+        "path": "Source/NexusForever.Database/NexusForever.Database.csproj",
+        "head": "61f9d5326c59ec7018164eba605a01f4081dfded",
+        "candidate": "163c4f01e198e71066afcd9089a367c78b4c3de6"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Reward/ClientRewardUpdateRequestClaimTests.cs",
+        "head": "d285b659b21404edf56c0d25e66312b806fb00c2",
+        "candidate": "c1c81b9d1ea460b88304a2326bbf86f9b9c56b5b"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Reward/RewardRotationRuntimeEvidenceTests.cs",
+        "head": "3da53e51468860257ccdf82a0ac52beb97e4e9cd",
+        "candidate": "79c06e33edea82414c8024aa7f9890eb28c5251e"
+      },
+      {
+        "path": "Source/NexusForever.Game/Account/Reward/RewardRotationRuntimeEvidenceCollector.cs",
+        "head": "1c74368bb8009ae79dcf9fdfff8cfe6e17113e54",
+        "candidate": "3acf4723aa72de8c23fbca60a565e10692d19b27"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+        "head": "1ffaefc3cf8c1eb7c5b0534d4d91f28eb7001347",
+        "candidate": "6c145b847fa7316e7982ab44cfa404f4e1e7fc70"
+      },
+      {
+        "path": "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj",
+        "head": "74f0ec9ebbf4894dd7ef64f379a773a9e4ce1295",
+        "candidate": "ecd970da6d0d220f3caaf6780656c1809e18a9af"
+      },
+      {
+        "path": "Source/NexusForever.Network.World/Message/Model/ClientRewardUpdateRequest.cs",
+        "head": "6f9c96a1a069f73d77fd51ca163210141a08ab28",
+        "candidate": "502e1e9cfe19008c3176e09137da93737f72ccf8"
+      },
+      {
+        "path": "Source/NexusForever.WorldServer/Network/Message/Handler/Reward/ClientRewardUpdateRequestHandler.cs",
+        "head": "a32c0ce7f54266fd3b9710eca1cf5bb2ad7c97aa",
+        "candidate": "1cac043a4af4d0a1537df7dbe08c845664be15ed"
+      }
+    ],
+    "historicalDifferences": [
+      "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+      "Source/NexusForever.ClientConnector/packages.config",
+      "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+      "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+      "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+      "Source/NexusForever.Database/NexusForever.Database.csproj",
+      "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+      "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj"
+    ],
+    "newOwnedFiles": [
+      "Source/NexusForever.Game.Tests/Reward/ClientRewardUpdateRequestClaimTests.RefreshOnly.cs"
+    ],
+    "missing": []
+  },
+  "validation": {
+    "baseline": {
+      "localPath": "artifacts/continuation-20261106/reward-rotation-refresh/baseline.trx",
+      "sha256": "53871a84b855e03d00aa08f5c01065f8d5d31706792700e2801714197409ac13",
+      "counters": {
+        "total": "8",
+        "executed": "8",
+        "passed": "3",
+        "failed": "5",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "results": [
+        {
+          "name": "NexusForever.Game.Tests.Reward.ClientRewardUpdateRequestClaimTests.RefreshOnly_UnsupportedIndexCannotUseATrailingLane",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Reward.ClientRewardUpdateRequestClaimTests.RefreshOnly_TrailingLaneCannotPersistAGrantOrPublishAnUpsert(lane: 3)",
+          "outcome": "Failed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Reward.ClientRewardUpdateRequestClaimTests.RefreshOnly_ExistingGrantReadbackSurvivesWithoutANewUpsert(extraTail: True)",
+          "outcome": "Failed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Reward.ClientRewardUpdateRequestClaimTests.RefreshOnly_TrailingLaneCannotPersistAGrantOrPublishAnUpsert(lane: 2)",
+          "outcome": "Failed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Reward.ClientRewardUpdateRequestClaimTests.RefreshOnly_TrailingLaneCannotPersistAGrantOrPublishAnUpsert(lane: 1)",
+          "outcome": "Failed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Reward.ClientRewardUpdateRequestClaimTests.RefreshOnly_ExistingGrantReadbackSurvivesWithoutANewUpsert(extraTail: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Reward.ClientRewardUpdateRequestClaimTests.RefreshOnly_ReaderConsumesOneWordAndLeavesTheTailNeutral",
+          "outcome": "Failed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Reward.ClientRewardUpdateRequestClaimTests.RefreshOnly_PlainMappedRequestConsumesTheCompleteBody",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "final": {
+      "localPath": "artifacts/continuation-20261106/reward-rotation-refresh/final-scoped.trx",
+      "sha256": "70caa2722d5d71ae7bfc99002e8d5d0c5a9668247ab737d0e506fcea6fb5f703",
+      "counters": {
+        "total": "56",
+        "executed": "56",
+        "passed": "56",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "results": [
+        {
+          "name": "NexusForever.Game.Tests.Entity.RewardRotationProtocolTests.ServerRewardRotationEntryStateArray_WriteRejectsNullRows",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.RewardRotationRefreshBuilderTests.Build_SupportedIndex_ReturnsEmptyPlaceholderRefresh(rewardRotationIndex: 0)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.RewardRotationRefreshBuilderTests.IsSupported_MatchesEvidenceBackedIndexRange(rewardRotationIndex: 7, expected: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.RewardRotationRefreshBuilderTests.Build_SupportedIndex_ReturnsEmptyPlaceholderRefresh(rewardRotationIndex: 6)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.RewardRotationEntryStateBuilderTests.BuildEmpty_ReturnsZeroEntryStateRows",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.RewardRotationRefreshBuilderTests.IsSupported_MatchesEvidenceBackedIndexRange(rewardRotationIndex: 0, expected: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.RewardRotationEntryStateBuilderTests.BuildFromPersistedGrants_EmitsStoredGrantRows",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.GameTableRewardRotationRefreshProviderTests.Build_PerContentCatalogSelection_UsesDistinctRowsPerContentId",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.RewardRotationProtocolTests.ServerRewardRotationScheduleArray_WriteRejectsContentIdsOutside14BitRange(contentId: 16384)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.AccountRewardRotationGrantManagerTests.BuildEntryState_ReturnsOnlyPersistedGrantsForRequestedIndex",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.RewardRotationProtocolTests.ServerRewardRotationContentContext_WriteRejectsContentIdCountsAboveWireBudget",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.RewardRotationProtocolTests.ServerRewardRotationScheduleArray_WriteRejectsUnsupportedRewardTypes(rewardType: 0)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.RewardRotationContentContextBuilderTests.CollectContentIds_MergesDirectAndReferencedContentForContentType",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.RewardRotationProtocolTests.ServerRewardRotationContentContext_WriteRejectsRewardRotationIndicesOutsideSupportedRange(rewardRotationIndex: 7)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.RewardRotationProtocolTests.ServerRewardRotationScheduleArray_WriteMatchesNativeApplyFieldOrder",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Reward.RewardRotationRuntimeEvidenceTests.HandleRewardCaptureNext_ArmsSessionAndReportsOutputHint",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.RewardRotationProtocolTests.RewardRotationEntryStatePackets_WriteRejectInvalidRewardTypeLanes(rewardTypeLane: 0)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.RewardRotationGrantClaimServiceTests.TryRecordClaimFromScheduleRow_RejectsUnknownScheduleRow",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.RewardRotationContentContextDeliveryTests.CreatePackets_SingleDiagnosticRow_DoesNotEmitRewardTrackOpcode",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.AccountRewardRotationGrantManagerTests.RecordGrant_UpdatesEntryStateForMatchingIndex",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.RewardRotationProtocolTests.ServerRewardRotationScheduleArray_WriteRejectsNullRows",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Reward.ClientRewardUpdateRequestClaimTests.RefreshOnly_ExistingGrantReadbackSurvivesWithoutANewUpsert(extraTail: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.RewardRotationScheduleBuilderTests.Build_WithKnownDifficultyContext_EmitsNormalAndVeteranRowsForSameContent",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.RewardRotationProtocolTests.ServerRewardRotationContentContext_WriteMatchesDecodedFieldOrder",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Reward.ClientRewardUpdateRequestClaimTests.RefreshOnly_TrailingLaneCannotPersistAGrantOrPublishAnUpsert(lane: 3)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.RewardRotationGrantClaimServiceTests.TryRecordClaimFromScheduleRow_RecordsMatchingScheduleRow",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.RewardRotationProtocolTests.ServerRewardRotationScheduleArray_WriteRejectsUnsupportedRewardTypes(rewardType: 4)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Reward.ClientRewardUpdateRequestClaimTests.RefreshOnly_TrailingLaneCannotPersistAGrantOrPublishAnUpsert(lane: 1)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.RewardRotationProtocolTests.ServerRewardRotationScheduleArray_WriteRejectsContentIdsOutside14BitRange(contentId: 20480)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Reward.ClientRewardUpdateRequestClaimTests.RefreshOnly_ReaderConsumesOneWordAndLeavesTheTailNeutral",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.RewardRotationEntryStateBuilderTests.BuildGrantedRows_EmitsOneGrantRowPerScheduleEntryForMatchingContentType",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.RewardRotationEntryStateBuilderTests.GetGrantFlagsForRewardType_MatchesClientBitmaskSemantics",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Reward.RewardRotationRuntimeEvidenceTests.HandleMessage_UnsupportedIndex_ArmedCapture_ExportsUnsupportedArtifact",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Reward.ClientRewardUpdateRequestClaimTests.RefreshOnly_PlainMappedRequestConsumesTheCompleteBody",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.RewardRotationRefreshBuilderTests.Build_OutOfRangeIndex_ReturnsNull",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.RewardRotationContentContextBuilderTests.BuildContexts_ChunksContentIdsToWireBudget",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.RewardRotationScheduleBuilderTests.Build_ReturnsEmptyScheduleWhenContentListIsEmpty",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Reward.RewardRotationRuntimeEvidenceTests.HandleRewardReport_ExportsManualReport",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.RewardRotationProtocolTests.ServerRewardRotationEntryStateUpdate_WriteMatchesDecodedEntryStateRowFormat",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.GameTableRewardRotationRefreshProviderTests.Build_WithPersistedEntryState_SetsEntryStateCountAndSource",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Reward.ClientRewardUpdateRequestClaimTests.RefreshOnly_ExistingGrantReadbackSurvivesWithoutANewUpsert(extraTail: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.RewardRotationProtocolTests.RewardRotationEntryStatePackets_WriteRejectTypeIdsOutsideThreeBitRange",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.RewardRotationProtocolTests.ServerRewardRotationContentContextArray_WriteMatchesCountPlusRowLayout",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.RewardRotationProtocolTests.ServerRewardRotationScheduleArray_WriteRejectsNonFiniteDurations",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.RewardRotationRefreshBuilderTests.Build_SupportedIndex_ReturnsEmptyPlaceholderRefresh(rewardRotationIndex: 3)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Reward.ClientRewardUpdateRequestClaimTests.RefreshOnly_UnsupportedIndexCannotUseATrailingLane",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.RewardRotationProtocolTests.ServerRewardRotationContentContext_WriteRejectsRewardRotationIndicesOutsideSupportedRange(rewardRotationIndex: 99)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.RewardRotationRefreshBuilderTests.IsSupported_MatchesEvidenceBackedIndexRange(rewardRotationIndex: 6, expected: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Reward.RewardRotationRuntimeEvidenceTests.HandleMessage_ArmedCapture_ExportsPlaceholderArtifact",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.RewardRotationRefreshBuilderTests.Build_CustomProvider_PreservesObservableRowsAndResponseSource",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.RewardRotationScheduleBuilderTests.Build_EmitsItemEssenceAndModifierRowsPerContentId",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.RewardRotationScheduleBuilderTests.Build_WithLevelFiftyKnownDifficultyContext_EmitsEligibleRewardRows",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.RewardRotationContentContextDeliveryTests.CreatePackets_MultipleDiagnosticRows_DoNotEmitRewardTrackReload",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.RewardRotationProtocolTests.RewardRotationEntryStatePackets_WriteRejectInvalidRewardTypeLanes(rewardTypeLane: 4)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Reward.ClientRewardUpdateRequestClaimTests.RefreshOnly_TrailingLaneCannotPersistAGrantOrPublishAnUpsert(lane: 2)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Account.Reward.RewardRotationContentContextBuilderTests.Build_AssignsRewardRotationIndexAndCorrelatedThrottleMetadata",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "newCases": 8,
+    "interpretation": "Five baseline failures/three controls. All three synthetic lane tails create persisted Auth grant rows while Auth inventory/currency remain empty; the mapped decoder wrongly consumes extra bytes and an existing grant gets a synthetic upsert. Final eight cases cover correction. Two historical tests encoding the unsupported claim extension are superseded, with reusable fixtures retained.",
+    "owningBuild": {
+      "project": "Source/NexusForever.WorldServer/NexusForever.WorldServer.csproj",
+      "seconds": 21.53,
+      "warnings": 0,
+      "errors": 0,
+      "logSha256": "92db17c27abe1cd6070460eea2fd2e3b43f361b84ef8cc3958df3795c9c9262b"
+    },
+    "testBuild": {
+      "project": "Source/NexusForever.Game.Tests/NexusForever.Game.Tests.csproj",
+      "seconds": 13.8,
+      "buildProjectReferences": false,
+      "warnings": 0,
+      "errors": 0,
+      "logSha256": "049ecf60e3a6f790883a557b4e429ed4ae2342c256782e17042684bb0ea1dfa6"
+    },
+    "testDurationReported": "2 s",
+    "fullSolutionOrSuiteRun": false,
+    "scope": "Only the exact executed classes below are claimed; filter alternatives with no matching case add no qualification.",
+    "retainedDiagnostics": [
+      "Initial test compile used a nonexistent GrantFlagItem constant; corrected to existing GrantFlagItemOrModifier before the qualified baseline.",
+      "Catalog probe first referenced internal CollectContentIds; changed to the existing public BuildContexts seam. No product API was widened.",
+      "Read-only Ghidra writer pass reports missing function at14007d000 despite exit0; not counted as successful decompilation. Original PE bytes and installed LLVM supply explicit serializer evidence."
+    ],
+    "executedClasses": [
+      "NexusForever.Game.Tests.Account.Reward.AccountRewardRotationGrantManagerTests",
+      "NexusForever.Game.Tests.Account.Reward.GameTableRewardRotationRefreshProviderTests",
+      "NexusForever.Game.Tests.Account.Reward.RewardRotationContentContextBuilderTests",
+      "NexusForever.Game.Tests.Account.Reward.RewardRotationContentContextDeliveryTests",
+      "NexusForever.Game.Tests.Account.Reward.RewardRotationEntryStateBuilderTests",
+      "NexusForever.Game.Tests.Account.Reward.RewardRotationGrantClaimServiceTests",
+      "NexusForever.Game.Tests.Account.Reward.RewardRotationRefreshBuilderTests",
+      "NexusForever.Game.Tests.Account.Reward.RewardRotationScheduleBuilderTests",
+      "NexusForever.Game.Tests.Entity.RewardRotationProtocolTests",
+      "NexusForever.Game.Tests.Reward.ClientRewardUpdateRequestClaimTests",
+      "NexusForever.Game.Tests.Reward.RewardRotationRuntimeEvidenceTests"
+    ]
+  },
+  "native": {
+    "binarySha256": "231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5",
+    "binaryBytes": 13927576,
+    "reaIdentityEvidence": "ev_142ebc012c9fce11df9c67703c5d9e335b4810c52c1d752b63ed2828030231d4",
+    "reaReuse": "Retained PE-import identity for same exact binary; no repeated unchanged native-provider readiness call.",
+    "ranges": [
+      {
+        "va": "0x140636ba0",
+        "bytes": 160,
+        "sha256": "6d83622ebdfb7591603b5c7bc5fadd5cd7a33372fddd96c3158e373a54f35ec5",
+        "rawFileOffset": 6512544,
+        "source": "native-console.log",
+        "kind": "read-only Ghidra decompile or existing instruction block"
+      },
+      {
+        "va": "0x140636d10",
+        "bytes": 7584,
+        "sha256": "8b2e00f9e24cead66601109cd60426cb482cebff1330157a1f21e6b47bc605fb",
+        "rawFileOffset": 6512912,
+        "source": "native-console.log",
+        "kind": "read-only Ghidra decompile or existing instruction block"
+      },
+      {
+        "va": "0x140078400",
+        "bytes": 193,
+        "sha256": "7561fead1db2ac2714404ccaa3971ff189e8bbdca04c774acfc4cb95377269cd",
+        "rawFileOffset": 489472,
+        "source": "registration-console.log",
+        "kind": "read-only Ghidra decompile or existing instruction block"
+      },
+      {
+        "va": "0x14007d000",
+        "bytes": 5,
+        "sha256": "f907b6b86d129904e6a36fda8f1d25655c24717b65bfc62ec0b11c2be3b1ce74",
+        "rawFileOffset": 508928,
+        "rawHex": "48830220c3",
+        "source": "writer-llvm-full.log; size stub in writer-llvm.log",
+        "kind": "LLVM22.1.6 selected raw-code disassembly",
+        "role": "32-bit size stub"
+      },
+      {
+        "va": "0x14007d010",
+        "bytes": 151,
+        "sha256": "7e0c11265950ea5dea1e3a01d4aba71d2afa75b9b55db5e0b43270e6c938d850",
+        "rawFileOffset": 508944,
+        "rawHex": "4c8b4108448b124c8bc94d85c07477498b4018488b4910492b402048c1e003482bc14883f840725e498b5020b80100000048d3e048ffc8482102498b4910418bc248d3e0480902498b4910488d41274883e0f84883f8407615b8400000002ac10fb6c8498b402049d3ea44885008498b41104883c02048c1e80349014020498361100733c0c3498bd241b820000000498bc9e9c9932b00",
+        "source": "writer-llvm-full.log; size stub in writer-llvm.log",
+        "kind": "LLVM22.1.6 selected raw-code disassembly",
+        "role": "uint32 serializer"
+      }
+    ],
+    "conclusions": [
+      "Sender140636ba0 initializes one int32 with content-type index below7 and sends07CC.",
+      "Registration140078439-14007846e chooses object size4, size function14007d000, writer14007d010.",
+      "Size stub adds32 bits. Serializer loads one dword from payload and writes32 bits; no trailing content/reward lane."
+    ],
+    "limits": [
+      "Read-only static evidence; Ghidra12.0.4/JDK21 and LLVM22.1.6 are separate from unavailable REA native provider. No client launch or UI.",
+      "Ghidra did not define functions at the two writer entries; failed script is retained, despite process exit0. Selected LLVM disassembly supplies code evidence instead.",
+      "The Lua getter decompile is retained as an inspected range but is not used as a server selection/claim policy."
+    ]
+  },
+  "nativeProvenanceRow": {
+    "opcodeEvidenceId": "OPC-CLIENT-CLIENTREWARDUPDATEREQUEST-07CC",
+    "opcodeName": "ClientRewardUpdateRequest",
+    "opcodeHex": "0x07CC",
+    "direction": "Client",
+    "binary": "WildStar64.exe",
+    "nativeRegistrationFunction": "World opcode registry initializer",
+    "nativeRegistrationAddress": "14006c290",
+    "registrationEvidence": "Exact-hash registration span140078439-14007846e: opcode07CC, payload size4, size callback14007d000, writer14007d010; read-only Ghidra and LLVM serializer verified against PE bytes.",
+    "payloadReaderFunction": "",
+    "payloadReaderAddress": "",
+    "payloadWriterFunction": "UInt32 payload serializer",
+    "payloadWriterAddress": "14007d010",
+    "sendOrApplyOwnerFunction": "Reward_SendRewardUpdateRequest",
+    "sendOrApplyOwnerAddress": "140636ba0",
+    "payloadShape": "One uint32 content-type index; size callback adds32bits; no claim content/lane payload.",
+    "nexusModel": "ClientRewardUpdateRequest",
+    "nexusModelPath": "Source/NexusForever.Network.World/Message/Model/ClientRewardUpdateRequest.cs",
+    "nexusHandler": "ClientRewardUpdateRequestHandler",
+    "nexusHandlerPath": "Source/NexusForever.WorldServer/Network/Message/Handler/Reward/ClientRewardUpdateRequestHandler.cs",
+    "evidenceStatus": "Verified",
+    "findingPath": "Decomp/Analysis/REWARD_ROTATION_REFRESH_AUTHORITY.md",
+    "blockers": "Authoritative content/reward association, completion producer, schedule and durable delivery remain unqualified; this verifies refresh wire only.",
+    "lastReviewed": "2026-11-06"
+  },
+  "catalog": {
+    "data": {
+      "Inputs": [
+        {
+          "Name": "RewardRotationContent.tbl",
+          "Sha256": "583d231f995281ad1fa9ac91cb6d096a36fca3a6f64bed6282384c7a2242268f",
+          "Bytes": 720
+        },
+        {
+          "Name": "RewardRotationItem.tbl",
+          "Sha256": "3ee5ceb833d73b326db0184631aa606a71ef776c0d32b49e1b83c03faf14f128",
+          "Bytes": 928
+        },
+        {
+          "Name": "RewardRotationEssence.tbl",
+          "Sha256": "3f9402667176c993b09198eef9123db2ae7fc49d4c96e1828c6d13e674cca2dc",
+          "Bytes": 816
+        },
+        {
+          "Name": "RewardRotationModifier.tbl",
+          "Sha256": "dc8877a53545222fd66126c990ff488e3d76710065d5bd67bacb5330c1c6bc5a",
+          "Bytes": 992
+        },
+        {
+          "Name": "MatchTypeRewardRotationContent.tbl",
+          "Sha256": "4d3455c23d02d47d5ab56efb6224da9442ad86a68ecee8120a0052d05fe19bae",
+          "Bytes": 496
+        },
+        {
+          "Name": "World.tbl",
+          "Sha256": "55d6a26501e8da8adcbb7cf250206d97875f507e2fa5dc33a0f26c7bede27b7b",
+          "Bytes": 314096
+        },
+        {
+          "Name": "WorldZone.tbl",
+          "Sha256": "5fd9dd26245ef9bd3a431e5185f80d754cb59b796859716e252d10a715f3691c",
+          "Bytes": 162272
+        },
+        {
+          "Name": "PublicEvent.tbl",
+          "Sha256": "c1968cd17f869b2383c93f67fd2a409e68f64de214827e5e67fb08157a0595fd",
+          "Bytes": 38080
+        }
+      ],
+      "Content": [
+        {
+          "Id": 12,
+          "ContentTypeEnum": 1
+        },
+        {
+          "Id": 13,
+          "ContentTypeEnum": 1
+        },
+        {
+          "Id": 14,
+          "ContentTypeEnum": 1
+        },
+        {
+          "Id": 15,
+          "ContentTypeEnum": 1
+        },
+        {
+          "Id": 16,
+          "ContentTypeEnum": 1
+        },
+        {
+          "Id": 17,
+          "ContentTypeEnum": 1
+        },
+        {
+          "Id": 18,
+          "ContentTypeEnum": 3
+        },
+        {
+          "Id": 19,
+          "ContentTypeEnum": 3
+        },
+        {
+          "Id": 20,
+          "ContentTypeEnum": 3
+        },
+        {
+          "Id": 21,
+          "ContentTypeEnum": 3
+        },
+        {
+          "Id": 22,
+          "ContentTypeEnum": 3
+        },
+        {
+          "Id": 23,
+          "ContentTypeEnum": 3
+        },
+        {
+          "Id": 24,
+          "ContentTypeEnum": 3
+        },
+        {
+          "Id": 25,
+          "ContentTypeEnum": 3
+        },
+        {
+          "Id": 26,
+          "ContentTypeEnum": 4
+        },
+        {
+          "Id": 27,
+          "ContentTypeEnum": 4
+        },
+        {
+          "Id": 28,
+          "ContentTypeEnum": 4
+        },
+        {
+          "Id": 29,
+          "ContentTypeEnum": 4
+        },
+        {
+          "Id": 30,
+          "ContentTypeEnum": 4
+        },
+        {
+          "Id": 31,
+          "ContentTypeEnum": 4
+        },
+        {
+          "Id": 32,
+          "ContentTypeEnum": 4
+        },
+        {
+          "Id": 33,
+          "ContentTypeEnum": 4
+        },
+        {
+          "Id": 34,
+          "ContentTypeEnum": 4
+        },
+        {
+          "Id": 35,
+          "ContentTypeEnum": 4
+        },
+        {
+          "Id": 36,
+          "ContentTypeEnum": 4
+        },
+        {
+          "Id": 37,
+          "ContentTypeEnum": 4
+        },
+        {
+          "Id": 38,
+          "ContentTypeEnum": 5
+        },
+        {
+          "Id": 39,
+          "ContentTypeEnum": 5
+        },
+        {
+          "Id": 40,
+          "ContentTypeEnum": 5
+        },
+        {
+          "Id": 41,
+          "ContentTypeEnum": 2
+        },
+        {
+          "Id": 42,
+          "ContentTypeEnum": 2
+        },
+        {
+          "Id": 43,
+          "ContentTypeEnum": 2
+        },
+        {
+          "Id": 44,
+          "ContentTypeEnum": 2
+        },
+        {
+          "Id": 45,
+          "ContentTypeEnum": 1
+        },
+        {
+          "Id": 46,
+          "ContentTypeEnum": 6
+        }
+      ],
+      "Items": [
+        {
+          "Id": 3,
+          "RewardItemTypeEnum": 3,
+          "RewardItemObject": 18,
+          "Count": 6000,
+          "IconPath": "IconSprites:Icon_Windows_UI_Coin_Essence_Purple",
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 2
+        },
+        {
+          "Id": 4,
+          "RewardItemTypeEnum": 3,
+          "RewardItemObject": 18,
+          "Count": 3000,
+          "IconPath": "IconSprites:Icon_Windows_UI_Coin_Essence_Purple",
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 2
+        },
+        {
+          "Id": 5,
+          "RewardItemTypeEnum": 3,
+          "RewardItemObject": 18,
+          "Count": 5000,
+          "IconPath": "IconSprites:Icon_Windows_UI_Coin_Essence_Purple",
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 1
+        },
+        {
+          "Id": 6,
+          "RewardItemTypeEnum": 3,
+          "RewardItemObject": 18,
+          "Count": 4000,
+          "IconPath": "IconSprites:Icon_Windows_UI_Coin_Essence_Purple",
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 1
+        },
+        {
+          "Id": 7,
+          "RewardItemTypeEnum": 3,
+          "RewardItemObject": 18,
+          "Count": 4000,
+          "IconPath": "IconSprites:Icon_Windows_UI_Coin_Essence_Purple",
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 1
+        },
+        {
+          "Id": 18,
+          "RewardItemTypeEnum": 3,
+          "RewardItemObject": 18,
+          "Count": 1000,
+          "IconPath": "IconSprites:Icon_Windows_UI_Coin_Essence_Purple",
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 1
+        }
+      ],
+      "Essences": [
+        {
+          "Id": 5,
+          "AccountCurrencyTypeId": 15,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 2
+        },
+        {
+          "Id": 6,
+          "AccountCurrencyTypeId": 16,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 2
+        },
+        {
+          "Id": 7,
+          "AccountCurrencyTypeId": 17,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 2
+        },
+        {
+          "Id": 8,
+          "AccountCurrencyTypeId": 18,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 2
+        },
+        {
+          "Id": 9,
+          "AccountCurrencyTypeId": 15,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 2
+        },
+        {
+          "Id": 10,
+          "AccountCurrencyTypeId": 16,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 2
+        },
+        {
+          "Id": 11,
+          "AccountCurrencyTypeId": 17,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 2
+        },
+        {
+          "Id": 12,
+          "AccountCurrencyTypeId": 18,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 2
+        },
+        {
+          "Id": 13,
+          "AccountCurrencyTypeId": 15,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 1
+        },
+        {
+          "Id": 14,
+          "AccountCurrencyTypeId": 16,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 1
+        },
+        {
+          "Id": 15,
+          "AccountCurrencyTypeId": 17,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 1
+        },
+        {
+          "Id": 16,
+          "AccountCurrencyTypeId": 18,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 1
+        },
+        {
+          "Id": 17,
+          "AccountCurrencyTypeId": 15,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 1
+        },
+        {
+          "Id": 18,
+          "AccountCurrencyTypeId": 16,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 1
+        },
+        {
+          "Id": 19,
+          "AccountCurrencyTypeId": 17,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 1
+        },
+        {
+          "Id": 20,
+          "AccountCurrencyTypeId": 18,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 1
+        },
+        {
+          "Id": 21,
+          "AccountCurrencyTypeId": 15,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 1
+        },
+        {
+          "Id": 22,
+          "AccountCurrencyTypeId": 16,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 1
+        },
+        {
+          "Id": 23,
+          "AccountCurrencyTypeId": 17,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 1
+        },
+        {
+          "Id": 24,
+          "AccountCurrencyTypeId": 18,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 1
+        }
+      ],
+      "Modifiers": [
+        {
+          "Id": 5,
+          "RewardPropertyId": 38,
+          "RewardPropertyData": 0,
+          "ModifierValue": 5,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 2
+        },
+        {
+          "Id": 6,
+          "RewardPropertyId": 38,
+          "RewardPropertyData": 0,
+          "ModifierValue": 5,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 2
+        },
+        {
+          "Id": 7,
+          "RewardPropertyId": 38,
+          "RewardPropertyData": 0,
+          "ModifierValue": 5,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 2
+        },
+        {
+          "Id": 9,
+          "RewardPropertyId": 38,
+          "RewardPropertyData": 0,
+          "ModifierValue": 5,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 2
+        },
+        {
+          "Id": 10,
+          "RewardPropertyId": 38,
+          "RewardPropertyData": 0,
+          "ModifierValue": 5,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 2
+        },
+        {
+          "Id": 11,
+          "RewardPropertyId": 38,
+          "RewardPropertyData": 0,
+          "ModifierValue": 5,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 2
+        },
+        {
+          "Id": 12,
+          "RewardPropertyId": 38,
+          "RewardPropertyData": 0,
+          "ModifierValue": 15,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 1
+        },
+        {
+          "Id": 15,
+          "RewardPropertyId": 38,
+          "RewardPropertyData": 0,
+          "ModifierValue": 5,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 1
+        },
+        {
+          "Id": 16,
+          "RewardPropertyId": 38,
+          "RewardPropertyData": 0,
+          "ModifierValue": 5,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 1
+        },
+        {
+          "Id": 17,
+          "RewardPropertyId": 38,
+          "RewardPropertyData": 0,
+          "ModifierValue": 5,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 1
+        },
+        {
+          "Id": 18,
+          "RewardPropertyId": 38,
+          "RewardPropertyData": 0,
+          "ModifierValue": 15,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 1
+        },
+        {
+          "Id": 21,
+          "RewardPropertyId": 38,
+          "RewardPropertyData": 0,
+          "ModifierValue": 5,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 2
+        },
+        {
+          "Id": 22,
+          "RewardPropertyId": 38,
+          "RewardPropertyData": 0,
+          "ModifierValue": 5,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 2
+        },
+        {
+          "Id": 23,
+          "RewardPropertyId": 38,
+          "RewardPropertyData": 0,
+          "ModifierValue": 5,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 1
+        },
+        {
+          "Id": 24,
+          "RewardPropertyId": 38,
+          "RewardPropertyData": 0,
+          "ModifierValue": 5,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 1
+        },
+        {
+          "Id": 25,
+          "RewardPropertyId": 38,
+          "RewardPropertyData": 0,
+          "ModifierValue": 5,
+          "MinPlayerLevel": 50,
+          "WorldDifficultyFlags": 1
+        }
+      ],
+      "MatchTypes": [
+        {
+          "Id": 3,
+          "MatchTypeEnum": 1,
+          "RewardRotationContentIdRandomNormal": 46,
+          "RewardRotationContentIdRandomVeteran": 0
+        }
+      ],
+      "Contexts": [
+        {
+          "Index": 0,
+          "ContentIds": []
+        },
+        {
+          "Index": 1,
+          "ContentIds": [
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            45
+          ]
+        },
+        {
+          "Index": 2,
+          "ContentIds": [
+            41,
+            42,
+            43,
+            44
+          ]
+        },
+        {
+          "Index": 3,
+          "ContentIds": [
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25
+          ]
+        },
+        {
+          "Index": 4,
+          "ContentIds": [
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37
+          ]
+        },
+        {
+          "Index": 5,
+          "ContentIds": [
+            38,
+            39,
+            40
+          ]
+        },
+        {
+          "Index": 6,
+          "ContentIds": [
+            46
+          ]
+        }
+      ],
+      "Schema": {
+        "Content": [
+          "Id",
+          "ContentTypeEnum"
+        ],
+        "Item": [
+          "Id",
+          "RewardItemTypeEnum",
+          "RewardItemObject",
+          "Count",
+          "IconPath",
+          "MinPlayerLevel",
+          "WorldDifficultyFlags"
+        ],
+        "Essence": [
+          "Id",
+          "AccountCurrencyTypeId",
+          "MinPlayerLevel",
+          "WorldDifficultyFlags"
+        ],
+        "Modifier": [
+          "Id",
+          "RewardPropertyId",
+          "RewardPropertyData",
+          "ModifierValue",
+          "MinPlayerLevel",
+          "WorldDifficultyFlags"
+        ]
+      },
+      "ReaderSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+      "GameSha256": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+      "Limit": "Actual catalog/context input qualification only. No direct content-to-reward association, server schedule, completion owner, settlement or native/runtime/retail claim."
+    },
+    "sha256": "c2039700e966826b74c3d6a8e1709cc835b79b19e7db1fc7bf6a5525c43e8e23",
+    "buildSeconds": 2.59,
+    "interpretation": "Owning GameTableManager loads eight hash-qualified tables.35 content,6 item,20 essence,16 modifier rows and existing content context joins are qualified inputs only. Their schemas provide no direct content-to-reward association. Content-ID modulo selection and auction-derived duration remain an existing emulator fallback, not a retail quote.",
+    "rewardItemRawSummary": "All six item-catalog rows use raw RewardItemTypeEnum3/RewardItemObject18, counts1000..6000, minimum level50, difficulty masks1or2. No semantic currency or delivery policy is assigned by this milestone.",
+    "gameMatchesTestedAssembly": true
+  },
+  "binaries": {
+    "count": 138,
+    "baseline": {
+      "Aspire.Hosting.AppHost.dll": "9d241fac4ea6f912abe94bdaa1043633ce62c3989be4aadbee61cba7bd16c09f",
+      "Aspire.Hosting.dll": "9c5f526f0d2474bf1d547e09ccb2015522f4e92c48e3feb69538f0b7844f1d92",
+      "Aspire.Hosting.Docker.dll": "513608d74a705e3ad9319881a55ab245ebd0bf7127777ee5d3cbbcf66a27d358",
+      "Aspire.Hosting.MySql.dll": "91c9f18a1c51e6cfb39d8e6e3703181b113c07dad431c2d83af95d62877b453b",
+      "Aspire.Hosting.RabbitMQ.dll": "7b22016ca210d666f09f83e332ef8900db218c196b117dd1ad52c4cc53a55334",
+      "Azure.Core.Amqp.dll": "d53d832629b76fcae7f0e0352788c43c79e13480247dba11e37961b60e52c142",
+      "Azure.Core.dll": "1d6df436afdc73c30d476be938f6513c90ef8fc884a7bae280091a9bed0a5490",
+      "Azure.Identity.dll": "31574a3d35ffeb0e25a00ebb317937222fe5283b91af608613f2e3bf0f26c50a",
+      "Azure.Messaging.ServiceBus.dll": "6895bb412db0242bed71d10d3325b86d51611e578529c91108afdeb96bff08fc",
+      "Basic.Reference.Assemblies.Net100.dll": "35ce19c341334cc79951576712d105a75b681b58532c0dd010ac302936d208ba",
+      "CommandLine.dll": "8a55501cd1a1590a4bd93a17c6fdd2c01a0ed5bff1aea9036bdc78d98c9a3fad",
+      "DotNet.Glob.dll": "5263008e364a7a072eddf6d483ed988baf4f50dc0391e358b490ac6c01a6acf5",
+      "Fractions.dll": "e8407a878af8aec1f485f50a9f356c439371610fff20756d4f2284ac6c995cbf",
+      "Google.Protobuf.dll": "8997a69619b59db587a45e75a03c164a44afb613f82db138d35e1636e4cbdc73",
+      "Grpc.AspNetCore.Server.ClientFactory.dll": "c57f69775e2b8acda401efb5f152eba6cfd23d0fc9277b7d2e0ed1f1533158e3",
+      "Grpc.AspNetCore.Server.dll": "a66e142b1a3cbaf8ed3f0835faac72e0484d4eb8b1295e0d3d1de69d72e575b2",
+      "Grpc.Core.Api.dll": "440b6b0a5beca40718a01b3e892baa6e2fd03933f3f501fc40e2a956b0d937a1",
+      "Grpc.Net.Client.dll": "4070680267f1eba977958284088f8bf63bccb2f9fea873d6b244fd7d4b76afd3",
+      "Grpc.Net.ClientFactory.dll": "b62b17995c8576378e790ce1c5dff994c0cf605a6d7da7510078857f59f09d97",
+      "Grpc.Net.Common.dll": "c6ee8099f5fd7013825d2ff636375391c8992704ad40b9819f6c9078c25c6574",
+      "HealthChecks.MySql.dll": "9947a05820c92ceb061edf02271844da0fe5d6bd47a2364f6e14287f9ba1fc7d",
+      "HealthChecks.Rabbitmq.dll": "258cf95771cab344da41843ad69f19598fafe6847ce4200ea3045819ca654983",
+      "HealthChecks.Uris.dll": "32f8e0615a70e07c6c37c3e2e0774207c84d2f2695942fba82e7bc3bee1a5708",
+      "Hex1b.dll": "1113557a5737e1fac2fdda1f6579737c50eac4620e83fefb3c29fa2ecc9b12bc",
+      "KubernetesClient.dll": "1fdb3ddc3db829a3f4015afc328a00d3747fb228c7866df6f765be4cedb800ce",
+      "MessagePack.Annotations.dll": "bd364b1513c9df5d4063b6ee3602a5bf951507484f46a2366a6f2a9aeb1c4cf2",
+      "MessagePack.dll": "1ebc0c2baec5a89b3738e892d61c92f037dd588db52412e1e3bdf2adc407aa94",
+      "Microsoft.Azure.Amqp.dll": "eb58a9058b6cde95081608e1921967cc704d6e411745436b20c68caa37389980",
+      "Microsoft.Bcl.AsyncInterfaces.dll": "f1e1d6e1a2990071b450bdf6c9618408ac0e3f24a3c7a3bef1f50508ba732ca5",
+      "Microsoft.CodeAnalysis.CSharp.dll": "54142770a00e594942ee8923726ea49126303d0c523932886c2417eb66dc07f8",
+      "Microsoft.CodeAnalysis.dll": "ad857f1ce7f8e26c2722ade705fac3f90502a47590c14075df1327210f10b1ef",
+      "Microsoft.Data.Sqlite.dll": "1078d41c6c0f2cee48a8b706e3a54ce145705993f19f703d2b3bdf2abcc59088",
+      "Microsoft.EntityFrameworkCore.Abstractions.dll": "98c8252995283ef0884b904dbab03696ca7f71a05b8dde34dace5eeb9bf4382c",
+      "Microsoft.EntityFrameworkCore.dll": "acb89dff050d681fab6f86d2175929471200b9bed66ac9321cbe6a17eaa26933",
+      "Microsoft.EntityFrameworkCore.Relational.dll": "ac1146e68d53d56b79e9473f68c557999de99674be392bbbbb02ae93a296b93e",
+      "Microsoft.EntityFrameworkCore.Sqlite.dll": "b8c5027b27be2012094699cbd5260239778a1891dc5c1887797d331b67f0ef89",
+      "Microsoft.Extensions.AI.Abstractions.dll": "dd444efc3b9e2db2e4e7616909731b8dde824b554455014002167918b823eac4",
+      "Microsoft.Extensions.DependencyModel.dll": "2385bfbc9344e03acb2ff44f1ed21a3770fbafdf1ba4be2dbcacd42027b8c3bd",
+      "Microsoft.Extensions.Hosting.Systemd.dll": "b83961fadb9b88ed05ccb4dea45165b5393b4eaf1258dce0b7d0f60e9c0c1d46",
+      "Microsoft.Extensions.Hosting.WindowsServices.dll": "caa306587f796d0290aada4fdfaec1394f1f206409ea4d5a20f309b61fc59959",
+      "Microsoft.Identity.Client.dll": "5795027e9ae95eececb310a4fed3c502bb368039d186ab0884f64b7792b84717",
+      "Microsoft.Identity.Client.Extensions.Msal.dll": "07109a2f30df782300077a567ade47cbd0a0502c75cd7c8a62192f7d64bb004e",
+      "Microsoft.IdentityModel.Abstractions.dll": "24e97b54b6b5c234a124a336757e3116617ac6c30b655cdae74517dc2ecb5746",
+      "Microsoft.NET.StringTools.dll": "887dec541cd0a719b7111458eb90a83b4491d6dd24eff2b16cf03d2782fd26a0",
+      "Microsoft.TestPlatform.CommunicationUtilities.dll": "7ed97ccfd6f9c74f054de4cf84a7b4b0179eb6064e3a406e746849c6989e0d6a",
+      "Microsoft.TestPlatform.CoreUtilities.dll": "db70e6632a13a6d46cc3bb75f71273b3e9c64ca1e5dd0537572fb0dadf444009",
+      "Microsoft.TestPlatform.CrossPlatEngine.dll": "eaf5a87745d6ab7f7ef7db6e85dfa96817ecdb06b51a642edd6f9c6b805c3616",
+      "Microsoft.TestPlatform.PlatformAbstractions.dll": "f5541efe526d719aef103026770faf0435218afc5be90f653a01886ff8bebc80",
+      "Microsoft.TestPlatform.Utilities.dll": "358ae71a7f820dfd7e3b2d86ad9a7402c72166c7197bccd89f39b9d62ec3f0ae",
+      "Microsoft.VisualStudio.CodeCoverage.Shim.dll": "ef1f649984cf2ff2d4f51944270d6b1557752ba0099ec97894361abe3e6640c1",
+      "Microsoft.VisualStudio.TestPlatform.Common.dll": "6e16cf009ff956b97eef96aefc64a33a9bff7df86a8e7e6e5664ec03e648bcc1",
+      "Microsoft.VisualStudio.TestPlatform.ObjectModel.dll": "9d0a31a406ab064d2bc009a5523b5e73b71d3fe1dddd19cffe4a70f14cde3f75",
+      "Microsoft.VisualStudio.Threading.dll": "138e3548e487152de355b81303ae98e1bb52a31fe5c9107fa81a15f66404f426",
+      "Microsoft.VisualStudio.Validation.dll": "59cd5e953cce597847e515a73a1c0975cd5a6b94921a7b91e81045fa9922f57c",
+      "Microsoft.Win32.SystemEvents.dll": "ca495bf6c86b7f092d624928101985a941532d149dcd8acfea170f8a53be8850",
+      "Microting.EntityFrameworkCore.MySql.dll": "c8dc4aff0fa81bcb09c11c7bbd15780378e39317c32b23f75a85dea4a9894171",
+      "ModelContextProtocol.Core.dll": "cd434634473f1d6b945a5583d48782207a1e79b8202cf6adb174e41ed2ca4643",
+      "ModelContextProtocol.dll": "1f0760611e72588fbffe2c7bacfce55b9942d7ed5cb5cd4a3ded5d5f7600e930",
+      "MySqlConnector.dll": "a3104353e86cc96123d8015fc5a3bf4ab88b127b9180caaa4db9a006c49f467b",
+      "Nerdbank.MessagePack.dll": "fc086ce3623a9a3f9213159d438c642d225046e371489e8e7f126d4c62f188fa",
+      "Nerdbank.Streams.dll": "e5c90ffcb7a0bd0cedf51ac33e818b9f64045e9839b19701eb73460356631872",
+      "Newtonsoft.Json.dll": "a28c251dfe36d881e9e2462e171441b8b0ec156fe3f452602c9149b1b9efe05b",
+      "Nexus.Archive.dll": "fd2fc160b92cd14a6f226a5095cde744d81a3c807ca45bf78c91cf2a2ba0237b",
+      "NexusForever.API.Account.Client.dll": "dcc138d6ebbedc6142fecadbcd0512815a32f0eb7c0266a03bbf461824951418",
+      "NexusForever.API.Character.Client.dll": "8b6ec8947c3c48537b39ee8eb5927ea4a873a149d27f25fbed2c518f820fdcc3",
+      "NexusForever.API.dll": "2cab2612f5a2463d1d091d55619dec8c718609ea3df939ecfba8e8373b2aacbe",
+      "NexusForever.Aspire.AppHost.dll": "502a444ce79cb4b804299940f807544e7ea50fa9ac0194f022bc07a46bbe60a9",
+      "NexusForever.Aspire.Database.Migrations.dll": "4924c36a806c4707d68da5e6541f0b6bd462a1eafa382e7a5710403ab80d0491",
+      "NexusForever.Cryptography.dll": "0be240820a34f144d7a0bcbf5604e493949dc092582b850ec06a4dbb5fe41a02",
+      "NexusForever.Database.Auth.dll": "a5f2852d869f372f13809519c4745940496159001a417b551a3a8aa2677cf382",
+      "NexusForever.Database.Character.dll": "e07deffeb14813d67ecf1bb0422707d3a108208fa0228ebf89e7f0c34b46e535",
+      "NexusForever.Database.Chat.dll": "1ca123c52f3930de7eaaf49ff296f817242c45fc5cac4e24ac6ac0e9e8762a2c",
+      "NexusForever.Database.dll": "a30b2064fd1410686eded7ab814429988ebccea3cbad8e2a18d5f07191c56c20",
+      "NexusForever.Database.Friendship.dll": "c34de843d4336bfee2edd1b4d7f8b25b873d6ae1712c6e3af2a652af2b71acb3",
+      "NexusForever.Database.Group.dll": "e6a745dac3fb9ef3e2c78ad6d685347aa1b50825bf631834c63279d4d366eabd",
+      "NexusForever.Database.Query.dll": "22058e812ee2ff729630958815a8559bdc189af43397e75888e6f09d304c70b2",
+      "NexusForever.Database.Sqlite.Migrations.dll": "773cafb72de8fa05f99e51bac4bf08a08ff29deece50e26505d41b333a7d07e9",
+      "NexusForever.Database.World.dll": "02b482a13ddcd662a69c8e0aebaf1d6dfcef7a8d263e561569d02dc94115c1e4",
+      "NexusForever.Game.Abstract.dll": "fd2b3c0aae019258dc99374507fa9d7ec017b7dd33b729dc53c295e27df900bc",
+      "NexusForever.Game.dll": "8f3ff35ef1abb11d9447d2243343b22e118dea3ee08811f901a5f8481b44ec30",
+      "NexusForever.Game.Static.dll": "779eb188ecdfdbd6d3f50dfa60466b11e4472a4762e4c827d998eeae7136961e",
+      "NexusForever.Game.Tests.dll": "1b692ea3f7bc9794d1348d7411d3fe94f455468c77db353904d661471be746b2",
+      "NexusForever.GameTable.dll": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+      "NexusForever.IO.dll": "730c11e787d926cc0740c8277e1bc1666ab38e533d8ed07b4678ba97c6b6e0ca",
+      "NexusForever.LoadTest.dll": "77a5e488f9be259dc1762280bcde6fcd6c7ec0cb56953b78454d5b11fd1013fb",
+      "NexusForever.MapGenerator.dll": "ea62235d26f8d42b1090d906202a125a8a360473dd1d9bf93733fb7af60f0778",
+      "NexusForever.Network.Auth.dll": "de7bf01546c28442714e0c7486aa37d01bc142f6168e0fbff883e116f4ebbaa9",
+      "NexusForever.Network.dll": "ab9aa9f265093846927da9b4b2871e6573b8cdaab304f7bfc5a9329d3f3ee290",
+      "NexusForever.Network.Internal.dll": "f8223b4b8b4e65db8b10af9a13959915e8e35b95a49443ec000188a0524efcae",
+      "NexusForever.Network.Sts.dll": "c567a1260a9e6c00dce554d67e9df25511a2e1295cac59e2497735349f381232",
+      "NexusForever.Network.World.dll": "2c1edaf7620b57f1f6d48d36975dc072041b58fbe15a8a07366aac1e97972e39",
+      "NexusForever.Script.dll": "89eb5a09d23f0a9db832c98aded398108c40cab37f734eba6a900bb98a52d0ac",
+      "NexusForever.Script.Instance.dll": "69c624fe68d2993ad75773be5287681ce65895e8e0a6d5b9215a6c16c957498c",
+      "NexusForever.Script.Main.dll": "d3e958b67b19dadb7c1ae2774af67e17fbf770369186aa500433511be3b0d48c",
+      "NexusForever.Server.Character.dll": "19e92c61311aa4a58953aaf4f4bb9eba985663a29984a562dc7f652322596b31",
+      "NexusForever.Server.ChatServer.dll": "534e5e3a67d5e641ed3e1782ff80432a0ac9e01913b12f1125f44264876f0365",
+      "NexusForever.Server.Friendship.dll": "fcedff6e42584776a6c2e538eb3ab560509cebb33b816fe807f0ad6960eac9d7",
+      "NexusForever.Server.GroupServer.dll": "d916050d197079a147561667b0402af0857a42386173497ba8a4fdf21f6fc28b",
+      "NexusForever.Shared.dll": "0ed6771d65fededb95a55bb4463d1f7a102dd7d22ff84063e80e7301cd2304f0",
+      "NexusForever.StsServer.dll": "1d9624ba15b8c39c4af097cd8fd9b830bcf268eef6657f88b8c6687239133f78",
+      "NexusForever.WorldServer.dll": "8a2531760688e5e6afca5bdd8e4d38c37d5ea509c30e18141c2bc1451fe3ff85",
+      "NLog.dll": "9a706ace1a30cf5a9e169ceddf39d69df30ad99da5c4775d86413ac766cbb825",
+      "NLog.Extensions.Logging.dll": "9372ad36ff9c48826905d6eee58598b5df42334f9b35b93527927f38ae273504",
+      "OpenTelemetry.Api.dll": "9c636063c335902c73f916c133de22fe8af476c68189080176443b0b82d4d399",
+      "OpenTelemetry.Api.ProviderBuilderExtensions.dll": "fcd57330a4a3252773a0c71b9a497ee7834f415210fa405151275f97575ed164",
+      "OpenTelemetry.dll": "a19a8b4d39a00dca043919473c0d5b46a174a4363d611c8dd237b8f2b3f8a5b8",
+      "OpenTelemetry.Exporter.OpenTelemetryProtocol.dll": "3297002036e73a2ea7385d9521464dee725bbbd6491e20c559498cbe81598a3c",
+      "OpenTelemetry.Extensions.Hosting.dll": "97e52b88bfbad51767829ba834a3a35a63692170109c21a7103f5170c389d6f9",
+      "Polly.Core.dll": "f7f50017ca9f457b854498358ae595c2a8ab69c1fd8b915139d22bed8f7e4f2a",
+      "PolyType.dll": "33d30bc1baf80b85ad9b428a388d9999eaf20999d555a6e684aa758f4f679968",
+      "QRCoder.dll": "2c9a588e08ec91f00fac37a4a43995c8f1966a6cce615e9e8c063eec3d0f145a",
+      "Quartz.dll": "b195bbaec686ec9d3a8c38fdf961cf0f3818455c99c9553e1c317a55a6024069",
+      "Quartz.Extensions.DependencyInjection.dll": "9e53ba9d6862cf12b11bd92b07527b1398b905a1adcf72b7c40076695c707a9d",
+      "Quartz.Extensions.Hosting.dll": "6cc40edeb789e85b7455045dc864b91a369fb3415323d4d45537bbaf3849e361",
+      "RabbitMQ.Client.dll": "22d9ffa8cc2de798c61ec95b3f0b576c90d3370afa7128998859d3b2734d2910",
+      "Rebus.AzureServiceBus.dll": "522bb2cc849518f9178bcb0611c7235336fe823567383f43c33bf16ae97a920f",
+      "Rebus.dll": "93ae1869924a4a114ecc2c01046369819c0f4ffffba044bc5655013846ef4dea",
+      "Rebus.RabbitMq.dll": "911aedfb5da1a76585928888d694d54880af8a1c2ec94275d8efc4ed77562413",
+      "Rebus.ServiceProvider.dll": "ddc438278adb90788513722b7ad07ae6c3cbc92f491954fed7251f9b4a4bcdc4",
+      "Semver.dll": "a99edcb96efce3d6ff019c667e132d81d879f5a92bc9337591e0b7309d7f493f",
+      "SharpCompress.dll": "db4d49f11b30f2ababc6ed98551de818d8b6f15da88fada8bccd360ea3e12d73",
+      "SQLitePCLRaw.batteries_v2.dll": "94ac800c6b93ae50a025f247547781debe18391110667c5e242f51d8ac188ffb",
+      "SQLitePCLRaw.core.dll": "3d2ed8e186f124f988ebdb45d0354185b424357be2433bba0033ab9ec31bd25b",
+      "SQLitePCLRaw.provider.e_sqlite3.dll": "232990c8372aff30574eef9cc280b486ee6f39f8a66f83ea495dd0dbae98740c",
+      "StreamJsonRpc.dll": "ddc6a4d60e6cc940aae31faafc1fdcdbe520dfa51bec8dfc7f505449291536d5",
+      "System.ClientModel.dll": "dec5e22b71a1685c5e6e97cd28b629f0aa6703fb87b6950df28e79fc1804290c",
+      "System.Drawing.Common.dll": "98d07e6b1e7d3641a8608a360b3dc273fe8a0f78926b6e1e5f679a7a074d491f",
+      "System.IO.Hashing.dll": "cea6795cf9f7b139b2215ff6de794a6f6e44e78640fb30fa4c0d5fa8472df8e5",
+      "System.Memory.Data.dll": "2c1035b0106dbb2de7913d151e06071ed617bb58bbb3d6cd46a2dd0f6a03617b",
+      "System.Security.Cryptography.ProtectedData.dll": "80566f0839ece5946e66bf9f00d723e59e371ba1341a18e00c7c7a7c49298e1d",
+      "System.ServiceProcess.ServiceController.dll": "486a4fbb24ab089926fb05ab6b95af7bb04d2ff35eef55b6858437ebc4d040dc",
+      "testhost.dll": "3c2a3ed4b330b9cdaf1ee62580b7d373ec58ccf8b71fc34e0a51de28620899e9",
+      "xunit.abstractions.dll": "3166dc70323fb30ccf1cedb0fe86f2ad122c46d254542342d90386efc4c9285c",
+      "xunit.assert.dll": "bcd9711b22d227ac8cd4c1568e72433a0f576d2ec8aae64ac508081892015b1d",
+      "xunit.core.dll": "2f7feeec8c6dec7df684c25fb80aadb292b963d09723460f03d53c5ad2088acc",
+      "xunit.execution.dotnet.dll": "e70febe547c15f8155db3e2d95c3ba4445a59cbc21a3e7541ab22ed49d3dcf7b",
+      "xunit.runner.visualstudio.testadapter.dll": "384aba4bad96399a7fd2205a5a3517b643a16f4d7e843bd0b92e1e42f81fce2a",
+      "YamlDotNet.dll": "d618138109a40e4a7250e49e2abad8c450e3636bee18d7499ab231e37fa9150a"
+    },
+    "final": {
+      "Aspire.Hosting.AppHost.dll": "9d241fac4ea6f912abe94bdaa1043633ce62c3989be4aadbee61cba7bd16c09f",
+      "Aspire.Hosting.dll": "9c5f526f0d2474bf1d547e09ccb2015522f4e92c48e3feb69538f0b7844f1d92",
+      "Aspire.Hosting.Docker.dll": "513608d74a705e3ad9319881a55ab245ebd0bf7127777ee5d3cbbcf66a27d358",
+      "Aspire.Hosting.MySql.dll": "91c9f18a1c51e6cfb39d8e6e3703181b113c07dad431c2d83af95d62877b453b",
+      "Aspire.Hosting.RabbitMQ.dll": "7b22016ca210d666f09f83e332ef8900db218c196b117dd1ad52c4cc53a55334",
+      "Azure.Core.Amqp.dll": "d53d832629b76fcae7f0e0352788c43c79e13480247dba11e37961b60e52c142",
+      "Azure.Core.dll": "1d6df436afdc73c30d476be938f6513c90ef8fc884a7bae280091a9bed0a5490",
+      "Azure.Identity.dll": "31574a3d35ffeb0e25a00ebb317937222fe5283b91af608613f2e3bf0f26c50a",
+      "Azure.Messaging.ServiceBus.dll": "6895bb412db0242bed71d10d3325b86d51611e578529c91108afdeb96bff08fc",
+      "Basic.Reference.Assemblies.Net100.dll": "35ce19c341334cc79951576712d105a75b681b58532c0dd010ac302936d208ba",
+      "CommandLine.dll": "8a55501cd1a1590a4bd93a17c6fdd2c01a0ed5bff1aea9036bdc78d98c9a3fad",
+      "DotNet.Glob.dll": "5263008e364a7a072eddf6d483ed988baf4f50dc0391e358b490ac6c01a6acf5",
+      "Fractions.dll": "e8407a878af8aec1f485f50a9f356c439371610fff20756d4f2284ac6c995cbf",
+      "Google.Protobuf.dll": "8997a69619b59db587a45e75a03c164a44afb613f82db138d35e1636e4cbdc73",
+      "Grpc.AspNetCore.Server.ClientFactory.dll": "c57f69775e2b8acda401efb5f152eba6cfd23d0fc9277b7d2e0ed1f1533158e3",
+      "Grpc.AspNetCore.Server.dll": "a66e142b1a3cbaf8ed3f0835faac72e0484d4eb8b1295e0d3d1de69d72e575b2",
+      "Grpc.Core.Api.dll": "440b6b0a5beca40718a01b3e892baa6e2fd03933f3f501fc40e2a956b0d937a1",
+      "Grpc.Net.Client.dll": "4070680267f1eba977958284088f8bf63bccb2f9fea873d6b244fd7d4b76afd3",
+      "Grpc.Net.ClientFactory.dll": "b62b17995c8576378e790ce1c5dff994c0cf605a6d7da7510078857f59f09d97",
+      "Grpc.Net.Common.dll": "c6ee8099f5fd7013825d2ff636375391c8992704ad40b9819f6c9078c25c6574",
+      "HealthChecks.MySql.dll": "9947a05820c92ceb061edf02271844da0fe5d6bd47a2364f6e14287f9ba1fc7d",
+      "HealthChecks.Rabbitmq.dll": "258cf95771cab344da41843ad69f19598fafe6847ce4200ea3045819ca654983",
+      "HealthChecks.Uris.dll": "32f8e0615a70e07c6c37c3e2e0774207c84d2f2695942fba82e7bc3bee1a5708",
+      "Hex1b.dll": "1113557a5737e1fac2fdda1f6579737c50eac4620e83fefb3c29fa2ecc9b12bc",
+      "KubernetesClient.dll": "1fdb3ddc3db829a3f4015afc328a00d3747fb228c7866df6f765be4cedb800ce",
+      "MessagePack.Annotations.dll": "bd364b1513c9df5d4063b6ee3602a5bf951507484f46a2366a6f2a9aeb1c4cf2",
+      "MessagePack.dll": "1ebc0c2baec5a89b3738e892d61c92f037dd588db52412e1e3bdf2adc407aa94",
+      "Microsoft.Azure.Amqp.dll": "eb58a9058b6cde95081608e1921967cc704d6e411745436b20c68caa37389980",
+      "Microsoft.Bcl.AsyncInterfaces.dll": "f1e1d6e1a2990071b450bdf6c9618408ac0e3f24a3c7a3bef1f50508ba732ca5",
+      "Microsoft.CodeAnalysis.CSharp.dll": "54142770a00e594942ee8923726ea49126303d0c523932886c2417eb66dc07f8",
+      "Microsoft.CodeAnalysis.dll": "ad857f1ce7f8e26c2722ade705fac3f90502a47590c14075df1327210f10b1ef",
+      "Microsoft.Data.Sqlite.dll": "1078d41c6c0f2cee48a8b706e3a54ce145705993f19f703d2b3bdf2abcc59088",
+      "Microsoft.EntityFrameworkCore.Abstractions.dll": "98c8252995283ef0884b904dbab03696ca7f71a05b8dde34dace5eeb9bf4382c",
+      "Microsoft.EntityFrameworkCore.dll": "acb89dff050d681fab6f86d2175929471200b9bed66ac9321cbe6a17eaa26933",
+      "Microsoft.EntityFrameworkCore.Relational.dll": "ac1146e68d53d56b79e9473f68c557999de99674be392bbbbb02ae93a296b93e",
+      "Microsoft.EntityFrameworkCore.Sqlite.dll": "b8c5027b27be2012094699cbd5260239778a1891dc5c1887797d331b67f0ef89",
+      "Microsoft.Extensions.AI.Abstractions.dll": "dd444efc3b9e2db2e4e7616909731b8dde824b554455014002167918b823eac4",
+      "Microsoft.Extensions.DependencyModel.dll": "2385bfbc9344e03acb2ff44f1ed21a3770fbafdf1ba4be2dbcacd42027b8c3bd",
+      "Microsoft.Extensions.Hosting.Systemd.dll": "b83961fadb9b88ed05ccb4dea45165b5393b4eaf1258dce0b7d0f60e9c0c1d46",
+      "Microsoft.Extensions.Hosting.WindowsServices.dll": "caa306587f796d0290aada4fdfaec1394f1f206409ea4d5a20f309b61fc59959",
+      "Microsoft.Identity.Client.dll": "5795027e9ae95eececb310a4fed3c502bb368039d186ab0884f64b7792b84717",
+      "Microsoft.Identity.Client.Extensions.Msal.dll": "07109a2f30df782300077a567ade47cbd0a0502c75cd7c8a62192f7d64bb004e",
+      "Microsoft.IdentityModel.Abstractions.dll": "24e97b54b6b5c234a124a336757e3116617ac6c30b655cdae74517dc2ecb5746",
+      "Microsoft.NET.StringTools.dll": "887dec541cd0a719b7111458eb90a83b4491d6dd24eff2b16cf03d2782fd26a0",
+      "Microsoft.TestPlatform.CommunicationUtilities.dll": "7ed97ccfd6f9c74f054de4cf84a7b4b0179eb6064e3a406e746849c6989e0d6a",
+      "Microsoft.TestPlatform.CoreUtilities.dll": "db70e6632a13a6d46cc3bb75f71273b3e9c64ca1e5dd0537572fb0dadf444009",
+      "Microsoft.TestPlatform.CrossPlatEngine.dll": "eaf5a87745d6ab7f7ef7db6e85dfa96817ecdb06b51a642edd6f9c6b805c3616",
+      "Microsoft.TestPlatform.PlatformAbstractions.dll": "f5541efe526d719aef103026770faf0435218afc5be90f653a01886ff8bebc80",
+      "Microsoft.TestPlatform.Utilities.dll": "358ae71a7f820dfd7e3b2d86ad9a7402c72166c7197bccd89f39b9d62ec3f0ae",
+      "Microsoft.VisualStudio.CodeCoverage.Shim.dll": "ef1f649984cf2ff2d4f51944270d6b1557752ba0099ec97894361abe3e6640c1",
+      "Microsoft.VisualStudio.TestPlatform.Common.dll": "6e16cf009ff956b97eef96aefc64a33a9bff7df86a8e7e6e5664ec03e648bcc1",
+      "Microsoft.VisualStudio.TestPlatform.ObjectModel.dll": "9d0a31a406ab064d2bc009a5523b5e73b71d3fe1dddd19cffe4a70f14cde3f75",
+      "Microsoft.VisualStudio.Threading.dll": "138e3548e487152de355b81303ae98e1bb52a31fe5c9107fa81a15f66404f426",
+      "Microsoft.VisualStudio.Validation.dll": "59cd5e953cce597847e515a73a1c0975cd5a6b94921a7b91e81045fa9922f57c",
+      "Microsoft.Win32.SystemEvents.dll": "ca495bf6c86b7f092d624928101985a941532d149dcd8acfea170f8a53be8850",
+      "Microting.EntityFrameworkCore.MySql.dll": "c8dc4aff0fa81bcb09c11c7bbd15780378e39317c32b23f75a85dea4a9894171",
+      "ModelContextProtocol.Core.dll": "cd434634473f1d6b945a5583d48782207a1e79b8202cf6adb174e41ed2ca4643",
+      "ModelContextProtocol.dll": "1f0760611e72588fbffe2c7bacfce55b9942d7ed5cb5cd4a3ded5d5f7600e930",
+      "MySqlConnector.dll": "a3104353e86cc96123d8015fc5a3bf4ab88b127b9180caaa4db9a006c49f467b",
+      "Nerdbank.MessagePack.dll": "fc086ce3623a9a3f9213159d438c642d225046e371489e8e7f126d4c62f188fa",
+      "Nerdbank.Streams.dll": "e5c90ffcb7a0bd0cedf51ac33e818b9f64045e9839b19701eb73460356631872",
+      "Newtonsoft.Json.dll": "a28c251dfe36d881e9e2462e171441b8b0ec156fe3f452602c9149b1b9efe05b",
+      "Nexus.Archive.dll": "fd2fc160b92cd14a6f226a5095cde744d81a3c807ca45bf78c91cf2a2ba0237b",
+      "NexusForever.API.Account.Client.dll": "dcc138d6ebbedc6142fecadbcd0512815a32f0eb7c0266a03bbf461824951418",
+      "NexusForever.API.Character.Client.dll": "8b6ec8947c3c48537b39ee8eb5927ea4a873a149d27f25fbed2c518f820fdcc3",
+      "NexusForever.API.dll": "2cab2612f5a2463d1d091d55619dec8c718609ea3df939ecfba8e8373b2aacbe",
+      "NexusForever.Aspire.AppHost.dll": "502a444ce79cb4b804299940f807544e7ea50fa9ac0194f022bc07a46bbe60a9",
+      "NexusForever.Aspire.Database.Migrations.dll": "4924c36a806c4707d68da5e6541f0b6bd462a1eafa382e7a5710403ab80d0491",
+      "NexusForever.Cryptography.dll": "0be240820a34f144d7a0bcbf5604e493949dc092582b850ec06a4dbb5fe41a02",
+      "NexusForever.Database.Auth.dll": "a5f2852d869f372f13809519c4745940496159001a417b551a3a8aa2677cf382",
+      "NexusForever.Database.Character.dll": "e07deffeb14813d67ecf1bb0422707d3a108208fa0228ebf89e7f0c34b46e535",
+      "NexusForever.Database.Chat.dll": "1ca123c52f3930de7eaaf49ff296f817242c45fc5cac4e24ac6ac0e9e8762a2c",
+      "NexusForever.Database.dll": "a30b2064fd1410686eded7ab814429988ebccea3cbad8e2a18d5f07191c56c20",
+      "NexusForever.Database.Friendship.dll": "c34de843d4336bfee2edd1b4d7f8b25b873d6ae1712c6e3af2a652af2b71acb3",
+      "NexusForever.Database.Group.dll": "e6a745dac3fb9ef3e2c78ad6d685347aa1b50825bf631834c63279d4d366eabd",
+      "NexusForever.Database.Query.dll": "22058e812ee2ff729630958815a8559bdc189af43397e75888e6f09d304c70b2",
+      "NexusForever.Database.Sqlite.Migrations.dll": "773cafb72de8fa05f99e51bac4bf08a08ff29deece50e26505d41b333a7d07e9",
+      "NexusForever.Database.World.dll": "02b482a13ddcd662a69c8e0aebaf1d6dfcef7a8d263e561569d02dc94115c1e4",
+      "NexusForever.Game.Abstract.dll": "d60e08db57dc4eb27fd913965d01c07d456dad3ddabb4ccea144786583b55329",
+      "NexusForever.Game.dll": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+      "NexusForever.Game.Static.dll": "779eb188ecdfdbd6d3f50dfa60466b11e4472a4762e4c827d998eeae7136961e",
+      "NexusForever.Game.Tests.dll": "be5cb005efbbe9b90c6118fa58095b32b56ca47f92b5fbacdb5dd76fa2d816f5",
+      "NexusForever.GameTable.dll": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+      "NexusForever.IO.dll": "730c11e787d926cc0740c8277e1bc1666ab38e533d8ed07b4678ba97c6b6e0ca",
+      "NexusForever.LoadTest.dll": "77a5e488f9be259dc1762280bcde6fcd6c7ec0cb56953b78454d5b11fd1013fb",
+      "NexusForever.MapGenerator.dll": "ea62235d26f8d42b1090d906202a125a8a360473dd1d9bf93733fb7af60f0778",
+      "NexusForever.Network.Auth.dll": "de7bf01546c28442714e0c7486aa37d01bc142f6168e0fbff883e116f4ebbaa9",
+      "NexusForever.Network.dll": "ab9aa9f265093846927da9b4b2871e6573b8cdaab304f7bfc5a9329d3f3ee290",
+      "NexusForever.Network.Internal.dll": "f8223b4b8b4e65db8b10af9a13959915e8e35b95a49443ec000188a0524efcae",
+      "NexusForever.Network.Sts.dll": "c567a1260a9e6c00dce554d67e9df25511a2e1295cac59e2497735349f381232",
+      "NexusForever.Network.World.dll": "f4bfeb4c4723c21796e91f9cab17d81121bfb80f2c82be6afb7696363f0d702d",
+      "NexusForever.Script.dll": "582af4ca58b07ed2ee2e109aa76660122e23bc9c680e7ff13f306bb516a66476",
+      "NexusForever.Script.Instance.dll": "69c624fe68d2993ad75773be5287681ce65895e8e0a6d5b9215a6c16c957498c",
+      "NexusForever.Script.Main.dll": "d3e958b67b19dadb7c1ae2774af67e17fbf770369186aa500433511be3b0d48c",
+      "NexusForever.Server.Character.dll": "19e92c61311aa4a58953aaf4f4bb9eba985663a29984a562dc7f652322596b31",
+      "NexusForever.Server.ChatServer.dll": "534e5e3a67d5e641ed3e1782ff80432a0ac9e01913b12f1125f44264876f0365",
+      "NexusForever.Server.Friendship.dll": "fcedff6e42584776a6c2e538eb3ab560509cebb33b816fe807f0ad6960eac9d7",
+      "NexusForever.Server.GroupServer.dll": "d916050d197079a147561667b0402af0857a42386173497ba8a4fdf21f6fc28b",
+      "NexusForever.Shared.dll": "0ed6771d65fededb95a55bb4463d1f7a102dd7d22ff84063e80e7301cd2304f0",
+      "NexusForever.StsServer.dll": "1d9624ba15b8c39c4af097cd8fd9b830bcf268eef6657f88b8c6687239133f78",
+      "NexusForever.WorldServer.dll": "190e1c0341aebc90d3b1fb73ea5f66e3e03ae71b87258b95b76b76484b318586",
+      "NLog.dll": "9a706ace1a30cf5a9e169ceddf39d69df30ad99da5c4775d86413ac766cbb825",
+      "NLog.Extensions.Logging.dll": "9372ad36ff9c48826905d6eee58598b5df42334f9b35b93527927f38ae273504",
+      "OpenTelemetry.Api.dll": "9c636063c335902c73f916c133de22fe8af476c68189080176443b0b82d4d399",
+      "OpenTelemetry.Api.ProviderBuilderExtensions.dll": "fcd57330a4a3252773a0c71b9a497ee7834f415210fa405151275f97575ed164",
+      "OpenTelemetry.dll": "a19a8b4d39a00dca043919473c0d5b46a174a4363d611c8dd237b8f2b3f8a5b8",
+      "OpenTelemetry.Exporter.OpenTelemetryProtocol.dll": "3297002036e73a2ea7385d9521464dee725bbbd6491e20c559498cbe81598a3c",
+      "OpenTelemetry.Extensions.Hosting.dll": "97e52b88bfbad51767829ba834a3a35a63692170109c21a7103f5170c389d6f9",
+      "Polly.Core.dll": "f7f50017ca9f457b854498358ae595c2a8ab69c1fd8b915139d22bed8f7e4f2a",
+      "PolyType.dll": "33d30bc1baf80b85ad9b428a388d9999eaf20999d555a6e684aa758f4f679968",
+      "QRCoder.dll": "2c9a588e08ec91f00fac37a4a43995c8f1966a6cce615e9e8c063eec3d0f145a",
+      "Quartz.dll": "b195bbaec686ec9d3a8c38fdf961cf0f3818455c99c9553e1c317a55a6024069",
+      "Quartz.Extensions.DependencyInjection.dll": "9e53ba9d6862cf12b11bd92b07527b1398b905a1adcf72b7c40076695c707a9d",
+      "Quartz.Extensions.Hosting.dll": "6cc40edeb789e85b7455045dc864b91a369fb3415323d4d45537bbaf3849e361",
+      "RabbitMQ.Client.dll": "22d9ffa8cc2de798c61ec95b3f0b576c90d3370afa7128998859d3b2734d2910",
+      "Rebus.AzureServiceBus.dll": "522bb2cc849518f9178bcb0611c7235336fe823567383f43c33bf16ae97a920f",
+      "Rebus.dll": "93ae1869924a4a114ecc2c01046369819c0f4ffffba044bc5655013846ef4dea",
+      "Rebus.RabbitMq.dll": "911aedfb5da1a76585928888d694d54880af8a1c2ec94275d8efc4ed77562413",
+      "Rebus.ServiceProvider.dll": "ddc438278adb90788513722b7ad07ae6c3cbc92f491954fed7251f9b4a4bcdc4",
+      "Semver.dll": "a99edcb96efce3d6ff019c667e132d81d879f5a92bc9337591e0b7309d7f493f",
+      "SharpCompress.dll": "db4d49f11b30f2ababc6ed98551de818d8b6f15da88fada8bccd360ea3e12d73",
+      "SQLitePCLRaw.batteries_v2.dll": "94ac800c6b93ae50a025f247547781debe18391110667c5e242f51d8ac188ffb",
+      "SQLitePCLRaw.core.dll": "3d2ed8e186f124f988ebdb45d0354185b424357be2433bba0033ab9ec31bd25b",
+      "SQLitePCLRaw.provider.e_sqlite3.dll": "232990c8372aff30574eef9cc280b486ee6f39f8a66f83ea495dd0dbae98740c",
+      "StreamJsonRpc.dll": "ddc6a4d60e6cc940aae31faafc1fdcdbe520dfa51bec8dfc7f505449291536d5",
+      "System.ClientModel.dll": "dec5e22b71a1685c5e6e97cd28b629f0aa6703fb87b6950df28e79fc1804290c",
+      "System.Drawing.Common.dll": "98d07e6b1e7d3641a8608a360b3dc273fe8a0f78926b6e1e5f679a7a074d491f",
+      "System.IO.Hashing.dll": "cea6795cf9f7b139b2215ff6de794a6f6e44e78640fb30fa4c0d5fa8472df8e5",
+      "System.Memory.Data.dll": "2c1035b0106dbb2de7913d151e06071ed617bb58bbb3d6cd46a2dd0f6a03617b",
+      "System.Security.Cryptography.ProtectedData.dll": "80566f0839ece5946e66bf9f00d723e59e371ba1341a18e00c7c7a7c49298e1d",
+      "System.ServiceProcess.ServiceController.dll": "486a4fbb24ab089926fb05ab6b95af7bb04d2ff35eef55b6858437ebc4d040dc",
+      "testhost.dll": "3c2a3ed4b330b9cdaf1ee62580b7d373ec58ccf8b71fc34e0a51de28620899e9",
+      "xunit.abstractions.dll": "3166dc70323fb30ccf1cedb0fe86f2ad122c46d254542342d90386efc4c9285c",
+      "xunit.assert.dll": "bcd9711b22d227ac8cd4c1568e72433a0f576d2ec8aae64ac508081892015b1d",
+      "xunit.core.dll": "2f7feeec8c6dec7df684c25fb80aadb292b963d09723460f03d53c5ad2088acc",
+      "xunit.execution.dotnet.dll": "e70febe547c15f8155db3e2d95c3ba4445a59cbc21a3e7541ab22ed49d3dcf7b",
+      "xunit.runner.visualstudio.testadapter.dll": "384aba4bad96399a7fd2205a5a3517b643a16f4d7e843bd0b92e1e42f81fce2a",
+      "YamlDotNet.dll": "d618138109a40e4a7250e49e2abad8c450e3636bee18d7499ab231e37fa9150a"
+    },
+    "changedVsBaseline": [
+      "NexusForever.Game.Abstract.dll",
+      "NexusForever.Game.dll",
+      "NexusForever.Game.Tests.dll",
+      "NexusForever.Network.World.dll",
+      "NexusForever.Script.dll",
+      "NexusForever.WorldServer.dll"
+    ],
+    "owningCopies": [
+      {
+        "assembly": "NexusForever.Network.World.dll",
+        "ownerSha256": "f4bfeb4c4723c21796e91f9cab17d81121bfb80f2c82be6afb7696363f0d702d",
+        "testCopySha256": "f4bfeb4c4723c21796e91f9cab17d81121bfb80f2c82be6afb7696363f0d702d"
+      },
+      {
+        "assembly": "NexusForever.Game.dll",
+        "ownerSha256": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+        "testCopySha256": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f"
+      },
+      {
+        "assembly": "NexusForever.WorldServer.dll",
+        "ownerSha256": "190e1c0341aebc90d3b1fb73ea5f66e3e03ae71b87258b95b76b76484b318586",
+        "testCopySha256": "190e1c0341aebc90d3b1fb73ea5f66e3e03ae71b87258b95b76b76484b318586"
+      }
+    ],
+    "sameTestDllClaim": false
+  },
+  "reviews": {
+    "standards": {
+      "findings": 0,
+      "report": "No actionable Source-standard or heuristic findings. Six pinned identities match. Refresh/readback is preserved; direct internal grant service is unchanged. Native sender/registration/serializer support one-word shape. The requested canonical note must exist before publication; it is supplied in this milestone. Inspection only."
+    },
+    "spec": {
+      "findings": 0,
+      "report": "Six fixed hashes match. Mapped index-only refresh leaves unknown trailing bytes neutral and cannot persist fabricated grants/upserts. Existing schedule/grant readback and internal claim service remain. Missing association/completion/schedule/settlement and native/provider/retail limits remain explicit. Inspection only."
+    }
+  },
+  "upstreamRefresh": {
+    "prs": [
+      {
+        "base_sha": "d8e43d2c3cc5a05f03e56dfc388288a4126c7ed9",
+        "head_sha": "36b59aaaaebbcd0ec3e23a94fd3cf9de8975923b",
+        "merged": false,
+        "number": 604,
+        "state": "open",
+        "updated_at": "2026-11-01T03:41:35Z"
+      },
+      {
+        "base_sha": "d8e43d2c3cc5a05f03e56dfc388288a4126c7ed9",
+        "head_sha": "f9b6f7356798a41beea0768ff1f6b5a758ffeca3",
+        "merged": false,
+        "number": 609,
+        "state": "closed",
+        "updated_at": "2026-11-01T02:58:37Z"
+      },
+      {
+        "base_sha": "3588ca5f578387928e6593e3808bf15f6192b094",
+        "head_sha": "7db12d9a7c694bc5e66d9e0f4cdbc1b82155e69b",
+        "merged": false,
+        "number": 608,
+        "state": "open",
+        "updated_at": "2026-10-30T18:53:13Z"
+      },
+      {
+        "base_sha": "3588ca5f578387928e6593e3808bf15f6192b094",
+        "head_sha": "ba30ae14513461ab6bd83d691543b6a155846e1c",
+        "merged": false,
+        "number": 595,
+        "state": "open",
+        "updated_at": "2026-10-30T06:28:59Z"
+      },
+      {
+        "base_sha": "d0817fdf40e4832dbc578b7b2ea82a1b1fa378bf",
+        "head_sha": "f88b196f11b909b4e0db94db2affff3c585d971f",
+        "merged": true,
+        "number": 598,
+        "state": "closed",
+        "updated_at": "2026-10-30T02:09:40Z"
+      },
+      {
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head_sha": "7f044aad0a20419a788b8140d263ac83fcd93217",
+        "merged": false,
+        "number": 607,
+        "state": "open",
+        "updated_at": "2026-10-28T06:05:47Z"
+      },
+      {
+        "base_sha": "f9bb26efddbf304003fc8ebf484ac75bc6be84da",
+        "head_sha": "e41fb57514cc202425430684e11e5fdd8f1b71f0",
+        "merged": false,
+        "number": 588,
+        "state": "open",
+        "updated_at": "2026-10-28T05:57:43Z"
+      },
+      {
+        "base_sha": "845651e68fa1416931ea6507de1d3404d88f192e",
+        "head_sha": "38f8c19409c6fc9c3afc08744ce49cb6ed0de1db",
+        "merged": false,
+        "number": 599,
+        "state": "closed",
+        "updated_at": "2026-10-27T14:11:52Z"
+      },
+      {
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head_sha": "4ffa050ba994a82e0fb52f0b5b733c94b139367e",
+        "merged": false,
+        "number": 606,
+        "state": "open",
+        "updated_at": "2026-10-27T14:11:20Z"
+      },
+      {
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head_sha": "972ad3b4f9c7bce0a460ad0e5b5410f311b8573c",
+        "merged": false,
+        "number": 605,
+        "state": "open",
+        "updated_at": "2026-10-27T14:11:18Z"
+      },
+      {
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head_sha": "6faa74d029f95b5e29684690ee2628c10dc80b59",
+        "merged": false,
+        "number": 603,
+        "state": "open",
+        "updated_at": "2026-10-27T14:11:12Z"
+      },
+      {
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head_sha": "ffe5dc0512452fe3e383b8a8b454017c04120df4",
+        "merged": false,
+        "number": 602,
+        "state": "open",
+        "updated_at": "2026-10-27T14:11:10Z"
+      },
+      {
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head_sha": "79a36684101423cfd199047b466a2c2c839e9c2e",
+        "merged": false,
+        "number": 601,
+        "state": "open",
+        "updated_at": "2026-10-27T14:11:07Z"
+      },
+      {
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head_sha": "1bf8de1caba3baa70620998b82317d65c96b07c8",
+        "merged": false,
+        "number": 600,
+        "state": "open",
+        "updated_at": "2026-10-27T14:11:04Z"
+      },
+      {
+        "base_sha": "f9bb26efddbf304003fc8ebf484ac75bc6be84da",
+        "head_sha": "17ef256c2f38ef6d010db807b69452d1bb2be614",
+        "merged": true,
+        "number": 593,
+        "state": "closed",
+        "updated_at": "2026-10-26T18:24:11Z"
+      },
+      {
+        "base_sha": "845651e68fa1416931ea6507de1d3404d88f192e",
+        "head_sha": "eb4db38857bb263493f56912a99184a9992d4e36",
+        "merged": true,
+        "number": 591,
+        "state": "closed",
+        "updated_at": "2026-10-26T18:23:58Z"
+      },
+      {
+        "base_sha": "d0817fdf40e4832dbc578b7b2ea82a1b1fa378bf",
+        "head_sha": "8ca89ccb31c20a286a64ac632fca8885d812cba5",
+        "merged": false,
+        "number": 597,
+        "state": "open",
+        "updated_at": "2026-10-26T15:50:33Z"
+      },
+      {
+        "base_sha": "f9bb26efddbf304003fc8ebf484ac75bc6be84da",
+        "head_sha": "56b816084bb2cdd3bcd990a52f47f9d2cb621871",
+        "merged": true,
+        "number": 587,
+        "state": "closed",
+        "updated_at": "2026-10-26T04:08:09Z"
+      },
+      {
+        "base_sha": "f9bb26efddbf304003fc8ebf484ac75bc6be84da",
+        "head_sha": "121f4c3ec7472b8a6c0f6e3054fd788f939dd028",
+        "merged": true,
+        "number": 589,
+        "state": "closed",
+        "updated_at": "2026-10-26T04:00:28Z"
+      },
+      {
+        "base_sha": "3588ca5f578387928e6593e3808bf15f6192b094",
+        "head_sha": "e100f4c29a1571a7181d06967ed8133612d99074",
+        "merged": false,
+        "number": 596,
+        "state": "open",
+        "updated_at": "2026-10-25T15:27:59Z"
+      }
+    ],
+    "unchanged": true,
+    "selected": "#608 open; #609 closed/unmerged"
+  },
+  "limits": [
+    "This does not implement actual Rotation reward delivery. Authoritative completion ownership, immutable content/difficulty/reward quote, schedule/reset/throttle policy and durable item/currency settlement/recovery remain required.",
+    "Prepared sessions/accounts/schedules drive real parsed handler, real grant manager and in-memory Auth/SQLite save; no hosted World/Auth connection, configured MySQL provider, copied upgrade, physical restart or retail qualification.",
+    "Client/CUA remain stopped. Standalone Ghidra/LLVM are static only and do not repair or qualify the unavailable REA native provider.",
+    "Defaults15:1/17:1 remain; no automatic44/seven baseline grants. Foreign work is excluded from candidate and commit."
+  ]
+}

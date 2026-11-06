@@ -1,5 +1,13 @@
 # Client Binary Decompile Continuation Guide
 
+[Rotation refresh authority](REWARD_ROTATION_REFRESH_AUTHORITY.md) now keeps
+native07CC index-only and cannot turn extra bytes into persisted grants/upserts.
+Five baseline failures are fixed;8 new/all56 scoped cases, clean builds and both
+reviews pass. Native producer/registration/serializer and actual8-table inputs
+are qualified at their recorded limits. Source readback remains; content/reward
+association, completion, schedule and settlement still gate delivery.
+Do not repeat the closed refresh correction; client/CUA stopped.
+
 [Proc AMP lifecycle](AMP_UPSTREAM_RECONCILIATION.md#owned-unfiltered-proc-augmentations)
 now applies/removes the supported seven actual-catalog spells through original
 cast handles and selected-node state. All23 new/241 scoped cases and seven
