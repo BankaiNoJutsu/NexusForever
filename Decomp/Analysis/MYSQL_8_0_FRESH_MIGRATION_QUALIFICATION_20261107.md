@@ -46,3 +46,20 @@ disposable schemas were dropped; `SHOW DATABASES LIKE 'nexus_qual%'` returns not
 
 Limits: row counts, not row contents, were compared; World (the older schema has 18 applied migrations vs 17 in source) was
 not copied; MySQL 8.0.46 only (not 8.4.13); no public-flow, recovery, retry-strategy, socket or load run.
+
+## Quest persistence durability on MySQL (2026-11-07)
+
+`QuestPersistenceDurabilityMySqlTests` (new, opt-in) runs every case of `QuestPersistenceDurabilityTests` (13 facts and 23 theory
+cases, 36 in total, the same 36 that pass on SQLite) against a fresh disposable MySQL schema per case, created and dropped by the
+driver. It is skipped unless `NEXUS_FOREVER_TEST_MYSQL_SERVER` is set to a server connection string without a database (no
+credentials are in the repository). With the documented local development account against MySQL Server 8.0.46 it passed, and
+`SHOW DATABASES LIKE 'nexus_qual%'` was empty afterwards. These cases cover the Quest save/retry/rollback/dispose/flush-failure
+ownership under a real provider, including serializable transactions and interceptor-driven commit faults.
+
+Limits: this is one test class, not the account-settlement, Contract-claim or Auth outbox recovery flows, which still need their
+own provider seams or the earlier adapter harness; MySQL 8.0.46 only (not 8.4.13); the configured retry execution strategy was not
+enabled; no socket, broker or load run. The same pattern (explicit `DbContextOptions<CharacterContext>` passed to an existing
+fixture) is available to other test classes that already accept provider options.
+
+Run: set `NEXUS_FOREVER_TEST_MYSQL_SERVER="server=127.0.0.1;port=3306;user=<user>;password=<password>"` and run
+`dotnet test NexusForever.Game.Tests --filter "FullyQualifiedName~QuestPersistenceDurabilityMySql"`.

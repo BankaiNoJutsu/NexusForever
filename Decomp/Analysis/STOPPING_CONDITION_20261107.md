@@ -66,3 +66,7 @@ Every remaining row in the table above is blocked on an input that does not exis
 the client binary, its Lua, or the local databases: a retail/server-side witness (07CE reset rules, type-10 currency, per-type
 achievement and spell-effect semantics), a schema/DDL design decision, or the recovery/socket/broker/load harness and runtime.
 No independent Source/SQLite slice with usable evidence remains.
+
+Update: an opt-in MySQL driver now runs the 36 Quest persistence durability cases on real MySQL 8.0.46 (all pass), so the
+"harness" gate is partly addressed by a reusable pattern; the other recovery flows (account settlement, Contract claim, Auth outbox)
+still need provider seams or the earlier adapter harness.
