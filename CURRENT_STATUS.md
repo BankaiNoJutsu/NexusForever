@@ -1,5 +1,13 @@
 # NexusForever Feature Restoration - Current Status
 
+[Combat threat relation lifecycle](Decomp/Analysis/COMBAT_THREAT_RELATION_LIFECYCLE.md)
+now cleans both original actors after visibility loss, notification failure and
+GUID/manager replacement. NPC leash reset completes; callback-created relations
+survive older cleanup. Ten baseline and four later admission/callback negatives
+are fixed;20 new/all107 scoped cases, clean builds and both reviews pass.
+Scoring/aggro policy is unchanged; world/native/retail qualification stays open.
+
+
 [Committed Path item quantities](Decomp/Analysis/PATH_ITEM_QUANTITY_PUBLICATION.md)
 now publish supported level/mission/episode item adds and stack updates only
 after the original Player save. Related ordinary quantity/removal notices stay

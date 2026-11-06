@@ -1,5 +1,13 @@
 # Client Binary Decompile Continuation Guide
 
+[Combat threat cleanup](COMBAT_THREAT_RELATION_LIFECYCLE.md) now owns the
+original reciprocal entries across visibility loss, reused IDs and reentrant
+callbacks. NPC leash reset survives rejected threat notifications. All20 new/
+107 scoped cases, clean builds and both final reviews pass. Current actor
+authority is rechecked after peer lookup/publication. Reuse the Source proof;
+actual-world/social-aggro/socket/native/retail remain open; client/CUA stopped.
+
+
 [Path item quantity publication](PATH_ITEM_QUANTITY_PUBLICATION.md) now waits
 for the complete original Player save, freezes current Item membership/counts
 and retains ordered quantity/removal retries. All17 new/355 scoped cases and

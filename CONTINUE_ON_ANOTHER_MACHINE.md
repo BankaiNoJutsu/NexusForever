@@ -1,5 +1,15 @@
 # Continue on another machine
 
+Latest combat Source result:
+[original threat relations](Decomp/Analysis/COMBAT_THREAT_RELATION_LIFECYCLE.md)
+preserve original actors/managers/entry identities and complete reciprocal
+cleanup and the existing NPC leash reset through callback/enqueue failures.
+Ten baseline/four later negatives are fixed;20 new/all107 scoped cases,
+clean9.74/6.96s builds and both reviews pass. Reuse these checks. Wider combat/
+world/socket/native/retail remain open; client/CUA stopped. Foreign Source and
+the separately owned MySQL workload remain preserved; overall Goal active.
+
+
 Latest Path Source result:
 [item quantity publication](Decomp/Analysis/PATH_ITEM_QUANTITY_PUBLICATION.md)
 confirms supported level/mission/episode add/stack packets with the original

@@ -27,7 +27,7 @@ using NexusForever.Shared;
 
 namespace NexusForever.Game.Tests.Combat;
 
-public class CombatAITests
+public partial class CombatAITests
 {
     private const Faction TutorialDominionCombatFaction = (Faction)1441u;
     private const Faction TutorialExileCombatFaction = (Faction)1442u;

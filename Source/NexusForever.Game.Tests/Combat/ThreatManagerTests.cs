@@ -5,7 +5,7 @@ using NexusForever.Game.Tests.TestSupport;
 
 namespace NexusForever.Game.Tests.Combat;
 
-public class ThreatManagerTests
+public partial class ThreatManagerTests
 {
     [Fact]
     public void UpdateThreat_CreatesReciprocalHostile()

@@ -1,6 +1,7 @@
-﻿using System.Collections;
+using System.Collections;
 using NexusForever.Game.Abstract.Combat;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model;
 using NLog;
@@ -10,10 +11,39 @@ namespace NexusForever.Game.Combat
     public class ThreatManager : IThreatManager
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
+        private readonly Dictionary<uint, HostileLink> hostiles = new();
+        private readonly IUnitEntity owner;
 
-        private Dictionary<uint /*unitId*/, IHostileEntity> hostiles = new();
+        // Numeric IDs remain the protocol lookup keys. The retained actors,
+        // managers and reciprocal entry identify the relation being retired.
+        private sealed class HostileLink
+        {
+            internal ThreatManager Manager { get; }
+            internal IUnitEntity Target { get; }
+            internal IThreatManager PeerManager { get; }
+            internal uint OwnerId { get; }
+            internal uint TargetId { get; }
+            internal IBaseMap OwnerMap { get; }
+            internal IBaseMap TargetMap { get; }
+            internal IHostileEntity Hostile { get; }
+            internal HostileLink Peer { get; set; }
+            internal IHostileEntity ExternalPeer { get; set; }
 
-        private IUnitEntity owner;
+            internal HostileLink(ThreatManager manager, IUnitEntity target)
+            {
+                Manager = manager; Target = target; PeerManager = target.ThreatManager;
+                OwnerId = manager.owner.Guid; TargetId = target.Guid;
+                OwnerMap = manager.owner.Map; TargetMap = target.Map;
+                Hostile = new HostileEntity(TargetId);
+            }
+
+            internal bool CurrentOwner => ReferenceEquals(Manager.owner.ThreatManager, Manager)
+                && Manager.owner.Guid == OwnerId && ReferenceEquals(Manager.owner.Map, OwnerMap);
+
+            internal bool CurrentActors => CurrentOwner && PeerManager != null
+                && ReferenceEquals(Target.ThreatManager, PeerManager) && Target.Guid == TargetId
+                && ReferenceEquals(Target.Map, TargetMap);
+        }
 
         /// <summary>
         /// Initialise <see cref="IThreatManager"/> for a <see cref="IUnitEntity"/>.
@@ -32,9 +62,7 @@ namespace NexusForever.Game.Combat
         /// Returns <see cref="IHostileEntity"/> for supplied target if it exists in the threat list.
         /// </summary>
         public IHostileEntity GetHostile(uint target)
-        {
-            return hostiles.TryGetValue(target, out IHostileEntity hostile) ? hostile : null;
-        }
+            => hostiles.TryGetValue(target, out HostileLink link) ? link.Hostile : null;
 
         /// <summary>
         /// Return the <see cref="IHostileEntity"/> with the highest threat in the threat list.
@@ -42,13 +70,28 @@ namespace NexusForever.Game.Combat
         public IHostileEntity GetTopHostile()
         {
             IHostileEntity topHostile = null;
-            foreach (IHostileEntity hostile in hostiles.Values)
-            {
-                if (topHostile == null || hostile.Threat > topHostile.Threat)
-                    topHostile = hostile;
-            }
-
+            foreach (HostileLink link in hostiles.Values)
+                if (topHostile == null || link.Hostile.Threat > topHostile.Threat)
+                    topHostile = link.Hostile;
             return topHostile;
+        }
+
+        private bool Owns(HostileLink link)
+            => hostiles.TryGetValue(link.TargetId, out HostileLink current) && ReferenceEquals(current, link);
+
+        private HostileLink GetOrPrepareLink(IUnitEntity target)
+        {
+            if (target == null || target.Guid == owner.Guid || !ReferenceEquals(owner.ThreatManager, this))
+                return null;
+            hostiles.TryGetValue(target.Guid, out HostileLink current);
+            if (current?.CurrentActors == true && ReferenceEquals(current.Target, target))
+                return current;
+
+            var prepared = new HostileLink(this, target);
+            if (current != null) RemoveHostile(current);
+            // A cleanup callback may have installed another relation or moved
+            // either actor. That new work is not owned by this older request.
+            return prepared.CurrentActors && !hostiles.ContainsKey(prepared.TargetId) ? prepared : null;
         }
 
         /// <summary>
@@ -56,73 +99,88 @@ namespace NexusForever.Game.Combat
         /// </summary>
         public void UpdateThreat(IUnitEntity target, int threat)
         {
-            if (target == null || target.Guid == owner.Guid)
-                return;
-
-            if (hostiles.TryGetValue(target.Guid, out IHostileEntity hostile))
-                UpdateThreat(hostile, threat);
-            else
-                CreateHostile(target, threat);
+            HostileLink link = GetOrPrepareLink(target);
+            if (link == null) return;
+            if (Owns(link)) UpdateThreat(link, threat);
+            else CreateHostile(link, threat);
         }
 
         public void SetThreat(IUnitEntity target, uint threat)
         {
-            if (target == null || target.Guid == owner.Guid)
-                return;
-
-            IHostileEntity hostile = GetHostile(target.Guid);
-            uint currentThreat = hostile?.Threat ?? 0u;
-            if (currentThreat == threat)
-                return;
-
-            if (threat == 0u)
-            {
-                RemoveHostile(target.Guid);
-                return;
-            }
+            HostileLink link = GetOrPrepareLink(target);
+            if (link == null) return;
+            uint currentThreat = Owns(link) ? link.Hostile.Threat : 0u;
+            if (currentThreat == threat) return;
+            if (threat == 0u) { RemoveHostile(link); return; }
 
             int delta = threat > currentThreat
                 ? (int)Math.Min(int.MaxValue, threat - currentThreat)
                 : -(int)Math.Min(int.MaxValue, currentThreat - threat);
-
-            UpdateThreat(target, delta);
+            if (Owns(link)) UpdateThreat(link, delta);
+            else CreateHostile(link, delta);
         }
 
-        /// <summary>
-        /// Instantiates a <see cref="IHostileEntity"/> for the given <see cref="IUnitEntity"/>.
-        /// </summary>
-        private void CreateHostile(IUnitEntity target, int threat)
+        private void BindReciprocal(HostileLink link)
         {
-            IHostileEntity hostile = new HostileEntity(target.Guid);
-            hostile.UpdateThreat(threat);
-            hostiles.Add(hostile.HatedUnitId, hostile);
-
-            owner.OnThreatAddTarget(hostile);
-            if (!hostiles.ContainsKey(hostile.HatedUnitId))
-                return;
-
-            log.Trace($"Added {hostile.HatedUnitId} to threat list for {owner.Guid}.");
-            
-            // place owner on threat list of new hostile
-            if (target.ThreatManager.GetHostile(owner.Guid) == null)
+            if (!Owns(link) || !link.CurrentActors) return;
+            if (link.PeerManager is ThreatManager peerManager)
             {
-                target.ThreatManager.UpdateThreat(owner, 1);
-                if (target.ThreatManager.GetHostile(owner.Guid) == null)
-                    RemoveHostile(target.Guid);
+                if (!ReferenceEquals(peerManager.owner, link.Target)
+                    || !peerManager.hostiles.TryGetValue(link.OwnerId, out HostileLink peer)
+                    || !peer.CurrentActors || !ReferenceEquals(peer.Target, owner)
+                    || !ReferenceEquals(peer.PeerManager, this) || peer.OwnerId != link.TargetId)
+                    return;
+                link.Peer = peer;
+                peer.Peer = link;
             }
+            else link.ExternalPeer = link.PeerManager.GetHostile(link.OwnerId);
         }
 
-        /// <summary>
-        /// Internal method to adjust threat for the given <see cref="IHostileEntity"/>.
-        /// </summary>
-        private void UpdateThreat(IHostileEntity hostile, int threat)
+        private void CreateHostile(HostileLink link, int threat)
         {
-            hostile.UpdateThreat(threat);
+            link.Hostile.UpdateThreat(threat);
+            hostiles.Add(link.TargetId, link);
+            if (!TryNotify(() => BindReciprocal(link), "reciprocal bind"))
+            {
+                RemoveHostile(link);
+                return;
+            }
+            if (!Owns(link)) return;
+            if (!link.CurrentActors) { RemoveHostile(link); return; }
+            if (!TryNotify(() => owner.OnThreatAddTarget(link.Hostile), "add"))
+            {
+                RemoveHostile(link);
+                return;
+            }
+            if (!Owns(link)) return;
+            if (!link.CurrentActors) { RemoveHostile(link); return; }
 
-            if (hostile.Threat != 0u)
-                owner.OnThreatChange(hostile);
+            try
+            {
+                if (link.Peer == null && link.ExternalPeer == null)
+                    link.PeerManager.UpdateThreat(owner, 1);
+                BindReciprocal(link);
+            }
+            catch (Exception error)
+            {
+                log.Warn(error, "Reciprocal threat admission failed; retiring the original relation.");
+                RemoveHostile(link);
+                return;
+            }
+            if (!Owns(link)) return;
+            if (!link.CurrentActors || link.Peer == null && link.ExternalPeer == null)
+                RemoveHostile(link);
+        }
+
+        private void UpdateThreat(HostileLink link, int threat)
+        {
+            link.Hostile.UpdateThreat(threat);
+            if (link.Hostile.Threat == 0u) RemoveHostile(link);
             else
-                RemoveHostile(hostile.HatedUnitId);
+            {
+                TryNotify(() => owner.OnThreatChange(link.Hostile), "change");
+                if (Owns(link) && !link.CurrentActors) RemoveHostile(link);
+            }
         }
 
         /// <summary>
@@ -130,10 +188,8 @@ namespace NexusForever.Game.Combat
         /// </summary>
         public void ClearThreatList()
         {
-            log.Trace($"Clearing threat list for {owner.Guid}.");
-
-            foreach (IHostileEntity hostile in hostiles.Values.ToList())
-                RemoveHostile(hostile.HatedUnitId);
+            foreach (HostileLink link in hostiles.Values.ToArray())
+                RemoveHostile(link);
         }
 
         /// <summary>
@@ -141,23 +197,51 @@ namespace NexusForever.Game.Combat
         /// </summary>
         public void RemoveHostile(uint unitId)
         {
-            if (!hostiles.Remove(unitId, out IHostileEntity hostileEntity))
-                return;
+            if (hostiles.TryGetValue(unitId, out HostileLink link))
+                RemoveHostile(link);
+        }
 
-            // despite being an update it looks like this is only sent on remove to set threat to 0
-            // might need more research to see if this needs to be sent on any threat change
-            owner.EnqueueToVisible(new ServerEntityThreatUpdate
+        private void RemoveHostile(HostileLink link)
+        {
+            if (!Owns(link)) return;
+            hostiles.Remove(link.TargetId);
+
+            // Retire both original entries before invoking callbacks. A callback
+            // may create a replacement with the same IDs; never remove that entry.
+            HostileLink peer = link.Peer;
+            link.Peer = null;
+            if (peer != null)
             {
-                UnitId      = owner.Guid,
-                TargetId    = hostileEntity.HatedUnitId,
-                ThreatLevel = 0
-            });
+                if (ReferenceEquals(peer.Peer, link)) peer.Peer = null;
+                peer.Manager.RemoveHostile(peer);
+            }
+            else if (link.ExternalPeer != null)
+            {
+                TryNotify(() =>
+                {
+                    if (ReferenceEquals(link.PeerManager.GetHostile(link.OwnerId), link.ExternalPeer))
+                        link.PeerManager.RemoveHostile(link.OwnerId);
+                }, "reciprocal remove");
+            }
 
-            owner.OnThreatRemoveTarget(hostileEntity);
+            if (!link.CurrentOwner) return;
+            if (!hostiles.ContainsKey(link.TargetId))
+                TryNotify(() => owner.EnqueueToVisible(new ServerEntityThreatUpdate
+                {
+                    UnitId = link.OwnerId, TargetId = link.TargetId, ThreatLevel = 0
+                }), "remove publication");
+            if (link.CurrentOwner)
+                TryNotify(() => owner.OnThreatRemoveTarget(link.Hostile), "remove");
+        }
 
-            owner.GetVisible<IUnitEntity>(unitId)?.ThreatManager.RemoveHostile(owner.Guid);
-
-            log.Trace($"Removed hostile {hostileEntity.HatedUnitId} from {owner.Guid}'s threat list.");
+        private static bool TryNotify(Action notify, string operation)
+        {
+            try { notify(); return true; }
+            catch (Exception error)
+            {
+                log.Warn(error, "Threat {0} notification failed; preserving relation cleanup.", operation);
+                return false;
+            }
         }
 
         /// <summary>
@@ -199,13 +283,13 @@ namespace NexusForever.Game.Combat
             // whenever it already exists on the threat list.
             List<IHostileEntity> hostileEntities = [];
             uint? prioritisedHostileId = null;
-            if (owner.TargetGuid.HasValue && hostiles.TryGetValue(owner.TargetGuid.Value, out IHostileEntity currentTarget))
+            if (owner.TargetGuid.HasValue && hostiles.TryGetValue(owner.TargetGuid.Value, out HostileLink currentTarget))
             {
-                prioritisedHostileId = currentTarget.HatedUnitId;
-                hostileEntities.Add(currentTarget);
+                prioritisedHostileId = currentTarget.TargetId;
+                hostileEntities.Add(currentTarget.Hostile);
             }
 
-            foreach (IHostileEntity hostile in hostiles.Values)
+            foreach (IHostileEntity hostile in hostiles.Values.Select(link => link.Hostile))
             {
                 if (prioritisedHostileId.HasValue && hostile.HatedUnitId == prioritisedHostileId.Value)
                     continue;
@@ -238,7 +322,7 @@ namespace NexusForever.Game.Combat
 
         public IEnumerator<IHostileEntity> GetEnumerator()
         {
-            return hostiles.Values.GetEnumerator();
+            return hostiles.Values.Select(link => link.Hostile).GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()

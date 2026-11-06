@@ -1,5 +1,17 @@
 # Assessment follow-through goal
 
+[Original combat threat relations](COMBAT_THREAT_RELATION_LIFECYCLE.md) complete
+the Source reciprocal cleanup boundary through visibility loss, reused IDs,
+reentrant replacements and packet/script failures. Actual CombatAI leash reset
+finishes its existing heal/return path. Ten original baseline cases and four
+later admission/callback negatives are fixed;20 new/all107 scoped cases, clean
+owning/test builds and both final reviews pass. Scoring, aggro/leash rules and
+wire shapes remain. Reuse these checks; actual-world/catalog/social-aggro,
+ephemeral socket replay, broader combat and native/retail remain open.
+Primal allocation still lacks authoritative essence debit/synchronization;
+keep its public handler diagnostic and continue independent gameplay.
+
+
 [Committed Path item quantity publication](PATH_ITEM_QUANTITY_PUBLICATION.md)
 completes supported level/mission/episode add/stack notification settlement:
 full original Player save confirmation, current Item membership/count capture,
