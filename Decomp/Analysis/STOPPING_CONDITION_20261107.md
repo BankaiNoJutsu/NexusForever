@@ -44,3 +44,25 @@ T-series, content inventory), plus raw-table censuses ([RAW_TABLE_EXTRACTION_202
 Tooling state: REA 6.8.0 and Ghidra 12.1.4 are configured at project scope and the doctor passes for Ghidra; a headless
 analysis of `WildStar64.exe` is running outside the repository. Native string probes show the client holds no
 achievement-type or spell-effect server semantics, so it is not expected to close the rows above.
+
+## Re-verification (2026-11-07, at 6390ac86)
+
+Re-read against the repository, remote and tooling after the later work. Local and `origin/legacy-di-storefront-hardening`
+are both at 6390ac86; every document linked above exists. Changes to the gate table since it was first written:
+
+- Source robustness: all five matrix-triage micro-slices are done ([SOURCE_ROBUSTNESS_FIXES_20261107.md](SOURCE_ROBUSTNESS_FIXES_20261107.md)).
+- MySQL: fresh-schema and copied-upgrade forward migration pass on local MySQL 8.0.46
+  ([MYSQL_8_0_FRESH_MIGRATION_QUALIFICATION_20261107.md](MYSQL_8_0_FRESH_MIGRATION_QUALIFICATION_20261107.md)). Recovery, retry-strategy,
+  public-flow, socket, broker and load qualifications still need the adapter harness or runtime.
+- Contract 07CE: choice policy (player-selected, zero-based choice index) and enum classification are corroborated by the
+  client Lua and decompilation ([CLIENT_LUA_CONTRACT_AND_REWARD_EVIDENCE_20261107.md](CLIENT_LUA_CONTRACT_AND_REWARD_EVIDENCE_20261107.md));
+  the reset edge rules have no evidence anywhere reachable (client Lua and decompiled presentation code show none), so 07CE stays unwired.
+- Unmapped achievement types: description-based candidates exist for most
+  ([ACHIEVEMENT_UNMAPPED_TYPE_CANDIDATES_20261106.md](ACHIEVEMENT_UNMAPPED_TYPE_CANDIDATES_20261106.md)); crediting actor/trigger
+  per type still needs a producer witness, and the PvP producers they depend on do not exist in source.
+- Ghidra 12.1.4 analysis of `WildStar64.exe` is complete; it yields presentation-side names/structure only.
+
+Every remaining row in the table above is blocked on an input that does not exist in the repository, on this machine's tables,
+the client binary, its Lua, or the local databases: a retail/server-side witness (07CE reset rules, type-10 currency, per-type
+achievement and spell-effect semantics), a schema/DDL design decision, or the recovery/socket/broker/load harness and runtime.
+No independent Source/SQLite slice with usable evidence remains.
