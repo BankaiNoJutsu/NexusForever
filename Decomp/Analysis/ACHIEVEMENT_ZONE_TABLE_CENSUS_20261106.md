@@ -34,3 +34,23 @@ for each need the native client enum or a retail witness, which is the intended 
 Type 12 alone is 842 rows (17% of the table) and is the highest-value target.
 
 Evidence tier: raw-table census only. Nothing here implements or claims behavior for the unmapped types.
+
+## Structural observation on the largest unmapped types
+
+Row-shape only; this does not establish what the types mean or how they progress.
+
+| Type | Rows | Rows with WorldZoneId | Rows with ObjectId | Rows with ObjectIdAlt |
+|---|---|---|---|---|
+| 12 | 842 | 842 | 13 | 0 |
+| 44 | 161 | 161 | 0 | 0 |
+| 9 | 88 | 88 | 0 | 0 |
+| 76 | 73 | 73 | 0 | 0 |
+| 88 | 150 | 150 | 150 | 0 |
+| 57 | 124 | 124 | 124 | 89 |
+| 96 | 120 | 120 | 104 | 117 |
+| 61 | 70 | 70 | 70 | 0 |
+
+Types 12, 44, 9 and 76 (1,164 rows) are zone-scoped with essentially no object reference, so their progress
+source is zone-level rather than a creature/item/quest id. A table-id overlap test against all extracted
+tables was inconclusive (dense id ranges match many tables), so no semantic claim is made. Naming these types
+still needs the native enum or a retail witness.
