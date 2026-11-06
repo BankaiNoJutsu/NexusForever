@@ -105,3 +105,21 @@ Gates worded "raw TBL absent" are re-opened where only table rows were missing; 
 [RAW_TABLE_EXTRACTION_20261106.md](RAW_TABLE_EXTRACTION_20261106.md). Next candidates: Contract 07CE
 full-table classification (RewardTrack / RewardTrackRewards), F-035 Achievement type census, F-036 zone
 reward columns.
+
+## MySQL gate refinement (2026-11-06)
+
+This machine runs MySQL Server 8.0 on 127.0.0.1:3306 with the local development reference databases described
+in AGENTS.md (`wildstar_client`, `jabbithole`, `nexus_forever_*`, many retained `nexus_assessment_*` schemas).
+Earlier "configured MySQL" qualifications (CONTRACT_ACTUAL_MYSQL_RECOVERY.md and others) ran on MySQL 8.4.13 through a
+separate process/adapter harness (a "retained earlier adapter binary") that is not in this repository's test project;
+the repo's own tests use SQLite and only construct, never connect, MySQL contexts (one World-DB wire test is gated on
+`NEXUS_FOREVER_WORLD_DB`). So the MySQL-gated items are blocked by the missing adapter harness and the version
+difference (8.0 here vs 8.4.13), not by the absence of a server. Missing input to re-run them: that harness/artifacts
+(or a new one), plus a decision to use this 8.0 instance with disposable schemas.
+
+## Candidate semantics now available (2026-11-06)
+
+[ACHIEVEMENT_UNMAPPED_TYPE_CANDIDATES_20261106.md](ACHIEVEMENT_UNMAPPED_TYPE_CANDIDATES_20261106.md) gives description-based
+candidate meanings for most of the 39 unmapped types. Implementation is held where the credited actor or trigger is
+ambiguous (for example type 109 "set a player as your neighbor": inviter or invitee is not determined). Those need a
+producer-side witness, not more table reads.
