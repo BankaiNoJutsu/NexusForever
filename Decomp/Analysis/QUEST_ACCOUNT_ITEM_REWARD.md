@@ -26,3 +26,9 @@ remain unhandled.
 (`GenericUnlockEntry` vs `GenericUnlockSet`) and the grant/notification routine; (b) for 10, the
 RewardRotation/essence grant semantics. The repo holds no Quest2Reward rows with these types, so any
 implementation now would be speculative. Revisit when raw TBL or a retail/native witness exists.
+
+## Update with raw table evidence (2026-11-06)
+
+[Raw extraction](RAW_TABLE_EXTRACTION_20261106.md) shows retail `Quest2Reward.tbl` has no type 6, 8 or 9
+rows, so those are excluded with evidence. Only type 10 (86 rows, ObjectId 0, amounts 24/40/240) remains;
+its currency target is not in the table.

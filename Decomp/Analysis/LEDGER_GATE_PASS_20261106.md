@@ -17,7 +17,7 @@ grep/read; Source/SQLite is the only runnable tier on this checkout. Each row na
 | Q5597 quest/achievement qualification | Open | Retail data |
 | Primal Matrix save (handler is trace-only) | Open | Schema/DDL decision and essence-debit rules |
 | Friendship auto-response persistence | Open | DDL and retail restore/owner witness |
-| Quest reward types 8/9/10 | Open | Table binding of ObjectId and grant routine (see QUEST_ACCOUNT_ITEM_REWARD.md) |
+| Quest reward types 8/9/10 | 8/9 excluded (0 retail rows); 10 open | Type 10: essence currency target not in table (see RAW_TABLE_EXTRACTION_20261106.md) |
 | Duel full damage/death/respawn | Open | Retail death/respawn behavior unverified; not implemented speculatively |
 | Mixed-bundle ordinary quest reward atomicity | No gap reproduced | `SaveOrdinaryQuestMutation` quarantines and reloads on failure; existing "mixed" variant covers Item rollback. No new failing test could be written |
 | Scalar Character save acknowledgement | Done | PLAYER_SCALAR_SAVE_RETRY.md (Source/SQLite) |
@@ -98,3 +98,10 @@ table-extraction path from those archives is not yet exercised; no native analys
 sequential ids and realm id, team-member JSON, background completion callback, and id continuation
 after a restart. These are regression pins: they passed on first run, so no defect was found or fixed.
 22 Leaderboard cases pass in that filter. Score producers (what a retail match records) remain B-NAT.
+
+## Raw tables now available (2026-11-06)
+
+Gates worded "raw TBL absent" are re-opened where only table rows were missing; see
+[RAW_TABLE_EXTRACTION_20261106.md](RAW_TABLE_EXTRACTION_20261106.md). Next candidates: Contract 07CE
+full-table classification (RewardTrack / RewardTrackRewards), F-035 Achievement type census, F-036 zone
+reward columns.

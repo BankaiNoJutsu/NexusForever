@@ -1,5 +1,10 @@
 # Assessment follow-through goal
 
+[Raw build 16042 tables](RAW_TABLE_EXTRACTION_20261106.md) (2026-11-06): all 384 DB tables extracted from the
+installed client; 9 hashes match the recorded build 16042 values. Quest2Reward has no type 6/8/9 rows; type 10
+(86 rows) is the only unhandled quest reward. The 481759-byte table named in the 609 entry was not found.
+Extraction/census only; no new gameplay tests run.
+
 [Ledger gate pass](LEDGER_GATE_PASS_20261106.md) (2026-11-06) records the exact missing input for each
 remaining queue item after the scalar-save and quest AccountItem slices. Source-reading only; no new tests run.
 
