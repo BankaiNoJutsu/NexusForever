@@ -1,5 +1,19 @@
 # Assessment follow-through goal
 
+6 November resumed continuation: [provider packet and hosted World/Auth qualification](PROVIDER_PACKET_HOSTED_RESTART_HANDOFF.md)
+passes 16 SQLite/16 configured MySQL timestamp probes and 118 scoped Guild cases.
+No production timestamp change was needed. Frozen hosted replacement passes
+full socket/bootstrap/closed-presence cycles and prepared pending/delivered/
+duplicate recovery; immediate admission still waits for the first realm heartbeat.
+All 23 new schemas and 11 service generations are absent; broker/EPMD stopped,
+queues retained empty, original data/entitlements preserved. The next pass
+reconciles 290's existing Source alias and 203's client no-op without authorizing
+raid eligibility. Overall restoration is resumed/unfinished; native client and
+Computer Use remain stopped. This supersedes historical pause/next-step text.
+
+Earlier parallel source milestones are retained below as historical checkpoints;
+the qualification above supersedes their hosted-restart next steps.
+
 [Physical loot feedback](PHYSICAL_LOOT_DELIVERY_FEEDBACK.md) completes the bounded refused-notice/partial physical BOP award slice. Whole quantity and collect state precede UI; retry, stale admission, packet rebuilding and full Player SQLite save/reload controls pass. All19 focused/all239 related cases, isolated incremental builds, eight compiler-source bindings and both review axes pass. Full durable loot receipt/crash recovery, arbitrary script-exception recovery, provider/socket/native/retail stay open. User-requested machine transfer follows publication; [resume prompt](RETAIL_RESTORATION_RESUME_PROMPT.md) starts with completed timestamp evidence applicability, then hosted World/Auth restart using verified destination assets.
 
 
@@ -37,7 +51,6 @@ is unchanged; clean builds and both reviews pass. Reuse this completed slice.
 The user resumed the incomplete Goal. Next inspect hosted runtime readiness;
 where verified assets/services are unavailable, retain that gate and continue
 an independent evidence-backed gameplay outcome. Native/CUA remain stopped.
-
 
 [Q3777 canonical fragment pickup](Q3777_CANONICAL_FRAGMENT_PICKUP.md) completes
 the existing range producer's physical item6998 grant and owned-count progress.

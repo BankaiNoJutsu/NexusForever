@@ -1,0 +1,518 @@
+{
+  "Date": "2026-11-06",
+  "Outcome": "Provider timestamp hypothesis rejected at tested boundary; hosted World/Auth restart and prepared pending/delivered socket recovery qualified; overall restoration unfinished",
+  "Checkout": "I:\\GIT\\NexusForever-restoration-20261106",
+  "BaseHEAD": "84483cc8f24c5ccb736ba03f97fd976ec5a11e93",
+  "Branch": "codex/provider-packet-hosted-restart-20261106",
+  "ProductionChanges": [],
+  "Verification": {
+    "TimestampSQLite": 16,
+    "TimestampConfiguredMySQL": 16,
+    "MySQLVersion": "8.0.46",
+    "CharacterMigrationsPerFixture": 49,
+    "ScopedGuildSQLite": 118,
+    "ExistingRetainedMilestone": "MySQL51 / SQLite344 / six producer-loss windows plus normal control / normal MySQL restart; reused, not rerun",
+    "OnlyKnownBuildWarning": "ASPIRE010 in Game.Tests dependency graph; no new xUnit analyzer warnings",
+    "IncrementalOwningBuilds": [
+      "WorldServer",
+      "AuthServer",
+      "API.Character",
+      "API.Account",
+      "Game.Tests"
+    ],
+    "CompilerBinding": [
+      {
+        "PDB": "hosted/NexusForever.WorldServer/NexusForever.Game.pdb",
+        "CheckedDocuments": 1018,
+        "SHA256": "35EB426668A19DF8C6EB459A5822502ECADDA59A1C80089AC957E98C6D6CF07B"
+      },
+      {
+        "PDB": "hosted/NexusForever.WorldServer/NexusForever.WorldServer.pdb",
+        "CheckedDocuments": 460,
+        "SHA256": "C022BC4B1908FD4F56D569D74D204F4ECE2FABF3BA7B03C96270E088D6158622"
+      },
+      {
+        "PDB": "hosted/NexusForever.AuthServer/NexusForever.AuthServer.pdb",
+        "CheckedDocuments": 11,
+        "SHA256": "4ABEB3FA4B5EFB1217C6F3C3C84F41864F02148AC0C460BA48D02991353790F0"
+      },
+      {
+        "PDB": "provider-runner/bin/Debug/net10.0/NexusForever.Game.Tests.pdb",
+        "CheckedDocuments": 725,
+        "SHA256": "4A8D2B506277976CF0349B96CA34B50705F5942355E47EC461C99CF6D2AFBB03"
+      }
+    ]
+  },
+  "Assets": {
+    "Root": "I:\\GIT\\NexusForever-assessment-report\\remaining-goal\\full-prepared-assets",
+    "InventorySHA256": "295132fd25cd57bd95bdbb6cc1a9364e0f061ab4f2e1e0ba083cf837e1492e4b",
+    "Files": 1211,
+    "Mismatches": [],
+    "IncompleteMarkers": []
+  },
+  "Hosted": {
+    "Cases": [
+      {
+        "Case": "pending",
+        "Owner": {
+          "AccountId": 28,
+          "CharacterId": 75,
+          "WorldZoneId": 0
+        },
+        "Intent": "g000000000000004b93f3cf4da9a6bcb",
+        "Delivery": "h000000000000004b93f3cf4da9a6bcb",
+        "ReceiptPayloadSHA256": "66172f7f161d595031a52689361f04b73c9020edab2a1745834ac65857f39923",
+        "CreatedUtc": "2026-11-06T10:50:27",
+        "ExactPreRecoverySnapshotSurvived": true,
+        "Row": {
+          "Id": 75,
+          "AchievementId": 7194,
+          "ProgressState": 1,
+          "CreditedChecklistMask": 0,
+          "DateCompleted": null,
+          "Character": null
+        },
+        "Wire": [
+          {
+            "Kind": "ServerAchievementUpdate",
+            "Id": 7194,
+            "Progress": 1,
+            "Credits": 0,
+            "Completed": 0,
+            "BodySHA256": "FE5BF429CA3056529AF40ED0F1CDE248571640B15580816DFD9588E668DE324A"
+          }
+        ],
+        "PresenceEpochBefore": 1,
+        "PresenceEpochAfter": 2,
+        "Closed": true,
+        "CurrencyUnchanged": true
+      },
+      {
+        "Case": "delivered",
+        "Owner": {
+          "AccountId": 29,
+          "CharacterId": 76,
+          "WorldZoneId": 0
+        },
+        "Intent": "g000000000000004c3d8f5e2203f1e97",
+        "Delivery": "h000000000000004c3d8f5e2203f1e97",
+        "ReceiptPayloadSHA256": "eeeb67e31d92d9aafc77592788d90980ad08cafb1c3562ce450cd433d98fcbef",
+        "CreatedUtc": "2026-11-06T10:49:16",
+        "ExactPreRecoverySnapshotSurvived": true,
+        "Row": {
+          "Id": 76,
+          "AchievementId": 7194,
+          "ProgressState": 1,
+          "CreditedChecklistMask": 0,
+          "DateCompleted": null,
+          "Character": null
+        },
+        "Wire": [
+          {
+            "Kind": "ServerAchievementInit",
+            "Id": 7194,
+            "Progress": 1,
+            "Credits": 0,
+            "Completed": 0,
+            "BodySHA256": "B8BE0590983AFD33453DF9A0080066743375EE7993FDB73E45E01E880E6D2E7B"
+          }
+        ],
+        "PresenceEpochBefore": 2,
+        "PresenceEpochAfter": 3,
+        "Closed": true,
+        "CurrencyUnchanged": true
+      }
+    ],
+    "DuplicateExactRowsReceiptsCurrency": true,
+    "AllRuntimeFilesUnchanged": 1264,
+    "BrokerQueuesDrained": true
+  },
+  "ReplacementStopped": [
+    {
+      "StartedUtc": "2026-11-06T10:46:10.3909327Z",
+      "Pid": 34692,
+      "Absent": true,
+      "Project": "NexusForever.WorldServer",
+      "Mechanism": "Validated Stop-Process, matching retained Stop-IsolatedServers.ps1"
+    },
+    {
+      "StartedUtc": "2026-11-06T10:46:10.3475675Z",
+      "Pid": 27972,
+      "Absent": true,
+      "Project": "NexusForever.AuthServer",
+      "Mechanism": "Validated Stop-Process, matching retained Stop-IsolatedServers.ps1"
+    }
+  ],
+  "ReplacementStarted": [
+    {
+      "Project": "NexusForever.AuthServer",
+      "Pid": 36756,
+      "Executable": "I:\\GIT\\NexusForever-restoration-20261106\\artifacts\\provider-packet-hosted-restart-20261106\\hosted\\NexusForever.AuthServer\\NexusForever.AuthServer.exe",
+      "StartedUtc": "2026-11-06T10:51:22.4393320Z",
+      "SHA256": "726D75B3D3B24C50233C7BB2F0916FABD0F9F241E3AC8171EB0A13FB154C6DDA",
+      "Label": "after"
+    },
+    {
+      "Project": "NexusForever.WorldServer",
+      "Pid": 35628,
+      "Executable": "I:\\GIT\\NexusForever-restoration-20261106\\artifacts\\provider-packet-hosted-restart-20261106\\hosted\\NexusForever.WorldServer\\NexusForever.WorldServer.exe",
+      "StartedUtc": "2026-11-06T10:51:22.4590536Z",
+      "SHA256": "AAFD04DEC10C6DA521F4E8D36F6F6939CDFD393F993962DC94E8B10841853278",
+      "Label": "after"
+    }
+  ],
+  "PreservedOtherServices": [
+    {
+      "Project": "NexusForever.API.Character",
+      "Pid": 19032,
+      "SameGeneration": true
+    },
+    {
+      "Project": "NexusForever.API.Account",
+      "Pid": 18740,
+      "SameGeneration": true
+    },
+    {
+      "Project": "NexusForever.Server.Character",
+      "Pid": 34732,
+      "SameGeneration": true
+    },
+    {
+      "Project": "NexusForever.Server.GroupServer",
+      "Pid": 36428,
+      "SameGeneration": true
+    },
+    {
+      "Project": "NexusForever.Server.ChatServer",
+      "Pid": 35452,
+      "SameGeneration": true
+    },
+    {
+      "Project": "NexusForever.Server.Friendship",
+      "Pid": 26728,
+      "SameGeneration": true
+    },
+    {
+      "Project": "NexusForever.StsServer",
+      "Pid": 7536,
+      "SameGeneration": true
+    }
+  ],
+  "Cleanup": {
+    "ProviderSchemas": [
+      {
+        "schema": "nexus_assessment_pkt_611d9fddb7ac44f781",
+        "Absent": true
+      },
+      {
+        "schema": "nexus_assessment_pkt_8f89a6f55b2e4e068c",
+        "Absent": true
+      },
+      {
+        "schema": "nexus_assessment_pkt_05e91ef75a4345e991",
+        "Absent": true
+      },
+      {
+        "schema": "nexus_assessment_pkt_0325655479e34b18b6",
+        "Absent": true
+      },
+      {
+        "schema": "nexus_assessment_pkt_42bb82bc613745e7b9",
+        "Absent": true
+      },
+      {
+        "schema": "nexus_assessment_pkt_08d0373ac8ac44ecb4",
+        "Absent": true
+      },
+      {
+        "schema": "nexus_assessment_pkt_d4f47acd358743c981",
+        "Absent": true
+      },
+      {
+        "schema": "nexus_assessment_pkt_1e0f3c6a5f1e421388",
+        "Absent": true
+      },
+      {
+        "schema": "nexus_assessment_pkt_f36894da645648e8b5",
+        "Absent": true
+      },
+      {
+        "schema": "nexus_assessment_pkt_81375af9d2834bd19c",
+        "Absent": true
+      },
+      {
+        "schema": "nexus_assessment_pkt_253096f0c148432491",
+        "Absent": true
+      },
+      {
+        "schema": "nexus_assessment_pkt_fd524a651c914c7f88",
+        "Absent": true
+      },
+      {
+        "schema": "nexus_assessment_pkt_e0d497ce324b41c08b",
+        "Absent": true
+      },
+      {
+        "schema": "nexus_assessment_pkt_a3922d6630874c6eb4",
+        "Absent": true
+      },
+      {
+        "schema": "nexus_assessment_pkt_7bc0765e2d8c4a26bd",
+        "Absent": true
+      },
+      {
+        "schema": "nexus_assessment_pkt_4b95f265b5654fe4ba",
+        "Absent": true
+      }
+    ],
+    "HostedSchemas": [
+      {
+        "Absent": true,
+        "Schema": "nexus_assessment_20261106_restart_auth"
+      },
+      {
+        "Absent": true,
+        "Schema": "nexus_assessment_20261106_restart_character"
+      },
+      {
+        "Absent": true,
+        "Schema": "nexus_assessment_20261106_restart_world"
+      },
+      {
+        "Absent": true,
+        "Schema": "nexus_assessment_20261106_restart_group"
+      },
+      {
+        "Absent": true,
+        "Schema": "nexus_assessment_20261106_restart_chat"
+      },
+      {
+        "Absent": true,
+        "Schema": "nexus_assessment_20261106_restart_friendship"
+      },
+      {
+        "Absent": true,
+        "Schema": "nexus_assessment_20261106_restart_query"
+      }
+    ],
+    "GenerationsAndListeners": {
+      "Generations": [
+        {
+          "Project": "NexusForever.StsServer",
+          "Pid": 7536,
+          "StartedUtc": "2026-11-06T10:46:10.3056522Z",
+          "GenerationAbsent": true
+        },
+        {
+          "Project": "NexusForever.API.Account",
+          "Pid": 18740,
+          "StartedUtc": "2026-11-06T10:45:44.9804496Z",
+          "GenerationAbsent": true
+        },
+        {
+          "Project": "NexusForever.API.Character",
+          "Pid": 19032,
+          "StartedUtc": "2026-11-06T10:45:44.9131655Z",
+          "GenerationAbsent": true
+        },
+        {
+          "Project": "NexusForever.Server.Friendship",
+          "Pid": 26728,
+          "StartedUtc": "2026-11-06T10:46:10.2646572Z",
+          "GenerationAbsent": true
+        },
+        {
+          "Project": "NexusForever.AuthServer",
+          "Pid": 27972,
+          "StartedUtc": "2026-11-06T10:46:10.3475675Z",
+          "GenerationAbsent": true
+        },
+        {
+          "Project": "NexusForever.WorldServer",
+          "Pid": 34692,
+          "StartedUtc": "2026-11-06T10:46:10.3909327Z",
+          "GenerationAbsent": true
+        },
+        {
+          "Project": "NexusForever.Server.Character",
+          "Pid": 34732,
+          "StartedUtc": "2026-11-06T10:46:10.1480871Z",
+          "GenerationAbsent": true
+        },
+        {
+          "Project": "NexusForever.Server.ChatServer",
+          "Pid": 35452,
+          "StartedUtc": "2026-11-06T10:46:10.2272775Z",
+          "GenerationAbsent": true
+        },
+        {
+          "Project": "NexusForever.WorldServer",
+          "Pid": 35628,
+          "StartedUtc": "2026-11-06T10:51:22.4590536Z",
+          "GenerationAbsent": true
+        },
+        {
+          "Project": "NexusForever.Server.GroupServer",
+          "Pid": 36428,
+          "StartedUtc": "2026-11-06T10:46:10.1886248Z",
+          "GenerationAbsent": true
+        },
+        {
+          "Project": "NexusForever.AuthServer",
+          "Pid": 36756,
+          "StartedUtc": "2026-11-06T10:51:22.439332Z",
+          "GenerationAbsent": true
+        }
+      ],
+      "ListenersAbsent": true,
+      "HostedAndNodeProcessesAbsent": true,
+      "BrokerNormalShutdown": true,
+      "EpmdStopped": true,
+      "OriginalMySQLService": "Running",
+      "StoppedUtc": "2026-11-06T10:59:24.4731775Z"
+    },
+    "OriginalSchemas": [
+      {
+        "Database": "auth",
+        "OriginalPreserved": true,
+        "SQLWithoutDumpCompletionSHA256": "697c452913390159b76307ea35b78345092f38b63bd19cd7487346d180bd18d3"
+      },
+      {
+        "Database": "character",
+        "OriginalPreserved": true,
+        "SQLWithoutDumpCompletionSHA256": "177b1a7dbeb3018f9814b5706600172710cc3548c9fddda22b9b1257dd0c1ebe"
+      },
+      {
+        "Database": "chat",
+        "OriginalPreserved": true,
+        "SQLWithoutDumpCompletionSHA256": "2d30b06775113d444071523e4ce0ca268f5ae28768c23e72a985a09a32a3c8e2"
+      },
+      {
+        "Database": "friendship",
+        "OriginalPreserved": true,
+        "SQLWithoutDumpCompletionSHA256": "46e1d34195faf411f3b61647e2312a99e2885554f1f61872e498170b8f27285d"
+      },
+      {
+        "Database": "group",
+        "OriginalPreserved": true,
+        "SQLWithoutDumpCompletionSHA256": "4a4edff09f82e721a4f19127c4f47267a32841a821183ceb133588dcb114ed06"
+      },
+      {
+        "Database": "query",
+        "OriginalPreserved": true,
+        "SQLWithoutDumpCompletionSHA256": "24c05fc98d97923531946b720f44bee51bcf71a830cfa74286868125f2adc1c7"
+      },
+      {
+        "Database": "world",
+        "OriginalPreserved": true,
+        "SQLWithoutDumpCompletionSHA256": "09140c356819abce185893f019b31799010dd83fa29238a12cf2c887b5d47788"
+      }
+    ],
+    "Queues": "Six retained empty queues; all ready/unacknowledged/consumers zero after service cleanup"
+  },
+  "Identity": {
+    "Sources": {
+      "Source/NexusForever.Game.Tests/Guild/GuildAchievementPacketTimestampTests.cs": "93a58694548d8f9cf21c5bb80715743aefaedc1e3faaf05c7bfa94701d1d7be3",
+      "Source/NexusForever.Game.Tests/Guild/GuildCreationFinanceTests.cs": "ea995cee5a91d08ff0a2821bde1508c4d0d0393a69d4b3810d331c29a770c622",
+      "Source/NexusForever.Game/Achievement/GuildAchievementManager.cs": "a801df34d684b3c9979d6959cd9a6d28d0f7f5baff1078d2993650259da3aa13",
+      "Source/NexusForever.Game/Achievement/Achievement.cs": "1c989c1f2ded35facf1fc8e005a068dd10e95af2708dbf5fe189f56ff1bd6c01",
+      "Source/NexusForever.Game/Achievement/CharacterAchievementManager.Publication.cs": "eb3f6b5a24eb97958b535878918f3000bb9157aa34e3b49b88efceb18ddceb51",
+      "Source/NexusForever.Game/Achievement/CharacterAchievementManager.GuildFeedback.cs": "a29ff15598b870936fe5dfbf0c60cefb41b122b8391448a18feea21df7be08f0",
+      "Source/NexusForever.Game/Achievement/GuildAchievementFeedbackReceipt.cs": "b729f7e8a5c315f7e058fd0c00ecba35dc905d619827b6e0aed5e03181fe6246",
+      "Source/NexusForever.Game/Guild/GuildBase.MutationPublication.cs": "8ecb53328bfc356e081cd1e108c609d84d8afdaca181af13ae13c1a4d5ffa221",
+      "Source/NexusForever.Game/Entity/ExperiencePersistence.cs": "8c2f5f4b79ba80efc6c6a902bf5e39f639938a7d1708e1d91fa0d9bca58926a5",
+      "Source/NexusForever.Game/Entity/Player.ExperiencePersistence.cs": "42de6debfe6f86c124e1dd008f7cc73677e78ead81832edc0881c59e6cc9e787"
+    },
+    "DLLs": {
+      "hosted/NexusForever.WorldServer/NexusForever.WorldServer.dll": "2b3ed490633cc4ec1b930205867589d25e2c4b661d702cbb103b8cb7f43a3ee7",
+      "hosted/NexusForever.WorldServer/NexusForever.Game.dll": "76070f71b758d014a2033e9ae60ff37bc43b37e3369e615477e42d9862e06faf",
+      "hosted/NexusForever.AuthServer/NexusForever.AuthServer.dll": "a4d448fbe096aaf71b4870e9eb9d7081aa0854a421daa7e2e757912411ea7e61",
+      "hosted/NexusForever.WorldServer/NexusForever.Database.Character.dll": "42cde4242c5f6575aec5c9fb8aca18ea6f02806faeb974208a2d8e2496c5b53d",
+      "hosted/NexusForever.WorldServer/NexusForever.Network.World.dll": "c4104b1b399a9cabc3219e96f82417ab3278c746948f81c83e839788b80624bf",
+      "provider-runner/bin/Debug/net10.0/NexusForever.Game.Tests.dll": "15b361b1f1c5393c089d3e4b6d05bbd01e8c075a6569af9c5b568c34411fca35",
+      "provider-runner/bin/Debug/net10.0/MySqlConnector.dll": "a3104353e86cc96123d8015fc5a3bf4ab88b127b9180caaa4db9a006c49f467b",
+      "host-probe/bin/Debug/net10.0/HostedProbe.dll": "a0a01dec5bd4a6b16dc8c190d121204d031d33bc2e573448db3ee323b6318c58"
+    },
+    "CompleteSourceManifestFiles": 6319,
+    "FrozenRuntimeFiles": 1264,
+    "ManifestSHA256": "4f88364fe504c268af2c6de3f161401b371862d85f4c858b3c0aca83de86a9ad",
+    "ProbeSources": {
+      "host-probe\\HostedProbe.cs": "79f826b9f19ea340c87115f2bf959d8a2cb979e039047383944061f145c6a514",
+      "provider-runner\\Program.cs": "f6c4dd44c3531bd9d3d83b3901e236887a150e9d9447957f154c7e299a720c34",
+      "symbol-proof\\Program.cs": "8294894252c92905dc222ddd1c18f724ec724c3153497e1a223ab405b1afa982"
+    },
+    "ReviewsSHA256": "6ede99240f3b1d516c74cab042c9c10136d812c8b4f16a1e3661934ab2681ce4"
+  },
+  "NextOutcome": {
+    "Classification": "Mapped only: prerequisite blocker reconciliation",
+    "Native": {
+      "Binary": "D:\\WildStar\\Client64\\WildStar64.exe",
+      "SHA256": "231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5",
+      "ImageBase": "0x140000000",
+      "Vtable": "0x140b67740",
+      "Slots": {
+        "203": {
+          "Case": "0xcb",
+          "Slot": "0x348",
+          "Address": "0x140b67a88",
+          "Target": "0x140001ba0"
+        },
+        "290": {
+          "Case": "0x122",
+          "Slot": "0x3a8",
+          "Address": "0x140b67ae8",
+          "Target": "0x14049efa0"
+        }
+      }
+    },
+    "REA": "open_binary observed same PE x86_64 SHA256, then close_binary succeeded; no native execution or new decompile",
+    "290": "Existing alias dispatch and Source ServerControl proxy; actual row/raid eligibility remains unqualified",
+    "203": "Client no-op slot; no server predicate established; no bypass or rename",
+    "Open": [
+      "Actual raid/group eligibility and all-member fanout",
+      "Durable global-first arbitration",
+      "Other providers/routes",
+      "Native achievement UI/earning and retail parity",
+      "Immediate first-login readiness before initial heartbeat"
+    ]
+  },
+  "Reviews": {
+    "Date": "2026-11-06",
+    "Reviewer": "Primary agent; separate self-review passes, no independent reviewer claim",
+    "Spec": {
+      "OpenFindings": [],
+      "Checked": [
+        "Stored SQL date oracle and provider precision, not DateTime.Kind hypothesis",
+        "Guild broadcast recipient lookup and committed queue drain",
+        "Wire headers and 15/32/32/64-bit row fields, progress/masks/null=0",
+        "16 SQLite and 16 configured MySQL probes plus 118 scoped compatibility cases",
+        "Exact pending/delivered/replay SQL, receipt payload/date, packet and lifecycle witnesses",
+        "Prepared eligibility is separate from live raid earning; startup is separate from admission"
+      ]
+    },
+    "Standards": {
+      "OpenFindings": [],
+      "Checked": [
+        "Production source unchanged; fixture seam defaults preserved",
+        "Owning builds and immutable candidate; no full solution or full-suite run",
+        "Exact process generation/path/hash checks for World/Auth replacement",
+        "Other seven service generations unchanged across replacement; drained queues retained",
+        "Seven original schemas match retained pre-run dumps; secrets remain local",
+        "All 23 leased schemas and all 11 service generations absent; broker and EPMD stopped",
+        "Compiler document checksums bind 1018 Game, 460 World, 11 Auth and 725 test documents"
+      ]
+    },
+    "CorrectedDiagnostics": [
+      "Initial test compile API errors",
+      "Reloaded Guild required ICharacterManager; Character initial packets include a distinct Guild packet",
+      "Temporary probe initially used default Auth 23115 instead of configured 23119",
+      "Prepared 7194 partial progress is ProgressState=1, separate credited mask=0; initial temporary probe wrongly expected credited mask=1",
+      "Auth Hosting started precedes initial 15-second realm heartbeat; premature NoRealmsAvailable retained and excluded from passing cycles",
+      "Cleanup process scan initially matched its own PowerShell command text; narrowed to hosted executable root or Erlang process names"
+    ]
+  },
+  "RawEvidence": "artifacts/provider-packet-hosted-restart-20261106",
+  "Transfer": "Ignored raw logs/TRX/frozen DLLs/probes/private configs/database dumps remain local; git alone does not transfer them",
+  "NativeClientAndComputerUse": "Stopped throughout",
+  "Goal": "Continuation resumed by current user instruction; no duplicate goal object created; no overall completion claim"
+}

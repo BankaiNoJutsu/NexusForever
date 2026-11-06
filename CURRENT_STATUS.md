@@ -1,5 +1,19 @@
 # NexusForever Feature Restoration - Current Status
 
+6 November resumed continuation: [provider packet and hosted World/Auth qualification](Decomp/Analysis/PROVIDER_PACKET_HOSTED_RESTART_HANDOFF.md)
+passes 16 SQLite/16 configured MySQL timestamp probes and 118 scoped Guild cases.
+No production timestamp change was needed. Frozen hosted replacement passes
+full socket/bootstrap/closed-presence cycles and prepared pending/delivered/
+duplicate recovery; immediate admission still waits for the first realm heartbeat.
+All 23 new schemas and 11 service generations are absent; broker/EPMD stopped,
+queues retained empty, original data/entitlements preserved. The next pass
+reconciles 290's existing Source alias and 203's client no-op without authorizing
+raid eligibility. Overall restoration is resumed/unfinished; native client and
+Computer Use remain stopped. This supersedes historical pause/next-step text.
+
+Earlier parallel source milestones are retained below as historical checkpoints;
+the qualification above supersedes their hosted-restart next steps.
+
 [Physical loot feedback](Decomp/Analysis/PHYSICAL_LOOT_DELIVERY_FEEDBACK.md) now accepts the complete bound award and collect transition before fallible UI. Refused notices retry without repeating quantity; map/GUID changes abandon old publication. All19 focused/all239 related Source/SQLite cases, incremental isolated builds and both review axes pass; eight compiler-source bindings match. Durable loot-receipt/process/provider/socket/native/retail remain open. The user requested publication and machine transfer; resume from the [saved prompt](Decomp/Analysis/RETAIL_RESTORATION_RESUME_PROMPT.md), checking completed provider timestamps before hosted World/Auth restart. Broader restoration remains unfinished.
 
 
@@ -29,7 +43,6 @@ match stored SQL dates, including null and fractional rounding. Production
 conversion is unchanged; the missing Guild registry was a fixture omission.
 All12 schemas and the owned engine are absent; clean builds/both reviews pass.
 The user resumed the incomplete Goal; hosted restart remains asset-dependent.
-
 
 [Q3777 physical fragments](Decomp/Analysis/Q3777_CANONICAL_FRAGMENT_PICKUP.md)
 now create real item6998 before activation and derive collection from owned

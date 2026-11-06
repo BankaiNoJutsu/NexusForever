@@ -1,5 +1,19 @@
 # Client Binary Decompile Continuation Guide
 
+6 November resumed continuation: [provider packet and hosted World/Auth qualification](PROVIDER_PACKET_HOSTED_RESTART_HANDOFF.md)
+passes 16 SQLite/16 configured MySQL timestamp probes and 118 scoped Guild cases.
+No production timestamp change was needed. Frozen hosted replacement passes
+full socket/bootstrap/closed-presence cycles and prepared pending/delivered/
+duplicate recovery; immediate admission still waits for the first realm heartbeat.
+All 23 new schemas and 11 service generations are absent; broker/EPMD stopped,
+queues retained empty, original data/entitlements preserved. The next pass
+reconciles 290's existing Source alias and 203's client no-op without authorizing
+raid eligibility. Overall restoration is resumed/unfinished; native client and
+Computer Use remain stopped. This supersedes historical pause/next-step text.
+
+Earlier parallel source milestones are retained below as historical checkpoints;
+the qualification above supersedes their hosted-restart next steps.
+
 [Physical loot feedback](PHYSICAL_LOOT_DELIVERY_FEEDBACK.md) is Source/SQLite verified: complete bound quantity and collect transition before fallible UI, retained original-owner notices and stale map-admission rejection. All19 focused/all239 related cases, isolated owning builds, eight compiler-source bindings and both review axes pass. The build uses published-parent Game/Game.Tests plus selected Source and frozen assembly dependencies; combined-root/provider/process/socket/native qualification is separate. The user requested publication and handoff; follow the [resume prompt](RETAIL_RESTORATION_RESUME_PROMPT.md) on the asset-owning machine. Completed timestamp checks precede the still-open hosted restart gate.
 
 
@@ -26,7 +40,6 @@ committed updates,fresh initial packets and legacy serialization. Stored dates
 are authoritative,including provider rounding; no production conversion change.
 All12 schemas and the owned server/listener are absent; clean builds and both
 reviews pass. The Goal resumed; hosted/native/retail gates remain separate.
-
 
 [Q3777 physical fragment pickup](Q3777_CANONICAL_FRAGMENT_PICKUP.md) now owns
 the real item before activation feedback and syncs collection from inventory.

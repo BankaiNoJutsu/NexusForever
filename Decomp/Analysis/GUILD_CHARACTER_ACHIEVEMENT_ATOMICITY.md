@@ -42,8 +42,11 @@ Guild completions under the current flag/type interpretation:
 - Its six checklist entries10875..10880 reference Guild achievements7187..7192.
 - The first parent7187 is Guild: Faulty Hypothesis (Prime1), describing Experiment
   X-89 with an all-Guild group. The other parents cover the remaining raid bosses.
-- Character server prerequisite44606 contains unknown types290 and203. Those
-  remain unmapped here. Prepared test gates do not authorize runtime bypasses.
+- Character server prerequisite44606 uses290 and203. The later native/source
+  reconciliation in the hosted handoff confirms290 already dispatches to an
+  aliased body with a Source ServerControl proxy;203 remains a client no-op
+  without a server predicate. Actual raid eligibility remains unqualified.
+  Prepared test gates do not authorize runtime bypasses.
 
 The actual first-parent control observes ProgressState1 (checklist bit0), separate
 CreditedChecklistMask0 and no completion date. This is partial progress, not a
@@ -246,3 +249,21 @@ Prepared recovery does not qualify autonomous hosted World/Auth startup,
 socket/native delivery, raid earning/all-Guild-group admission, prerequisite
 types290/203, all-member fanout, durable global realm-first arbitration, other
 providers or changed-route recovery. Client/CUA remain stopped.
+
+
+## Asset-owning-machine provider packet and hosted follow-through
+
+The [latest handoff](PROVIDER_PACKET_HOSTED_RESTART_HANDOFF.md#6-november-2026-asset-owning-machine-result)
+qualifies16 SQLite/16 configured MySQL packet cases and118 scoped Guild cases,
+with no production timestamp change. Stored SQL values agree with actual wire
+fields across both clock changes, fractions, null, provider-loaded Guild
+updates/reloads and Character completion publication. Incremental frozen
+World/Auth replacement passes full socket/bootstrap/cleanup cycles, prepared
+pending delivery and exact delivered/duplicate recovery. It does not qualify
+raid earning or native UI. The first Auth heartbeat remains an admission gate.
+All23 new schemas,11 owned service generations and new broker/EPMD are absent;
+original schemas and entitlements match their pre-run dumps. Spec/Standards
+self-reviews and compiler/source/DLL identities are in the portable
+[coverage](coverage/provider-packet-hosted-restart-20261106.json). Earlier pause
+and unfinished-provider statements above are historical; reuse their prior
+headless proof. Overall retail restoration remains unfinished and resumed.

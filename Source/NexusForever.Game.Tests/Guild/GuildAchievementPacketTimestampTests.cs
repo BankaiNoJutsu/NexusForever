@@ -4,165 +4,175 @@ using Microsoft.EntityFrameworkCore;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Achievement;
+using NexusForever.Game.Abstract.Character;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Achievement;
-using NexusForever.Game.Guild;
-using NexusForever.Game.Static.Achievement;
 using NexusForever.Game.Tests.TestSupport;
-using NexusForever.GameTable.Model;
 using NexusForever.GameTable.Text.Filter;
 using NexusForever.Network;
 using NexusForever.Network.Internal;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Achievement;
-using NexusForever.WorldServer.Network;
 using GameGuild = NexusForever.Game.Guild.Guild;
-using PacketAchievement = NexusForever.Network.World.Message.Model.Achievement.Achievement;
+using PacketRow = NexusForever.Network.World.Message.Model.Achievement.Achievement;
 
 namespace NexusForever.Game.Tests.Guild;
 
 public sealed partial class GuildCreationFinanceTests
 {
-    [Theory]
-    [InlineData(null)]
-    [InlineData("2026-01-02T03:04:05Z")]
-    [InlineData("2026-07-02T03:04:05Z")]
-    [InlineData("2026-03-29T01:30:00Z")]
-    [InlineData("2026-10-25T01:30:00Z")]
-    [InlineData("2026-01-02T03:04:05.8000000Z")]
-    public async Task GuildAchievementPacketsRetainStoredCompletion(string timestamp)
-        => await ProbeGuildPacketTimestamps(timestamp, _ => { });
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("2026-01-02T03:04:05Z")]
-    [InlineData("2026-07-02T03:04:05Z")]
-    [InlineData("2026-03-29T01:30:00Z")]
-    [InlineData("2026-10-25T01:30:00Z")]
-    [InlineData("2026-01-02T03:04:05.8000000Z")]
-    public async Task CharacterAchievementPacketsRetainStoredCompletion(string timestamp)
-        => await ProbeCharacterPacketTimestamps(timestamp, _ => { });
-
-    internal async Task ProbeGuildPacketTimestamps(string timestamp, Action<object> observe)
+    public static TheoryData<string> CompletionDates => new()
     {
-        using var f = await CreateFeedbackFixture();
-        ConfigureTimestampAchievements(f, timestamp);
-        var guild = Assert.IsType<GameGuild>(f.Actor.Player.GuildManager.Guild);
+        null,
+        "2026-01-02T03:04:05Z",
+        "2026-07-02T03:04:05Z",
+        "2026-03-29T00:59:59Z",
+        "2026-03-29T01:00:00Z",
+        "2026-10-25T00:59:59Z",
+        "2026-10-25T01:00:00Z",
+        "2026-01-02T03:04:05.8001234Z"
+    };
 
-        // Normal Guild broadcasts resolve online members through IPlayerManager.
-        // The finance fixture intentionally omits that collaborator; supply it
-        // for this packet observation without changing production or the fixture.
+    [Theory]
+    [MemberData(nameof(CompletionDates))]
+    public async Task GuildProviderLoadedPacketsRetainStoredCompletion(string timestamp)
+        => await ProbeGuildPacketTimestamp(timestamp, _ => { });
+
+    internal async Task ProbeGuildPacketTimestamp(string timestamp, Action<object> observe)
+    {
+        IPlayer recipient = null;
         var players = RecordingDispatchProxy<IPlayerManager>.Create(out var registry);
         registry.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args =>
-            (ulong)args[0] == f.Actor.Player.CharacterId ? f.Actor.Player : null);
-        typeof(GuildBase).GetField("playerManager", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(guild, players);
-        Assert.NotNull(guild.GetMember(f.Actor.Player.CharacterId));
-
-        EarnFeedback(f);
-        var manager = Assert.IsType<GuildAchievementManager>(guild.AchievementManager);
-        var live = TimestampAchievement<GuildAchievementModel>(manager, 600);
-        DateTime? original = ParseTimestamp(timestamp);
-        Assert.Equal(original.HasValue, live.DateCompleted.HasValue);
-        if (original.HasValue) live.DateCompleted = original;
-        Assert.DoesNotContain(f.Packets<ServerAchievementUpdate>().SelectMany(packet => packet.Achievements), row => row.AchievementId == 600);
+            args[0] is ulong id && id == recipient?.CharacterId ? recipient : null);
+        using var f = await CreateFeedbackFixture(players: players);
+        recipient = f.Actor.Player;
+        var original = Assert.IsType<GameGuild>(recipient.GuildManager.Guild);
+        var row = Row<GuildAchievementModel>(original.AchievementManager, 600, create: true);
+        row.DateCompleted = ParseCompletion(timestamp);
+        row.ProgressCount = timestamp == null ? 0x10203u : 1u;
+        row.CreditedChecklistMask = 0x1020408;
+        Assert.DoesNotContain(f.Packets<ServerAchievementUpdate>(), p => p.Achievements.Any(a => a.AchievementId == 600));
         await CommitFeedbackParent(f);
-        await f.Flush();
+        await DrainGuildPackets(original);
         using var sql = f.Source.Context();
         var stored = Assert.Single(sql.GuildAchievement.AsNoTracking());
-        Assert.Equal(original.HasValue, stored.DateCompleted.HasValue);
-        if (sql.Database.IsMySql() && stored.DateCompleted.HasValue)
-            Assert.Equal(DateTimeKind.Unspecified, stored.DateCompleted.Value.Kind);
-        ulong expected = StoredFileTime(stored.DateCompleted);
-        var updatePacket = Assert.Single(f.Packets<ServerAchievementUpdate>(), packet => packet.Achievements.Any(row => row.AchievementId == 600));
-        var update = Assert.Single(updatePacket.Achievements);
+        AssertStoredKind(sql.Database.IsMySql(), stored.DateCompleted);
+        CheckPacket(Assert.Single(f.Packets<ServerAchievementUpdate>(), p => p.Achievements.Any(a => a.AchievementId == 600)), stored);
 
-        var model = Assert.Single(f.Actor.Player.GetCharacterDatabase().GetGuilds());
-        var realm = RecordingDispatchProxy<IRealmContext>.Create(out var realmProxy);
-        realmProxy.SetProperty(nameof(IRealmContext.RealmId), (ushort)1);
-        var reloaded = new GameGuild(realm, RecordingDispatchProxy<IInternalMessagePublisher>.Create(out _),
-            RecordingDispatchProxy<ITextFilterManager>.Create(out _), globalAchievementManager: f.Achievements, gameTableManager: f.Tables);
-        reloaded.Initialise(model);
-        reloaded.AchievementManager.SendInitialPackets(f.Actor.Player);
-        var initialPacket = f.Packets<ServerAchievementInit>().Last();
-        var initial = Assert.Single(initialPacket.Achievements);
-        var legacy = TimestampAchievement<GuildAchievementModel>(reloaded.AchievementManager, 600).Build();
-        AssertTimestampRows(600, stored.ProgressState, stored.CreditedChecklistMask, expected, update, initial, legacy);
-        AssertTimestampWire(updatePacket, 600, stored.ProgressState, stored.CreditedChecklistMask, expected);
-        AssertTimestampWire(initialPacket, 600, stored.ProgressState, stored.CreditedChecklistMask, expected);
-        AssertTimestampWire(new ServerAchievementInit { Achievements = [legacy] }, 600, stored.ProgressState, stored.CreditedChecklistMask, expected);
-        observe(new { Owner = "Guild", Provider = sql.Database.ProviderName, LocalZone = TimeZoneInfo.Local.Id,
-            Original = original, Stored = stored.DateCompleted, Kind = stored.DateCompleted?.Kind.ToString(), Expected = expected,
-            Update = update.DateCompleted, Reload = initial.DateCompleted, Legacy = legacy.DateCompleted });
+        GameGuild LoadGuild()
+        {
+            var model = Assert.Single(f.Actor.Player.GetCharacterDatabase().GetGuilds());
+            var realm = RecordingDispatchProxy<IRealmContext>.Create(out var realmProxy);
+            realmProxy.SetProperty(nameof(IRealmContext.RealmId), (ushort)1);
+            var characters = RecordingDispatchProxy<ICharacterManager>.Create(out var people);
+            var character = RecordingDispatchProxy<ICharacter>.Create(out var person);
+            person.SetProperty(nameof(ICharacter.Name), "Leader");
+            people.SetMethodReturn(nameof(ICharacterManager.GetCharacter), character);
+            var guild = new GameGuild(realm, RecordingDispatchProxy<IInternalMessagePublisher>.Create(out _),
+                RecordingDispatchProxy<ITextFilterManager>.Create(out _), globalAchievementManager: f.Achievements,
+                gameTableManager: f.Tables, playerManager: players, characterManager: characters);
+            guild.Initialise(model);
+            return guild;
+        }
+        var loaded = LoadGuild();
+        loaded.AchievementManager.SendInitialPackets(recipient);
+        CheckPacket(f.Packets<ServerAchievementInit>().Last(), stored);
+        var loadedRow = Row<GuildAchievementModel>(loaded.AchievementManager, 600);
+        CheckLegacy(loadedRow.Build(), stored);
+
+        // A committed update must also preserve the provider-loaded date, with a
+        // real online-member registration and recipient lookup through the Guild.
+        loaded.OnPlayerLogin(recipient);
+        loadedRow.ProgressCount++;
+        loadedRow.CreditedChecklistMask ^= 0x40000000;
+        int packetsBefore = f.Packets<ServerAchievementUpdate>().Count();
+        using (var transaction = f.Source.Context())
+        {
+            loaded.Save(transaction);
+            await DrainGuildPackets(loaded);
+            Assert.Equal(packetsBefore, f.Packets<ServerAchievementUpdate>().Count());
+            await transaction.SaveChangesAsync();
+        }
+        await DrainGuildPackets(loaded);
+        Assert.Equal(packetsBefore + 1, f.Packets<ServerAchievementUpdate>().Count());
+        sql.ChangeTracker.Clear();
+        stored = Assert.Single(sql.GuildAchievement.AsNoTracking());
+        CheckPacket(f.Packets<ServerAchievementUpdate>().Last(), stored);
+        Assert.Equal(ParseCompletion(timestamp).HasValue, stored.DateCompleted.HasValue);
+        var fresh = LoadGuild();
+        fresh.AchievementManager.SendInitialPackets(recipient);
+        CheckPacket(f.Packets<ServerAchievementInit>().Last(), stored);
+        CheckLegacy(Row<GuildAchievementModel>(fresh.AchievementManager, 600).Build(), stored);
+        observe(new { Provider = sql.Database.ProviderName, LocalZone = TimeZoneInfo.Local.Id, Timestamp = timestamp,
+            Stored = stored.DateCompleted, Kind = stored.DateCompleted?.Kind.ToString(), stored.ProgressState,
+            stored.CreditedChecklistMask, Wire = ExpectedFileTime(stored.DateCompleted), ProviderLoadedUpdate = true });
     }
 
-    internal async Task ProbeCharacterPacketTimestamps(string timestamp, Action<object> observe)
+    [Theory]
+    [MemberData(nameof(CompletionDates))]
+    public async Task CharacterCommittedPacketsRetainStoredCompletion(string timestamp)
+        => await ProbeCharacterPacketTimestamp(timestamp, _ => { });
+
+    internal async Task ProbeCharacterPacketTimestamp(string timestamp, Action<object> observe)
     {
         using var f = await CreateFeedbackFixture();
-        ConfigureTimestampAchievements(f, timestamp);
         var manager = Assert.IsType<CharacterAchievementManager>(f.Actor.Player.AchievementManager);
-        manager.CheckAchievements(f.Actor.Player, AchievementType.AchievementComplete, 600);
-        var live = TimestampAchievement<CharacterAchievementModel>(manager, 601);
-        DateTime? original = ParseTimestamp(timestamp);
-        Assert.Equal(original.HasValue, live.DateCompleted.HasValue);
-        if (original.HasValue) live.DateCompleted = original;
-        Assert.DoesNotContain(f.Packets<ServerAchievementUpdate>().SelectMany(packet => packet.Achievements), row => row.AchievementId == 601);
+        var row = Row<CharacterAchievementModel>(manager, 601, create: true);
+        row.DateCompleted = ParseCompletion(timestamp);
+        row.ProgressCount = timestamp == null ? 1u : 2u;
+        row.CreditedChecklistMask = 0x4020108;
+        Assert.DoesNotContain(f.Packets<ServerAchievementUpdate>(), p => p.Achievements.Any(a => a.AchievementId == 601));
         f.Actor.StartSave();
         await f.Actor.Drain();
         using var sql = f.Source.Context();
         var stored = Assert.Single(sql.CharacterAchievement.AsNoTracking());
-        Assert.Equal(original.HasValue, stored.DateCompleted.HasValue);
-        if (sql.Database.IsMySql() && stored.DateCompleted.HasValue)
-            Assert.Equal(DateTimeKind.Unspecified, stored.DateCompleted.Value.Kind);
-        ulong expected = StoredFileTime(stored.DateCompleted);
-        var updatePacket = Assert.Single(f.Packets<ServerAchievementUpdate>(), packet => packet.Achievements.Any(row => row.AchievementId == 601));
-        var update = Assert.Single(updatePacket.Achievements);
+        AssertStoredKind(sql.Database.IsMySql(), stored.DateCompleted);
+        CheckPacket(Assert.Single(f.Packets<ServerAchievementUpdate>(), p => p.Achievements.Any(a => a.AchievementId == 601)), stored);
+        manager.SendInitialPackets(f.Actor.Player);
+        CheckPacket(f.Packets<ServerAchievementInit>().Last(p => p.Achievements.Any(a => a.AchievementId == 601)), stored);
         using var fresh = await FreshFeedbackActor(f);
+        var connection = (RecordingDispatchProxy<NexusForever.WorldServer.Network.IWorldSession>)(object)fresh.Player.Session;
         fresh.Player.AchievementManager.SendInitialPackets(fresh.Player);
-        var messages = (RecordingDispatchProxy<IWorldSession>)(object)fresh.Player.Session;
-        var initialPacket = messages.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
+        var initial = connection.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted))
             .Select(call => call.Arguments[0]).OfType<ServerAchievementInit>().Last();
-        var initial = Assert.Single(initialPacket.Achievements);
-        var legacy = TimestampAchievement<CharacterAchievementModel>(fresh.Player.AchievementManager, 601).Build();
-        AssertTimestampRows(601, stored.ProgressState, stored.CreditedChecklistMask, expected, update, initial, legacy);
-        AssertTimestampWire(updatePacket, 601, stored.ProgressState, stored.CreditedChecklistMask, expected);
-        AssertTimestampWire(initialPacket, 601, stored.ProgressState, stored.CreditedChecklistMask, expected);
-        AssertTimestampWire(new ServerAchievementInit { Achievements = [legacy] }, 601, stored.ProgressState, stored.CreditedChecklistMask, expected);
-        observe(new { Owner = "Character", Provider = sql.Database.ProviderName, LocalZone = TimeZoneInfo.Local.Id,
-            Original = original, Stored = stored.DateCompleted, Kind = stored.DateCompleted?.Kind.ToString(), Expected = expected,
-            Update = update.DateCompleted, Reload = initial.DateCompleted, Legacy = legacy.DateCompleted });
+        CheckPacket(initial, stored);
+        CheckLegacy(Row<CharacterAchievementModel>(fresh.Player.AchievementManager, 601).Build(), stored);
+        observe(new { Provider = sql.Database.ProviderName, LocalZone = TimeZoneInfo.Local.Id, Timestamp = timestamp,
+            Stored = stored.DateCompleted, Kind = stored.DateCompleted?.Kind.ToString(), stored.ProgressState,
+            stored.CreditedChecklistMask, Wire = ExpectedFileTime(stored.DateCompleted) });
     }
 
-    private static void ConfigureTimestampAchievements(Fixture f, string timestamp)
-        => ConfigureFeedback(f,
-            new AchievementEntry { Id = 600, Flags = (uint)AchievementFlags.Guild,
-                AchievementTypeId = (uint)AchievementType.KillCreatureEntry, ObjectId = 500, RequiredProgress = timestamp == null ? 2u : 1u },
-            new AchievementEntry { Id = 601, AchievementTypeId = (uint)AchievementType.AchievementComplete,
-                ObjectId = 600, RequiredProgress = timestamp == null ? 2u : 1u }, []);
-
-    private static DateTime? ParseTimestamp(string value) => value == null ? null
-        : DateTime.Parse(value, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal);
-    private static ulong StoredFileTime(DateTime? value) => value.HasValue
-        ? (ulong)DateTime.SpecifyKind(value.Value, DateTimeKind.Utc).ToFileTimeUtc() : 0;
-    private static IAchievement TimestampAchievement<T>(object manager, ushort id) where T : class, IAchievementModel, new()
-        => (IAchievement)typeof(BaseAchievementManager<T>).GetMethod("GetAchievement", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(manager, [id])!;
-    private static void AssertTimestampRows(ushort id, uint progress, uint credited, ulong completed, params PacketAchievement[] rows)
+    private static IAchievement Row<T>(object manager, ushort id, bool create = false) where T : class, IAchievementModel, new()
     {
-        foreach (var row in rows)
-        {
-            Assert.Equal(id, row.AchievementId); Assert.Equal(progress, row.ProgressState);
-            Assert.Equal(credited, row.CreditedChecklistMask); Assert.Equal(completed, row.DateCompleted);
-        }
+        if (create) ((BaseAchievementManager<T>)manager).GrantAchievement(id);
+        var get = typeof(BaseAchievementManager<T>).GetMethod("GetAchievement", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        return Assert.IsAssignableFrom<IAchievement>(get.Invoke(manager, [id]));
     }
-    private static void AssertTimestampWire(IWritable packet, ushort id, uint progress, uint credited, ulong completed)
+    private static Task DrainGuildPackets(GameGuild guild) => (Task)typeof(GameGuild).BaseType!
+        .GetMethod("PublishMutationsAsync", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(guild, null)!;
+    private static DateTime? ParseCompletion(string value) => value == null ? null
+        : DateTime.Parse(value, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal);
+    private static ulong ExpectedFileTime(DateTime? stored) => stored.HasValue
+        ? (ulong)DateTime.SpecifyKind(stored.Value, DateTimeKind.Utc).ToFileTimeUtc() : 0;
+    private static void AssertStoredKind(bool mysql, DateTime? date)
+    {
+        if (mysql && date.HasValue) Assert.Equal(DateTimeKind.Unspecified, date.Value.Kind);
+    }
+    private static void CheckLegacy(PacketRow row, IAchievementModel stored)
+        => CheckPacket(new ServerAchievementInit { Achievements = [row] }, stored);
+    private static void CheckPacket(IWritable packet, IAchievementModel stored)
     {
         using var bytes = new MemoryStream();
-        using (var writer = new GamePacketWriter(bytes)) { packet.Write(writer); writer.FlushBits(); }
+        using var writer = new GamePacketWriter(bytes);
+        packet.Write(writer);
+        writer.FlushBits();
         using var reader = new GamePacketReader(new MemoryStream(bytes.ToArray()));
         if (packet is ServerAchievementUpdate) Assert.False(reader.ReadBit());
-        Assert.Equal(1, reader.ReadInt());
-        Assert.Equal(id, reader.ReadUShort(15));
-        Assert.Equal(progress, reader.ReadUInt()); Assert.Equal(credited, reader.ReadUInt());
-        Assert.Equal(completed, reader.ReadULong());
+        Assert.Equal(1u, reader.ReadUInt());
+        Assert.Equal(stored.AchievementId, reader.ReadUShort(15));
+        Assert.Equal(stored.ProgressState, reader.ReadUInt());
+        Assert.Equal(stored.CreditedChecklistMask, reader.ReadUInt());
+        Assert.Equal(ExpectedFileTime(stored.DateCompleted), reader.ReadULong());
+        Assert.Equal(0u, reader.BytesRemaining);
     }
 }

@@ -1,5 +1,19 @@
 # Continue on another machine
 
+6 November resumed continuation: [provider packet and hosted World/Auth qualification](Decomp/Analysis/PROVIDER_PACKET_HOSTED_RESTART_HANDOFF.md)
+passes 16 SQLite/16 configured MySQL timestamp probes and 118 scoped Guild cases.
+No production timestamp change was needed. Frozen hosted replacement passes
+full socket/bootstrap/closed-presence cycles and prepared pending/delivered/
+duplicate recovery; immediate admission still waits for the first realm heartbeat.
+All 23 new schemas and 11 service generations are absent; broker/EPMD stopped,
+queues retained empty, original data/entitlements preserved. The next pass
+reconciles 290's existing Source alias and 203's client no-op without authorizing
+raid eligibility. Overall restoration is resumed/unfinished; native client and
+Computer Use remain stopped. This supersedes historical pause/next-step text.
+
+Earlier parallel source milestones are retained below as historical checkpoints;
+the qualification above supersedes their hosted-restart next steps.
+
 Use the [saved resume prompt](Decomp/Analysis/RETAIL_RESTORATION_RESUME_PROMPT.md) for this user-requested machine transfer. First confirm applicability of the completed12 MySQL/166 SQLite provider packet timestamp result; then qualify hosted World/Auth restart with verified build16042 runtime assets. The latest [physical loot feedback](Decomp/Analysis/PHYSICAL_LOOT_DELIVERY_FEEDBACK.md) slice passes19 focused/239 related Source/SQLite cases, isolated owning builds, eight compiler-source bindings and both reviews. Raw artifacts, binaries, private settings and runtime assets are ignored and do not travel with Git. Overall restoration is unfinished; Computer Use/native-client launch stay stopped. This checkpoint supersedes historical active/pause/draft directions below.
 
 
@@ -32,7 +46,6 @@ production conversion agrees with stored dates and remains unchanged.
 All12 schemas and the owned engine/listener are absent. Resume hosted World/Auth
 qualification with verified runtime assets; keep unavailable gates explicit and
 continue independent gameplay. Older pause/draft instructions below are history.
-
 
 Latest [Q3777 physical fragment pickup](Decomp/Analysis/Q3777_CANONICAL_FRAGMENT_PICKUP.md)
 creates actual item6998 before activation feedback, preserves refused pickups
