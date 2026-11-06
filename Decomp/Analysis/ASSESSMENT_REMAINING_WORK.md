@@ -1,5 +1,14 @@
 # Assessment follow-through goal
 
+[Challenge Ability target identity](CHARACTER_CHALLENGE_LIVE_PRODUCERS.md#ability-spell-targets-do-not-earn-creature-activation-credit)
+now rejects creature activation as spell earning. Actual 182 Target 28780 is
+Spell4, pane group 5913; all 45 nonzero Ability targets resolve Spell4 and none of
+47 rows targets a group. Three baseline failures/actual false count and tier
+are fixed;144 scoped/four actual cases and both reviews pass. The historical
+synthetic mapping is superseded; Checklist and explicit scripts remain intact.
+Positive cast/hit/effect/proxy/dedup semantics still need specific evidence;
+do not invent a spell producer. Continue independent roadmap work.
+
 [Challenge creature target identity](CHARACTER_CHALLENGE_LIVE_PRODUCERS.md#creature-target-identity)
 fixes false combat/checklist earning from zero padding and target-group IDs
 misread as creature IDs. Four baseline regressions and five actual103/532

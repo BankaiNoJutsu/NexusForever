@@ -22,7 +22,7 @@ namespace NexusForever.Game.Tests.Challenges;
 public class ChallengeDataMappingSliceTests
 {
     private const ushort ExplodingIcetailsChallengeId = 182;
-    private const uint ExplodingIcetailsTargetGroupId = 28780u;
+    private const uint ExplodingIcetailsSpellId = 28780u;
     private const uint EnragedRingtailCreature2Id = 20775u;
     private const uint ExplodingIcetailsTier0Id = 338u;
 
@@ -73,16 +73,16 @@ public class ChallengeDataMappingSliceTests
     private const uint NorthernWildsRootbruteSpawnWorldZoneId = 949u;
 
     [Fact]
-    public void MappedActivationTarget_AdvancesAbilityChallengeThroughTargetGroup()
+    public void AbilitySpellTarget_DoesNotAdvanceFromCreatureActivation()
     {
         GameTableManager gameTables = CreateGameTables(
             new ChallengeEntry
             {
                 Id                      = ExplodingIcetailsChallengeId,
                 ChallengeTypeEnum       = (uint)ChallengeType.Ability,
-                Target                  = ExplodingIcetailsTargetGroupId,
+                Target                  = ExplodingIcetailsSpellId,
                 ChallengeTierId00       = ExplodingIcetailsTier0Id,
-                TargetGroupIdRewardPane = ExplodingIcetailsTargetGroupId
+                TargetGroupIdRewardPane = 5913u
             },
             [
                 new ChallengeTierEntry
@@ -94,7 +94,7 @@ public class ChallengeDataMappingSliceTests
             [
                 new TargetGroupEntry
                 {
-                    Id          = ExplodingIcetailsTargetGroupId,
+                    Id          = 5913u,
                     Type        = (uint)TargetGroupType.CreatureIdListGroup,
                     DataEntries = [EnragedRingtailCreature2Id, 20779u, 20776u, 61864u, 0u, 0u, 0u]
                 }
@@ -104,9 +104,15 @@ public class ChallengeDataMappingSliceTests
         manager.HandleChoice(ExplodingIcetailsChallengeId, ChallengeChoice.Activate);
         ChallengeActivationHooks.OnTargetActivated(player, EnragedRingtailCreature2Id);
 
-        ServerChallengeResult completed = GetMessages<ServerChallengeResult>(sessionProxy)
-            .Last(result => result.Result == ChallengeResult.Completed);
-        Assert.Equal(ExplodingIcetailsChallengeId, completed.ChallengeId);
+        ChallengeActivationHooks.OnTargetActivated(player, ExplodingIcetailsSpellId);
+        ServerChallengeUpdate.Challenge row = Assert.Single(GetMessages<ServerChallengeUpdate>(sessionProxy).Last().ActiveChallenges);
+        Assert.Equal(0u, row.CurrentCount);
+        Assert.True(row.Activated);
+        Assert.DoesNotContain(GetMessages<ServerChallengeResult>(sessionProxy), result => result.Result == ChallengeResult.Completed);
+
+        // This explicit script API control is separate from a qualified spell producer.
+        Assert.True(ChallengeProgressHooks.OnChallengeProgress(player, ExplodingIcetailsChallengeId));
+        Assert.Contains(GetMessages<ServerChallengeResult>(sessionProxy), result => result.Result == ChallengeResult.Completed);
     }
 
     [Fact]

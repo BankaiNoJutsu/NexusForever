@@ -244,7 +244,7 @@ public class ChallengeManagerTests
         bool combat = scenario == "combat-new";
         bool alreadyActive = scenario is "activation-restarted" or "activation-both";
         var tables = CreateGameTablesWithMultipleTypes(
-            (ChallengeId, combat ? ChallengeType.Combat : ChallengeType.Ability),
+            (ChallengeId, combat ? ChallengeType.Combat : ChallengeType.ChecklistActivate),
             (secondChallenge, ChallengeType.ChecklistActivate));
         tables.Challenge.GetEntry(ChallengeId).Target = creature;
         tables.Challenge.GetEntry(ChallengeId).ChallengeTierId00 = 2002;
@@ -256,7 +256,19 @@ public class ChallengeManagerTests
         IChallengeManager manager = player.ChallengeManager;
         manager.HandleChoice(ChallengeId, ChallengeChoice.Activate);
         if (alreadyActive)
-            manager.HandleChoice(secondChallenge, ChallengeChoice.Activate);
+        {
+            // Retain the old callback/restart coverage for historical loaded rows.
+            // New admission correctly permits only one active Challenge per type.
+            manager = new ChallengeManager(player, new CharacterModel
+            {
+                Challenge =
+                [
+                    new CharacterChallengeModel { ChallengeId = ChallengeId, Activated = true },
+                    new CharacterChallengeModel { ChallengeId = secondChallenge, Activated = true }
+                ]
+            }, tables);
+            ((RecordingDispatchProxy<IPlayer>)(object)player).SetProperty(nameof(IPlayer.ChallengeManager), manager);
+        }
 
         bool changed = false;
         quests.SetMethodHandler(nameof(IQuestManager.ObjectiveUpdate), args =>

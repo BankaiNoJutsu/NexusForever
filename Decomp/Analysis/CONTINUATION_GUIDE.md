@@ -1,5 +1,12 @@
 # Client Binary Decompile Continuation Guide
 
+[Challenge Ability spell targets](CHARACTER_CHALLENGE_LIVE_PRODUCERS.md#ability-spell-targets-do-not-earn-creature-activation-credit)
+now stay outside creature-activation scoring. Actual 182 alias earning is fixed;
+144 scoped/four actual cases, clean builds and both reviews pass. The old
+synthetic Group 28780 claim is superseded by Spell4 28780/pane group 5913.
+Checklist/explicit scripts remain supported; positive spell scoring, providers
+and native/retail stay open. Client/CUA remain stopped.
+
 [Challenge target identity](CHARACTER_CHALLENGE_LIVE_PRODUCERS.md#creature-target-identity)
 now gives known combat/checklist groups their own namespace and rejects zero
 creature IDs. All121 scoped cases and five actual103/532 cases pass; builds and

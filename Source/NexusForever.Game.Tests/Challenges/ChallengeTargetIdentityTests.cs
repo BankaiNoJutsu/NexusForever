@@ -34,7 +34,7 @@ public sealed class ChallengeTargetIdentityTests
     }
 
     [Theory]
-    [InlineData(ChallengeType.Combat)] [InlineData(ChallengeType.Ability)] [InlineData(ChallengeType.ChecklistActivate)]
+    [InlineData(ChallengeType.Combat)] [InlineData(ChallengeType.ChecklistActivate)]
     public void ExistingDirectTargetsWithoutAGroupKeepTheirRoute(ChallengeType type)
     {
         using var f = new Fixture(new ChallengeEntry { Id = 1001, ChallengeTypeEnum = (uint)type, Target = 42, ChallengeTierId00 = 1 });

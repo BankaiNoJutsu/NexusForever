@@ -3,7 +3,7 @@ using NexusForever.Game.Abstract.Entity;
 namespace NexusForever.Game.Challenges
 {
     /// <summary>
-    /// Credits active activation-style challenges when a successful interaction matches the challenge table target id.
+    /// Credits active ChecklistActivate challenges after a matching creature interaction.
     /// </summary>
     public static class ChallengeActivationHooks
     {

@@ -613,8 +613,8 @@ namespace NexusForever.Game.Challenges
 
         private static bool IsActivationChallengeType(uint challengeType)
         {
-            return challengeType == (uint)ChallengeType.Ability
-                || challengeType == (uint)ChallengeType.ChecklistActivate;
+            // Ability targets name spells, not creatures or target groups.
+            return challengeType == (uint)ChallengeType.ChecklistActivate;
         }
 
         private bool MatchesChallengeTarget(ChallengeEntry entry, uint creatureId)
@@ -627,8 +627,8 @@ namespace NexusForever.Game.Challenges
 
             TargetGroupEntry targetGroup = gameTableManager.TargetGroup?.GetEntry(entry.Target);
             bool groupTarget = entry.ChallengeTypeEnum is (uint)ChallengeType.Combat or (uint)ChallengeType.ChecklistActivate;
-            // Known combat/checklist groups own their creature namespace. Ability
-            // and direct targets without a group retain their existing binding.
+            // Known combat/checklist groups own their creature namespace.
+            // Direct targets without a group retain their existing binding.
             if (entry.Target == creatureId && (!groupTarget || targetGroup == null))
                 return true;
 

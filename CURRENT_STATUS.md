@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[Challenge Ability target correction](Decomp/Analysis/CHARACTER_CHALLENGE_LIVE_PRODUCERS.md#ability-spell-targets-do-not-earn-creature-activation-credit)
+removes false creature/group activation credit for spell-target Ability rows.
+Three focused baseline failures and actual 182 false count/tier are fixed;
+144 scoped/four actual cases, clean builds and both reviews pass. Checklist and
+explicit scripts remain supported. Positive spell scoring/provider/native/retail
+stay open; no guessed producer was enabled. Client/CUA remain stopped.
+
 [Challenge creature target identity](Decomp/Analysis/CHARACTER_CHALLENGE_LIVE_PRODUCERS.md#creature-target-identity)
 now rejects invalid zero and raw group-ID aliases in combat/checklist earning.
 Actual103/532 progress/tier/autostart regressions are fixed; all121 scoped

@@ -12942,6 +12942,14 @@ auto-routing and choreography/timing also remain blocked until retail
 selection/order evidence is captured. Focused public-event verification passed
 `1394/1394`.
 
+6 November 2026 correction: the Ability activation interpretation below is
+superseded by [recovered spell-target qualification](CHARACTER_CHALLENGE_LIVE_PRODUCERS.md#ability-spell-targets-do-not-earn-creature-activation-credit).
+Challenge 182 Target 28780 is Spell4, with separate reward-pane group 5913.
+Creature activation now advances ChecklistActivate only; explicit Challenge-ID
+scripts remain supported.144 scoped/four actual-data cases and both reviews
+pass. Positive Ability spell scoring remains unqualified. The historical
+mapping/test record is retained below.
+
 Supplemental update: 2026-06-16 F-033 challenge objective/reward-track slice.
 `ChallengeManager` now credits both `ChallengeType.Ability` and
 `ChallengeType.ChecklistActivate` rows from successful target activation, and

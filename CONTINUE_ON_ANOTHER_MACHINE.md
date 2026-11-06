@@ -1,5 +1,13 @@
 # Continue on another machine
 
+Latest Challenge Source correction:
+[Ability spell targets](Decomp/Analysis/CHARACTER_CHALLENGE_LIVE_PRODUCERS.md#ability-spell-targets-do-not-earn-creature-activation-credit)
+cannot earn creature-activation credit. Three baseline failures and actual 182
+false count/tier are fixed;144 scoped/four actual cases, clean builds and both
+reviews pass. Spell 28780/pane group 5913 supersede the old synthetic mapping.
+Checklist/explicit script paths remain; positive spell producer/provider/native/
+retail stay open. Move independent roadmap work; client/CUA remain stopped.
+
 Latest Challenge Source result:
 [target identity](Decomp/Analysis/CHARACTER_CHALLENGE_LIVE_PRODUCERS.md#creature-target-identity)
 prevents group-ID aliases/zero padding from earning combat/checklist progress

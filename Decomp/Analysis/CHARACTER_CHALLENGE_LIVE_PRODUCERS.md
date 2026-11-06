@@ -1,5 +1,66 @@
 # Live Character Challenge earning producers
 
+## Ability spell targets do not earn creature activation credit
+
+6 November 2026, parent 775d5fd884249f228570267198cf54e063227ee2.
+Creature activation now advances ChecklistActivate challenges only. An Ability
+target cannot be interpreted as a creature or creature-group ID. Explicit
+Challenge-ID script progress remains available; this correction does not supply
+the still-unqualified positive spell producer.
+
+The recovered 643-row Challenge catalog has 47 Ability rows. All 45 nonzero
+targets resolve to Spell4, none resolves to TargetGroup. The two zero targets
+are unnamed internal row 2 and 1117 (Eviction Day); their positive earning is
+undefined here. Selected 182, Exploding Icetails, targets Spell4 28780, whose
+base 15260 names the Razortail Rocket Launcher. Its objective requires launcher
+use on Icetails. The separate reward-pane group 5913 contains 20775 among its
+creatures; there is no group 28780. A Creature2 row 28780 is an unrelated numeric
+coincidence. These joined metadata and objective semantics, rather than ID
+coincidences alone, reject the old activation interpretation.
+
+The June 16 F-033 synthetic test and DataMapping claim treated 28780 as a group.
+That historical claim is superseded. The fixture now keeps spell target 28780
+separate from pane group 5913 and rejects ordinary creature activation. The
+earlier target-identity milestone deliberately preserved Ability compatibility;
+this later actual-data qualification justifies removing that wrong route.
+Callback ownership coverage now uses Checklist earning. Its historical
+multiple-active same-type rows are loaded through Character models; new public
+admission still permits only one active Challenge of a type.
+
+The unchanged production baseline fails three of seven focused cases. Real
+parsed ClientActivateUnit passes through its public handler, interaction updater
+and ChallengeManager with prepared visible/nonhostile entities and actor/session
+collaborators. Both raw-ID and fabricated-group aliases incorrectly add credit.
+With actual 182 definition/full tier/group tables, one Creature 28780 interaction
+adds count 1; eight interactions falsely reach tier 1. A pane-member interaction
+correctly earns no Ability credit even before the fix. Actual Checklist 309 still
+earns count 1 for Creature 25640.
+
+The final candidate passes all seven focused cases within 144 selected Challenge
+and interaction cases, and all four actual-data cases. Both owning/test builds
+are clean (11.76 s/14.18 s), the runner build is clean (2.76 s), and the selected
+tests report 47 s. The same test DLL runs before/after; only the Game DLL changes
+among 138 test-output DLLs. Both final Source review axes have zero findings.
+No full solution or full suite ran; foreign root Source was excluded.
+
+Spell 28780 has five effect rows: 187435/type 112, 187436/Damage (2000 ms delay),
+187437/ForcedMove, 187507/Fluff and 208288/Proxy (raw DataBits00=79239). These data do
+not decide whether earning belongs to cast, successful hit/application, a proxy
+or another script event, nor per-target/per-cast deduplication, miss/cancel or
+failure semantics. No OnCast/OnExecute/effect callback is promoted to reward
+authority from this evidence. Correct positive Ability earning remains open,
+alongside collect/item/general/time-tiered producers and share activation.
+Move to independent actionable roadmap work until that specific evidence changes.
+
+The [portable record](coverage/challenge-ability-activation-20261106.json) binds
+the six Source paths, recovered 385-payload manifest, target/effect joins,
+baseline/final identities, scoped results and final reviews. Raw evidence is
+under artifacts/continuation-20261106/challenge-ability-contract/.
+The actual checks prepare interaction visibility, eligibility and geometry;
+they do not prove real placement, a native spell/interaction, positive Ability
+earning, durable medal/claim settlement or provider/socket/deployment/retail
+behavior. Client launch and Computer Use remain stopped.
+
 ## Creature target identity
 
 6 November 2026, parent `0aecab7ff71b63d4b44dbfbecff4fbef578182e0`.

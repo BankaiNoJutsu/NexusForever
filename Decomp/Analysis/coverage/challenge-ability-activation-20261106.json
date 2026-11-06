@@ -1,0 +1,404 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-06T04:29:28.538515+00:00",
+  "baseCommit": "775d5fd884249f228570267198cf54e063227ee2",
+  "milestone": "Reject creature activation as Ability spell-target earning",
+  "classification": "Implemented verified wrong-producer correction with actual catalog/public interaction regressions; positive Ability spell scoring and overall Goal remain open",
+  "sources": [
+    {
+      "path": "Source/NexusForever.Game/Challenges/ChallengeManager.cs",
+      "sha256": "f45873563c4f3dd1e49da838baaaa48c8c44d89ef064ade244b45d5fcaa21797",
+      "gitBlob": "8568ad4f194ed6c2e2fbeb113894051dec17abab"
+    },
+    {
+      "path": "Source/NexusForever.Game/Challenges/ChallengeActivationHooks.cs",
+      "sha256": "8036627d9d4e06cf685f8b89b20f177b834edad4236851646c3a76ee477d6bea",
+      "gitBlob": "e85678b45c4ef821cd3f52c636c3cc271dd29356"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Challenges/ChallengeAbilityActivationTests.cs",
+      "sha256": "882d0315f7488b4433dcd1204fd19684e6508c89a62caaa6d611b56a12b7f322",
+      "gitBlob": "4a2c52da1fa36fe5392f2ac0d88a1689950b75bd"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Challenges/ChallengeDataMappingSliceTests.cs",
+      "sha256": "29d38c197eeeb429449d21286c54964c5732fd62b0034cf8a232aa049fbc5b4d",
+      "gitBlob": "c78fe930c3b0d5dda0a7afb70152882dd6fa714e"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Challenges/ChallengeTargetIdentityTests.cs",
+      "sha256": "13feb403fc216e9e9857db9acb7ba1a7d7084105fc0942cb6a8e395c2653fa10",
+      "gitBlob": "830ef85b8ba6a595f0ddb3c382fdd4cf929cce35"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Challenges/ChallengeManagerTests.cs",
+      "sha256": "56590c928e9cd65a79bf90226c25d2e916b016d7d322669fe79fb26c4fd39445",
+      "gitBlob": "583285e49f87c78133bcb6c23a9ed6cc5d0a645f"
+    }
+  ],
+  "sourceBoundary": {
+    "base": "775d5fd884249f228570267198cf54e063227ee2",
+    "trackedSourceFiles": 6289,
+    "differences": [
+      {
+        "path": "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+        "head": "9b4e604e08391bf229552fa04081ecf9c74fec4d",
+        "candidate": "7de92fafe0c2474ba8428ca9ceee883d39138b46"
+      },
+      {
+        "path": "Source/NexusForever.ClientConnector/packages.config",
+        "head": "fa4b77dc45783358023c1cd38e6ff9bad122aea4",
+        "candidate": "8ab13a9023dec3cf548ee61ba183013bd098a297"
+      },
+      {
+        "path": "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+        "head": "64769a2266f7feab861fcc61cd2b00a0a05da8c4",
+        "candidate": "74272fd6bf29afac14c5d62cb172e81b4edee19a"
+      },
+      {
+        "path": "Source/NexusForever.Database/NexusForever.Database.csproj",
+        "head": "61f9d5326c59ec7018164eba605a01f4081dfded",
+        "candidate": "163c4f01e198e71066afcd9089a367c78b4c3de6"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Challenges/ChallengeDataMappingSliceTests.cs",
+        "head": "cf0621260187b76f8fd9e964494a3e8ba486ce77",
+        "candidate": "c78fe930c3b0d5dda0a7afb70152882dd6fa714e"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Challenges/ChallengeManagerTests.cs",
+        "head": "8e24049abe73aa6abbbc6fffdcfcddf1884d8b5e",
+        "candidate": "583285e49f87c78133bcb6c23a9ed6cc5d0a645f"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Challenges/ChallengeTargetIdentityTests.cs",
+        "head": "75de8122d8d6bed9b5277e62e30291c1772550ef",
+        "candidate": "830ef85b8ba6a595f0ddb3c382fdd4cf929cce35"
+      },
+      {
+        "path": "Source/NexusForever.Game/Challenges/ChallengeActivationHooks.cs",
+        "head": "3a37d6257fd55e93cd70b08fbfe4c1e46f22c7fb",
+        "candidate": "e85678b45c4ef821cd3f52c636c3cc271dd29356"
+      },
+      {
+        "path": "Source/NexusForever.Game/Challenges/ChallengeManager.cs",
+        "head": "e01efa8f472c74e11bb7edccb039343132b37f1e",
+        "candidate": "8568ad4f194ed6c2e2fbeb113894051dec17abab"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+        "head": "1ffaefc3cf8c1eb7c5b0534d4d91f28eb7001347",
+        "candidate": "6c145b847fa7316e7982ab44cfa404f4e1e7fc70"
+      },
+      {
+        "path": "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj",
+        "head": "74f0ec9ebbf4894dd7ef64f379a773a9e4ce1295",
+        "candidate": "ecd970da6d0d220f3caaf6780656c1809e18a9af"
+      }
+    ],
+    "newOwned": [
+      "Source/NexusForever.Game.Tests/Challenges/ChallengeAbilityActivationTests.cs"
+    ],
+    "historicalNonTaskDifferencePaths": [
+      "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+      "Source/NexusForever.ClientConnector/packages.config",
+      "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+      "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+      "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+      "Source/NexusForever.Database/NexusForever.Database.csproj",
+      "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+      "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj"
+    ],
+    "foreignRootSourceExcluded": true
+  },
+  "inputs": {
+    "baseline": {
+      "path": "artifacts/continuation-20261106/challenge-ability-contract/baseline-inputs.json",
+      "sha256": "3f208e33b482463cbeccdca6a39775c1f5ae3ba379db748f578cadcace705205"
+    },
+    "final": {
+      "path": "artifacts/continuation-20261106/challenge-ability-contract/final-inputs.json",
+      "sha256": "e610ec44f1442d74a83adef6eea0c181024a9913261fe0e68357bc83cf17c1fb"
+    },
+    "baselineActual": {
+      "path": "artifacts/continuation-20261106/challenge-ability-contract/baseline-actual-01/inputs.json",
+      "sha256": "a97c1087551190b228af19e84586f6205f3b82b8ce9cd6bb653a439c4aa4fc61"
+    },
+    "finalActual": {
+      "path": "artifacts/continuation-20261106/challenge-ability-contract/final-actual-01/inputs.json",
+      "sha256": "8b6c8cddf612e6d7e9608df676ce2e0eca1f56eb00816ecbb59d56677c2de3a9"
+    },
+    "verifiedRecoveredPayloads": 385,
+    "manifestSha256": "bfb15d7824bb7ed4f4b03cc26411b3adb07317744ff2939b9fd1101c476902ad",
+    "loadedTypedTables": 8,
+    "sameTestDllBeforeAfter": true,
+    "changedDlls": [
+      "NexusForever.Game.dll"
+    ],
+    "testOutputDlls": 138,
+    "owningTestRunnerCopiesExact": true
+  },
+  "dataAudit": {
+    "targets": {
+      "path": "artifacts/continuation-20261106/challenge-ability-contract/table-audit.json",
+      "sha256": "dd5140e9587357d1725b04a25b14ccd54122affc6b8c10c80517e1504434ac5d"
+    },
+    "effects": {
+      "path": "artifacts/continuation-20261106/challenge-ability-contract/effect-audit.json",
+      "sha256": "da6aebd41448df04e7818487927baedbfe61c347bbf2115c3d9fc65eceebe695"
+    },
+    "catalogRows": 643,
+    "abilityRows": 47,
+    "nonzeroTargets": 45,
+    "nonzeroSpell4Joins": 45,
+    "targetGroupJoins": 0,
+    "zeroTargets": [
+      2,
+      1117
+    ],
+    "selected": {
+      "challenge": 182,
+      "targetSpell4": 28780,
+      "baseSpell": 15260,
+      "baseName": "Razortail Rocket Launcher",
+      "rewardPaneGroup": 5913,
+      "firstTierGoal": 8,
+      "aliasCreature": 28780
+    },
+    "spellEffects": [
+      {
+        "Id": 187435,
+        "SpellId": 28780,
+        "EffectType": 112,
+        "TargetFlags": 1,
+        "DelayTime": 0,
+        "DataBits00": 0
+      },
+      {
+        "Id": 187436,
+        "SpellId": 28780,
+        "EffectType": 8,
+        "TargetFlags": 2,
+        "DelayTime": 2000,
+        "DataBits00": 1065353216
+      },
+      {
+        "Id": 187437,
+        "SpellId": 28780,
+        "EffectType": 3,
+        "TargetFlags": 2,
+        "DelayTime": 0,
+        "DataBits00": 5
+      },
+      {
+        "Id": 187507,
+        "SpellId": 28780,
+        "EffectType": 17,
+        "TargetFlags": 2,
+        "DelayTime": 0,
+        "DataBits00": 0
+      },
+      {
+        "Id": 208288,
+        "SpellId": 28780,
+        "EffectType": 26,
+        "TargetFlags": 2,
+        "DelayTime": 0,
+        "DataBits00": 79239
+      }
+    ],
+    "supersedes": "June16 F-033 synthetic TargetGroup28780/Ability activation interpretation; previous milestone preserved compatibility pending this actual-data qualification."
+  },
+  "baseline": {
+    "focused": {
+      "path": "artifacts/continuation-20261106/challenge-ability-contract/baseline.trx",
+      "sha256": "0fdcdc10e8ce9c313c762161b5db5909684ec1fd7a150b1e00c596378c3ffb67",
+      "passed": 4,
+      "failed": 3,
+      "skipped": 0
+    },
+    "actual": {
+      "path": "artifacts/continuation-20261106/challenge-ability-contract/baseline-actual-01/result.json",
+      "sha256": "857236bb14ac7e8836c72b8b7aebec23ec0572bbbb11f4993240dbfed66905ec",
+      "Cases": [
+        {
+          "Id": 182,
+          "Creature": 28780,
+          "Repeats": 1,
+          "CurrentCount": 1,
+          "CurrentTier": 0,
+          "CompletionCount": 0,
+          "Passed": false
+        },
+        {
+          "Id": 182,
+          "Creature": 28780,
+          "Repeats": 8,
+          "CurrentCount": 0,
+          "CurrentTier": 1,
+          "CompletionCount": 0,
+          "Passed": false
+        },
+        {
+          "Id": 182,
+          "Creature": 20775,
+          "Repeats": 1,
+          "CurrentCount": 0,
+          "CurrentTier": 0,
+          "CompletionCount": 0,
+          "Passed": true
+        },
+        {
+          "Id": 309,
+          "Creature": 25640,
+          "CurrentCount": 1,
+          "CurrentTier": 0,
+          "CompletionCount": 0,
+          "Passed": true
+        }
+      ],
+      "Failures": 2,
+      "AbilityRows": 47,
+      "SpellTargets": 45,
+      "ZeroTargets": [
+        2,
+        1117
+      ],
+      "Limit": "Parsed ClientActivateUnit and real interaction updater/ChallengeManager with actual definitions, full tier/group/creature tables and proxy visible entity/Player/session. No positive Ability spell producer, physical placement, durable award, provider, socket, native or retail qualification."
+    }
+  },
+  "final": {
+    "focusedWithinScoped": 7,
+    "newFocusedCases": 6,
+    "scoped": {
+      "path": "artifacts/continuation-20261106/challenge-ability-contract/final-scoped.trx",
+      "sha256": "484f0a8ef19d8ad83615a1a29097e79b6780a57d0442490599e1b21e3051a4c5",
+      "passed": 144,
+      "failed": 0,
+      "skipped": 0,
+      "reportedSeconds": 47,
+      "filter": "FullyQualifiedName~ChallengeAbilityActivationTests|FullyQualifiedName~ChallengeTargetIdentityTests|FullyQualifiedName~ChallengeCombatHooksTests|FullyQualifiedName~ChallengeDataMappingSliceTests|FullyQualifiedName~ChallengeLiveProducerTests|FullyQualifiedName~ChallengeManagerTests|FullyQualifiedName~ClientActivateUnitHandlerTests|FullyQualifiedName~ClientActivateUnitCastHandlerTests"
+    },
+    "actual": {
+      "path": "artifacts/continuation-20261106/challenge-ability-contract/final-actual-01/result.json",
+      "sha256": "455b7a58551d67369e21ef41d00fd4f0fed33b919d94c60ca4aa36dcfe40c1b6",
+      "Cases": [
+        {
+          "Id": 182,
+          "Creature": 28780,
+          "Repeats": 1,
+          "CurrentCount": 0,
+          "CurrentTier": 0,
+          "CompletionCount": 0,
+          "Passed": true
+        },
+        {
+          "Id": 182,
+          "Creature": 28780,
+          "Repeats": 8,
+          "CurrentCount": 0,
+          "CurrentTier": 0,
+          "CompletionCount": 0,
+          "Passed": true
+        },
+        {
+          "Id": 182,
+          "Creature": 20775,
+          "Repeats": 1,
+          "CurrentCount": 0,
+          "CurrentTier": 0,
+          "CompletionCount": 0,
+          "Passed": true
+        },
+        {
+          "Id": 309,
+          "Creature": 25640,
+          "CurrentCount": 1,
+          "CurrentTier": 0,
+          "CompletionCount": 0,
+          "Passed": true
+        }
+      ],
+      "Failures": 0,
+      "AbilityRows": 47,
+      "SpellTargets": 45,
+      "ZeroTargets": [
+        2,
+        1117
+      ],
+      "Limit": "Parsed ClientActivateUnit and real interaction updater/ChallengeManager with actual definitions, full tier/group/creature tables and proxy visible entity/Player/session. No positive Ability spell producer, physical placement, durable award, provider, socket, native or retail qualification."
+    }
+  },
+  "builds": {
+    "baselineTest": {
+      "path": "artifacts/continuation-20261106/challenge-ability-contract/baseline-test-build.log",
+      "sha256": "6672a5d293a449b081913bcaa67fa174e61ba24ddb82ea93ca87ac2a995a5a0d",
+      "seconds": 21.78,
+      "warnings": 0,
+      "errors": 0,
+      "buildProjectReferences": false
+    },
+    "owning": {
+      "path": "artifacts/continuation-20261106/challenge-ability-contract/final-owning-build.log",
+      "sha256": "6d27b73e0c6f6089a1156c7431cd75ff419300e4ed05188172fb942983ddc1b1",
+      "seconds": 11.76,
+      "warnings": 0,
+      "errors": 0,
+      "project": "NexusForever.WorldServer"
+    },
+    "test": {
+      "path": "artifacts/continuation-20261106/challenge-ability-contract/final-test-build.log",
+      "sha256": "579399c53e065afe701e9d8f7c9b387db0741846ce65a3fa1f9c2c024efb30fd",
+      "seconds": 14.18,
+      "warnings": 0,
+      "errors": 0,
+      "buildProjectReferences": false
+    },
+    "runner": {
+      "path": "artifacts/continuation-20261106/challenge-ability-contract/final-runner-build.log",
+      "sha256": "66b61ad57c25b3ea5987097f80df18ba3622f006348b597178a30b62bb5744d4",
+      "seconds": 2.76,
+      "warnings": 0,
+      "errors": 0
+    }
+  },
+  "reviews": {
+    "path": "artifacts/continuation-20261106/challenge-ability-contract/reviews.json",
+    "sha256": "c4beee1858dfa52287e5e181d8a14f502fb6fa0789e4d67e5a12f0f75fd6edbf",
+    "specFindings": 0,
+    "standardsFindings": 0
+  },
+  "upstream": {
+    "path": "artifacts/continuation-20261106/challenge-ability-contract/upstream-refresh.json",
+    "sha256": "72f92dcc256c70ffd648b5d45cb061d5a9ea307b2eb09edd5b7d8e7eb8bc4216",
+    "latestPrs": 20,
+    "headsBasesStatesUnchanged": true,
+    "pr608": "open",
+    "pr609": "closed/unmerged"
+  },
+  "preserved": {
+    "historicalCandidateDifferences": 8,
+    "fullSolutionOrFullSuiteRun": false,
+    "newAbilitySpellProducerEnabled": false,
+    "freshProviderOrDeploymentQualification": false,
+    "nativeClientAndComputerUseStopped": true,
+    "entitlements": "15:1/17:1; no automatic44/seven grants"
+  },
+  "limits": [
+    "Visible nonhostile interactable, eligibility, geometry, Player/session and other managers are prepared collaborators; actual definitions/full target groups/tiers and parsed handler are real. No physical placement or socket/native interaction proof.",
+    "Four actual cases exercise legacy earning before any legitimate terminal award; no new durable medal/claim/provider qualification is claimed.",
+    "Spell cast/hit/effect/proxy trigger, per-target/per-cast duplicate credit, miss/cancel/failure semantics remain unqualified. No guessed positive Ability producer.",
+    "Zero-target Ability2/1117, collect/item/general/time-tiered producers, share activation and broader reward/provider/native/retail gates remain open.",
+    "Existing Challenge103 socket cycle and previous completed milestones were not repeated."
+  ]
+}
