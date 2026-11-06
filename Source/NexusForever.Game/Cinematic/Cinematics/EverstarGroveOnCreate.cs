@@ -75,7 +75,7 @@ namespace NexusForever.Game.Cinematic.Cinematics
             base.Play();
 
             foreach (IKeyframeAction keyframeAction in Keyframes)
-                keyframeAction.Send(Player.Session);
+                keyframeAction.Send(Session);
         }
     }
 }

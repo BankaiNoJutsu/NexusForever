@@ -1,5 +1,11 @@
 # NexusForever Feature Restoration - Current Status
 
+[Cinematic completion ownership](Decomp/Analysis/CINEMATIC_COMPLETION_OWNERSHIP.md)
+retires the original playback before event continuation and keeps queued movies,
+concrete packet streams and each script callback bound to their admitted context.
+Idle completion is harmless. The linked record distinguishes the reproduced
+failures, scoped checks and remaining client correlation/native gates.
+
 [Actual-catalog Contract process recovery](Decomp/Analysis/CONTRACT_ACTUAL_PROCESS_RECOVERY.md)
 passes the completed control/seven producer kills and seven fresh spent-claim
 replays. Original receipts/operations/revisions remain owned; spent awards stay

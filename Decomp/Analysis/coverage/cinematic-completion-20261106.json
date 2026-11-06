@@ -1,0 +1,427 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-06T02:38:00.079837+00:00",
+  "baseCommit": "cd1dee96e1460e8fe322ade16052653db578d096",
+  "milestone": "Parsed cinematic completion, concrete packet ownership and public-event continuation",
+  "classification": "Implemented and scoped Source qualified; F-022 content, wire correlation, deployment/native/retail and overall Goal remain open",
+  "sources": [
+    {
+      "path": "Source/NexusForever.Game/Entity/CinematicManager.cs",
+      "sha256": "55ecc7e245b9910a9483186c2e9bbc7e18bdffdcea45ee267d6c6eed13c75dd0",
+      "gitBlob": "7487a416e68b2230840c3ebe4ab1ee90e46820d8"
+    },
+    {
+      "path": "Source/NexusForever.Game/PublicEvent/PublicEventCharacter.cs",
+      "sha256": "c49eaa779493a2ed016a1dac507d924115763abd5b758591a8aff0d1a7abf818",
+      "gitBlob": "d70a05e135613aafe74fd8f36af10621f1b6887b"
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/Network/Message/Handler/Misc/ClientCinematicStateHandler.cs",
+      "sha256": "1e5660e2e22f7f20a69febab635f4633024609583cba6caa90c5f9897d19b8bc",
+      "gitBlob": "0a2fe227c19734ab4126865f0b5ed9bd1ec61deb"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Entity/CinematicCompletionTests.cs",
+      "sha256": "2543a71bb1532bbe7682fffe1067d3396f0d5eb3257595681e8462056a96d585",
+      "gitBlob": "8110433a3e846bfc3b102e05c426b914c346ef70"
+    },
+    {
+      "path": "Source/NexusForever.Game/Cinematic/CinematicBase.cs",
+      "sha256": "91cb9cd7f35f9f5e342a1630d27a11ffa5a999aba04c0e68fa210db15617f026",
+      "gitBlob": "687213db2b46f0a474765ac867b6d8c5d439d351"
+    },
+    {
+      "path": "Source/NexusForever.Game/Cinematic/Cinematics/CrimsonIsleOnCreate.cs",
+      "sha256": "a87014d1e270c3fccdc31038d9a60fb7fe94ce2b462de6bb602089e9fb728b30",
+      "gitBlob": "a6eb93a5d929e46faf33bdac6a8de0018755ea14"
+    },
+    {
+      "path": "Source/NexusForever.Game/Cinematic/Cinematics/EverstarGroveOnCreate.cs",
+      "sha256": "100508b4021a47690228bd7a267fdd46b23857a558b6102554ceac694ae0fa52",
+      "gitBlob": "00f395da47bffbe495c26f0919fdb9bf654e849f"
+    },
+    {
+      "path": "Source/NexusForever.Game/Cinematic/Cinematics/EvilFromTheEtherOnCreate.cs",
+      "sha256": "9a05dd28fb2f69f7531e5f08ed7fe31805fe01f9839bbf6991584ec008426de4",
+      "gitBlob": "0414bae4f245d50ca3d9d91bed5cb33db6f83756"
+    },
+    {
+      "path": "Source/NexusForever.Game/Cinematic/Cinematics/EvilFromTheEtherOnEthericOrganisms.cs",
+      "sha256": "50221ba77a831ce901f31512facc3610f9f5279b92e41428f7c30b6e2f80d2c4",
+      "gitBlob": "37a4c32d022435d101dabfa6d7d78153ce5a3b5a"
+    },
+    {
+      "path": "Source/NexusForever.Game/Cinematic/Cinematics/EvilFromTheEtherOnOpenMedbay.cs",
+      "sha256": "b9987471226795bc436068d7af4e9ff92ee4b28859e873e49b75279ddd01f0c0",
+      "gitBlob": "279471f295103a9a421a72cd00f2c45f75f499e5"
+    },
+    {
+      "path": "Source/NexusForever.Game/Cinematic/Cinematics/LevianBayOnCreate.cs",
+      "sha256": "9aa8e9cd5f8c7a3833877a37bb8dc7f38f9cd69240a6d045acec63a0d5900721",
+      "gitBlob": "9c47a0fc916a7b6ff5184fef71aa845ba0a4d9f3"
+    },
+    {
+      "path": "Source/NexusForever.Game/Cinematic/Cinematics/NorthernWildsOnCreate.cs",
+      "sha256": "5467f754e465467d9ce37e189d52d3f0e45cb879e94a91fdf9da824f44d1566e",
+      "gitBlob": "cfc59af59d627fec640c5650109776c2940d2dd2"
+    },
+    {
+      "path": "Source/NexusForever.Game/Cinematic/Cinematics/NoviceTutorialCombatProjector.cs",
+      "sha256": "92e2fd862084c1d0bc9273e900803eaf469d23251a780b7480101f8e542734d7",
+      "gitBlob": "42890890640eb07258c4112c07fb40f78bf71e32"
+    },
+    {
+      "path": "Source/NexusForever.Game/Cinematic/Cinematics/NoviceTutorialOnEnter.cs",
+      "sha256": "87c0dae57f049d295f0a610c693a959517933fa1d9c1c68cc7eff319baa6bf1b",
+      "gitBlob": "73ae26901bbe2bcc2c824c92d0dae9c065dbf48a"
+    },
+    {
+      "path": "Source/NexusForever.Game/Cinematic/Cinematics/Q3486EmpoweredTowerCinematic.cs",
+      "sha256": "7f75b58c58afaa0eca38a8a5315316dec85dd454d0a8774a8b48a42dd6e38cf4",
+      "gitBlob": "a1d1e1142a079f8bde3323424724b7ebe65a1e33"
+    },
+    {
+      "path": "Source/NexusForever.Game/Cinematic/Cinematics/Q3673ContactWithThaydCinematic.cs",
+      "sha256": "312baac24db96671477349eddb615c2ff6ccfb8339bd6a47703eb607de19af98",
+      "gitBlob": "1f134b44bf458f4932d082f518b1c7ec1edd425a"
+    },
+    {
+      "path": "Source/NexusForever.Game/Cinematic/Cinematics/Q3963MoreImportantThanRevengeDepartureCinematic.cs",
+      "sha256": "c721418ed5bc5d01371448f7f2591f9cf8228bd24a52c75a87cc104e1eef229a",
+      "gitBlob": "699f5155cc65fb9cb27804998aa8e45013c9aed0"
+    },
+    {
+      "path": "Source/NexusForever.Game/Cinematic/Cinematics/Q5573PoweringDownCinematic.cs",
+      "sha256": "de0b52d6f949f5b5f98ba751c4306059bd5d76a1c3c3bf76671a867bb8143427",
+      "gitBlob": "38f50e6d9112620bab3b66769dac2a4eb41411cf"
+    },
+    {
+      "path": "Source/NexusForever.Game/Cinematic/Cinematics/Q5604TacticalDemolitionsCinematic.cs",
+      "sha256": "487b33eb0c51ac41e84cb9fdaf88f41f7619d012a26fe3fd29d0bcf2f9d823b2",
+      "gitBlob": "680e37fff80900c87d5495f7113022c432788593"
+    },
+    {
+      "path": "Source/NexusForever.Game/Cinematic/CinematicPlaybackSession.cs",
+      "sha256": "c4827b8c261c194cf1a7bccdfe3d7e4dc3cc40a2e78f18cbe929440cb669996e",
+      "gitBlob": "e869821c5d407d386dab59061367cccbd997b2b7"
+    }
+  ],
+  "sourceBoundary": {
+    "base": "cd1dee96e1460e8fe322ade16052653db578d096",
+    "trackedSourceFiles": 6283,
+    "missing": [],
+    "differences": [
+      {
+        "path": "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+        "head": "9b4e604e08391bf229552fa04081ecf9c74fec4d",
+        "candidate": "7de92fafe0c2474ba8428ca9ceee883d39138b46"
+      },
+      {
+        "path": "Source/NexusForever.ClientConnector/packages.config",
+        "head": "fa4b77dc45783358023c1cd38e6ff9bad122aea4",
+        "candidate": "8ab13a9023dec3cf548ee61ba183013bd098a297"
+      },
+      {
+        "path": "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+        "head": "64769a2266f7feab861fcc61cd2b00a0a05da8c4",
+        "candidate": "74272fd6bf29afac14c5d62cb172e81b4edee19a"
+      },
+      {
+        "path": "Source/NexusForever.Database/NexusForever.Database.csproj",
+        "head": "61f9d5326c59ec7018164eba605a01f4081dfded",
+        "candidate": "163c4f01e198e71066afcd9089a367c78b4c3de6"
+      },
+      {
+        "path": "Source/NexusForever.Game/Cinematic/CinematicBase.cs",
+        "head": "a33c4bf1ce080ff924a2f927af6c4c4cea3d35cb",
+        "candidate": "687213db2b46f0a474765ac867b6d8c5d439d351"
+      },
+      {
+        "path": "Source/NexusForever.Game/Cinematic/Cinematics/CrimsonIsleOnCreate.cs",
+        "head": "9e25400a5c6b255414e390471c2feadf8a976a9c",
+        "candidate": "a6eb93a5d929e46faf33bdac6a8de0018755ea14"
+      },
+      {
+        "path": "Source/NexusForever.Game/Cinematic/Cinematics/EverstarGroveOnCreate.cs",
+        "head": "d634d9da930621c0852a0f941140aee4aab3f87b",
+        "candidate": "00f395da47bffbe495c26f0919fdb9bf654e849f"
+      },
+      {
+        "path": "Source/NexusForever.Game/Cinematic/Cinematics/EvilFromTheEtherOnCreate.cs",
+        "head": "2179e409838869c169c04039b868a6beae9ecaea",
+        "candidate": "0414bae4f245d50ca3d9d91bed5cb33db6f83756"
+      },
+      {
+        "path": "Source/NexusForever.Game/Cinematic/Cinematics/EvilFromTheEtherOnEthericOrganisms.cs",
+        "head": "7225aed01e4821e430b47b026ecb5814a45b7eed",
+        "candidate": "37a4c32d022435d101dabfa6d7d78153ce5a3b5a"
+      },
+      {
+        "path": "Source/NexusForever.Game/Cinematic/Cinematics/EvilFromTheEtherOnOpenMedbay.cs",
+        "head": "c33530cc2ba36e8ead52d3fd2999920f85d8010f",
+        "candidate": "279471f295103a9a421a72cd00f2c45f75f499e5"
+      },
+      {
+        "path": "Source/NexusForever.Game/Cinematic/Cinematics/LevianBayOnCreate.cs",
+        "head": "20e4c838d2e744ea6bf4eaf65d0021891463a8b3",
+        "candidate": "9c47a0fc916a7b6ff5184fef71aa845ba0a4d9f3"
+      },
+      {
+        "path": "Source/NexusForever.Game/Cinematic/Cinematics/NorthernWildsOnCreate.cs",
+        "head": "e03d7d5d5641aed95b09ece5763c1db92551533a",
+        "candidate": "cfc59af59d627fec640c5650109776c2940d2dd2"
+      },
+      {
+        "path": "Source/NexusForever.Game/Cinematic/Cinematics/NoviceTutorialCombatProjector.cs",
+        "head": "1680fefb5e3bde5b84e868432ed33156abaf0f5f",
+        "candidate": "42890890640eb07258c4112c07fb40f78bf71e32"
+      },
+      {
+        "path": "Source/NexusForever.Game/Cinematic/Cinematics/NoviceTutorialOnEnter.cs",
+        "head": "41053ff6ff9b08b34c9664d1565fd3b1d55c8766",
+        "candidate": "73ae26901bbe2bcc2c824c92d0dae9c065dbf48a"
+      },
+      {
+        "path": "Source/NexusForever.Game/Cinematic/Cinematics/Q3486EmpoweredTowerCinematic.cs",
+        "head": "9c0556af265464717b373b0729795b37315e2250",
+        "candidate": "a1d1e1142a079f8bde3323424724b7ebe65a1e33"
+      },
+      {
+        "path": "Source/NexusForever.Game/Cinematic/Cinematics/Q3673ContactWithThaydCinematic.cs",
+        "head": "ed26e4484530e55fde3ade1bf71abaac006e1b86",
+        "candidate": "1f134b44bf458f4932d082f518b1c7ec1edd425a"
+      },
+      {
+        "path": "Source/NexusForever.Game/Cinematic/Cinematics/Q3963MoreImportantThanRevengeDepartureCinematic.cs",
+        "head": "5c166e339bdf152e83920f5a04b663710520fc33",
+        "candidate": "699f5155cc65fb9cb27804998aa8e45013c9aed0"
+      },
+      {
+        "path": "Source/NexusForever.Game/Cinematic/Cinematics/Q5573PoweringDownCinematic.cs",
+        "head": "925e26072b117571f7213c38c4f7d15e60169ab8",
+        "candidate": "38f50e6d9112620bab3b66769dac2a4eb41411cf"
+      },
+      {
+        "path": "Source/NexusForever.Game/Cinematic/Cinematics/Q5604TacticalDemolitionsCinematic.cs",
+        "head": "3cfb83d65fcd23953333390f56e87d2ff625e112",
+        "candidate": "680e37fff80900c87d5495f7113022c432788593"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/CinematicManager.cs",
+        "head": "7a4e462643cac13082dc9a905e04a430b7d788d8",
+        "candidate": "7487a416e68b2230840c3ebe4ab1ee90e46820d8"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+        "head": "1ffaefc3cf8c1eb7c5b0534d4d91f28eb7001347",
+        "candidate": "6c145b847fa7316e7982ab44cfa404f4e1e7fc70"
+      },
+      {
+        "path": "Source/NexusForever.Game/PublicEvent/PublicEventCharacter.cs",
+        "head": "31369cab9e26cf8f97975c981ea4b8dc282e98f7",
+        "candidate": "d70a05e135613aafe74fd8f36af10621f1b6887b"
+      },
+      {
+        "path": "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj",
+        "head": "74f0ec9ebbf4894dd7ef64f379a773a9e4ce1295",
+        "candidate": "ecd970da6d0d220f3caaf6780656c1809e18a9af"
+      },
+      {
+        "path": "Source/NexusForever.WorldServer/Network/Message/Handler/Misc/ClientCinematicStateHandler.cs",
+        "head": "e65ed493f0bdddcd9ebb9bdfb4607e879f98808c",
+        "candidate": "0a2fe227c19734ab4126865f0b5ed9bd1ec61deb"
+      }
+    ],
+    "newOwned": [
+      "Source/NexusForever.Game.Tests/Entity/CinematicCompletionTests.cs",
+      "Source/NexusForever.Game/Cinematic/CinematicPlaybackSession.cs"
+    ],
+    "historicalNonTaskDifferencePaths": [
+      "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+      "Source/NexusForever.ClientConnector/packages.config",
+      "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+      "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+      "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+      "Source/NexusForever.Database/NexusForever.Database.csproj",
+      "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+      "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj"
+    ]
+  },
+  "inputCandidates": {
+    "baseline": {
+      "path": "artifacts/continuation-20261106/cinematic-completion/baseline-inputs.json",
+      "sha256": "b1d12622166badb076b99cf17a20e8b3b041df55006f76720b3050de3a939307"
+    },
+    "firstReviewed": {
+      "path": "artifacts/continuation-20261106/cinematic-completion/pre-review-inputs.json",
+      "sha256": "c764eafc577a25485db1244d24f1a2b4641ba96e750d07afd85f05d940cf8c37"
+    },
+    "reviewNegatives": {
+      "path": "artifacts/continuation-20261106/cinematic-completion/review-before-inputs.json",
+      "sha256": "c764eafc577a25485db1244d24f1a2b4641ba96e750d07afd85f05d940cf8c37"
+    },
+    "beforeBusyFrameFix": {
+      "path": "artifacts/continuation-20261106/cinematic-completion/pre-busy-inputs.json",
+      "sha256": "8e7f1d4beab28b5e7fb672fbd0093bb2d38bc8fb9cc10ef991e2f1e9ffe808e6"
+    },
+    "busyFrameNegative": {
+      "path": "artifacts/continuation-20261106/cinematic-completion/busy-negative-inputs.json",
+      "sha256": "3877b8b8fd388f8ee3722c2c4034f9ae4dd06a4ff761ab59133251d3b3ff45d9"
+    },
+    "final": {
+      "path": "artifacts/continuation-20261106/cinematic-completion/final-inputs.json",
+      "sha256": "8ebe4f136f433e95b7523be406db27e5495f8e4fb68f3510180807139c08337d"
+    }
+  },
+  "finalBinaryManifestDllCount": 138,
+  "finalOwningAndTestCopiesMatch": true,
+  "finalOwningBinaries": [
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Abstract.dll",
+      "sha256": "777dd151b26100b93e2bb3e4ddd5e754db901d444b35d8b976c293fac2da639f"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.dll",
+      "sha256": "f24d63d4e1858edcd82b75baf7b9c90322d7bdf2c96b083b5f15aaca86366276"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+      "sha256": "f4592f64015f4e809a959baccab73691981ac5c0f470ae0fc5ec0b76447ac37c"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Network.dll",
+      "sha256": "ab9aa9f265093846927da9b4b2871e6573b8cdaab304f7bfc5a9329d3f3ee290"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+      "sha256": "0a4996eba6ba57c968d207813ba305c56085115475968a787eefea1802657026"
+    }
+  ],
+  "results": {
+    "baseline": {
+      "path": "artifacts/continuation-20261106/cinematic-completion/baseline.trx",
+      "sha256": "d73c2711fe990893916d8681cc4f49acd578e843e8cb4ea0e17a110b7e55dab4",
+      "total": 10,
+      "passed": 2,
+      "failed": 8,
+      "skipped": 0
+    },
+    "firstReviewNegatives": {
+      "path": "artifacts/continuation-20261106/cinematic-completion/review-negatives.trx",
+      "sha256": "f3df511ea7e827b063b7fce008b4c090c86304ee77f761e6cf70f964e918dc16",
+      "total": 4,
+      "passed": 0,
+      "failed": 4,
+      "skipped": 0
+    },
+    "unpublishedFrameNegative": {
+      "path": "artifacts/continuation-20261106/cinematic-completion/busy-negative.trx",
+      "sha256": "3e819b9c728ca28e1f9c3b5f3d5fc587a0af7104fa1e5dee7247e7608c06f36f",
+      "total": 1,
+      "passed": 0,
+      "failed": 1,
+      "skipped": 0
+    },
+    "final": {
+      "path": "artifacts/continuation-20261106/cinematic-completion/final-scoped.trx",
+      "sha256": "4ef99ae33e6969dd1f21bbc0b00d3b085d4ac77dd4e9b5c37066368de82ce9ef",
+      "total": 1921,
+      "passed": 1921,
+      "failed": 0,
+      "skipped": 0
+    },
+    "newCinematicCases": 25,
+    "existingSelectedCases": 1896,
+    "newCaseNames": [
+      "NexusForever.Game.Tests.Entity.CinematicCompletionTests.CompletionCallbackCanStartQueuedPlaybackWithoutAnOldAdvanceReplacingIt",
+      "NexusForever.Game.Tests.Entity.CinematicCompletionTests.ThrowingEventCallbackDoesNotLeaveOldPlaybackActiveOrBlockTheQueue",
+      "NexusForever.Game.Tests.Entity.CinematicCompletionTests.FirstNotifyCannotChangeThePublishedCinematicIdentity",
+      "NexusForever.Game.Tests.Entity.CinematicCompletionTests.OtherClientStatesDoNotAdvancePlayback",
+      "NexusForever.Game.Tests.Entity.CinematicCompletionTests.QueuedPlaybackCannotMigrateIntoAReplacementSession",
+      "NexusForever.Game.Tests.Entity.CinematicCompletionTests.ChangedEpochOrEventQueueCannotAdoptOldQueuedPlayback(replaceQueue: True)",
+      "NexusForever.Game.Tests.Entity.CinematicCompletionTests.ThrowingPlaybackDoesNotKeepTheManagerBusy",
+      "NexusForever.Game.Tests.Entity.CinematicCompletionTests.CompletionIsRetiredBeforeAnEventRecursivelyReportsEnded",
+      "NexusForever.Game.Tests.Entity.CinematicCompletionTests.PublicCompletionAfterSessionPlayerWasRemovedIsInert",
+      "NexusForever.Game.Tests.Entity.CinematicCompletionTests.CompletionFromTheOldMapCannotProgressTheNewMapsEvent",
+      "NexusForever.Game.Tests.Entity.CinematicCompletionTests.CompletionCallbackCanQueueTheNextConcretePlayback",
+      "NexusForever.Game.Tests.Entity.CinematicCompletionTests.ExplicitAdvanceCannotReplaceAnActivePlayback",
+      "NexusForever.Game.Tests.Entity.CinematicCompletionTests.EventFanoutStopsWhenTheFirstScriptChangesMap",
+      "NexusForever.Game.Tests.Entity.CinematicCompletionTests.ReentrantCompletionAtFirstNotifyStopsTheOldConcretePacketTail",
+      "NexusForever.Game.Tests.Entity.CinematicCompletionTests.OldMapQueueIsSkippedBeforeNewMapPlaybackStarts",
+      "NexusForever.Game.Tests.Entity.CinematicCompletionTests.PublicEndedWithoutPlaybackAndAfterIdleCompletionIsInert",
+      "NexusForever.Game.Tests.Entity.CinematicCompletionTests.EventFanoutDoesNotInvokeAnOldMembershipAfterReplacement",
+      "NexusForever.Game.Tests.Entity.CinematicCompletionTests.SetupContextChangeReleasesTheUnpublishedFrameAndStartsValidQueuedPlayback",
+      "NexusForever.Game.Tests.Entity.CinematicCompletionTests.EachScriptInTheSameEventMustStillOwnCompletion(removeMembership: True)",
+      "NexusForever.Game.Tests.Entity.CinematicCompletionTests.EventCanJoinAnotherEventDuringItsCompletionWithoutReplayingIt",
+      "NexusForever.Game.Tests.Entity.CinematicCompletionTests.ProvidedCinematicActorAndDerivedPlayPacketsRemainOwned(endAtFirstActor: True)",
+      "NexusForever.Game.Tests.Entity.CinematicCompletionTests.EachScriptInTheSameEventMustStillOwnCompletion(removeMembership: False)",
+      "NexusForever.Game.Tests.Entity.CinematicCompletionTests.EventReceivesTheIdThatActuallyStartedPlayback",
+      "NexusForever.Game.Tests.Entity.CinematicCompletionTests.ChangedEpochOrEventQueueCannotAdoptOldQueuedPlayback(replaceQueue: False)",
+      "NexusForever.Game.Tests.Entity.CinematicCompletionTests.ProvidedCinematicActorAndDerivedPlayPacketsRemainOwned(endAtFirstActor: False)"
+    ]
+  },
+  "builds": {
+    "owning": {
+      "path": "artifacts/continuation-20261106/cinematic-completion/final-owning-build.log",
+      "sha256": "12184ccf17c789fdf28296e88d4dc2bc1929f80ed5a35bd2a00a939d4b7b2642",
+      "project": "NexusForever.WorldServer",
+      "warnings": 0,
+      "errors": 0,
+      "seconds": 10.54
+    },
+    "test": {
+      "path": "artifacts/continuation-20261106/cinematic-completion/final-test-build.log",
+      "sha256": "2f0efdb70e63ddb33b2b47c0bfd53521f058e54f50f732c68c26d181a94219df",
+      "project": "NexusForever.Game.Tests",
+      "buildProjectReferences": false,
+      "warnings": 0,
+      "errors": 0,
+      "seconds": 4.03
+    },
+    "testDurationSecondsReported": 11,
+    "compileDiagnosticRetained": {
+      "path": "artifacts/continuation-20261106/cinematic-completion/adapter-import-failure.log",
+      "sha256": "84d633cda0f370879496076caf28183984ef0f209beba66f967bd08ef7212daf",
+      "meaning": "Missing SocketHeartbeat namespace during adapter implementation; fixed import, not a runtime defect."
+    }
+  },
+  "testCommand": "dotnet test <isolated-candidate>/Source/NexusForever.Game.Tests/NexusForever.Game.Tests.csproj --no-build --no-restore --filter 'FullyQualifiedName~Cinematic|FullyQualifiedName~PublicEvent'",
+  "review": {
+    "path": "artifacts/continuation-20261106/cinematic-completion/reviews.json",
+    "sha256": "f4bbfc8581c1f4d8877531f3d609b68785508f842ee0e941b54e054971559dc4",
+    "remainingSpecFindings": 0,
+    "remainingStandardsFindings": 0
+  },
+  "upstreamRefresh": {
+    "path": "artifacts/continuation-20261106/cinematic-completion/upstream-refresh.json",
+    "sha256": "3f21decef9f9fa5fbdd2a638b3d7f521f10c598ed802c9e38cc34f40b1b6edd2",
+    "reviewedPrCount": 20,
+    "allReviewedHeadsBasesStatesUnchanged": true,
+    "pr608": "open",
+    "pr609": "closed/unmerged"
+  },
+  "preserved": {
+    "foreignRootWorkExcluded": true,
+    "historicalCandidateDifferences": 8,
+    "entitlements": "15:1 and 17:1; no automatic44 or seven baseline grants",
+    "fullSolutionOrFullSuiteRun": false,
+    "nativeClientAndComputerUseStopped": true,
+    "freshProviderOrRuntimeServerStarted": false
+  },
+  "limitations": [
+    "Player/session/account and event script collaborators are proxies; manager, Base, NorthernWilds and public-event manager/character are concrete.",
+    "Packet-stream protection covers the provided Base-derived cinematics; legacy interface-only implementations retain their entry point.",
+    "Ended wire payload has no playback identity; a duplicate old Ended after the next movie is active cannot be correlated by this change.",
+    "Broader F-022 content/triggers, client cancellation semantics, sockets/deployment/provider and native/retail remain open."
+  ]
+}

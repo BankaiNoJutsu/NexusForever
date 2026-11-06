@@ -1,6 +1,12 @@
 ﻿using NexusForever.Game.Abstract.Cinematic;
+using NexusForever.Game.Cinematic;
 using NexusForever.Game.Abstract.Cinematic.Cinematics;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Account;
+using NexusForever.Game.Abstract.Map;
+using NexusForever.Game.Abstract.PublicEvent;
+using NexusForever.Network.Session;
+using NexusForever.Shared.Game.Events;
 using NexusForever.Game.Static.Cinematic;
 using NexusForever.Game.Static.Quest;
 using NLog;
@@ -13,10 +19,30 @@ namespace NexusForever.Game.Entity
         private static readonly ushort[] riderReefStarterTutorialQuestIds = [10513, 10521, 10527, 10532];
         private static readonly ushort[] riderReefFollowUpTutorialQuestIds = [10518, 10519, 10520, 10522, 10523, 10524, 10525, 10526, 10528, 10530, 10540, 10541];
 
-        private IPlayer owner;
+        private readonly IPlayer owner;
 
-        private ICinematicBase currentCinematic;
-        private readonly Queue<ICinematicBase> queuedCinematics = new();
+        private sealed class Playback(ICinematicBase cinematic, IPlayer player)
+        {
+            internal readonly ICinematicBase Cinematic = cinematic;
+            internal readonly IBaseMap Map = player.Map;
+            internal readonly IPublicEventManager Events = player.Map?.PublicEventManager;
+            private readonly IGameSession session = player.Session;
+            private readonly EventQueue queue = player.Session?.Events;
+            private readonly IAccount account = player.Account;
+            private readonly ulong epoch = player.Account?.WorldSessionEpoch ?? 0;
+            internal ushort? StartedId;
+
+            internal bool Current(IPlayer owner) => ReferenceEquals(owner.Map, Map)
+                && ReferenceEquals(Map?.PublicEventManager, Events)
+                && ReferenceEquals(owner.Session, session) && ReferenceEquals(session?.Events, queue)
+                && ReferenceEquals(owner.Account, account)
+                && (account == null || account.WorldSessionEpoch == epoch && ReferenceEquals(account.Session, session))
+                && session is not NetworkSession { IsDisconnecting: true }
+                && (session is not IPlayerSession bound || ReferenceEquals(bound.Player, owner));
+        }
+
+        private Playback currentCinematic;
+        private readonly Queue<Playback> queuedCinematics = new();
         private readonly HashSet<Type> queuedSurfaceStarterIntroTypesThisSession = [];
         private bool riderReefIntroQueuedThisSession;
 
@@ -58,7 +84,7 @@ namespace NexusForever.Game.Entity
                 riderReefIntroQueuedThisSession = true;
             }
 
-            queuedCinematics.Enqueue(cinematic);
+            queuedCinematics.Enqueue(new Playback(cinematic, owner));
             if (currentCinematic == null && queuedCinematics.Count >= 1u)
                 PlayQueuedCinematic();
         }
@@ -108,12 +134,42 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void PlayQueuedCinematic()
         {
-            if (queuedCinematics.Count == 0)
+            if (currentCinematic != null)
                 return;
 
-            ICinematicBase cinematic = queuedCinematics.Dequeue();
-            currentCinematic = cinematic;
-            currentCinematic.StartPlayback(owner);
+            while (queuedCinematics.TryDequeue(out Playback playback))
+            {
+                if (!playback.Current(owner))
+                    continue;
+
+                currentCinematic = playback;
+                try
+                {
+                    if (playback.Cinematic is CinematicBase scripted)
+                        scripted.StartPlayback(owner, id => playback.StartedId = id,
+                            () => ReferenceEquals(currentCinematic, playback) && playback.Current(owner));
+                    else
+                    {
+                        // Preserve the legacy interface-only path; provided scripts
+                        // derive from CinematicBase and use the guarded emitter.
+                        playback.Cinematic.StartPlayback(owner);
+                        playback.StartedId = playback.Cinematic.CinematicId;
+                    }
+                }
+                catch
+                {
+                    if (ReferenceEquals(currentCinematic, playback))
+                        currentCinematic = null;
+                    throw;
+                }
+                if (ReferenceEquals(currentCinematic, playback) && !playback.StartedId.HasValue)
+                {
+                    // Setup revoked this frame before its first notification.
+                    currentCinematic = null;
+                    continue;
+                }
+                return;
+            }
         }
 
         /// <summary>
@@ -133,10 +189,19 @@ namespace NexusForever.Game.Entity
                     break;
                 case CinematicState.Ended:
                     // Player is back in the world. Continue any scripts that may've been paused.
-                    owner.Map?.PublicEventManager.OnCinematicFinish(owner, currentCinematic.CinematicId);
-
+                    Playback finished = currentCinematic;
+                    if (finished == null)
+                        return;
                     currentCinematic = null;
-                    PlayQueuedCinematic();
+                    try
+                    {
+                        if (finished.Current(owner))
+                            finished.Events?.OnCinematicFinish(owner, finished.StartedId ?? finished.Cinematic.CinematicId);
+                    }
+                    finally
+                    {
+                        PlayQueuedCinematic();
+                    }
                     break;
             }
         }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Network.Session;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Script.Template;
@@ -120,8 +121,34 @@ namespace NexusForever.Game.PublicEvent
         /// </summary>
         public void OnCinematicFinish(IPlayer player, uint cinematicId)
         {
-            foreach (IPublicEvent @event in events.Values)
-                @event.InvokeScriptCollection<IPublicEventScript>(s => s.OnCinematicFinish(player, cinematicId));
+            if (player == null || player.CharacterId != CharacterId)
+                return;
+            var map = player.Map;
+            var session = player.Session;
+            var queue = session?.Events;
+            var account = player.Account;
+            ulong epoch = account?.WorldSessionEpoch ?? 0;
+            var manager = map?.PublicEventManager;
+            bool CurrentActor() => ReferenceEquals(player.Map, map) && ReferenceEquals(map?.PublicEventManager, manager)
+                && ReferenceEquals(player.Session, session) && ReferenceEquals(session?.Events, queue)
+                && ReferenceEquals(player.Account, account)
+                && (account == null || account.WorldSessionEpoch == epoch && ReferenceEquals(account.Session, session))
+                && session is not NetworkSession { IsDisconnecting: true }
+                && (session is not IPlayerSession bound || ReferenceEquals(bound.Player, player));
+            foreach (IPublicEvent @event in events.Values.ToArray())
+            {
+                if (!CurrentActor())
+                    break;
+                bool CurrentEvent() => events.TryGetValue(@event.Id, out IPublicEvent current)
+                    && ReferenceEquals(current, @event) && !@event.IsFinalised;
+                if (!CurrentEvent())
+                    continue;
+                @event.InvokeScriptCollection<IPublicEventScript>(script =>
+                {
+                    if (CurrentActor() && CurrentEvent())
+                        script.OnCinematicFinish(player, cinematicId);
+                });
+            }
         }
     }
 }

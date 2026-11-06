@@ -1,5 +1,12 @@
 # Assessment follow-through goal
 
+[Cinematic completion ownership](CINEMATIC_COMPLETION_OWNERSHIP.md) closes the
+parsed Source completion slice of F-022: original-frame retirement, owned queue
+advance, frozen started ID, guarded concrete emitters and per-script continuation.
+Use its linked evidence and remaining boundaries; broader content, stale next-End
+correlation, deployed sockets and native/retail remain open. Continue independent
+gameplay/progression rather than repeating this slice.
+
 [Actual-catalog Contract process recovery](CONTRACT_ACTUAL_PROCESS_RECOVERY.md)
 qualifies the named Character/Auth/acknowledgement producer-loss boundaries with
 real item/account metadata, independent recovery and original-claim replay after

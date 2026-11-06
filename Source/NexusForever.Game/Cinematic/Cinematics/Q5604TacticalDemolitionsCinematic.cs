@@ -56,7 +56,7 @@ namespace NexusForever.Game.Cinematic.Cinematics
         {
             base.Play();
 
-            Player.Session.EnqueueMessageEncrypted(new ServerCinematicTransitionDurationSet
+            Session.EnqueueMessageEncrypted(new ServerCinematicTransitionDurationSet
             {
                 Type          = ScaleTransitionType.StartMinimized,
                 DurationStart = 1500,
@@ -65,7 +65,7 @@ namespace NexusForever.Game.Cinematic.Cinematics
             });
 
             foreach (IKeyframeAction keyframeAction in Keyframes)
-                keyframeAction.Send(Player.Session);
+                keyframeAction.Send(Session);
         }
     }
 }

@@ -1,5 +1,11 @@
 # Client Binary Decompile Continuation Guide
 
+[Cinematic completion ownership](CINEMATIC_COMPLETION_OWNERSHIP.md) binds parsed
+completion and provided concrete cinematic packets to the original playback and
+rechecks every event script. See its portable result before further F-022 work.
+Broader authored content, wire correlation and socket/native/retail remain open;
+client/CUA remain stopped.
+
 [Actual Contract process recovery](CONTRACT_ACTUAL_PROCESS_RECOVERY.md) passes
 one completed control/seven producer kills and seven fresh spent-claim replays.
 38 recorded generations are absent; receipts/operations stay original and both

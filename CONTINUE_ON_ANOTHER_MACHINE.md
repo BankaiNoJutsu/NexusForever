@@ -1,5 +1,12 @@
 # Continue on another machine
 
+Latest cinematic Source result:
+[completion ownership](Decomp/Analysis/CINEMATIC_COMPLETION_OWNERSHIP.md) covers
+original-frame retirement, valid queued follow-up, frozen IDs, guarded provided
+cinematic packet tails and per-script event ownership. The linked record carries
+exact source/binary identities and scoped evidence. Broader content, late-next-End
+correlation and deployment/native/retail remain open; client/CUA remain stopped.
+
 Latest Contract recovery: [actual-catalog producer loss](Decomp/Analysis/CONTRACT_ACTUAL_PROCESS_RECOVERY.md)
 passes one control/seven real producer kills and seven fresh spent-claim
 replays. Original receipts/operations/revisions survive; no spent award returns.

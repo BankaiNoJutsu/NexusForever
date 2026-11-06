@@ -7,7 +7,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Misc
     {
         public void HandleMessage(IWorldSession session, ClientCinematicState cinematicState)
         {
-            session.Player.CinematicManager.HandleClientCinematicState(cinematicState.State);
+            session.Player?.CinematicManager?.HandleClientCinematicState(cinematicState.State);
         }
     }
 }
