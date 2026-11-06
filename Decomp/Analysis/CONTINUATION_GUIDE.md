@@ -1,5 +1,11 @@
 # Client Binary Decompile Continuation Guide
 
+[Actual Contract process recovery](CONTRACT_ACTUAL_PROCESS_RECOVERY.md) passes
+one completed control/seven producer kills and seven fresh spent-claim replays.
+38 recorded generations are absent; receipts/operations stay original and both
+final reviews pass. Public/reset, autonomous World/provider/native/retail gates
+remain separate. Continue broader gameplay/progression with client/CUA stopped.
+
 [Actual-catalog Contract delivery](CONTRACT_ACTUAL_CATALOG_DELIVERY.md) passes
 all726 internal choices with real ItemInfo, settlement/publication or Auth
 compensation, replay and reload.967 controls, clean builds and both reviews pass.

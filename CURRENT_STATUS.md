@@ -1,5 +1,11 @@
 # NexusForever Feature Restoration - Current Status
 
+[Actual-catalog Contract process recovery](Decomp/Analysis/CONTRACT_ACTUAL_PROCESS_RECOVERY.md)
+passes the completed control/seven producer kills and seven fresh spent-claim
+replays. Original receipts/operations/revisions remain owned; spent awards stay
+spent.38 process generations are absent; both final reviews pass. Public/reset
+policy, autonomous World/provider/socket/native/retail gates remain open.
+
 [Actual-catalog Contract delivery](Decomp/Analysis/CONTRACT_ACTUAL_CATALOG_DELIVERY.md)
 passes all726 canonical internal claims using real ItemInfo metadata, including
 publication or Auth compensation, replay and reload. All967 selected controls,

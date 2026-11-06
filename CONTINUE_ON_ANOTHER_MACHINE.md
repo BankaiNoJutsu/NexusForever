@@ -1,5 +1,12 @@
 # Continue on another machine
 
+Latest Contract recovery: [actual-catalog producer loss](Decomp/Analysis/CONTRACT_ACTUAL_PROCESS_RECOVERY.md)
+passes one control/seven real producer kills and seven fresh spent-claim
+replays. Original receipts/operations/revisions survive; no spent award returns.
+38 child generations and owned temp directories are absent; 16 disposable
+SQLite databases remain as ignored evidence. Final reviews/builds pass; public/
+reset policy, autonomous World/provider/socket/native/retail remain open.
+
 Latest Contract evidence: [actual-catalog delivery](Decomp/Analysis/CONTRACT_ACTUAL_CATALOG_DELIVERY.md)
 passes all726 canonical internal choices with recovered ItemInfo and real
 settlement, publication/Auth compensation, replay and reload.967 existing scoped

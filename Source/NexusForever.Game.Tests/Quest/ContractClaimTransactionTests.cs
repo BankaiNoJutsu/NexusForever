@@ -257,7 +257,7 @@ public sealed partial class ContractClaimTransactionTests
         internal readonly ContractTrackState Before;
         internal readonly ContractRewardClaimQuote Quote;
         internal readonly CharacterChallengeRewardCommand Command;
-        internal CommitFault CharacterFault, AuthFault;
+        internal IInterceptor CharacterFault, AuthFault;
         internal CharacterChallengeRewardExecutor Executor { get; }
         internal static uint CompensationRow(uint account) => LoyaltyCatalogBuild16042Fixture.Rewards().First(row => row.RewardTrackId == 5 && row.RewardChoiceId02 == account).Id;
         internal Fixture(DbContextOptions<CharacterContext> character, DbContextOptions<AuthContext> auth, uint reward, uint choice, IGameTableManager actualTables = null)

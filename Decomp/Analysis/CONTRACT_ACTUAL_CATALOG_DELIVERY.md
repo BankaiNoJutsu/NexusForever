@@ -1,5 +1,11 @@
 # Actual-catalog Contract claim delivery
 
+The later [producer-loss and spent-claim replay proof](CONTRACT_ACTUAL_PROCESS_RECOVERY.md)
+qualifies the named internal SQLite Character/Auth/ack windows with real data.
+Seven terminated producers recover, and seven fresh executor replays preserve
+spent state and original receipts/operations. Public/reset policy, autonomous
+World publication, configured providers and native/retail remain separate.
+
 6 November 2026. The recovered build16042 corpus now supplies the Item2 and
 supporting metadata that was missing from the
 [internal Contract claim qualification](CONTRACT_CLAIM_TRANSACTION_AND_ACCOUNT_HANDOFF.md).

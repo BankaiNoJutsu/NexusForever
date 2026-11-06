@@ -1,0 +1,322 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-06T01:57:40.100863+00:00",
+  "baseCommit": "92daba0578e505194de294a16f9ed6f84a2eb607",
+  "milestone": "Actual-catalog Contract producer termination, fresh recovery and spent original-claim replay",
+  "classification": "Scoped Source/SQLite process-loss qualification; production/public/reset/provider/native and overall Goal remain open",
+  "sources": [
+    {
+      "path": "Source/NexusForever.Game.Tests/Quest/ContractActualCatalogQualification.cs",
+      "sha256": "51c3bcd1cbb18c8907c6a7b5f0ebbeb32043e37a16e88119a5389dc6be70c8fc",
+      "gitBlob": "97d00797d3e8661e7199418cb41f249f204c047c"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Quest/ContractActualProcessRecovery.cs",
+      "sha256": "a581162d24172a81bc3234246186bd29bdfdc5f5243e0589a0737d4ef7b10b95",
+      "gitBlob": "b8633f2aaa5a9cb7338507d02b932b6792c8e980"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Quest/ContractClaimTransactionTests.cs",
+      "sha256": "3f35d20e0286eea3fae66a84530422eb47d8cc126410d7fed820d92e9b62cf16",
+      "gitBlob": "1811236814ee0a3a7553299b6b800c148be2c001"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Entity/InventoryRewardDeliveryTests.cs",
+      "sha256": "6a40e276d5c3f6404a98fffca11ebc979c6bd88a0234ab58908609f248a9e209",
+      "gitBlob": "3a7a3e556976fb847af250617958af89a306482f"
+    }
+  ],
+  "sourceBoundary": {
+    "base": "92daba0578e505194de294a16f9ed6f84a2eb607",
+    "trackedSourceFiles": 6282,
+    "missing": [],
+    "differences": [
+      {
+        "path": "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+        "head": "9b4e604e08391bf229552fa04081ecf9c74fec4d",
+        "candidate": "7de92fafe0c2474ba8428ca9ceee883d39138b46"
+      },
+      {
+        "path": "Source/NexusForever.ClientConnector/packages.config",
+        "head": "fa4b77dc45783358023c1cd38e6ff9bad122aea4",
+        "candidate": "8ab13a9023dec3cf548ee61ba183013bd098a297"
+      },
+      {
+        "path": "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+        "head": "64769a2266f7feab861fcc61cd2b00a0a05da8c4",
+        "candidate": "74272fd6bf29afac14c5d62cb172e81b4edee19a"
+      },
+      {
+        "path": "Source/NexusForever.Database/NexusForever.Database.csproj",
+        "head": "61f9d5326c59ec7018164eba605a01f4081dfded",
+        "candidate": "163c4f01e198e71066afcd9089a367c78b4c3de6"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Entity/InventoryRewardDeliveryTests.cs",
+        "head": "6cf10ff59cbdc7613b651a1713b7b457fb72e301",
+        "candidate": "3a7a3e556976fb847af250617958af89a306482f"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Quest/ContractActualCatalogQualification.cs",
+        "head": "63f2fb403c477bc624f0e36c0b08cc3761d6232e",
+        "candidate": "97d00797d3e8661e7199418cb41f249f204c047c"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Quest/ContractClaimTransactionTests.cs",
+        "head": "64f2a96004be61a33fdef43ed915536a267fdada",
+        "candidate": "1811236814ee0a3a7553299b6b800c148be2c001"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+        "head": "1ffaefc3cf8c1eb7c5b0534d4d91f28eb7001347",
+        "candidate": "6c145b847fa7316e7982ab44cfa404f4e1e7fc70"
+      },
+      {
+        "path": "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj",
+        "head": "74f0ec9ebbf4894dd7ef64f379a773a9e4ce1295",
+        "candidate": "ecd970da6d0d220f3caaf6780656c1809e18a9af"
+      }
+    ],
+    "newOwned": [
+      "Source/NexusForever.Game.Tests/Quest/ContractActualProcessRecovery.cs"
+    ]
+  },
+  "inputCandidates": {
+    "initial": {
+      "path": "artifacts/continuation-20261106/contract-process-recovery/initial-candidate-inputs.json",
+      "sha256": "d0a02db60ef45c6c17e9376210743b8c0f4632216f70d15a698d45a667e79107"
+    },
+    "final": {
+      "path": "artifacts/continuation-20261106/contract-process-recovery/final-inputs.json",
+      "sha256": "0ff827265e8e4ba43cfa524721df945701455ba28164e8cc045103c694e2d254"
+    },
+    "dllsEach": 140,
+    "changedDlls": [
+      "NexusForever.Game.Tests.dll",
+      "Runner.dll"
+    ],
+    "productionAndReaderDependenciesIdentical": true,
+    "priorVerificationAndLoaderStatementsExactlyRetained": {
+      "path": "artifacts/continuation-20261106/contract-process-recovery/helper-equivalence.json",
+      "sha256": "3c0d2374351937d3a5bb3d890052b8e7911d7b2aa8230eeb097ebbbf19b99df5"
+    },
+    "corpusManifestSha256": "bfb15d7824bb7ed4f4b03cc26411b3adb07317744ff2939b9fd1101c476902ad"
+  },
+  "initialPhysicalProof": {
+    "cases": 8,
+    "producerKills": 7,
+    "processes": 30,
+    "elapsedSeconds": 145.03030660000513,
+    "result": {
+      "path": "artifacts/continuation-20261106/contract-process-recovery/initial-process-result.json",
+      "sha256": "91700ceb2f6a6fb6f4b376a696e4c19cbb16d806943dae8f412bcf3c7fd28d11"
+    },
+    "parent": {
+      "path": "artifacts/continuation-20261106/contract-process-recovery/run_recovery.py",
+      "sha256": "559463fb87ccfe39f8dd6af2481499f15ecca9991e326ea5dc004244b8cfdbe9"
+    },
+    "windows": [
+      {
+        "window": "control",
+        "reward": 69,
+        "choice": 0,
+        "itemId": 90844,
+        "accountAmount": 0,
+        "credit": 2500000,
+        "recoveredReceiptSha256": "ceccffc4cf21d98804ce4e94b1acc7b5667693a9d46a8bdce66f218897324996"
+      },
+      {
+        "window": "character-before",
+        "reward": 69,
+        "choice": 0,
+        "itemId": 90844,
+        "accountAmount": 0,
+        "credit": 2500000,
+        "recoveredReceiptSha256": null
+      },
+      {
+        "window": "item-after-character",
+        "reward": 69,
+        "choice": 0,
+        "itemId": 90844,
+        "accountAmount": 0,
+        "credit": 2500000,
+        "recoveredReceiptSha256": "610c9c111e16b0c682174fe6640d9ab6dd4e111bf0929ca4fdb589a66a46ee78"
+      },
+      {
+        "window": "nonstackable-after-character",
+        "reward": 17,
+        "choice": 0,
+        "itemId": 72011,
+        "accountAmount": 0,
+        "credit": 0,
+        "recoveredReceiptSha256": "223d6643a5461669805f0f65f54260d9ebecfe2d7a2d955dcb1561c7dd608483"
+      },
+      {
+        "window": "account-after-character",
+        "reward": 17,
+        "choice": 2,
+        "itemId": null,
+        "accountAmount": 5,
+        "credit": 0,
+        "recoveredReceiptSha256": "a5562ad121e7e4e3c17b929f89c77e71d021182ad014b308f33958c17f03087a"
+      },
+      {
+        "window": "account-before-auth",
+        "reward": 17,
+        "choice": 2,
+        "itemId": null,
+        "accountAmount": 5,
+        "credit": 0,
+        "recoveredReceiptSha256": "4a6feadd25a68f7b1f157994796d3f6971902e3b20af7433a477d203d4c5258e"
+      },
+      {
+        "window": "account-after-auth",
+        "reward": 17,
+        "choice": 2,
+        "itemId": null,
+        "accountAmount": 5,
+        "credit": 0,
+        "recoveredReceiptSha256": "67a0620ceb1025f4c65036ced94834290f2c0c40aede2645fea871639a81270d"
+      },
+      {
+        "window": "account-after-ack",
+        "reward": 27,
+        "choice": 2,
+        "itemId": null,
+        "accountAmount": 7,
+        "credit": 0,
+        "recoveredReceiptSha256": "a01558408521ea5230f51866ba6f223d04b46f779c211a06615b35dfa7065bf6"
+      }
+    ]
+  },
+  "spentClaimReplay": {
+    "passed": 7,
+    "processes": 7,
+    "elapsedSeconds": 29.107457100006286,
+    "result": {
+      "path": "artifacts/continuation-20261106/contract-process-recovery/spent-replay-result.json",
+      "sha256": "cbf4d58e35797a84df61d678982c0fd277f114530c2aa2aa72b07faecda0cd5c"
+    },
+    "parent": {
+      "path": "artifacts/continuation-20261106/contract-process-recovery/run_spent_replay.py",
+      "sha256": "82da388bc5fae7ee32f75c1f1b7a40ffac6124b3c2d2a9d818eabf2a887e73c3"
+    },
+    "assertions": [
+      "Original canonical quote/baseline and receipt identity",
+      "Real claim executor returns Committed/Appliedfalse/Changedfalse",
+      "Fresh actualItemInfo reservation stays Prepared",
+      "Spent item/credit/account balances not restored",
+      "No new receipt/account operation/track revision"
+    ]
+  },
+  "helperFailureControl": {
+    "expectedPostLaunchException": {
+      "path": "artifacts/continuation-20261106/contract-process-recovery/cleanup-control-replay-helper-failure.json",
+      "sha256": "060263dfb817a193955903837d7ae27dafbc4721bf5f1685dc7654d32ffcd4d7"
+    },
+    "terminalChild": {
+      "path": "artifacts/continuation-20261106/contract-process-recovery/cleanup-control-replay-processes.json",
+      "sha256": "c2b97b611535d33df7ed9c34a1784a120a7f071bb373795844a9b1b7bafe9896"
+    },
+    "expected": true
+  },
+  "processAndDataPreservation": {
+    "recordedGenerationsAbsent": 38,
+    "nativeAbsenceProof": {
+      "path": "artifacts/continuation-20261106/contract-process-recovery/process-absence.json",
+      "sha256": "048e145b88a685cdbd72699d1d08275f03cd04f911ef307a5da4d16595e0f80e"
+    },
+    "producerTempDirectoriesAbsent": 16,
+    "replayInventoryDirectoriesAbsent": 3,
+    "retainedDisposableSqliteDatabases": 16,
+    "independentIntegrity": "all16ok",
+    "sqlAudit": {
+      "path": "artifacts/continuation-20261106/contract-process-recovery/retained-sqlite-audit.json",
+      "sha256": "25786810d686475548d57b912fddcb858add2745bf92c71b3cf6522b6e9dfdde"
+    },
+    "foreignWorkloadsUntouched": true
+  },
+  "controls": [
+    {
+      "name": "interceptor-controls",
+      "passed": 21,
+      "failed": 0,
+      "skipped": 0,
+      "trx": {
+        "path": "artifacts/continuation-20261106/contract-process-recovery/interceptor-controls.trx",
+        "sha256": "3aaed0c2ba88294e35b58a4bb4b7047971eb4a35cc86e9a36c22a4c0417c5d67"
+      },
+      "candidate": "initial"
+    },
+    {
+      "name": "final-fixture-controls",
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "trx": {
+        "path": "artifacts/continuation-20261106/contract-process-recovery/final-fixture-controls.trx",
+        "sha256": "b1fa2a17b851e10a9277468f5f03d767cf5af61c2710064b706def6a793b79d8"
+      },
+      "candidate": "final"
+    }
+  ],
+  "builds": {
+    "initialTestSeconds": 15.97,
+    "initialRunnerSeconds": 4.54,
+    "finalTestSeconds": 18.2,
+    "finalRunnerSeconds": 2.71,
+    "warnings": 0,
+    "errors": 0
+  },
+  "reviews": {
+    "initialStandards": 0,
+    "initialSpec": 1,
+    "materialStandards": 1,
+    "finalStandards": 0,
+    "finalSpec": 0,
+    "specCorrection": "Item/credit spent proof now invokes real claim executor with fresh actual metadata reservation; retains original receipt/quote/baseline",
+    "standardsCorrection": "Replay helper retains owned process handles and guarded finally cleanup; injected post-launch failure confirms stop/wait/status",
+    "classification": "Verification/helper lifecycle gaps, not production defects",
+    "reviewers": [
+      "/root/iccomm_spec",
+      "/root/iccomm_standards"
+    ]
+  },
+  "upstream": {
+    "refresh": {
+      "path": "artifacts/continuation-20261106/contract-process-recovery/upstream-refresh.json",
+      "sha256": "3f21decef9f9fa5fbdd2a638b3d7f521f10c598ed802c9e38cc34f40b1b6edd2"
+    },
+    "changedHeadBaseStates": 0,
+    "pr608": "open",
+    "pr609": "closed/unmerged"
+  },
+  "limits": [
+    "Four testSource paths only; no production/schema/public07CE changes",
+    "Internal services explicitly invoked, not autonomous hostedWorld recovery/publication",
+    "Seeded prerequisites/selected cycles; proxy Player/session/ItemManager; SQL-modeled consumption",
+    "Representative real item/finalcredit/account shapes, not726failurepermutations",
+    "No configuredMySQL/copiedupgrade/DBserver or connectionloss/broker/socket/deployment/native/retail qualification",
+    "21initial and6finalcontrols bind separate candidates; prior726/967batches retained, not rerun",
+    "No fullsolution/fullsuite, nativeclient/CUA or unrelatedworkload mutation"
+  ],
+  "diagnostics": {
+    "fixtureCompileFailure": {
+      "path": "artifacts/continuation-20261106/contract-process-recovery/fixture-compile-failure.log",
+      "sha256": "948c28a0673d58abfa908e90c6b7482de1668db4901426052d079094ef3839a8"
+    },
+    "classification": "Initial interceptor field type/import corrections; excluded from production failure claims"
+  },
+  "evidenceDirectory": "artifacts/continuation-20261106/contract-process-recovery"
+}

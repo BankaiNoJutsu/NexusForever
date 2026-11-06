@@ -23,36 +23,8 @@ public static class ContractActualCatalogQualification
         if (Directory.Exists(outputDirectory)) throw new IOException("Choose a new output directory to preserve prior evidence.");
         Directory.CreateDirectory(outputDirectory);
         var json = new JsonSerializerOptions { WriteIndented = true };
-        string Hash(byte[] bytes) => Convert.ToHexStringLower(SHA256.HashData(bytes));
-        byte[] manifestBytes = File.ReadAllBytes(Path.Combine(recoveryRoot, "recovered-payloads.json"));
-        using var manifest = JsonDocument.Parse(manifestBytes);
-        Assert.True(manifest.RootElement.GetProperty("complete").GetBoolean());
-        var inputs = new List<object>();
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (JsonElement file in manifest.RootElement.GetProperty("files").EnumerateArray())
-        {
-            string relative = file.GetProperty("recoveredFile").GetString();
-            string path = Path.GetFullPath(Path.Combine(recoveryRoot, relative));
-            Assert.StartsWith(recoveryRoot + Path.DirectorySeparatorChar, path, StringComparison.OrdinalIgnoreCase);
-            Assert.True(seen.Add(path));
-            byte[] bytes = File.ReadAllBytes(path);
-            Assert.Equal(file.GetProperty("sha256").GetString(), Hash(bytes));
-            Assert.Equal(file.GetProperty("uncompressedSize").GetInt64(), bytes.LongLength);
-            inputs.Add(new { File = relative, Sha256 = Hash(bytes), Bytes = bytes.Length });
-        }
-        Assert.Equal(385, seen.Count);
-        var tables = new GameTableManager(Options.Create(new GameTableConfig
-        {
-            GameTablePath = Path.Combine(recoveryRoot, "recovered-tables")
-        }));
-        await tables.Initialise(new GameTableLoader()
-            .AddGameTable<RewardTrackEntry>().AddGameTable<RewardTrackRewardsEntry>()
-            .AddGameTable<Item2Entry>().AddGameTable<AccountItemEntry>()
-            .AddGameTable<CurrencyTypeEntry>().AddGameTable<AccountCurrencyTypeEntry>()
-            .AddGameTable<Item2FamilyEntry>().AddGameTable<Item2CategoryEntry>().AddGameTable<Item2TypeEntry>()
-            .AddGameTable<ItemSlotEntry>().AddGameTable<ItemBudgetEntry>().AddGameTable<ItemStatEntry>()
-            .AddGameTable<ItemQualityEntry>().AddGameTable<ItemRandomStatEntry>()
-            .AddGameTable<GameFormulaEntry>().AddGameTable<UnitProperty2Entry>());
+        var (manifestBytes, inputs) = VerifyInputs(recoveryRoot);
+        var tables = await LoadTablesAsync(recoveryRoot);
         var catalog = new ContractRewardAwardCatalog(tables);
         Assert.Equal(726, catalog.Awards.Count);
         Assert.Equal(486, catalog.Awards.Count(award => award.Item != null));
@@ -143,4 +115,45 @@ public static class ContractActualCatalogQualification
         }, json));
         Console.WriteLine($"Contract actual delivery complete: {results.Count}/726");
     }
+    private static string Hash(byte[] bytes) => Convert.ToHexStringLower(SHA256.HashData(bytes));
+
+    internal static (byte[] ManifestBytes, List<object> Files) VerifyInputs(string recoveryRoot)
+    {
+        byte[] manifestBytes = File.ReadAllBytes(Path.Combine(recoveryRoot, "recovered-payloads.json"));
+        using var manifest = JsonDocument.Parse(manifestBytes);
+        Assert.True(manifest.RootElement.GetProperty("complete").GetBoolean());
+        var inputs = new List<object>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (JsonElement file in manifest.RootElement.GetProperty("files").EnumerateArray())
+        {
+            string relative = file.GetProperty("recoveredFile").GetString();
+            string path = Path.GetFullPath(Path.Combine(recoveryRoot, relative));
+            Assert.StartsWith(recoveryRoot + Path.DirectorySeparatorChar, path, StringComparison.OrdinalIgnoreCase);
+            Assert.True(seen.Add(path));
+            byte[] bytes = File.ReadAllBytes(path);
+            Assert.Equal(file.GetProperty("sha256").GetString(), Hash(bytes));
+            Assert.Equal(file.GetProperty("uncompressedSize").GetInt64(), bytes.LongLength);
+            inputs.Add(new { File = relative, Sha256 = Hash(bytes), Bytes = bytes.Length });
+        }
+        Assert.Equal(385, seen.Count);
+        return (manifestBytes, inputs);
+    }
+
+    internal static async Task<GameTableManager> LoadTablesAsync(string recoveryRoot)
+    {
+        var tables = new GameTableManager(Options.Create(new GameTableConfig
+        {
+            GameTablePath = Path.Combine(recoveryRoot, "recovered-tables")
+        }));
+        await tables.Initialise(new GameTableLoader()
+            .AddGameTable<RewardTrackEntry>().AddGameTable<RewardTrackRewardsEntry>()
+            .AddGameTable<Item2Entry>().AddGameTable<AccountItemEntry>()
+            .AddGameTable<CurrencyTypeEntry>().AddGameTable<AccountCurrencyTypeEntry>()
+            .AddGameTable<Item2FamilyEntry>().AddGameTable<Item2CategoryEntry>().AddGameTable<Item2TypeEntry>()
+            .AddGameTable<ItemSlotEntry>().AddGameTable<ItemBudgetEntry>().AddGameTable<ItemStatEntry>()
+            .AddGameTable<ItemQualityEntry>().AddGameTable<ItemRandomStatEntry>()
+            .AddGameTable<GameFormulaEntry>().AddGameTable<UnitProperty2Entry>());
+        return tables;
+    }
+
 }

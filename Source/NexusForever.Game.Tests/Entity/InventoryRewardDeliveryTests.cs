@@ -651,7 +651,7 @@ public sealed partial class InventoryRewardDeliveryTests
         public RecordingDispatchProxy<IQuestManager> QuestProxy { get; }
         public IEnumerable<object> Messages => SessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Select(call => call.Arguments[0]);
 
-        public Fixture(uint capacity, uint[] stacks, bool expiring = false, DbContextOptions<CharacterContext> providerOptions = null, bool contract = false, uint itemId = 9011, IItemInfo actualInfo = null)
+        public Fixture(uint capacity, uint[] stacks, bool expiring = false, DbContextOptions<CharacterContext> providerOptions = null, bool contract = false, uint itemId = 9011, IItemInfo actualInfo = null, bool loadExisting = false)
         {
             Directory.CreateDirectory(directory);
             options = providerOptions ?? new DbContextOptionsBuilder<CharacterContext>().UseSqlite($"Data Source={Path.Combine(directory, "delivery.sqlite")};Pooling=False").Options;
@@ -683,18 +683,21 @@ public sealed partial class InventoryRewardDeliveryTests
             Set("characterId", 42ul); Set("player", player); Set("itemManager", Manager);
             Set("bags", new Dictionary<InventoryLocation, IBag> { [InventoryLocation.Inventory] = Bag }); Set("deletedItems", new List<IItem>());
             using var context = Context();
-            context.Database.EnsureCreated();
-            context.Character.Add(new CharacterModel { Id = 42, AccountId = contract ? 27u : 0u, Name = "Inventory reward owner" });
-            if (contract) SeedContract(context);
-            context.CharacterChallengeRewardTrack.Add(new CharacterChallengeRewardTrackModel { Id = 42, TrackId = 15, CycleId = 7, Points = 100, Revision = 1, Active = true });
-            context.CharacterChallengeRewardSlot.Add(new CharacterChallengeRewardSlotModel { Id = 42, TrackId = 15, CycleId = 7, Ordinal = 0, RewardRowId = 315, RequiredPoints = 100 });
-            for (int i = 0; i < stacks.Length; ++i) context.Item.Add(new ItemModel
+            if (!loadExisting)
             {
-                Id = (ulong)(101 + i), OwnerId = 42, ItemId = itemId, Location = (ushort)InventoryLocation.Inventory, BagIndex = (uint)i,
-                StackCount = stacks[i], Charges = 5, Durability = 1, ExpirationTimeLeft = expiring ? 120u : 0u,
-                Soulbound = true, MicrochipIds = "", RuneSlots = ""
-            });
-            context.SaveChanges();
+                context.Database.EnsureCreated();
+                context.Character.Add(new CharacterModel { Id = 42, AccountId = contract ? 27u : 0u, Name = "Inventory reward owner" });
+                if (contract) SeedContract(context);
+                context.CharacterChallengeRewardTrack.Add(new CharacterChallengeRewardTrackModel { Id = 42, TrackId = 15, CycleId = 7, Points = 100, Revision = 1, Active = true });
+                context.CharacterChallengeRewardSlot.Add(new CharacterChallengeRewardSlotModel { Id = 42, TrackId = 15, CycleId = 7, Ordinal = 0, RewardRowId = 315, RequiredPoints = 100 });
+                for (int i = 0; i < stacks.Length; ++i) context.Item.Add(new ItemModel
+                {
+                    Id = (ulong)(101 + i), OwnerId = 42, ItemId = itemId, Location = (ushort)InventoryLocation.Inventory, BagIndex = (uint)i,
+                    StackCount = stacks[i], Charges = 5, Durability = 1, ExpirationTimeLeft = expiring ? 120u : 0u,
+                    Soulbound = true, MicrochipIds = "", RuneSlots = ""
+                });
+                context.SaveChanges();
+            }
             foreach (var row in context.Item.AsNoTracking().OrderBy(row => row.BagIndex))
                 Inventory.LoadItem(new GameItem(row, Manager), InventoryLocation.Inventory, row.BagIndex);
             ManagerProxy.Invocations.Clear(); SessionProxy.Invocations.Clear();

@@ -1,5 +1,16 @@
 # Assessment follow-through goal
 
+[Actual-catalog Contract process recovery](CONTRACT_ACTUAL_PROCESS_RECOVERY.md)
+qualifies the named Character/Auth/acknowledgement producer-loss boundaries with
+real item/account metadata, independent recovery and original-claim replay after
+SQL-modeled consumption. One control/seven kills and seven fresh spent replays
+pass;38 child generations and owned temp directories are absent.21 initial/six
+final scoped controls, clean builds and both final reviews pass. This closes
+those internal SQLite windows, not public 07CE/reset/unclaimed/final-first/excess
+policy, autonomous hosted World publication, configured MySQL/copied-upgrade,
+server/connection loss, socket/deployed/native/retail or all 726 failure variants.
+Preserve broader progression/gameplay and concurrent work; continue the queue.
+
 [Actual-catalog Contract delivery](CONTRACT_ACTUAL_CATALOG_DELIVERY.md) replaces
 the missing ItemInfo/stack/binding input for initial internal claim delivery
 with16 recovered actual tables. All726 choices (486 item/240 Auth, six additional
