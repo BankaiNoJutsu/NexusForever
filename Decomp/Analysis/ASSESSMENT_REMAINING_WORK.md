@@ -1,5 +1,15 @@
 # Assessment follow-through goal
 
+[Scientist scanner lifecycle](SCIENTIST_SCANBOT_LIFECYCLE.md) completes the
+public request/dismiss original-object boundary, stale queued-add visibility
+suppression and fresh retained state replies. Original six-failure baseline
+and both reproduced review findings are fixed;11 new/all243 scoped cases,
+clean builds and both final reviews pass. Prepared metadata/map/session inputs
+do not qualify actual-table/spatial/provider/socket/native/retail behavior.
+Do not repeat this closed Source slice; continue independent gameplay/progression.
+Scientist scan earning/experimentation, cooldown and Path item overflow remain
+separate evidence or implementation gates; client/CUA remain stopped.
+
 [Normal auction bid physical producer loss](NORMAL_AUCTION_BID_TRANSACTION.md#physical-producer-loss-and-fresh-character-reload)
 now qualifies the representative parsed public bid over SQLite at preflight,
 financial, reconciliation and pre-result boundaries. One control/six kills,

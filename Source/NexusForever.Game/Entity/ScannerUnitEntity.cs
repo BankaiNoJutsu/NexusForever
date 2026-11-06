@@ -1,4 +1,6 @@
-﻿using NexusForever.Game.Abstract.Entity;
+﻿using System.Numerics;
+using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Entity.Movement;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Network.World.Entity;
@@ -36,6 +38,35 @@ namespace NexusForever.Game.Entity
         private string name = string.Empty;
 
         private readonly UpdateTimer followTimer = new(1d);
+        private PathManager pathManager;
+        private bool pathRemovalQueued;
+
+        internal void BindPathManager(PathManager owner)
+        {
+            pathManager = owner;
+            pathRemovalQueued = false;
+        }
+
+        public override void OnAddToMap(IBaseMap map, uint guid, Vector3 vector)
+        {
+            if (pathManager != null && !pathManager.OwnsScientistScanbot(this, map))
+            {
+                InitialiseMapRegistration(map, guid, vector);
+                RemoveFromMap();
+                return;
+            }
+            base.OnAddToMap(map, guid, vector);
+            if (!pathRemovalQueued && pathManager?.OnScientistScanbotSummoned(this) == false)
+                RemoveFromMap();
+        }
+
+        public override void OnRemoveFromMap()
+        {
+            var original = pathManager;
+            try { base.OnRemoveFromMap(); }
+            finally { original?.OnScientistScanbotUnsummoned(this); }
+        }
+
 
         #region Dependency Injection
 
@@ -58,6 +89,7 @@ namespace NexusForever.Game.Entity
 
         public override void OnEnqueueRemoveFromMap()
         {
+            pathRemovalQueued = true;
             followTimer.Reset(false);
             base.OnEnqueueRemoveFromMap();
         }
@@ -70,6 +102,11 @@ namespace NexusForever.Game.Entity
 
         private void FollowOwner(double lastTick)
         {
+            if (pathManager != null && !pathManager.OwnsScientistScanbot(this))
+            {
+                if (!pathRemovalQueued) RemoveFromMap();
+                return;
+            }
             if (SummonerGuid == null)
                 return;
 

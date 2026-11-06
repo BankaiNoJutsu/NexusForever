@@ -146,15 +146,22 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public virtual void OnAddToMap(IBaseMap map, uint guid, Vector3 vector)
         {
-            Guid     = guid;
-            Map      = map;
-            Position = vector;
+            InitialiseMapRegistration(map, guid, vector);
 
             UpdateVision();
             UpdateGridVision();
             UpdateRangeChecks();
 
             scriptCollection?.Invoke<IGridEntityScript>(s => s.OnAddToMap(map));
+        }
+
+        // Record the registration separately so a derived admission guard can
+        // queue removal without running visibility or script callbacks.
+        protected void InitialiseMapRegistration(IBaseMap map, uint guid, Vector3 vector)
+        {
+            Guid = guid;
+            Map = map;
+            Position = vector;
         }
 
         /// <summary>

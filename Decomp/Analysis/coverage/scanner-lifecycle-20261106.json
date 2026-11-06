@@ -1,0 +1,1751 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-06T06:08:49.641517+00:00",
+  "baseCommit": "eb359ee7a0a8f6abc080464121839553ccbe608d",
+  "milestone": "Scientist scanner original-owner lifecycle and visibility admission",
+  "classification": "Implemented Source public-flow correction; synthetic metadata/spatial fixtures; broader Scientist/provider/socket/native/retail and overall Goal remain open",
+  "behavior": [
+    "Parsed public request/dismiss routes retain the original scanner object, birth PathManager and captured owner/account/session/map context; a foreign object sharing its GUID cannot retire or replace its authority.",
+    "Deployment rejects a pre-rebound account, reserves in-flight creation, and rechecks original context after CanEnter. Stale queued additions record the registration needed for removal and return before base visibility/entity script callbacks; a concrete nearby Player receives no create or auxiliary packets.",
+    "Dismiss removes the captured original object even after owner map change and even if its state enqueue fails. Removal notifies the original PathManager even when map owner lookup is missing or a base unsummon callback throws.",
+    "Rejected state messages retry fresh DTOs on the original event queue; current-context checks suppress stale recipients, and later state or a new deployment supersedes the old notice."
+  ],
+  "sources": [
+    {
+      "path": "Source/NexusForever.Game/Entity/GridEntity.cs",
+      "sha256": "01923fb70faf2133f29cd4fd35527a653637278739905d58c6fbf1db81f14192",
+      "gitBlob": "1c287913e76c3f66f7657931550caf29aa2c815e"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/PathManager.cs",
+      "sha256": "4b5c52bf61cf5bb937119ac22067c683eb3513c13b62486eddc90938a6e89b1e",
+      "gitBlob": "7642a10829b6640ef15d6aae94918b43689b1a6d"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/PathManager.ScannerLifecycle.cs",
+      "sha256": "5993f8321ab438f3f56af3dc31b24e5a457e01360a3dd859a901f7c67d9ca610",
+      "gitBlob": "b8062ad484ec47c46fb2ff1a7ce1cb0467323a46"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/ScannerUnitEntity.cs",
+      "sha256": "5788a73e495477e4396fd05fb3d9e6142d432223095433f2fc461a98aa3c6bf1",
+      "gitBlob": "7e753b6744c749083244935dd69384e3189a8d2a"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Entity/PathManagerTests.cs",
+      "sha256": "0d40f4d45dfa81acd90378b0a7979586f1ddb7a62adaaec801937ccef70784c3",
+      "gitBlob": "56c3352733125a7884d5055ed561a428672f07a5"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Entity/PathManagerTests.ScannerLifecycle.cs",
+      "sha256": "0bec920546e9469e24404d233fd2ed2bbb24d6bd56b44f77a2863ae8c1bcb7c4",
+      "gitBlob": "2e555508e8b76f050f90f0a5cc01ca8706cc1e77"
+    }
+  ],
+  "sourceBoundary": {
+    "base": "eb359ee7a0a8f6abc080464121839553ccbe608d",
+    "trackedSourceFiles": 6292,
+    "differences": [
+      {
+        "path": "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+        "head": "9b4e604e08391bf229552fa04081ecf9c74fec4d",
+        "candidate": "7de92fafe0c2474ba8428ca9ceee883d39138b46"
+      },
+      {
+        "path": "Source/NexusForever.ClientConnector/packages.config",
+        "head": "fa4b77dc45783358023c1cd38e6ff9bad122aea4",
+        "candidate": "8ab13a9023dec3cf548ee61ba183013bd098a297"
+      },
+      {
+        "path": "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+        "head": "64769a2266f7feab861fcc61cd2b00a0a05da8c4",
+        "candidate": "74272fd6bf29afac14c5d62cb172e81b4edee19a"
+      },
+      {
+        "path": "Source/NexusForever.Database/NexusForever.Database.csproj",
+        "head": "61f9d5326c59ec7018164eba605a01f4081dfded",
+        "candidate": "163c4f01e198e71066afcd9089a367c78b4c3de6"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Entity/PathManagerTests.cs",
+        "head": "f10d17764789887baa58e9debb641fed3bcc2795",
+        "candidate": "56c3352733125a7884d5055ed561a428672f07a5"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/GridEntity.cs",
+        "head": "24b0dec6875e07c09ca2bff59ab26ce053211572",
+        "candidate": "1c287913e76c3f66f7657931550caf29aa2c815e"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+        "head": "1ffaefc3cf8c1eb7c5b0534d4d91f28eb7001347",
+        "candidate": "6c145b847fa7316e7982ab44cfa404f4e1e7fc70"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/PathManager.cs",
+        "head": "fcf81363542221000cc81426b768efe26edbf6d9",
+        "candidate": "7642a10829b6640ef15d6aae94918b43689b1a6d"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/ScannerUnitEntity.cs",
+        "head": "d3a643b0200eddb97076fc8b40163a4d39799f73",
+        "candidate": "7e753b6744c749083244935dd69384e3189a8d2a"
+      },
+      {
+        "path": "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj",
+        "head": "74f0ec9ebbf4894dd7ef64f379a773a9e4ce1295",
+        "candidate": "ecd970da6d0d220f3caaf6780656c1809e18a9af"
+      }
+    ],
+    "missing": [],
+    "newOwnedFiles": [
+      "Source/NexusForever.Game/Entity/PathManager.ScannerLifecycle.cs",
+      "Source/NexusForever.Game.Tests/Entity/PathManagerTests.ScannerLifecycle.cs"
+    ],
+    "historicalDifferences": [
+      "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+      "Source/NexusForever.ClientConnector/packages.config",
+      "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+      "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+      "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+      "Source/NexusForever.Database/NexusForever.Database.csproj",
+      "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+      "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj"
+    ]
+  },
+  "validation": {
+    "initialBehaviorBaseline": {
+      "localPath": "artifacts/continuation-20261106/scanner-lifecycle/baseline.trx",
+      "sha256": "38ffb6243c0bc005312748d0e6cb2e138d5c8bb18849fb38647ca3b02cb124c1",
+      "counters": {
+        "total": "7",
+        "executed": "7",
+        "passed": "1",
+        "failed": "6",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "results": [
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_QueuedAddCannotAdoptAChangedOwner(change: \"map\")",
+          "outcome": "Failed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_QueuedAddCannotAdoptAChangedOwner(change: \"session\")",
+          "outcome": "Failed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_RejectedDismissStateStillRemovesAndRetriesFreshState",
+          "outcome": "Failed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_UnrelatedUnsummonCannotRetireTheActiveInstance",
+          "outcome": "Failed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_QueuedAddCannotAdoptAChangedOwner(change: \"missing-owner\")",
+          "outcome": "Failed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_DismissRemovesTheOriginalObjectAfterMapChange",
+          "outcome": "Failed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_OriginalCallbacksAndPendingDismissRemainSupported",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "materialReviewBehaviorBaseline": {
+      "localPath": "artifacts/continuation-20261106/scanner-lifecycle/review-baseline-ready.trx",
+      "sha256": "589047b3323a391ee1f6760ff76347bacb66a2ad3c50b9b16f8048ae0061c309",
+      "counters": {
+        "total": "5",
+        "executed": "5",
+        "passed": "1",
+        "failed": "4",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "results": [
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_CurrentQueuedAddPublishesToNearbyPlayer",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_QueuedAddCannotAdoptAChangedOwner(change: \"map\")",
+          "outcome": "Failed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_QueuedAddCannotAdoptAChangedOwner(change: \"missing-owner\")",
+          "outcome": "Failed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_QueuedAddCannotAdoptAChangedOwner(change: \"session\")",
+          "outcome": "Failed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_DeployRejectsAnAccountAlreadyReboundToAnotherSession",
+          "outcome": "Failed"
+        }
+      ]
+    },
+    "baselineInterpretation": "Original seven-case reproduction: six fail/one control. The separate review baseline strengthens three existing stale-add cases with actual Player visibility and adds an account rejection case; four fail/one valid-create control. These observations are not added as distinct-case totals.",
+    "final": {
+      "localPath": "artifacts/continuation-20261106/scanner-lifecycle/final-scoped.trx",
+      "sha256": "ef7f8bec8705caa52301bd0f6193445084f5df39ea1a140c529ac52c7563625d",
+      "counters": {
+        "total": "243",
+        "executed": "243",
+        "passed": "243",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "results": [
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteCurrentScientistDatacubeDiscoveryMission_WithMatchingZone_CompletesActiveMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.MissingOrWrongPassengerDoesNotProduceVehicleAttachment(wrongPassenger: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerName_PublicRenameUpdatesOwnerObserversAndLateCreateModel",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.UnloadingInstanceRetryPreservesAdmissionOwnership(cancel: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerName_StaleOrDismissingEntityIsNotRenamed(stale: \"owner\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_OriginalCallbacksAndPendingDismissRemainSupported",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.AddVisible_WhenEntityBecomesVisible_EmitsSingleCreatePacket",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.TryDeployScientistScanbot_WithEarnedProfileMissingUnlock_RecoversAndQueuesScanner",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathSelectionHandlerTests.UnlockRequest_WithCostFormulaKeepsExistingDebitAndUnlockPath",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.ClientPathExplorerProgressReportHandlerTests.HandleMessage_WithOutOfRangeMissionId_DoesNotCompleteMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMissionBySoldierTowerDefenseId_WithMissingStaticTable_DoesNotCompleteMission(missingTable: \"tower-defense\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.InstanceCapacityCountsOnlyCurrentAddOrPendingReservations(pending: True, cancel: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerName_StaleOrDismissingEntityIsNotRenamed(stale: \"replacement\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.AddLevels_WithMissingTargetPathLevelRow_DoesNotMutateXp",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.TryActivateCurrentZoneEpisode_WithNorthernWildsCurrentEpisodeThenYetiMission_DoesNotStartHoldoutMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.MatchDepartureCancelsOnlyItsOwnTransfer(timing: \"before routing\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteExplorerPowerMapMission_WithMissingStaticTable_DoesNotCompleteMission(missingTable: \"path-mission\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMission_WithMissingSpellRewardTable_SkipsSpellRewardWithoutThrowing",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMission_WithKnownMissionAndNoConfiguredXp_AwardsGameFormulaPathXp",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.AFailedInstanceEntryPreservesOtherTransfers(outcome: \"superseded-fault\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.TryActivateCurrentZoneEpisode_WhilePlayerLoading_DoesNotSendMissionActivation",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMission_WithSupportedMissionRewards_GrantsUnflaggedRewardRows",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.GetSettlerHubContributionProgressPercent_UsesBundleCountOverMaxBundles",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.CanceledAndSupersededBaseMapAddsNeverActivateOrAdd(superseded: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.NorthernWildsScientistMission_WithRuntimeZoneBridge_CompletesAfterChecklistScans(pathMissionId: 160, pathScientistCreatureInfoId: 130, requiredScans: 3)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMissionBySoldierTowerDefenseId_CompletesMatchingEventMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMission_WithKnownMissionRow_UpdatesPathMissionAchievements",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMissionBySettlerImprovementGroupId_WithHubMissionCount_CompletesAfterRequiredBuilds",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMission_WithMissingPathLevelRows_SkipsXpAndKeepsMissionReward",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathSettlerBuildHandlerTests.HandleMessage_WithMissingImprovementTable_DoesNotSendBuildAcknowledgementOrProgress",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.CanceledAndSupersededBaseMapAddsNeverActivateOrAdd(superseded: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMissionBySettlerImprovementGroupId_WithMissingStaticTable_DoesNotProgressMission(missingTable: \"path-mission\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.SendInitialPackets_WithPersistedCompletedMission_DoesNotReplayEpisodeState",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.MountedPlayerVisibilityRestoresSeatOnlyAfterBothCreates(riderFirst: False, seat: Pilot, position: 0)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.ClientPathExplorerProgressReportHandlerTests.HandleMessage_WithMissionId_UsesExplorerProgressCompletion",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.GridEntityRangeCheckTests.SetInRangeCheck_AfterVisibleEntities_TracksPlayersAlreadyNearby",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ProgressSoldierSwatMission_WithMissingStaticTable_DoesNotProgressMission(missingTable: \"soldier-swat\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteExplorerPowerMapMission_WithActivePowerMapMission_CompletesMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.IsMissionCompleteByObjectId_WithCompletedMatchingMission_ReturnsTrue",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteCurrentExplorerExploreZoneMission_WithIncompleteMapZone_DoesNotCompleteMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.MapManagerDiscardsOldGenerationBeforeCreatingMap",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.PlayerMapAdmissionStateTests.ReconnectObjectIsIndependentOfCanceledOldObject",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.UnloadingInstanceRetryPreservesAdmissionOwnership(cancel: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.TryActivateCurrentZoneEpisode_WithNorthernWildsRuntimeZoneBridgeMissingClientEpisode_DoesNotActivate",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMissionBySettlerImprovementGroupId_WithPersistedPartialHubProgress_CompletesAfterReload",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.TryActivateCurrentZoneEpisode_WithNorthernWildsRuntimeZoneBridge_SetsCurrentClientPathEpisode(path: Scientist, expectedEpisodeId: 28, expectedMissionIds: [42, 160, 648])",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMissionBySettlerImprovementGroupId_WithMissingHub_DoesNotProgressMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMissionByObjectId_CompletesMatchingActiveMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.GridEntityRangeCheckTests.GetInRange_ReturnsOnlyEntitiesThatEnteredRange",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteExplorerProgressMission_WithoutMatchingExplorerNode_DoesNotCompleteMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.TryDeployScientistScanbot_WithNonScientistPathFailsClosed",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.DetachedTransferFailsOnceWhenDestinationGridCannotAdmit(activationFault: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.PlayerMapAdmissionStateTests.ReentrantWorldZoneCancellationStopsPathAndTutorialContinuations(boundary: \"achievement\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.Save_WithActivatedMission_CreatesPersistedMissionState",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMission_WithKnownMissionAndNoFormulaXp_AwardsClientFallbackPathXp",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerName_DeployUsesStoredProfileNameBeforeMapAdmission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.AddVisible_WhenEntityHasCreateAuxPackets_EmitsAuxPacketsBeforeCreate",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.AddVisible_WhenEmpoweredTowerStoppedStorm_HidesNorthernWildsAvalanches(creatureId: 67662)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.TryDeployScientistScanbot_WithDefaultProfileMissingUnlock_RecoversAndQueuesScanner",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMission_WithMissingSpellRewardEntry_SkipsSpellRewardWithoutThrowing",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.MatchDepartureCancelsOnlyItsOwnTransfer(timing: \"after source removal\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.TryDeployScientistScanbot_WithZeroProfileUsesDefaultProfile",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.TryActivateCurrentZoneEpisode_WithMissionPrerequisites_ActivatesOnlyEligibleMissions",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathSettlerBuildHandlerTests.HandleMessage_WithMissingImprovementGroupTable_DoesNotSendBuildAcknowledgementOrProgress",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.MatchDepartureCancelsOnlyItsOwnTransfer(timing: \"no departure\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.SendInitialPackets_WithPersistedMissionForDifferentPath_DoesNotReplayEpisodeState",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMissionBySettlerImprovementGroupId_WithNonSettlerPlayer_DoesNotProgressMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.SendInitialPackets_WhilePlayerLoading_ReplaysSoldierHoldoutEpisodeAfterPathLog",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.SendInitialPackets_WithPersistedMissionForWrongFaction_DoesNotReplayEpisodeState",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMissionBySettlerImprovementGroupId_WithDifferentHub_DoesNotProgressMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_CurrentQueuedAddPublishesToNearbyPlayer",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathSettlerBuildHandlerTests.HandleMessage_WithUnmappedOrUnwritableImprovement_DoesNotSendBuildAcknowledgementOrProgress(buildTier: 0, tier00ImprovementId: 32768)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerName_UnsummonedEntityKeepsItsNameAndRedeployUsesLatestAcceptedName",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ProgressSoldierAssassinateMissionForCreatureKill_WithMissingStaticTable_DoesNotProgressMission(missingTable: \"path-mission\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ProgressSoldierSwatMission_WithActiveMission_UsesSwatCountAndCompletes",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.CancellationAfterGridActivationCannotReachGraphInsertion",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerName_RejectedRequestPreservesProfileAndEntity(refusal: \"filtered\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMissionBySettlerImprovementGroupId_WithMissingStaticTable_DoesNotProgressMission(missingTable: \"hub\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.AddVisible_WhenEmpoweredTowerStoppedStorm_HidesNorthernWildsAvalanches(creatureId: 15615)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ProgressSoldierAssassinateMissionForCreatureKill_WithCreatureMatch_CompletesAfterRequiredCount",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ProgressSoldierAssassinateMissionForCreatureKill_WithNonSoldierPlayer_DoesNotProgressMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathSettlerBuildHandlerTests.HandleMessage_WithUnmappedOrUnwritableImprovement_DoesNotSendBuildAcknowledgementOrProgress(buildTier: 0, tier00ImprovementId: 0)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ProgressSoldierSwatMission_WithMissingStaticTable_DoesNotProgressMission(missingTable: \"path-mission\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.SendInitialPackets_WithPersistedMissionForMissingEpisode_DoesNotReplayEpisodeState",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.CanceledInstanceQueueCannotCreateInstanceOrReserveCount",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.PlayerMapAdmissionStateTests.AssignedMapRequestIsCoalescedUntilEntireBootstrapFinishes",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.NorthernWildsSettlerMission_WithRuntimeZoneBridgeAndHubRows_CompletesAfterVideoBackedBuildCount(pathMissionId: 650, pathSettlerHubId: 46, pathSettlerImprovementGroupId: 11, requiredBuildCount: 4)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.NorthernWildsSoldierMission_WithRuntimeZoneBridgeAndTowerDefenseRow_CompletesProgress",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMission_WithZeroCountMissionItemReward_GrantsSingleItem",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteExplorerPowerMapMission_WithMissingStaticTable_DoesNotCompleteMission(missingTable: \"power-map\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_QueuedAddCannotAdoptAChangedOwner(change: \"missing-owner\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMissionByObjectId_WithMismatchedPathMission_DoesNotCompleteMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.AddXp_AwardsInitialPathLevelRewardFromLevelRewardedState",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.AdmissionGateSerializesCancellationAgainstAnInProgressAdd",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.Save_WithCompletedPersistedMission_UpdatesPersistedMissionState",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_FailedMapCallbackStillRetiresItsOriginalState",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ProgressSoldierAssassinateMissionForCreatureKill_WithMissingStaticTable_DoesNotProgressMission(missingTable: \"soldier-assassinate\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMissionBySettlerImprovementGroupId_WithMissingStaticTable_DoesNotProgressMission(missingTable: \"improvement-group\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.RefreshQuestPresentation_WhenEmpoweredTowerStopsStorm_RemovesVisibleAvalanche",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.TryActivateCurrentZoneEpisode_WithMatchingRootZone_ActivatesFactionFilteredMissions",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.VehicleBecomingVisibleConnectsEachVisiblePassengerWithItsOwnSeat",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.NorthernWildsScientistMission_WithRuntimeZoneBridge_CompletesAfterChecklistScans(pathMissionId: 648, pathScientistCreatureInfoId: 128, requiredScans: 15)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.TryActivateCurrentZoneEpisode_WithNorthernWildsYetiMissionZone_SetsEpisodeWithoutStartingHoldout",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.AddVisible_WhenSettingUpCampAchievedForLandingSiteDeadeye_KeepsQuestReceiverPresentationCreature",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathSettlerBuildHandlerTests.HandleMessage_WithInsufficientSettlerResources_DoesNotSendBuildAcknowledgementOrProgress",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.DismissScientistScanbot_WithActiveScannerQueuesRemoveAndSendsDespawnState",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerName_RepeatingAcceptedNameDoesNotRepublishUnitUpdate",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathSettlerBuildHandlerTests.HandleMessage_WithKnownImprovementGroup_SendsBuildResultAndStatusAndConsumesResources",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.PlayerMapAdmissionStateTests.CancellationInvalidatesQueuedAndDeferredRequests(bootstrap: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.TryActivateCurrentZoneEpisode_WithNorthernWildsRuntimeZoneBridge_SetsCurrentClientPathEpisode(path: Settler, expectedEpisodeId: 82, expectedMissionIds: [650, 651, 652])",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathSelectionHandlerTests.ChangeRequest_WithFormulaKeepsExistingActivatePath",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMission_WithMissingScientistCreatureInfoRow_DoesNotMarkScan",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_NewDeploymentSupersedesAnOldDismissRetry",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerName_PacketKeepsNativeLayoutAndLegacyWriterRegistration",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.TryActivateCurrentZoneEpisode_WithoutMatchingEpisode_DoesNotSendPackets",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteCurrentExplorerExploreZoneMission_WithMissingPathMissionTable_DoesNotCompleteMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.OrdinaryPlatformDoesNotProduceVehicleAttachment",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.TryActivateCurrentZoneEpisode_WithNorthernWildsRuntimeZoneBridge_SetsCurrentClientPathEpisode(path: Explorer, expectedEpisodeId: 9, expectedMissionIds: [35, 36, 158, 1254])",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.FailedOuterCallbackReleasesBootstrapWithoutAcknowledgingEntry",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_UnrelatedUnsummonCannotRetireTheActiveInstance",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMission_UpdatesMissionAndAwardsConfiguredPathXp",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.DatacubeManager_AddDatacubeVolume_WhenTableMissingRejectsWithoutPacket",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.RemoveVisible_WhenEntityIsNotTracked_DoesNotEmitDestroyPacket",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.SendInitialPackets_WithPersistedActiveMissionWithoutCurrentZone_DoesNotReplayEpisodeState",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteCurrentScientistDatacubeDiscoveryMission_WithMismatchedZone_DoesNotCompleteMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.FailedRealPlayerBootstrapDisconnectsAndPreservesMapCleanupOwnership(afterAttachment: False, replaced: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathSelectionHandlerTests.ChangeRequest_WithMissingFormulaSendsStaticDataErrorWithoutMutation",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.UnlockPath_WithCurrentZoneSoldierHoldoutBeforePathLog_ReplaysHoldoutMissionAfterPathLog",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ProgressScientistCreatureScanMission_WithChecklistCount_CompletesAfterRequiredScans",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.DatacubeManager_Constructor_MergesDuplicatePersistedRows",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.SendInitialPackets_WithPersistedActiveMission_SendsPathLogEachCallWithoutReplay",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMission_WithMissingTitleRewardEntry_SkipsTitleRewardWithoutThrowing",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.PlayerMapAdmissionStateTests.RecoveryTeleportKeepsNewAdmissionAndRejectsOldDeferredRequest",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.PlayerMapAdmissionStateTests.FailedTeleportInvalidatesItsQueueWithoutPoisoningFutureAdmissions",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.AddVisible_WhenRemotePlayerAlreadyTracksOwner_RefreshesRemotePlayerCreate",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Pet.ClientPathScientistSetScannerNameHandlerTests.HandleMessage_WithNonScanBotTypeThrowsBeforeRename",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerName_StaleOrDismissingEntityIsNotRenamed(stale: \"identity\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.RemoveVisible_WhenEntityIsTracked_EmitsSingleDestroyPacket",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.AddVisible_WhenRemotePlayerMissingOwner_AddsReciprocalVisibility",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMission_WithMismatchedMissionPathAndNoConfiguredXp_DoesNotAwardFallbackXp",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.PlayerMapAdmissionStateTests.PreAdmissionRequestIsIgnoredAndDoesNotLeakIntoLaterBootstrap",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.NorthernWildsSettlerMission_WithRuntimeZoneBridgeAndHubRows_CompletesAfterVideoBackedBuildCount(pathMissionId: 652, pathSettlerHubId: 48, pathSettlerImprovementGroupId: 14, requiredBuildCount: 4)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.TryActivateCurrentZoneEpisode_WithPersistedActiveEpisode_ReemitsActivationPacketsOnce",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ActivateMissions_SendsEpisodeProgressAndMissionActivate",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteExplorerProgressMission_WithActiveNodeMissionAndNode_CompletesMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.DuplicateDirectAddCannotInsertAnAlreadyAdmittedPlayerAgain",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteExplorerProgressMission_WithMissingStaticTable_DoesNotCompleteMission(missingTable: \"explorer-node\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerName_RejectedRequestPreservesProfileAndEntity(refusal: \"locked\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.InstanceCapacityCountsOnlyCurrentAddOrPendingReservations(pending: False, cancel: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_DismissRemovesTheOriginalObjectAfterMapChange",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.SendInitialPackets_WithNewlyActivatedMissionWithoutCurrentZone_DoesNotReplayEpisodeState",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.GetSettlerHubBuildProgressPercent_UsesHubMissionProgressAndStoredTier",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.MarkScientistCreatureScanned_PersistsViaDatacubeManager",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.InstanceCapacityCountsOnlyCurrentAddOrPendingReservations(pending: True, cancel: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.MarkScientistCreatureScanned_WithInjectedGameTableManager_PersistsChecklistMask",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ProgressSoldierAssassinateMissionForCreatureKill_WithTargetGroupMatch_CompletesMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerName_RenamingAnotherUnlockedProfilePreservesActiveName",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.RefreshQuestPresentation_WhenSettingUpCampBecomesAchieved_RecreatesLandingSiteDeadeyeWithReceiverPresentation",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMission_WithMissingScanBotProfileRewardTable_SkipsScanBotProfileRewardWithoutThrowing",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Network.WorldMapAdmissionLifecycleTests.FinishedPlayerInMapManagerQueueCannotCreateOrEnterAMap",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.TryActivateCurrentZoneEpisode_WithNorthernWildsRuntimeZoneBridge_SetsCurrentClientPathEpisode(path: Soldier, expectedEpisodeId: 8, expectedMissionIds: [])",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerName_PublicRenameWhilePendingChangesCreateModelWithoutZeroGuidUpdate",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.PlayerMapAdmissionStateTests.RecoveryTeleportFromEnteredWorldKeepsPendingTransitionAndLoadingState",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMissionBySettlerImprovementGroupId_WithMissingGroup_DoesNotProgressMission(pathSettlerImprovementGroupId: 99)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMission_WithMissingPathMissionTable_CompletesWithoutMissionMetadata",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathSelectionHandlerTests.UnlockRequest_WithMissingCostFormulaSendsStaticDataErrorWithoutMutation",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.DetachedTransferFailsOnceWhenDestinationGridCannotAdmit(activationFault: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Pet.ClientPathScientistSetScannerNameHandlerTests.HandleMessage_WithLockedScanBotProfileThrowsBeforeRename",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteExplorerProgressMission_WithMissingStaticTable_DoesNotCompleteMission(missingTable: \"path-mission\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.NorthernWildsExplorerCartography_WithRuntimeZoneBridgeAndFullyExploredMap_CompletesSurvey",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.MountedPlayerVisibilityRestoresSeatOnlyAfterBothCreates(riderFirst: True, seat: Pilot, position: 0)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathSettlerBuildHandlerTests.HandleMessage_WithUnmappedOrUnwritableImprovement_DoesNotSendBuildAcknowledgementOrProgress(buildTier: 4, tier00ImprovementId: 9001)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.SendInitialPackets_WithPersistedMissionForUnmetPrerequisite_DoesNotReplayEpisodeState",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteActiveMission_WithoutActivatedMission_DoesNotCreateMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.SendInitialPackets_WithPersistedMissionForMismatchedEpisodePath_DoesNotReplayEpisodeState",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerName_StaleOrDismissingEntityIsNotRenamed(stale: \"missing\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.PlayerMapAdmissionStateTests.CancellationInvalidatesQueuedAndDeferredRequests(bootstrap: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.MatchDepartureCancelsOnlyItsOwnTransfer(timing: \"unrelated teleport\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.NorthernWildsSoldierMission_DoesNotGrantEpisodeRewardUntilAllActiveEpisodeMissionsComplete",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteExplorerPowerMapMission_WithoutPowerMapRow_DoesNotCompleteMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_QueuedAddCannotAdoptAChangedOwner(change: \"map\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.HiddenVehicleCannotBeAttachedAndDismountedRiderIsNotReattached",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.NearbyListRecreateRestoresMountedPlayersAttachmentAfterCreate",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_DeployRejectsAnAccountAlreadyReboundToAnotherSession",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMissionByObjectId_WithMissingPathMissionTable_DoesNotCompleteMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_QueuedAddCannotAdoptAChangedOwner(change: \"session\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerName_StaleOrDismissingEntityIsNotRenamed(stale: \"dismissed\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.NorthernWildsScientistMission_WithRuntimeZoneBridge_CompletesAfterChecklistScans(pathMissionId: 42, pathScientistCreatureInfoId: 34, requiredScans: 3)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ActivateMissions_WithAdditionalMissionInSameEpisode_SendsNewMissionActivation",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteActiveMission_WithActivatedMission_CompletesMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.TryDeployScientistScanbot_WithUnlockedProfileQueuesScannerAndEmitsStateAfterMapAdd",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.ValidPendingRemovalConvertsOnceAndReplacementPlayerIsUnaffected",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMission_MarksMappedScientistScanCreatureInfo",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.VehicleReturningToVisibilityRestoresExistingPassengerAttachment",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_RejectedDismissStateStillRemovesAndRetriesFreshState",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.SendInitialPackets_WithCurrentZoneSoldierHoldoutBeforeInitialise_ReplaysHoldoutMissionAfterPathLog",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.AFailedInstanceEntryPreservesOtherTransfers(outcome: \"denied\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.AFailedInstanceEntryPreservesOtherTransfers(outcome: \"creation-fault\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.DatacubeManager_SendInitialPackets_ReplaysVolumeArchivesAndSkipsScientistScanState",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.NorthernWildsSettlerMission_WithRuntimeZoneBridgeAndHubRows_CompletesAfterVideoBackedBuildCount(pathMissionId: 651, pathSettlerHubId: 47, pathSettlerImprovementGroupId: 10, requiredBuildCount: 1)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteCurrentExplorerExploreZoneMission_WithWrongMissionType_DoesNotCompleteMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.TryDeployScientistScanbot_WithLockedProfileFailsClosed",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteCurrentExplorerExploreZoneMission_WithFullyExploredParentMappedZone_CompletesMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.MountedPlayerVisibilityRestoresSeatOnlyAfterBothCreates(riderFirst: True, seat: Passenger, position: 3)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.AddVisible_WhenSettingUpCampAchievedForCampDeadeye_KeepsCampPresentationCreature",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.TryDeployScientistScanbot_WithMissingCreatureRowFailsClosed",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.PlayerMapAdmissionStateTests.ReentrantWorldZoneCancellationStopsPathAndTutorialContinuations(boundary: \"quest\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.DatacubeManager_AddDatacube_WhenTableMissingRejectsWithoutPacket",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Pet.ClientPathScientistSetScannerNameHandlerTests.HandleMessage_WithUnlockedScanBotRenamesProfile",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.MatchDepartureCancelsOnlyItsOwnTransfer(timing: \"before source removal\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.PlayerMapAdmissionStateTests.RealPlayerHandlerDefersAssignedMapAcknowledgementUntilReady",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.AddVisible_WhenBaseRejectsEntity_DoesNotEmitCreatePacket",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.PlayerMapAdmissionStateTests.ReentrantWorldZoneCancellationStopsPathAndTutorialContinuations(boundary: \"path\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.MountedPlayerVisibilityRestoresSeatOnlyAfterBothCreates(riderFirst: False, seat: Passenger, position: 3)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.Constructor_WithCompletedScientistScanMission_HydratesScanCredit",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathSettlerBuildHandlerTests.HandleMessage_WithUnknownImprovementGroup_DoesNotSendBuildAcknowledgementOrProgress",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Network.WorldMapAdmissionLifecycleTests.EnteredWorldBeforeMapAssignmentCannotAcknowledgeOrInvokePlayerEntry",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.TryActivateCurrentZoneEpisode_WithNorthernWildsLandingSiteZoneBridge_SetsEpisodeWithoutStartingHoldout",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMissionBySoldierTowerDefenseId_WithMissingStaticTable_DoesNotCompleteMission(missingTable: \"path-mission\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.PlayerMapAdmissionStateTests.FailedBootstrapNeverAcceptsDeferredOrLaterEntry",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.InstanceCapacityCountsOnlyCurrentAddOrPendingReservations(pending: False, cancel: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.FailedRealPlayerBootstrapDisconnectsAndPreservesMapCleanupOwnership(afterAttachment: False, replaced: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.FailedRealPlayerBootstrapDisconnectsAndPreservesMapCleanupOwnership(afterAttachment: True, replaced: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.DeferredEntryIsReleasedAfterTheOuterVirtualAddReturns",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.PendingRemovalRetryKeepsOriginalGenerationAndDropsCanceledPlayer",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteCurrentExplorerExploreZoneMission_WithWorldJoinFallback_CompletesMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.AddVisible_WhenRemotePlayerCreateHasStalePosition_ReplacesWithCurrentMapPosition",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.ClientPathExplorerPowerMapProgressHandlerTests.HandleMessage_UsesExplorerPowerMapCompletion",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteMissionBySettlerImprovementGroupId_WithMissingGroup_DoesNotProgressMission(pathSettlerImprovementGroupId: 0)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.TryActivateCurrentZoneEpisode_WithPersistedNorthernWildsYetiMissionAfterCurrentEpisode_DoesNotReplayHoldoutProgress",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.NorthernWildsExplorerNodeMissions_WithRuntimeZoneBridgeAndExplorerNode_CompleteProgress(pathMissionId: 35, pathExplorerAreaId: 37)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.NorthernWildsExplorerNodeMissions_WithRuntimeZoneBridgeAndExplorerNode_CompleteProgress(pathMissionId: 158, pathExplorerAreaId: 26)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.NorthernWildsMissionRewardGrant_GrantsMissionRewardAndCompletedEpisodeReward",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.NorthernWildsExplorerNodeMissions_WithRuntimeZoneBridgeAndExplorerNode_CompleteProgress(pathMissionId: 36, pathExplorerAreaId: 38)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteExplorerProgressMission_WithActiveNonExplorerMission_DoesNotCompleteMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.CompleteExplorerPowerMapMission_WithWrongMissionType_DoesNotCompleteMission",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.AddLevels_AtMaxPathLevelStillAwardsOutstandingCapReward",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.Dismount_WhenPlatformIsNotVehicle_DetachesPlatformWithoutThrowing",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PlayerVisibilityPacketTests.MissingOrWrongPassengerDoesNotProduceVehicleAttachment(wrongPassenger: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathSettlerBuildHandlerTests.HandleMessage_WithOutOfRangeImprovementGroup_DoesNotSendBuildAcknowledgementOrProgress",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Map.MapAdmissionQueueTests.AFailedInstanceEntryPreservesOtherTransfers(outcome: \"admission-fault\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.Constructor_WithPersistedCompletedMission_RestoresCompletionState",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.PathManagerTests.TryActivateCurrentZoneEpisode_WithPersistedDifferentPathEpisode_AllowsCurrentPathActivation",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "newLifecycleCases": [
+      "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_OriginalCallbacksAndPendingDismissRemainSupported",
+      "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_CurrentQueuedAddPublishesToNearbyPlayer",
+      "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_QueuedAddCannotAdoptAChangedOwner(change: \"missing-owner\")",
+      "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_FailedMapCallbackStillRetiresItsOriginalState",
+      "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_NewDeploymentSupersedesAnOldDismissRetry",
+      "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_UnrelatedUnsummonCannotRetireTheActiveInstance",
+      "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_DismissRemovesTheOriginalObjectAfterMapChange",
+      "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_QueuedAddCannotAdoptAChangedOwner(change: \"map\")",
+      "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_DeployRejectsAnAccountAlreadyReboundToAnotherSession",
+      "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_QueuedAddCannotAdoptAChangedOwner(change: \"session\")",
+      "NexusForever.Game.Tests.Entity.PathManagerTests.ScannerLifecycle_RejectedDismissStateStillRemovesAndRetriesFreshState"
+    ],
+    "finalFilter": "FullyQualifiedName~PathManagerTests|FullyQualifiedName~PathSelectionHandlerTests|FullyQualifiedName~ClientPathScientistSetScannerNameHandlerTests|FullyQualifiedName~PathSettlerBuildHandlerTests|FullyQualifiedName~ClientPathExplorerProgressReportHandlerTests|FullyQualifiedName~ClientPathExplorerPowerMapProgressHandlerTests|FullyQualifiedName~GridEntityRangeCheckTests|FullyQualifiedName~PlayerVisibilityPacketTests|FullyQualifiedName~MapAdmissionQueueTests|FullyQualifiedName~WorldMapAdmissionLifecycleTests|FullyQualifiedName~PlayerMapAdmissionStateTests",
+    "owningBuild": {
+      "project": "Source/NexusForever.WorldServer/NexusForever.WorldServer.csproj",
+      "seconds": 12.53,
+      "warnings": 0,
+      "errors": 0,
+      "logSha256": "e8c2a845fa7b2c03a2e3f3895388f0350addd918c5d672fa0764b1ba3487808b"
+    },
+    "testBuild": {
+      "project": "Source/NexusForever.Game.Tests/NexusForever.Game.Tests.csproj",
+      "buildProjectReferences": false,
+      "seconds": 14.08,
+      "warnings": 0,
+      "errors": 0,
+      "logSha256": "e87f18a0509ca116d02807bbda279c0cd777743a45dcf17f5ecd1521d0f684f4"
+    },
+    "testDurationReported": "3 s",
+    "fullSolutionOrSuiteRun": false,
+    "retainedExcludedDiagnostics": [
+      "Original baseline build: unused fixture constructor parameter and Assert.Single analyzer warnings; corrected before final, no weakened assertions.",
+      "Review fixture first build: two missing namespace imports and one Aspire bundle warning after an unnecessary dependency rebuild; no result qualifies that failed compile.",
+      "Review first execution: concrete observer had no movement manager and failed construction; account failure was observable, but the whole five-case run is excluded from claimed review reproduction.",
+      "Review guard first owning build: missing IBaseMap namespace; compile failure retained and corrected.",
+      "Earlier passing 166/167-case candidates precede the material review fixes and are retained separately; final 243 cases qualify the final six-file source only."
+    ]
+  },
+  "binaries": {
+    "count": 138,
+    "baselineManifest": {
+      "Aspire.Hosting.AppHost.dll": "9d241fac4ea6f912abe94bdaa1043633ce62c3989be4aadbee61cba7bd16c09f",
+      "Aspire.Hosting.dll": "9c5f526f0d2474bf1d547e09ccb2015522f4e92c48e3feb69538f0b7844f1d92",
+      "Aspire.Hosting.Docker.dll": "513608d74a705e3ad9319881a55ab245ebd0bf7127777ee5d3cbbcf66a27d358",
+      "Aspire.Hosting.MySql.dll": "91c9f18a1c51e6cfb39d8e6e3703181b113c07dad431c2d83af95d62877b453b",
+      "Aspire.Hosting.RabbitMQ.dll": "7b22016ca210d666f09f83e332ef8900db218c196b117dd1ad52c4cc53a55334",
+      "Azure.Core.Amqp.dll": "d53d832629b76fcae7f0e0352788c43c79e13480247dba11e37961b60e52c142",
+      "Azure.Core.dll": "1d6df436afdc73c30d476be938f6513c90ef8fc884a7bae280091a9bed0a5490",
+      "Azure.Identity.dll": "31574a3d35ffeb0e25a00ebb317937222fe5283b91af608613f2e3bf0f26c50a",
+      "Azure.Messaging.ServiceBus.dll": "6895bb412db0242bed71d10d3325b86d51611e578529c91108afdeb96bff08fc",
+      "Basic.Reference.Assemblies.Net100.dll": "35ce19c341334cc79951576712d105a75b681b58532c0dd010ac302936d208ba",
+      "CommandLine.dll": "8a55501cd1a1590a4bd93a17c6fdd2c01a0ed5bff1aea9036bdc78d98c9a3fad",
+      "DotNet.Glob.dll": "5263008e364a7a072eddf6d483ed988baf4f50dc0391e358b490ac6c01a6acf5",
+      "Fractions.dll": "e8407a878af8aec1f485f50a9f356c439371610fff20756d4f2284ac6c995cbf",
+      "Google.Protobuf.dll": "8997a69619b59db587a45e75a03c164a44afb613f82db138d35e1636e4cbdc73",
+      "Grpc.AspNetCore.Server.ClientFactory.dll": "c57f69775e2b8acda401efb5f152eba6cfd23d0fc9277b7d2e0ed1f1533158e3",
+      "Grpc.AspNetCore.Server.dll": "a66e142b1a3cbaf8ed3f0835faac72e0484d4eb8b1295e0d3d1de69d72e575b2",
+      "Grpc.Core.Api.dll": "440b6b0a5beca40718a01b3e892baa6e2fd03933f3f501fc40e2a956b0d937a1",
+      "Grpc.Net.Client.dll": "4070680267f1eba977958284088f8bf63bccb2f9fea873d6b244fd7d4b76afd3",
+      "Grpc.Net.ClientFactory.dll": "b62b17995c8576378e790ce1c5dff994c0cf605a6d7da7510078857f59f09d97",
+      "Grpc.Net.Common.dll": "c6ee8099f5fd7013825d2ff636375391c8992704ad40b9819f6c9078c25c6574",
+      "HealthChecks.MySql.dll": "9947a05820c92ceb061edf02271844da0fe5d6bd47a2364f6e14287f9ba1fc7d",
+      "HealthChecks.Rabbitmq.dll": "258cf95771cab344da41843ad69f19598fafe6847ce4200ea3045819ca654983",
+      "HealthChecks.Uris.dll": "32f8e0615a70e07c6c37c3e2e0774207c84d2f2695942fba82e7bc3bee1a5708",
+      "Hex1b.dll": "1113557a5737e1fac2fdda1f6579737c50eac4620e83fefb3c29fa2ecc9b12bc",
+      "KubernetesClient.dll": "1fdb3ddc3db829a3f4015afc328a00d3747fb228c7866df6f765be4cedb800ce",
+      "MessagePack.Annotations.dll": "bd364b1513c9df5d4063b6ee3602a5bf951507484f46a2366a6f2a9aeb1c4cf2",
+      "MessagePack.dll": "1ebc0c2baec5a89b3738e892d61c92f037dd588db52412e1e3bdf2adc407aa94",
+      "Microsoft.Azure.Amqp.dll": "eb58a9058b6cde95081608e1921967cc704d6e411745436b20c68caa37389980",
+      "Microsoft.Bcl.AsyncInterfaces.dll": "f1e1d6e1a2990071b450bdf6c9618408ac0e3f24a3c7a3bef1f50508ba732ca5",
+      "Microsoft.CodeAnalysis.CSharp.dll": "54142770a00e594942ee8923726ea49126303d0c523932886c2417eb66dc07f8",
+      "Microsoft.CodeAnalysis.dll": "ad857f1ce7f8e26c2722ade705fac3f90502a47590c14075df1327210f10b1ef",
+      "Microsoft.Data.Sqlite.dll": "1078d41c6c0f2cee48a8b706e3a54ce145705993f19f703d2b3bdf2abcc59088",
+      "Microsoft.EntityFrameworkCore.Abstractions.dll": "98c8252995283ef0884b904dbab03696ca7f71a05b8dde34dace5eeb9bf4382c",
+      "Microsoft.EntityFrameworkCore.dll": "acb89dff050d681fab6f86d2175929471200b9bed66ac9321cbe6a17eaa26933",
+      "Microsoft.EntityFrameworkCore.Relational.dll": "ac1146e68d53d56b79e9473f68c557999de99674be392bbbbb02ae93a296b93e",
+      "Microsoft.EntityFrameworkCore.Sqlite.dll": "b8c5027b27be2012094699cbd5260239778a1891dc5c1887797d331b67f0ef89",
+      "Microsoft.Extensions.AI.Abstractions.dll": "dd444efc3b9e2db2e4e7616909731b8dde824b554455014002167918b823eac4",
+      "Microsoft.Extensions.DependencyModel.dll": "2385bfbc9344e03acb2ff44f1ed21a3770fbafdf1ba4be2dbcacd42027b8c3bd",
+      "Microsoft.Extensions.Hosting.Systemd.dll": "b83961fadb9b88ed05ccb4dea45165b5393b4eaf1258dce0b7d0f60e9c0c1d46",
+      "Microsoft.Extensions.Hosting.WindowsServices.dll": "caa306587f796d0290aada4fdfaec1394f1f206409ea4d5a20f309b61fc59959",
+      "Microsoft.Identity.Client.dll": "5795027e9ae95eececb310a4fed3c502bb368039d186ab0884f64b7792b84717",
+      "Microsoft.Identity.Client.Extensions.Msal.dll": "07109a2f30df782300077a567ade47cbd0a0502c75cd7c8a62192f7d64bb004e",
+      "Microsoft.IdentityModel.Abstractions.dll": "24e97b54b6b5c234a124a336757e3116617ac6c30b655cdae74517dc2ecb5746",
+      "Microsoft.NET.StringTools.dll": "887dec541cd0a719b7111458eb90a83b4491d6dd24eff2b16cf03d2782fd26a0",
+      "Microsoft.TestPlatform.CommunicationUtilities.dll": "7ed97ccfd6f9c74f054de4cf84a7b4b0179eb6064e3a406e746849c6989e0d6a",
+      "Microsoft.TestPlatform.CoreUtilities.dll": "db70e6632a13a6d46cc3bb75f71273b3e9c64ca1e5dd0537572fb0dadf444009",
+      "Microsoft.TestPlatform.CrossPlatEngine.dll": "eaf5a87745d6ab7f7ef7db6e85dfa96817ecdb06b51a642edd6f9c6b805c3616",
+      "Microsoft.TestPlatform.PlatformAbstractions.dll": "f5541efe526d719aef103026770faf0435218afc5be90f653a01886ff8bebc80",
+      "Microsoft.TestPlatform.Utilities.dll": "358ae71a7f820dfd7e3b2d86ad9a7402c72166c7197bccd89f39b9d62ec3f0ae",
+      "Microsoft.VisualStudio.CodeCoverage.Shim.dll": "ef1f649984cf2ff2d4f51944270d6b1557752ba0099ec97894361abe3e6640c1",
+      "Microsoft.VisualStudio.TestPlatform.Common.dll": "6e16cf009ff956b97eef96aefc64a33a9bff7df86a8e7e6e5664ec03e648bcc1",
+      "Microsoft.VisualStudio.TestPlatform.ObjectModel.dll": "9d0a31a406ab064d2bc009a5523b5e73b71d3fe1dddd19cffe4a70f14cde3f75",
+      "Microsoft.VisualStudio.Threading.dll": "138e3548e487152de355b81303ae98e1bb52a31fe5c9107fa81a15f66404f426",
+      "Microsoft.VisualStudio.Validation.dll": "59cd5e953cce597847e515a73a1c0975cd5a6b94921a7b91e81045fa9922f57c",
+      "Microsoft.Win32.SystemEvents.dll": "ca495bf6c86b7f092d624928101985a941532d149dcd8acfea170f8a53be8850",
+      "Microting.EntityFrameworkCore.MySql.dll": "c8dc4aff0fa81bcb09c11c7bbd15780378e39317c32b23f75a85dea4a9894171",
+      "ModelContextProtocol.Core.dll": "cd434634473f1d6b945a5583d48782207a1e79b8202cf6adb174e41ed2ca4643",
+      "ModelContextProtocol.dll": "1f0760611e72588fbffe2c7bacfce55b9942d7ed5cb5cd4a3ded5d5f7600e930",
+      "MySqlConnector.dll": "a3104353e86cc96123d8015fc5a3bf4ab88b127b9180caaa4db9a006c49f467b",
+      "Nerdbank.MessagePack.dll": "fc086ce3623a9a3f9213159d438c642d225046e371489e8e7f126d4c62f188fa",
+      "Nerdbank.Streams.dll": "e5c90ffcb7a0bd0cedf51ac33e818b9f64045e9839b19701eb73460356631872",
+      "Newtonsoft.Json.dll": "a28c251dfe36d881e9e2462e171441b8b0ec156fe3f452602c9149b1b9efe05b",
+      "Nexus.Archive.dll": "fd2fc160b92cd14a6f226a5095cde744d81a3c807ca45bf78c91cf2a2ba0237b",
+      "NexusForever.API.Account.Client.dll": "dcc138d6ebbedc6142fecadbcd0512815a32f0eb7c0266a03bbf461824951418",
+      "NexusForever.API.Character.Client.dll": "8b6ec8947c3c48537b39ee8eb5927ea4a873a149d27f25fbed2c518f820fdcc3",
+      "NexusForever.API.dll": "2cab2612f5a2463d1d091d55619dec8c718609ea3df939ecfba8e8373b2aacbe",
+      "NexusForever.Aspire.AppHost.dll": "502a444ce79cb4b804299940f807544e7ea50fa9ac0194f022bc07a46bbe60a9",
+      "NexusForever.Aspire.Database.Migrations.dll": "316406232c49a962bd0cb4ec578c1a1b4fd606458ab8931b1caf2ed884a6dde6",
+      "NexusForever.Cryptography.dll": "0be240820a34f144d7a0bcbf5604e493949dc092582b850ec06a4dbb5fe41a02",
+      "NexusForever.Database.Auth.dll": "a5f2852d869f372f13809519c4745940496159001a417b551a3a8aa2677cf382",
+      "NexusForever.Database.Character.dll": "e07deffeb14813d67ecf1bb0422707d3a108208fa0228ebf89e7f0c34b46e535",
+      "NexusForever.Database.Chat.dll": "1ca123c52f3930de7eaaf49ff296f817242c45fc5cac4e24ac6ac0e9e8762a2c",
+      "NexusForever.Database.dll": "a30b2064fd1410686eded7ab814429988ebccea3cbad8e2a18d5f07191c56c20",
+      "NexusForever.Database.Friendship.dll": "c34de843d4336bfee2edd1b4d7f8b25b873d6ae1712c6e3af2a652af2b71acb3",
+      "NexusForever.Database.Group.dll": "e6a745dac3fb9ef3e2c78ad6d685347aa1b50825bf631834c63279d4d366eabd",
+      "NexusForever.Database.Query.dll": "22058e812ee2ff729630958815a8559bdc189af43397e75888e6f09d304c70b2",
+      "NexusForever.Database.Sqlite.Migrations.dll": "773cafb72de8fa05f99e51bac4bf08a08ff29deece50e26505d41b333a7d07e9",
+      "NexusForever.Database.World.dll": "02b482a13ddcd662a69c8e0aebaf1d6dfcef7a8d263e561569d02dc94115c1e4",
+      "NexusForever.Game.Abstract.dll": "777dd151b26100b93e2bb3e4ddd5e754db901d444b35d8b976c293fac2da639f",
+      "NexusForever.Game.dll": "9732ba7028e0d6e38a402ebdeb2e8897c120604c818864542f48266e8a753c69",
+      "NexusForever.Game.Static.dll": "779eb188ecdfdbd6d3f50dfa60466b11e4472a4762e4c827d998eeae7136961e",
+      "NexusForever.Game.Tests.dll": "f23655a4c935d63db9b487b04e449883262aa7a0217bb8e9ad8cdace839c9499",
+      "NexusForever.GameTable.dll": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+      "NexusForever.IO.dll": "730c11e787d926cc0740c8277e1bc1666ab38e533d8ed07b4678ba97c6b6e0ca",
+      "NexusForever.LoadTest.dll": "24983c296979deb5ec68481f9a52605014d310601e06cfc422fb68ba9c4dfeee",
+      "NexusForever.MapGenerator.dll": "ea62235d26f8d42b1090d906202a125a8a360473dd1d9bf93733fb7af60f0778",
+      "NexusForever.Network.Auth.dll": "de7bf01546c28442714e0c7486aa37d01bc142f6168e0fbff883e116f4ebbaa9",
+      "NexusForever.Network.dll": "ab9aa9f265093846927da9b4b2871e6573b8cdaab304f7bfc5a9329d3f3ee290",
+      "NexusForever.Network.Internal.dll": "f8223b4b8b4e65db8b10af9a13959915e8e35b95a49443ec000188a0524efcae",
+      "NexusForever.Network.Sts.dll": "c567a1260a9e6c00dce554d67e9df25511a2e1295cac59e2497735349f381232",
+      "NexusForever.Network.World.dll": "2c1edaf7620b57f1f6d48d36975dc072041b58fbe15a8a07366aac1e97972e39",
+      "NexusForever.Script.dll": "9ac25febecc0f1e68984890e5301209591eb5edee7170a43110a62791fd20c63",
+      "NexusForever.Script.Instance.dll": "7c4656128e0c81700576d5b25e7d403139e2340047af1f0d4a0049843f1aa771",
+      "NexusForever.Script.Main.dll": "7fa8b77fa675281e0e3514e8cb60f9dbd064df23605edcafc4664d15e35abd87",
+      "NexusForever.Server.Character.dll": "19e92c61311aa4a58953aaf4f4bb9eba985663a29984a562dc7f652322596b31",
+      "NexusForever.Server.ChatServer.dll": "534e5e3a67d5e641ed3e1782ff80432a0ac9e01913b12f1125f44264876f0365",
+      "NexusForever.Server.Friendship.dll": "fcedff6e42584776a6c2e538eb3ab560509cebb33b816fe807f0ad6960eac9d7",
+      "NexusForever.Server.GroupServer.dll": "d916050d197079a147561667b0402af0857a42386173497ba8a4fdf21f6fc28b",
+      "NexusForever.Shared.dll": "0ed6771d65fededb95a55bb4463d1f7a102dd7d22ff84063e80e7301cd2304f0",
+      "NexusForever.StsServer.dll": "1d9624ba15b8c39c4af097cd8fd9b830bcf268eef6657f88b8c6687239133f78",
+      "NexusForever.WorldServer.dll": "cd5595e3d0db0c6f02cdbf625ff9f0e3f112b7d1978c53b629e66644d445987c",
+      "NLog.dll": "9a706ace1a30cf5a9e169ceddf39d69df30ad99da5c4775d86413ac766cbb825",
+      "NLog.Extensions.Logging.dll": "9372ad36ff9c48826905d6eee58598b5df42334f9b35b93527927f38ae273504",
+      "OpenTelemetry.Api.dll": "9c636063c335902c73f916c133de22fe8af476c68189080176443b0b82d4d399",
+      "OpenTelemetry.Api.ProviderBuilderExtensions.dll": "fcd57330a4a3252773a0c71b9a497ee7834f415210fa405151275f97575ed164",
+      "OpenTelemetry.dll": "a19a8b4d39a00dca043919473c0d5b46a174a4363d611c8dd237b8f2b3f8a5b8",
+      "OpenTelemetry.Exporter.OpenTelemetryProtocol.dll": "3297002036e73a2ea7385d9521464dee725bbbd6491e20c559498cbe81598a3c",
+      "OpenTelemetry.Extensions.Hosting.dll": "97e52b88bfbad51767829ba834a3a35a63692170109c21a7103f5170c389d6f9",
+      "Polly.Core.dll": "f7f50017ca9f457b854498358ae595c2a8ab69c1fd8b915139d22bed8f7e4f2a",
+      "PolyType.dll": "33d30bc1baf80b85ad9b428a388d9999eaf20999d555a6e684aa758f4f679968",
+      "QRCoder.dll": "2c9a588e08ec91f00fac37a4a43995c8f1966a6cce615e9e8c063eec3d0f145a",
+      "Quartz.dll": "b195bbaec686ec9d3a8c38fdf961cf0f3818455c99c9553e1c317a55a6024069",
+      "Quartz.Extensions.DependencyInjection.dll": "9e53ba9d6862cf12b11bd92b07527b1398b905a1adcf72b7c40076695c707a9d",
+      "Quartz.Extensions.Hosting.dll": "6cc40edeb789e85b7455045dc864b91a369fb3415323d4d45537bbaf3849e361",
+      "RabbitMQ.Client.dll": "22d9ffa8cc2de798c61ec95b3f0b576c90d3370afa7128998859d3b2734d2910",
+      "Rebus.AzureServiceBus.dll": "522bb2cc849518f9178bcb0611c7235336fe823567383f43c33bf16ae97a920f",
+      "Rebus.dll": "93ae1869924a4a114ecc2c01046369819c0f4ffffba044bc5655013846ef4dea",
+      "Rebus.RabbitMq.dll": "911aedfb5da1a76585928888d694d54880af8a1c2ec94275d8efc4ed77562413",
+      "Rebus.ServiceProvider.dll": "ddc438278adb90788513722b7ad07ae6c3cbc92f491954fed7251f9b4a4bcdc4",
+      "Semver.dll": "a99edcb96efce3d6ff019c667e132d81d879f5a92bc9337591e0b7309d7f493f",
+      "SharpCompress.dll": "db4d49f11b30f2ababc6ed98551de818d8b6f15da88fada8bccd360ea3e12d73",
+      "SQLitePCLRaw.batteries_v2.dll": "94ac800c6b93ae50a025f247547781debe18391110667c5e242f51d8ac188ffb",
+      "SQLitePCLRaw.core.dll": "3d2ed8e186f124f988ebdb45d0354185b424357be2433bba0033ab9ec31bd25b",
+      "SQLitePCLRaw.provider.e_sqlite3.dll": "232990c8372aff30574eef9cc280b486ee6f39f8a66f83ea495dd0dbae98740c",
+      "StreamJsonRpc.dll": "ddc6a4d60e6cc940aae31faafc1fdcdbe520dfa51bec8dfc7f505449291536d5",
+      "System.ClientModel.dll": "dec5e22b71a1685c5e6e97cd28b629f0aa6703fb87b6950df28e79fc1804290c",
+      "System.Drawing.Common.dll": "98d07e6b1e7d3641a8608a360b3dc273fe8a0f78926b6e1e5f679a7a074d491f",
+      "System.IO.Hashing.dll": "cea6795cf9f7b139b2215ff6de794a6f6e44e78640fb30fa4c0d5fa8472df8e5",
+      "System.Memory.Data.dll": "2c1035b0106dbb2de7913d151e06071ed617bb58bbb3d6cd46a2dd0f6a03617b",
+      "System.Security.Cryptography.ProtectedData.dll": "80566f0839ece5946e66bf9f00d723e59e371ba1341a18e00c7c7a7c49298e1d",
+      "System.ServiceProcess.ServiceController.dll": "486a4fbb24ab089926fb05ab6b95af7bb04d2ff35eef55b6858437ebc4d040dc",
+      "testhost.dll": "3c2a3ed4b330b9cdaf1ee62580b7d373ec58ccf8b71fc34e0a51de28620899e9",
+      "xunit.abstractions.dll": "3166dc70323fb30ccf1cedb0fe86f2ad122c46d254542342d90386efc4c9285c",
+      "xunit.assert.dll": "bcd9711b22d227ac8cd4c1568e72433a0f576d2ec8aae64ac508081892015b1d",
+      "xunit.core.dll": "2f7feeec8c6dec7df684c25fb80aadb292b963d09723460f03d53c5ad2088acc",
+      "xunit.execution.dotnet.dll": "e70febe547c15f8155db3e2d95c3ba4445a59cbc21a3e7541ab22ed49d3dcf7b",
+      "xunit.runner.visualstudio.testadapter.dll": "384aba4bad96399a7fd2205a5a3517b643a16f4d7e843bd0b92e1e42f81fce2a",
+      "YamlDotNet.dll": "d618138109a40e4a7250e49e2abad8c450e3636bee18d7499ab231e37fa9150a"
+    },
+    "finalManifest": {
+      "Aspire.Hosting.AppHost.dll": "9d241fac4ea6f912abe94bdaa1043633ce62c3989be4aadbee61cba7bd16c09f",
+      "Aspire.Hosting.dll": "9c5f526f0d2474bf1d547e09ccb2015522f4e92c48e3feb69538f0b7844f1d92",
+      "Aspire.Hosting.Docker.dll": "513608d74a705e3ad9319881a55ab245ebd0bf7127777ee5d3cbbcf66a27d358",
+      "Aspire.Hosting.MySql.dll": "91c9f18a1c51e6cfb39d8e6e3703181b113c07dad431c2d83af95d62877b453b",
+      "Aspire.Hosting.RabbitMQ.dll": "7b22016ca210d666f09f83e332ef8900db218c196b117dd1ad52c4cc53a55334",
+      "Azure.Core.Amqp.dll": "d53d832629b76fcae7f0e0352788c43c79e13480247dba11e37961b60e52c142",
+      "Azure.Core.dll": "1d6df436afdc73c30d476be938f6513c90ef8fc884a7bae280091a9bed0a5490",
+      "Azure.Identity.dll": "31574a3d35ffeb0e25a00ebb317937222fe5283b91af608613f2e3bf0f26c50a",
+      "Azure.Messaging.ServiceBus.dll": "6895bb412db0242bed71d10d3325b86d51611e578529c91108afdeb96bff08fc",
+      "Basic.Reference.Assemblies.Net100.dll": "35ce19c341334cc79951576712d105a75b681b58532c0dd010ac302936d208ba",
+      "CommandLine.dll": "8a55501cd1a1590a4bd93a17c6fdd2c01a0ed5bff1aea9036bdc78d98c9a3fad",
+      "DotNet.Glob.dll": "5263008e364a7a072eddf6d483ed988baf4f50dc0391e358b490ac6c01a6acf5",
+      "Fractions.dll": "e8407a878af8aec1f485f50a9f356c439371610fff20756d4f2284ac6c995cbf",
+      "Google.Protobuf.dll": "8997a69619b59db587a45e75a03c164a44afb613f82db138d35e1636e4cbdc73",
+      "Grpc.AspNetCore.Server.ClientFactory.dll": "c57f69775e2b8acda401efb5f152eba6cfd23d0fc9277b7d2e0ed1f1533158e3",
+      "Grpc.AspNetCore.Server.dll": "a66e142b1a3cbaf8ed3f0835faac72e0484d4eb8b1295e0d3d1de69d72e575b2",
+      "Grpc.Core.Api.dll": "440b6b0a5beca40718a01b3e892baa6e2fd03933f3f501fc40e2a956b0d937a1",
+      "Grpc.Net.Client.dll": "4070680267f1eba977958284088f8bf63bccb2f9fea873d6b244fd7d4b76afd3",
+      "Grpc.Net.ClientFactory.dll": "b62b17995c8576378e790ce1c5dff994c0cf605a6d7da7510078857f59f09d97",
+      "Grpc.Net.Common.dll": "c6ee8099f5fd7013825d2ff636375391c8992704ad40b9819f6c9078c25c6574",
+      "HealthChecks.MySql.dll": "9947a05820c92ceb061edf02271844da0fe5d6bd47a2364f6e14287f9ba1fc7d",
+      "HealthChecks.Rabbitmq.dll": "258cf95771cab344da41843ad69f19598fafe6847ce4200ea3045819ca654983",
+      "HealthChecks.Uris.dll": "32f8e0615a70e07c6c37c3e2e0774207c84d2f2695942fba82e7bc3bee1a5708",
+      "Hex1b.dll": "1113557a5737e1fac2fdda1f6579737c50eac4620e83fefb3c29fa2ecc9b12bc",
+      "KubernetesClient.dll": "1fdb3ddc3db829a3f4015afc328a00d3747fb228c7866df6f765be4cedb800ce",
+      "MessagePack.Annotations.dll": "bd364b1513c9df5d4063b6ee3602a5bf951507484f46a2366a6f2a9aeb1c4cf2",
+      "MessagePack.dll": "1ebc0c2baec5a89b3738e892d61c92f037dd588db52412e1e3bdf2adc407aa94",
+      "Microsoft.Azure.Amqp.dll": "eb58a9058b6cde95081608e1921967cc704d6e411745436b20c68caa37389980",
+      "Microsoft.Bcl.AsyncInterfaces.dll": "f1e1d6e1a2990071b450bdf6c9618408ac0e3f24a3c7a3bef1f50508ba732ca5",
+      "Microsoft.CodeAnalysis.CSharp.dll": "54142770a00e594942ee8923726ea49126303d0c523932886c2417eb66dc07f8",
+      "Microsoft.CodeAnalysis.dll": "ad857f1ce7f8e26c2722ade705fac3f90502a47590c14075df1327210f10b1ef",
+      "Microsoft.Data.Sqlite.dll": "1078d41c6c0f2cee48a8b706e3a54ce145705993f19f703d2b3bdf2abcc59088",
+      "Microsoft.EntityFrameworkCore.Abstractions.dll": "98c8252995283ef0884b904dbab03696ca7f71a05b8dde34dace5eeb9bf4382c",
+      "Microsoft.EntityFrameworkCore.dll": "acb89dff050d681fab6f86d2175929471200b9bed66ac9321cbe6a17eaa26933",
+      "Microsoft.EntityFrameworkCore.Relational.dll": "ac1146e68d53d56b79e9473f68c557999de99674be392bbbbb02ae93a296b93e",
+      "Microsoft.EntityFrameworkCore.Sqlite.dll": "b8c5027b27be2012094699cbd5260239778a1891dc5c1887797d331b67f0ef89",
+      "Microsoft.Extensions.AI.Abstractions.dll": "dd444efc3b9e2db2e4e7616909731b8dde824b554455014002167918b823eac4",
+      "Microsoft.Extensions.DependencyModel.dll": "2385bfbc9344e03acb2ff44f1ed21a3770fbafdf1ba4be2dbcacd42027b8c3bd",
+      "Microsoft.Extensions.Hosting.Systemd.dll": "b83961fadb9b88ed05ccb4dea45165b5393b4eaf1258dce0b7d0f60e9c0c1d46",
+      "Microsoft.Extensions.Hosting.WindowsServices.dll": "caa306587f796d0290aada4fdfaec1394f1f206409ea4d5a20f309b61fc59959",
+      "Microsoft.Identity.Client.dll": "5795027e9ae95eececb310a4fed3c502bb368039d186ab0884f64b7792b84717",
+      "Microsoft.Identity.Client.Extensions.Msal.dll": "07109a2f30df782300077a567ade47cbd0a0502c75cd7c8a62192f7d64bb004e",
+      "Microsoft.IdentityModel.Abstractions.dll": "24e97b54b6b5c234a124a336757e3116617ac6c30b655cdae74517dc2ecb5746",
+      "Microsoft.NET.StringTools.dll": "887dec541cd0a719b7111458eb90a83b4491d6dd24eff2b16cf03d2782fd26a0",
+      "Microsoft.TestPlatform.CommunicationUtilities.dll": "7ed97ccfd6f9c74f054de4cf84a7b4b0179eb6064e3a406e746849c6989e0d6a",
+      "Microsoft.TestPlatform.CoreUtilities.dll": "db70e6632a13a6d46cc3bb75f71273b3e9c64ca1e5dd0537572fb0dadf444009",
+      "Microsoft.TestPlatform.CrossPlatEngine.dll": "eaf5a87745d6ab7f7ef7db6e85dfa96817ecdb06b51a642edd6f9c6b805c3616",
+      "Microsoft.TestPlatform.PlatformAbstractions.dll": "f5541efe526d719aef103026770faf0435218afc5be90f653a01886ff8bebc80",
+      "Microsoft.TestPlatform.Utilities.dll": "358ae71a7f820dfd7e3b2d86ad9a7402c72166c7197bccd89f39b9d62ec3f0ae",
+      "Microsoft.VisualStudio.CodeCoverage.Shim.dll": "ef1f649984cf2ff2d4f51944270d6b1557752ba0099ec97894361abe3e6640c1",
+      "Microsoft.VisualStudio.TestPlatform.Common.dll": "6e16cf009ff956b97eef96aefc64a33a9bff7df86a8e7e6e5664ec03e648bcc1",
+      "Microsoft.VisualStudio.TestPlatform.ObjectModel.dll": "9d0a31a406ab064d2bc009a5523b5e73b71d3fe1dddd19cffe4a70f14cde3f75",
+      "Microsoft.VisualStudio.Threading.dll": "138e3548e487152de355b81303ae98e1bb52a31fe5c9107fa81a15f66404f426",
+      "Microsoft.VisualStudio.Validation.dll": "59cd5e953cce597847e515a73a1c0975cd5a6b94921a7b91e81045fa9922f57c",
+      "Microsoft.Win32.SystemEvents.dll": "ca495bf6c86b7f092d624928101985a941532d149dcd8acfea170f8a53be8850",
+      "Microting.EntityFrameworkCore.MySql.dll": "c8dc4aff0fa81bcb09c11c7bbd15780378e39317c32b23f75a85dea4a9894171",
+      "ModelContextProtocol.Core.dll": "cd434634473f1d6b945a5583d48782207a1e79b8202cf6adb174e41ed2ca4643",
+      "ModelContextProtocol.dll": "1f0760611e72588fbffe2c7bacfce55b9942d7ed5cb5cd4a3ded5d5f7600e930",
+      "MySqlConnector.dll": "a3104353e86cc96123d8015fc5a3bf4ab88b127b9180caaa4db9a006c49f467b",
+      "Nerdbank.MessagePack.dll": "fc086ce3623a9a3f9213159d438c642d225046e371489e8e7f126d4c62f188fa",
+      "Nerdbank.Streams.dll": "e5c90ffcb7a0bd0cedf51ac33e818b9f64045e9839b19701eb73460356631872",
+      "Newtonsoft.Json.dll": "a28c251dfe36d881e9e2462e171441b8b0ec156fe3f452602c9149b1b9efe05b",
+      "Nexus.Archive.dll": "fd2fc160b92cd14a6f226a5095cde744d81a3c807ca45bf78c91cf2a2ba0237b",
+      "NexusForever.API.Account.Client.dll": "dcc138d6ebbedc6142fecadbcd0512815a32f0eb7c0266a03bbf461824951418",
+      "NexusForever.API.Character.Client.dll": "8b6ec8947c3c48537b39ee8eb5927ea4a873a149d27f25fbed2c518f820fdcc3",
+      "NexusForever.API.dll": "2cab2612f5a2463d1d091d55619dec8c718609ea3df939ecfba8e8373b2aacbe",
+      "NexusForever.Aspire.AppHost.dll": "502a444ce79cb4b804299940f807544e7ea50fa9ac0194f022bc07a46bbe60a9",
+      "NexusForever.Aspire.Database.Migrations.dll": "4924c36a806c4707d68da5e6541f0b6bd462a1eafa382e7a5710403ab80d0491",
+      "NexusForever.Cryptography.dll": "0be240820a34f144d7a0bcbf5604e493949dc092582b850ec06a4dbb5fe41a02",
+      "NexusForever.Database.Auth.dll": "a5f2852d869f372f13809519c4745940496159001a417b551a3a8aa2677cf382",
+      "NexusForever.Database.Character.dll": "e07deffeb14813d67ecf1bb0422707d3a108208fa0228ebf89e7f0c34b46e535",
+      "NexusForever.Database.Chat.dll": "1ca123c52f3930de7eaaf49ff296f817242c45fc5cac4e24ac6ac0e9e8762a2c",
+      "NexusForever.Database.dll": "a30b2064fd1410686eded7ab814429988ebccea3cbad8e2a18d5f07191c56c20",
+      "NexusForever.Database.Friendship.dll": "c34de843d4336bfee2edd1b4d7f8b25b873d6ae1712c6e3af2a652af2b71acb3",
+      "NexusForever.Database.Group.dll": "e6a745dac3fb9ef3e2c78ad6d685347aa1b50825bf631834c63279d4d366eabd",
+      "NexusForever.Database.Query.dll": "22058e812ee2ff729630958815a8559bdc189af43397e75888e6f09d304c70b2",
+      "NexusForever.Database.Sqlite.Migrations.dll": "773cafb72de8fa05f99e51bac4bf08a08ff29deece50e26505d41b333a7d07e9",
+      "NexusForever.Database.World.dll": "02b482a13ddcd662a69c8e0aebaf1d6dfcef7a8d263e561569d02dc94115c1e4",
+      "NexusForever.Game.Abstract.dll": "777dd151b26100b93e2bb3e4ddd5e754db901d444b35d8b976c293fac2da639f",
+      "NexusForever.Game.dll": "167def0f2485448640cd7404b33089e58a717d13607daa4dae5354724d42d1a9",
+      "NexusForever.Game.Static.dll": "779eb188ecdfdbd6d3f50dfa60466b11e4472a4762e4c827d998eeae7136961e",
+      "NexusForever.Game.Tests.dll": "a9dcd1b8aa958762740c4d818ef230281b8ef9c7023e9097eff863e5c02b379d",
+      "NexusForever.GameTable.dll": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+      "NexusForever.IO.dll": "730c11e787d926cc0740c8277e1bc1666ab38e533d8ed07b4678ba97c6b6e0ca",
+      "NexusForever.LoadTest.dll": "77a5e488f9be259dc1762280bcde6fcd6c7ec0cb56953b78454d5b11fd1013fb",
+      "NexusForever.MapGenerator.dll": "ea62235d26f8d42b1090d906202a125a8a360473dd1d9bf93733fb7af60f0778",
+      "NexusForever.Network.Auth.dll": "de7bf01546c28442714e0c7486aa37d01bc142f6168e0fbff883e116f4ebbaa9",
+      "NexusForever.Network.dll": "ab9aa9f265093846927da9b4b2871e6573b8cdaab304f7bfc5a9329d3f3ee290",
+      "NexusForever.Network.Internal.dll": "f8223b4b8b4e65db8b10af9a13959915e8e35b95a49443ec000188a0524efcae",
+      "NexusForever.Network.Sts.dll": "c567a1260a9e6c00dce554d67e9df25511a2e1295cac59e2497735349f381232",
+      "NexusForever.Network.World.dll": "2c1edaf7620b57f1f6d48d36975dc072041b58fbe15a8a07366aac1e97972e39",
+      "NexusForever.Script.dll": "9ac25febecc0f1e68984890e5301209591eb5edee7170a43110a62791fd20c63",
+      "NexusForever.Script.Instance.dll": "69c624fe68d2993ad75773be5287681ce65895e8e0a6d5b9215a6c16c957498c",
+      "NexusForever.Script.Main.dll": "d3e958b67b19dadb7c1ae2774af67e17fbf770369186aa500433511be3b0d48c",
+      "NexusForever.Server.Character.dll": "19e92c61311aa4a58953aaf4f4bb9eba985663a29984a562dc7f652322596b31",
+      "NexusForever.Server.ChatServer.dll": "534e5e3a67d5e641ed3e1782ff80432a0ac9e01913b12f1125f44264876f0365",
+      "NexusForever.Server.Friendship.dll": "fcedff6e42584776a6c2e538eb3ab560509cebb33b816fe807f0ad6960eac9d7",
+      "NexusForever.Server.GroupServer.dll": "d916050d197079a147561667b0402af0857a42386173497ba8a4fdf21f6fc28b",
+      "NexusForever.Shared.dll": "0ed6771d65fededb95a55bb4463d1f7a102dd7d22ff84063e80e7301cd2304f0",
+      "NexusForever.StsServer.dll": "1d9624ba15b8c39c4af097cd8fd9b830bcf268eef6657f88b8c6687239133f78",
+      "NexusForever.WorldServer.dll": "d6f802bf2f347224e43ac5cc9bfb09144bffa46b8439aa074996d06f193c2957",
+      "NLog.dll": "9a706ace1a30cf5a9e169ceddf39d69df30ad99da5c4775d86413ac766cbb825",
+      "NLog.Extensions.Logging.dll": "9372ad36ff9c48826905d6eee58598b5df42334f9b35b93527927f38ae273504",
+      "OpenTelemetry.Api.dll": "9c636063c335902c73f916c133de22fe8af476c68189080176443b0b82d4d399",
+      "OpenTelemetry.Api.ProviderBuilderExtensions.dll": "fcd57330a4a3252773a0c71b9a497ee7834f415210fa405151275f97575ed164",
+      "OpenTelemetry.dll": "a19a8b4d39a00dca043919473c0d5b46a174a4363d611c8dd237b8f2b3f8a5b8",
+      "OpenTelemetry.Exporter.OpenTelemetryProtocol.dll": "3297002036e73a2ea7385d9521464dee725bbbd6491e20c559498cbe81598a3c",
+      "OpenTelemetry.Extensions.Hosting.dll": "97e52b88bfbad51767829ba834a3a35a63692170109c21a7103f5170c389d6f9",
+      "Polly.Core.dll": "f7f50017ca9f457b854498358ae595c2a8ab69c1fd8b915139d22bed8f7e4f2a",
+      "PolyType.dll": "33d30bc1baf80b85ad9b428a388d9999eaf20999d555a6e684aa758f4f679968",
+      "QRCoder.dll": "2c9a588e08ec91f00fac37a4a43995c8f1966a6cce615e9e8c063eec3d0f145a",
+      "Quartz.dll": "b195bbaec686ec9d3a8c38fdf961cf0f3818455c99c9553e1c317a55a6024069",
+      "Quartz.Extensions.DependencyInjection.dll": "9e53ba9d6862cf12b11bd92b07527b1398b905a1adcf72b7c40076695c707a9d",
+      "Quartz.Extensions.Hosting.dll": "6cc40edeb789e85b7455045dc864b91a369fb3415323d4d45537bbaf3849e361",
+      "RabbitMQ.Client.dll": "22d9ffa8cc2de798c61ec95b3f0b576c90d3370afa7128998859d3b2734d2910",
+      "Rebus.AzureServiceBus.dll": "522bb2cc849518f9178bcb0611c7235336fe823567383f43c33bf16ae97a920f",
+      "Rebus.dll": "93ae1869924a4a114ecc2c01046369819c0f4ffffba044bc5655013846ef4dea",
+      "Rebus.RabbitMq.dll": "911aedfb5da1a76585928888d694d54880af8a1c2ec94275d8efc4ed77562413",
+      "Rebus.ServiceProvider.dll": "ddc438278adb90788513722b7ad07ae6c3cbc92f491954fed7251f9b4a4bcdc4",
+      "Semver.dll": "a99edcb96efce3d6ff019c667e132d81d879f5a92bc9337591e0b7309d7f493f",
+      "SharpCompress.dll": "db4d49f11b30f2ababc6ed98551de818d8b6f15da88fada8bccd360ea3e12d73",
+      "SQLitePCLRaw.batteries_v2.dll": "94ac800c6b93ae50a025f247547781debe18391110667c5e242f51d8ac188ffb",
+      "SQLitePCLRaw.core.dll": "3d2ed8e186f124f988ebdb45d0354185b424357be2433bba0033ab9ec31bd25b",
+      "SQLitePCLRaw.provider.e_sqlite3.dll": "232990c8372aff30574eef9cc280b486ee6f39f8a66f83ea495dd0dbae98740c",
+      "StreamJsonRpc.dll": "ddc6a4d60e6cc940aae31faafc1fdcdbe520dfa51bec8dfc7f505449291536d5",
+      "System.ClientModel.dll": "dec5e22b71a1685c5e6e97cd28b629f0aa6703fb87b6950df28e79fc1804290c",
+      "System.Drawing.Common.dll": "98d07e6b1e7d3641a8608a360b3dc273fe8a0f78926b6e1e5f679a7a074d491f",
+      "System.IO.Hashing.dll": "cea6795cf9f7b139b2215ff6de794a6f6e44e78640fb30fa4c0d5fa8472df8e5",
+      "System.Memory.Data.dll": "2c1035b0106dbb2de7913d151e06071ed617bb58bbb3d6cd46a2dd0f6a03617b",
+      "System.Security.Cryptography.ProtectedData.dll": "80566f0839ece5946e66bf9f00d723e59e371ba1341a18e00c7c7a7c49298e1d",
+      "System.ServiceProcess.ServiceController.dll": "486a4fbb24ab089926fb05ab6b95af7bb04d2ff35eef55b6858437ebc4d040dc",
+      "testhost.dll": "3c2a3ed4b330b9cdaf1ee62580b7d373ec58ccf8b71fc34e0a51de28620899e9",
+      "xunit.abstractions.dll": "3166dc70323fb30ccf1cedb0fe86f2ad122c46d254542342d90386efc4c9285c",
+      "xunit.assert.dll": "bcd9711b22d227ac8cd4c1568e72433a0f576d2ec8aae64ac508081892015b1d",
+      "xunit.core.dll": "2f7feeec8c6dec7df684c25fb80aadb292b963d09723460f03d53c5ad2088acc",
+      "xunit.execution.dotnet.dll": "e70febe547c15f8155db3e2d95c3ba4445a59cbc21a3e7541ab22ed49d3dcf7b",
+      "xunit.runner.visualstudio.testadapter.dll": "384aba4bad96399a7fd2205a5a3517b643a16f4d7e843bd0b92e1e42f81fce2a",
+      "YamlDotNet.dll": "d618138109a40e4a7250e49e2abad8c450e3636bee18d7499ab231e37fa9150a"
+    },
+    "changedVsBaseline": [
+      "NexusForever.Aspire.Database.Migrations.dll",
+      "NexusForever.Game.dll",
+      "NexusForever.Game.Tests.dll",
+      "NexusForever.LoadTest.dll",
+      "NexusForever.Script.Instance.dll",
+      "NexusForever.Script.Main.dll",
+      "NexusForever.WorldServer.dll"
+    ],
+    "owningCopies": [
+      {
+        "assembly": "NexusForever.Game.dll",
+        "ownerSha256": "167def0f2485448640cd7404b33089e58a717d13607daa4dae5354724d42d1a9",
+        "testCopySha256": "167def0f2485448640cd7404b33089e58a717d13607daa4dae5354724d42d1a9"
+      },
+      {
+        "assembly": "NexusForever.WorldServer.dll",
+        "ownerSha256": "d6f802bf2f347224e43ac5cc9bfb09144bffa46b8439aa074996d06f193c2957",
+        "testCopySha256": "d6f802bf2f347224e43ac5cc9bfb09144bffa46b8439aa074996d06f193c2957"
+      }
+    ],
+    "sameTestDllClaim": false,
+    "explanation": "Seven DLLs differ from initial baseline, including Game/World/test and four rebuilt dependent outputs. Both changed owning Game/World DLLs exactly match the tested copies. Candidate Source is restricted to six owned paths plus eight retained historical project/filter or BOM/newline variants."
+  },
+  "reviews": {
+    "standards": {
+      "initialFindings": 1,
+      "resolvedFindings": 1,
+      "remainingFindings": 0,
+      "report": "The account-session guard fixes the reported ownership gap. The Grid helper preserves the existing registration assignments, while stale scanners queue removal before base visibility callbacks. Reviewed the new negative and positive controls; all six refreshed Source hashes match. No edits, builds, tests or workloads performed."
+    },
+    "spec": {
+      "initialFindings": 1,
+      "resolvedFindings": 1,
+      "remainingFindings": 0,
+      "report": "The visibility P2 is resolved. A stale bound scanner checks its captured context before base visibility or entity script callbacks, records only the map registration needed for removal, then returns. Strengthened tests cover nearby concrete Player publication and a valid-create control. The account-session correction matches the original-owner requirement. The GridEntity extraction preserves the same three assignments and order on valid admission. All six current hashes match the updated manifest. Final build and expanded tests were pending at review; no broader qualification is implied."
+    }
+  },
+  "upstreamRefresh": {
+    "prs": [
+      {
+        "base_sha": "d8e43d2c3cc5a05f03e56dfc388288a4126c7ed9",
+        "head_sha": "36b59aaaaebbcd0ec3e23a94fd3cf9de8975923b",
+        "merged": false,
+        "number": 604,
+        "state": "open",
+        "updated_at": "2026-11-01T03:41:35Z"
+      },
+      {
+        "base_sha": "d8e43d2c3cc5a05f03e56dfc388288a4126c7ed9",
+        "head_sha": "f9b6f7356798a41beea0768ff1f6b5a758ffeca3",
+        "merged": false,
+        "number": 609,
+        "state": "closed",
+        "updated_at": "2026-11-01T02:58:37Z"
+      },
+      {
+        "base_sha": "3588ca5f578387928e6593e3808bf15f6192b094",
+        "head_sha": "7db12d9a7c694bc5e66d9e0f4cdbc1b82155e69b",
+        "merged": false,
+        "number": 608,
+        "state": "open",
+        "updated_at": "2026-10-30T18:53:13Z"
+      },
+      {
+        "base_sha": "3588ca5f578387928e6593e3808bf15f6192b094",
+        "head_sha": "ba30ae14513461ab6bd83d691543b6a155846e1c",
+        "merged": false,
+        "number": 595,
+        "state": "open",
+        "updated_at": "2026-10-30T06:28:59Z"
+      },
+      {
+        "base_sha": "d0817fdf40e4832dbc578b7b2ea82a1b1fa378bf",
+        "head_sha": "f88b196f11b909b4e0db94db2affff3c585d971f",
+        "merged": true,
+        "number": 598,
+        "state": "closed",
+        "updated_at": "2026-10-30T02:09:40Z"
+      },
+      {
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head_sha": "7f044aad0a20419a788b8140d263ac83fcd93217",
+        "merged": false,
+        "number": 607,
+        "state": "open",
+        "updated_at": "2026-10-28T06:05:47Z"
+      },
+      {
+        "base_sha": "f9bb26efddbf304003fc8ebf484ac75bc6be84da",
+        "head_sha": "e41fb57514cc202425430684e11e5fdd8f1b71f0",
+        "merged": false,
+        "number": 588,
+        "state": "open",
+        "updated_at": "2026-10-28T05:57:43Z"
+      },
+      {
+        "base_sha": "845651e68fa1416931ea6507de1d3404d88f192e",
+        "head_sha": "38f8c19409c6fc9c3afc08744ce49cb6ed0de1db",
+        "merged": false,
+        "number": 599,
+        "state": "closed",
+        "updated_at": "2026-10-27T14:11:52Z"
+      },
+      {
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head_sha": "4ffa050ba994a82e0fb52f0b5b733c94b139367e",
+        "merged": false,
+        "number": 606,
+        "state": "open",
+        "updated_at": "2026-10-27T14:11:20Z"
+      },
+      {
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head_sha": "972ad3b4f9c7bce0a460ad0e5b5410f311b8573c",
+        "merged": false,
+        "number": 605,
+        "state": "open",
+        "updated_at": "2026-10-27T14:11:18Z"
+      },
+      {
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head_sha": "6faa74d029f95b5e29684690ee2628c10dc80b59",
+        "merged": false,
+        "number": 603,
+        "state": "open",
+        "updated_at": "2026-10-27T14:11:12Z"
+      },
+      {
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head_sha": "ffe5dc0512452fe3e383b8a8b454017c04120df4",
+        "merged": false,
+        "number": 602,
+        "state": "open",
+        "updated_at": "2026-10-27T14:11:10Z"
+      },
+      {
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head_sha": "79a36684101423cfd199047b466a2c2c839e9c2e",
+        "merged": false,
+        "number": 601,
+        "state": "open",
+        "updated_at": "2026-10-27T14:11:07Z"
+      },
+      {
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head_sha": "1bf8de1caba3baa70620998b82317d65c96b07c8",
+        "merged": false,
+        "number": 600,
+        "state": "open",
+        "updated_at": "2026-10-27T14:11:04Z"
+      },
+      {
+        "base_sha": "f9bb26efddbf304003fc8ebf484ac75bc6be84da",
+        "head_sha": "17ef256c2f38ef6d010db807b69452d1bb2be614",
+        "merged": true,
+        "number": 593,
+        "state": "closed",
+        "updated_at": "2026-10-26T18:24:11Z"
+      },
+      {
+        "base_sha": "845651e68fa1416931ea6507de1d3404d88f192e",
+        "head_sha": "eb4db38857bb263493f56912a99184a9992d4e36",
+        "merged": true,
+        "number": 591,
+        "state": "closed",
+        "updated_at": "2026-10-26T18:23:58Z"
+      },
+      {
+        "base_sha": "d0817fdf40e4832dbc578b7b2ea82a1b1fa378bf",
+        "head_sha": "8ca89ccb31c20a286a64ac632fca8885d812cba5",
+        "merged": false,
+        "number": 597,
+        "state": "open",
+        "updated_at": "2026-10-26T15:50:33Z"
+      },
+      {
+        "base_sha": "f9bb26efddbf304003fc8ebf484ac75bc6be84da",
+        "head_sha": "56b816084bb2cdd3bcd990a52f47f9d2cb621871",
+        "merged": true,
+        "number": 587,
+        "state": "closed",
+        "updated_at": "2026-10-26T04:08:09Z"
+      },
+      {
+        "base_sha": "f9bb26efddbf304003fc8ebf484ac75bc6be84da",
+        "head_sha": "121f4c3ec7472b8a6c0f6e3054fd788f939dd028",
+        "merged": true,
+        "number": 589,
+        "state": "closed",
+        "updated_at": "2026-10-26T04:00:28Z"
+      },
+      {
+        "base_sha": "3588ca5f578387928e6593e3808bf15f6192b094",
+        "head_sha": "e100f4c29a1571a7181d06967ed8133612d99074",
+        "merged": false,
+        "number": 596,
+        "state": "open",
+        "updated_at": "2026-10-25T15:27:59Z"
+      }
+    ],
+    "interpretation": "20 latest all-state PR identities/states unchanged from the prior reviewed refresh; #608 open, #609 closed/unmerged. No new integration claimed."
+  },
+  "limits": [
+    "Real parsed handlers, concrete ScannerUnitEntity, WorldEntity/GridEntity callbacks and concrete Player visibility execute; owner/account/session/map/movement and table metadata are prepared. Empty MapFile/fake registry is not physical map placement or deployment evidence.",
+    "No new retail profile/unlock/cooldown, scan earning, Scientist experimentation or overflow/item-reward policy is inferred or enabled.",
+    "Captured current-reference checks are not a general concurrent map-epoch or cross-thread serialization proof.",
+    "No fresh configured provider, actual-table scanner corpus, physical restart, broker/socket/native/client/retail qualification. Client launch and Computer Use remain stopped.",
+    "Entitlements15:1/17:1 remain; no automatic44 or seven baseline grants. Unrelated dirty work remains outside this milestone."
+  ]
+}

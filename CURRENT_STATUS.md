@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[Scientist scanner lifecycle](Decomp/Analysis/SCIENTIST_SCANBOT_LIFECYCLE.md)
+now preserves the original object/owner through queued admission, dismiss and
+removal. Stale adds stop before concrete Player visibility; rejected state
+packets retry without blocking cleanup. Eleven new/243 scoped cases, clean
+builds and both final reviews pass. Synthetic spatial/catalog fixtures do not
+qualify deployment/provider/native/retail; client/CUA remain stopped.
+
 [Public normal-bid process loss](Decomp/Analysis/NORMAL_AUCTION_BID_TRANSACTION.md#physical-producer-loss-and-fresh-character-reload)
 passes one control/six real producer terminations, fresh reload/public retries
 and seven stronger wallet/result audits. All 36 qualified generations/temp

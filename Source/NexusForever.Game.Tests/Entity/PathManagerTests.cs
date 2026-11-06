@@ -5411,7 +5411,7 @@ public partial class PathManagerTests
         mapProxy.SetProperty(nameof(IBaseMap.Entry), new WorldEntry { Id = 426u });
         mapProxy.SetMethodHandler(nameof(IBaseMap.CanEnter), _ => true);
         mapProxy.SetMethodHandler(nameof(IBaseMap.GetEntity), args =>
-            args.Length == 1 && (uint)args[0] == 9001u ? scanbot : null);
+            args.Length == 1 ? (uint)args[0] == 9001u ? scanbot : (uint)args[0] == 500u ? (IPlayer)(object)playerProxy : null : null);
 
         IPetCustomisationManager petCustomisationManager =
             RecordingDispatchProxy<IPetCustomisationManager>.Create(out petCustomisationManagerProxy);
@@ -5429,6 +5429,8 @@ public partial class PathManagerTests
             return null;
         });
 
+        if (scanbot is RecordingDispatchProxy<IScannerUnitEntity> proxy)
+            proxy.SetProperty(nameof(IWorldEntity.Map), map);
         playerProxy.SetProperty(nameof(IGridEntity.Guid), 500u);
         playerProxy.SetProperty("Map", map);
         playerProxy.SetProperty(nameof(IPlayer.Faction1), Faction.Exile);

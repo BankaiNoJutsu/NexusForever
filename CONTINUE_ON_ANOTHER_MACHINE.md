@@ -1,5 +1,13 @@
 # Continue on another machine
 
+Latest Scientist Source result:
+[scanner lifecycle](Decomp/Analysis/SCIENTIST_SCANBOT_LIFECYCLE.md) fixes original
+object removal, stale queued visibility and rejected state cleanup/retry.
+Eleven new/243 scoped cases, clean builds and both final reviews pass.
+Reuse these completed checks. Actual-table/spatial/provider/socket/native/retail
+and broader Path reward/Scientist policies remain open; client/CUA stopped.
+Continue independent actionable gameplay/progression.
+
 Latest marketplace qualification:
 [public normal-bid process loss](Decomp/Analysis/NORMAL_AUCTION_BID_TRANSACTION.md#physical-producer-loss-and-fresh-character-reload)
 passes one control/six producer kills, fresh reload/public retries and seven

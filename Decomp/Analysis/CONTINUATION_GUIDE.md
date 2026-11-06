@@ -1,5 +1,13 @@
 # Client Binary Decompile Continuation Guide
 
+[Scientist scanner lifecycle](SCIENTIST_SCANBOT_LIFECYCLE.md) now keeps queued
+admission, dismiss/removal and retained state tied to the original object and
+owner context. Stale scanners stop before Player visibility. Eleven new/243
+scoped cases, clean builds and both final reviews pass; the portable record
+distinguishes genuine baselines from setup diagnostics. Prepared spatial and
+catalog inputs remain separate from provider/socket/native/retail qualification.
+Continue independent roadmap work; client/CUA stopped.
+
 [Normal-bid producer loss](NORMAL_AUCTION_BID_TRANSACTION.md#physical-producer-loss-and-fresh-character-reload)
 passes seven public-flow cases, seven stronger fresh wallet/result audits and
 guarded helper cleanup. All 36 qualified generations/temp directories are absent;
