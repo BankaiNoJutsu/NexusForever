@@ -972,9 +972,10 @@ namespace NexusForever.Game.Entity
                     CompleteOrdinaryQuest(quest, selectedReward, communicator);
                     return true;
                 }
-                bool accountReward = completionInfo.Rewards.Values.Any(row => row.Flags == 0
-                    && (QuestRewardType)row.Quest2RewardTypeId == QuestRewardType.AccountCurrency)
-                    || selectedReward != null && (QuestRewardType)selectedReward.Quest2RewardTypeId == QuestRewardType.AccountCurrency;
+                static bool IsAccountReward(Quest2RewardEntry row) => (QuestRewardType)row.Quest2RewardTypeId
+                    is QuestRewardType.AccountCurrency or QuestRewardType.AccountItem;
+                bool accountReward = completionInfo.Rewards.Values.Any(row => row.Flags == 0 && IsAccountReward(row))
+                    || selectedReward != null && IsAccountReward(selectedReward);
                 if (accountReward)
                 {
                     if (!owner.TrySaveQuestRewards(session, Complete, communicator ? null : closeDialog))
@@ -1309,6 +1310,23 @@ namespace NexusForever.Game.Entity
                     }
                     else
                         log.Warn($"Unhandled invalid quest account currency reward objectId {entry.ObjectId}!");
+                    break;
+                case QuestRewardType.AccountItem:
+                    if (gameTableManager?.AccountItem?.GetEntry(entry.ObjectId) == null)
+                    {
+                        log.Warn($"Unhandled invalid quest account item reward objectId {entry.ObjectId}!");
+                        break;
+                    }
+                    // Same paired Character/Auth settlement as account currency; the unpaired fallback
+                    // grants directly like loot does.
+                    if (player is not Player itemOwner || !itemOwner.RetainCraftingAccountAward(LootItemType.AccountItem, entry.ObjectId, entry.ObjectAmount))
+                    {
+                        if (player.Account.InventoryManager is Account.Inventory.AccountInventoryManager accountInventory)
+                            accountInventory.AddLootItems(entry.ObjectId, entry.ObjectAmount);
+                        else
+                            for (uint i = 0; i < entry.ObjectAmount; i++)
+                                player.Account.InventoryManager.AddItem(entry.ObjectId);
+                    }
                     break;
                 default:
                 {

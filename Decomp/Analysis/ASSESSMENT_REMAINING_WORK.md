@@ -1,5 +1,10 @@
 # Assessment follow-through goal
 
+[Quest AccountItem reward](QUEST_ACCOUNT_ITEM_REWARD.md) (2026-11-06) delivers type-6 quest rewards
+through the paired Character/Auth account-award settlement instead of dropping them. Source/SQLite
+only: 5 new cases (4 failed before), 32 settlement and 2,793 broader Quest/Crafting/Loot cases pass
+(separate scopes). ObjectId=AccountItem id is an inference. Types 8/9/10 remain unhandled.
+
 [Player scalar save retry](PLAYER_SCALAR_SAVE_RETRY.md) (2026-11-06) keeps the Path, InputKeySet,
 Level, Innate, Sex, Race and Options dirty bits until the flushed row matches and the transaction
 commits. Five failed-save outcomes lost these before; fixed. Source/SQLite only: 6 new and 225

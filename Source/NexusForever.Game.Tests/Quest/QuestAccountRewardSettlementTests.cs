@@ -63,6 +63,13 @@ public class QuestAccountRewardSettlementTests
     [InlineData("replacement")] [InlineData("unready")]
     public Task PublicTurnInCannotCreditAuthBeforeItsCharacterQuestCommits(string outcome) => Run(outcome);
 
+    [Theory]
+    [InlineData("commit")] [InlineData("rollback")] [InlineData("auth-refusal")]
+    [InlineData("replacement")] [InlineData("rollback-retry")]
+    public Task AccountItemRewardsShareTheirCharacterAndAccountBoundary(string outcome)
+        => Run(outcome, actualAwards: [new Quest2RewardEntry { Id = 70001, Quest2Id = 9001,
+            Quest2RewardTypeId = (uint)QuestRewardType.AccountItem, ObjectId = 3, ObjectAmount = 2 }]);
+
     internal static async Task Run(string outcome, IGameTableManager actualTables = null, Quest2RewardEntry[] actualAwards = null,
         string variant = "ordinary")
     {
@@ -71,7 +78,8 @@ public class QuestAccountRewardSettlementTests
             Quest2RewardTypeId = (uint)QuestRewardType.AccountCurrency, ObjectId = 14, ObjectAmount = 10 }];
         if (variant == "tutorial") awards[0].Quest2Id = StarterTutorialDefinition.ExileMovementQuestId;
         ushort questId = checked((ushort)awards[0].Quest2Id);
-        var amounts = awards.GroupBy(row => row.ObjectId).ToDictionary(group => group.Key,
+        bool accountItem = awards[0].Quest2RewardTypeId == (uint)QuestRewardType.AccountItem;
+        var amounts = awards.Where(row => row.Quest2RewardTypeId == (uint)QuestRewardType.AccountCurrency).GroupBy(row => row.ObjectId).ToDictionary(group => group.Key,
             group => group.Aggregate(0ul, (sum, row) => checked(sum + row.ObjectAmount)));
         if (variant == "mixed") awards = [..awards, new() { Id = 70002, Quest2Id = questId,
             Quest2RewardTypeId = (uint)QuestRewardType.Item, ObjectId = 7001, ObjectAmount = 1 }];
@@ -101,6 +109,7 @@ public class QuestAccountRewardSettlementTests
         var tables = (RecordingDispatchProxy<IGameTableManager>)(object)store.Source.Tables;
         tables.SetProperty(nameof(IGameTableManager.AccountCurrencyType), actualTables?.AccountCurrencyType
             ?? PlayerBindPointTests.Table(new AccountCurrencyTypeEntry { Id = 14 }));
+        tables.SetProperty(nameof(IGameTableManager.AccountItem), PlayerBindPointTests.Table(new AccountItemEntry { Id = 3 }));
         using var source = store.Context();
         var connection = source.Database.GetDbConnection().ConnectionString;
         (await source.Character.SingleAsync()).AccountId = 12;
@@ -247,7 +256,8 @@ public class QuestAccountRewardSettlementTests
             await retryActor.Drain();
             Assert.Single(Completions()); Assert.False(retrySession.IsDisconnecting);
             Assert.Equal(QuestState.Completed, (QuestState)(await character.CharacterQuest.AsNoTracking().SingleAsync()).State);
-            Assert.Equal(10ul, (await paid.AccountCurrency.AsNoTracking().SingleAsync()).Amount);
+            if (accountItem) Assert.Equal(2, await paid.AccountInventory.CountAsync(row => row.AccountItemId == 3));
+            else Assert.Equal(10ul, (await paid.AccountCurrency.AsNoTracking().SingleAsync()).Amount);
             Assert.Equal(2, await paid.AccountCraftingReceipt.CountAsync());
             Assert.Equal(1, await character.CharacterCraftingAccountOutbox.CountAsync(row => row.Cancelled));
             Assert.Equal(1, await character.CharacterCraftingAccountOutbox.CountAsync(row => row.Delivered));
@@ -266,7 +276,7 @@ public class QuestAccountRewardSettlementTests
         }
         foreach (var (currency, amount) in amounts)
             Assert.Equal(amount, (await paid.AccountCurrency.AsNoTracking().SingleAsync(row => row.CurrencyId == currency)).Amount);
-        if (outcome == "commit")
+        if (outcome == "commit" && !accountItem)
         {
             var currency = (AccountCurrencyType)amounts.Keys.First();
             actor.Player.Account.CurrencyManager.CurrencySubtractAmount(currency, 1);
@@ -280,6 +290,7 @@ public class QuestAccountRewardSettlementTests
             Assert.Equal(outcome == "commit" && currency == amounts.Keys.First() ? amount - 1 : amount,
                 (await paid.AccountCurrency.AsNoTracking().SingleAsync(row => row.CurrencyId == currency)).Amount);
         Assert.Equal(amounts.Count, await paid.AccountCurrencyOperation.CountAsync(row => !row.Subtract && row.Amount != 0));
+        if (accountItem) Assert.Equal(2, await paid.AccountInventory.CountAsync(row => row.AccountItemId == 3));
 
         IEnumerable<ServerGamePacket> Completions() => queue.Where(packet =>
         {
@@ -299,8 +310,10 @@ public class QuestAccountRewardSettlementTests
             var context = base.CreateContext();
             context.SavingChanges += (_, _) =>
             {
-                if (!RejectAwards || !context.ChangeTracker.Entries<AccountCurrencyOperationModel>()
-                    .Any(row => row.State == EntityState.Added && row.Entity.OperationKey.StartsWith("craft-award:", StringComparison.Ordinal))) return;
+                if (!RejectAwards || !(context.ChangeTracker.Entries<AccountCurrencyOperationModel>()
+                    .Any(row => row.State == EntityState.Added && row.Entity.OperationKey.StartsWith("craft-award:", StringComparison.Ordinal))
+                    || context.ChangeTracker.Entries<AccountInventoryModel>()
+                    .Any(row => row.State == EntityState.Added && row.Entity.CreationKey != null))) return;
                 Refused = true; throw new IOException("Owned quest account award refusal.");
             };
             return context;
