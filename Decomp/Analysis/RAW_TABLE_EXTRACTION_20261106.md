@@ -37,3 +37,13 @@ Consequences:
   7068). Which essence currency (account currencies 15 to 18) and how the amount is granted is not
   determined by the table; it needs the native grant routine or a capture. This is the one genuinely
   unhandled quest reward type.
+
+## Type 10 (RotationEssence) follow-up (2026-11-06)
+
+Amount distribution across the 86 rows is 24 (68 rows), 40 (16 rows) and 240 (2 rows); `ObjectId` is always 0.
+86 distinct quests (from 7068) carry them, 12 of which also have other reward rows. `RewardRotationEssence.tbl`
+(20 rows) maps each rotation essence entry to one of account currencies 15 to 18 (CrimsonEssence, CobaltEssence,
+ViridianEssence, VioletEssence) with level 50 and difficulty flags, but nothing links a quest to an essence entry.
+Which currency a type-10 reward credits is therefore decided by server logic (likely the active rotation) and is not
+recoverable from the tables or from the client binary (rewards are granted server-side). Gate: a retail server witness
+of a type-10 quest completion, or the active-rotation rule from a rotation capture. Left unhandled and inert.
