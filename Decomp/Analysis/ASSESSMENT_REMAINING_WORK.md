@@ -1,5 +1,9 @@
 # Assessment follow-through goal
 
+[Contract full-table classification](CONTRACT_FULL_TABLE_CLASSIFICATION_20261106.md) (2026-11-06): all 726 choices of
+tracks 4/5 resolve in the table their enum selects (Item2 or AccountItem, count 1) against hash-matched build
+16042 tables. Raw-table census only; public 07CE stays unwired pending the reset edge rules and choice policy.
+
 [Raw build 16042 tables](RAW_TABLE_EXTRACTION_20261106.md) (2026-11-06): all 384 DB tables extracted from the
 installed client; 9 hashes match the recorded build 16042 values. Quest2Reward has no type 6/8/9 rows; type 10
 (86 rows) is the only unhandled quest reward. The 481759-byte table named in the 609 entry was not found.
