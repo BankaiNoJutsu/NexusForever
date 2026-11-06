@@ -33,6 +33,20 @@ The dedicated editable worktree is I:/GIT/NexusForever-iccomm-20261106; locate t
 current checkout instead of assuming that path remains valid. Preserve the
 separate concurrent Q3777 provider work.
 
+The subsequent hosted ICComm socket milestone passes bounded Global and prepared-
+Guild scenarios: seven sessions/55 frames/18 message attempts per scope and 66
+scoped tests. Read ICCOMM_SOCKET_RECONNECT_QUALIFICATION.md and its portable record.
+All nine owned services, broker/EPMD and seven copied schemas were cleaned up;
+seven original schemas match their before dumps. Native/automatic reconnect,
+positive Group/live scope changes and policy semantics remain open. Abortive
+Linger(0) was requested; no captured TCP RST is claimed.
+
+Continue with the separately reproduced CharacterListManager -> CostumeManager
+null-Player presentation exception. Preserve loaded-owner persistence guards;
+qualify presentation without weakening save or publication authority. This did
+not prevent the bounded ICComm peers from reaching ClientEnteredWorld, but means
+those runs do not qualify error-free character-list gear presentation.
+
 Continue the next actionable restoration outcome from current evidence.
 Unknown290 already has an aliased native dispatch body and a Source ServerControl
 proxy, but actual row44606/raid eligibility is unqualified. Unknown203 dispatches

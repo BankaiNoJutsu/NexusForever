@@ -1,11 +1,10 @@
 # Missing Feature and Opcode Decode Matrix
 
-F-012 Source follow-through: [ICComm membership ownership](ICCOMM_MEMBERSHIP_OWNERSHIP.md)
-now binds public requests and accepted packet publication to the original Player,
-session and membership handle. All 24 new/all 50 scoped cases and both self-review
-axes pass. This closes the reproduced stale-owner boundary, not socket/native
-callbacks, entitlement/quota/throttle/reconnect or retail qualification. F-012
-remains partial; chat auxiliary producer gates are unchanged.
+F-012: [ICComm socket and explicit reconnect qualification](ICCOMM_SOCKET_RECONNECT_QUALIFICATION.md)
+passes bounded Global/prepared-Guild sessions, actual wire observations, normal
+and requested abortive cleanup and explicit rejoin; 66 scoped tests pass.
+Native/automatic reconnect, positive Group and policy gates remain open. F-012
+stays partial; separate character-list costume presentation failure is recorded.
 
 5 November [complete family-level blocker audit](ALL_REMAINING_BLOCKERS_RESEARCH_2026_11_05.md)
 reconciles every F-001..F-036 area and the broader Source/data/provider/native

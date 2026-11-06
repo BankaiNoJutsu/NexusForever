@@ -5,7 +5,10 @@ Player to send through or remove another ICComm membership. Membership now
 retains its original Player, GUID and session. A replacement session requires
 an explicit new join, and late packets on the old socket cannot operate the
 new membership. This completes a Source/public-handler boundary in F-012;
-ICComm native/socket/retail qualification remains open.
+ICComm native/retail qualification remains open. A subsequent
+[hosted socket milestone](ICCOMM_SOCKET_RECONNECT_QUALIFICATION.md) qualifies
+bounded Global/prepared-Guild explicit disconnect/reconnect on this candidate;
+the Source-only observations below remain their own earlier milestone.
 
 ## Reproduced problem and resulting behavior
 

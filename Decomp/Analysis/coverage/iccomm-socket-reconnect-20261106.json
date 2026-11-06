@@ -1,0 +1,393 @@
+{
+  "Date": "2026-11-06",
+  "BaseHEAD": "0fea0df75b9d17d2eda75a104d8024f7896743f0",
+  "Branch": "codex/iccomm-membership-ownership-20261106",
+  "Classification": "Hosted Global/prepared-Guild sockets and explicit reconnect qualified within stated bounds; F-012 and retail unfinished",
+  "DedicatedCheckout": "I:\\GIT\\NexusForever-iccomm-20261106",
+  "RawEvidence": "I:\\GIT\\NexusForever-iccomm-20261106\\artifacts\\iccomm-socket-reconnect-20261106",
+  "SourceSHA256": {
+    "Source/NexusForever.Game/ICComm/ICCommManager.cs": "91e44f66bddb3519c0a497ca68c89193d52db661216a90f1d2110894d4b138e6",
+    "Tools/NexusForever.LoadTest/Program.cs": "453a4abe59020f52e1fe0c25e2a0501cfa9944082b4a0f7624497b771043628a",
+    "Tools/NexusForever.LoadTest/ICCommProtocol.cs": "375eba20531ba53f649c430ebf011766c827ce4374b1a752ad7f985d00f01b60",
+    "Source/NexusForever.Game.Tests/ICComm/ICCommProtocolTests.cs": "102ddabea8b3301da8ff54a89ec72a3feb4f6b06a42371d0e4a3bf944bd65034",
+    "Source/NexusForever.WorldServer/Network/Message/Handler/ICComm/ClientICCommHandlers.cs": "841e5067b7fd5e09d8cb77f45499fead5ea252d7ab3a6be0418677ae93ea309b",
+    "Tools/NexusForever.LoadTest/ICCommReconnectCommand.cs": "3558aed51ce35eaabf22b5a26445a4eacc24967b645f5c239f0c8df89cd64fb1"
+  },
+  "FrozenBinarySHA256": {
+    "NexusForever.WorldServer.dll": "dc54e759eea91e97ce8c58d3483b202405c242489d4f5dc09adf82ebbe4a262d",
+    "NexusForever.Game.pdb": "ec9a2532ac3319782523a30191306d9d053ec243f92d03728812cf2ad6dad69b",
+    "NexusForever.Game.dll": "32be5b774a93d6502215dc8a5482f8779613b697eba55eb9a8a2f6bf27247f86",
+    "NexusForever.WorldServer.pdb": "a23b7e4e2c42402a45979b9c1581a7abd1207ac613984c799da74864452f8a7b",
+    "NexusForever.LoadTest.pdb": "83bc9c514c77f6d765b370be2ca8b6166e498fabd73b8560c2ce75e6eeaf76d4",
+    "NexusForever.Game.Tests.pdb": "83441658af30bdf54cfbde4160f6d1e29b0a28c3c34d84838c34888c6c20ce76",
+    "NexusForever.LoadTest.dll": "3dda769ef0a57efeec096f9dd456020e0b1722b1889b57b71d73519210e50147",
+    "NexusForever.Game.Tests.dll": "97ecd69eaeb4fbe5a2d655c48e6919f0497f4db882c3f350fa41bede529aba26"
+  },
+  "CompilerSourceBinding": [
+    {
+      "File": "NexusForever.Game.pdb",
+      "CompilerDocuments": 1018,
+      "SHA256": "EC9A2532AC3319782523A30191306D9D053EC243F92D03728812CF2AD6DAD69B"
+    },
+    {
+      "File": "NexusForever.WorldServer.pdb",
+      "CompilerDocuments": 460,
+      "SHA256": "A23B7E4E2C42402A45979B9C1581A7ABD1207AC613984C799DA74864452F8A7B"
+    },
+    {
+      "File": "NexusForever.Game.Tests.pdb",
+      "CompilerDocuments": 727,
+      "SHA256": "83441658AF30BDF54CFBDE4160F6D1E29B0A28C3C34D84838C34888C6C20CE76"
+    },
+    {
+      "File": "NexusForever.LoadTest.pdb",
+      "CompilerDocuments": 11,
+      "SHA256": "83BC9C514C77F6D765B370BE2CA8B6166E498FABD73B8560C2CE75E6EEAF76D4"
+    }
+  ],
+  "Tests": {
+    "Failures": 0,
+    "TRXSHA256": "0818a60acd2b5af9c59d7e15d261d496d842e9bedb772fcfc9a8378d7836f85f",
+    "WorldAuthHarnessWarnings": 0,
+    "NewCases": 16,
+    "FullSolutionOrSuite": false,
+    "ScopedPassed": 66,
+    "TestWarning": "Existing ASPIRE010"
+  },
+  "Hosted": {
+    "AssetValidation": "Current MapGenerator table/map validation passed",
+    "AssetFiles": 1211,
+    "Generations": [
+      {
+        "Project": "NexusForever.API.Character",
+        "Pid": 39560,
+        "Executable": "I:\\GIT\\NexusForever-iccomm-20261106\\artifacts\\iccomm-socket-reconnect-20261106\\hosted\\NexusForever.API.Character\\NexusForever.API.Character.exe",
+        "StartedUtc": "2026-11-06T12:11:49.500863Z",
+        "SHA256": "8A3D6726615276FCB6D0D5C44455CB565A910109F06B1368462AEEA099B9F5B1",
+        "Label": "socket"
+      },
+      {
+        "Project": "NexusForever.API.Account",
+        "Pid": 7936,
+        "Executable": "I:\\GIT\\NexusForever-iccomm-20261106\\artifacts\\iccomm-socket-reconnect-20261106\\hosted\\NexusForever.API.Account\\NexusForever.API.Account.exe",
+        "StartedUtc": "2026-11-06T12:11:49.5660371Z",
+        "SHA256": "AEBDB7956492B20267B8A525487CE473A3B31A701569D81AEEA06E04BE4BF3B9",
+        "Label": "socket"
+      },
+      {
+        "Project": "NexusForever.Server.Character",
+        "Pid": 37752,
+        "Executable": "I:\\GIT\\NexusForever-iccomm-20261106\\artifacts\\iccomm-socket-reconnect-20261106\\hosted\\NexusForever.Server.Character\\NexusForever.Server.Character.exe",
+        "StartedUtc": "2026-11-06T12:11:49.6030371Z",
+        "SHA256": "E838D45C042B73FCB193932E72DF08B9302D44203DE80CC0A1033E570651CFA4",
+        "Label": "socket"
+      },
+      {
+        "Project": "NexusForever.Server.GroupServer",
+        "Pid": 22956,
+        "Executable": "I:\\GIT\\NexusForever-iccomm-20261106\\artifacts\\iccomm-socket-reconnect-20261106\\hosted\\NexusForever.Server.GroupServer\\NexusForever.Server.GroupServer.exe",
+        "StartedUtc": "2026-11-06T12:11:49.6422311Z",
+        "SHA256": "AB6A2BE8D27F68A5D442069C947DCE8F34DEF3E45D3CDF7E00DC6D035D231D52",
+        "Label": "socket"
+      },
+      {
+        "Project": "NexusForever.Server.ChatServer",
+        "Pid": 35516,
+        "Executable": "I:\\GIT\\NexusForever-iccomm-20261106\\artifacts\\iccomm-socket-reconnect-20261106\\hosted\\NexusForever.Server.ChatServer\\NexusForever.Server.ChatServer.exe",
+        "StartedUtc": "2026-11-06T12:11:49.681684Z",
+        "SHA256": "CF9CAE40FB2A81C146A247DF4B85523CF4D6E47CF5E9B1289D091EB99564B65A",
+        "Label": "socket"
+      },
+      {
+        "Project": "NexusForever.Server.Friendship",
+        "Pid": 37908,
+        "Executable": "I:\\GIT\\NexusForever-iccomm-20261106\\artifacts\\iccomm-socket-reconnect-20261106\\hosted\\NexusForever.Server.Friendship\\NexusForever.Server.Friendship.exe",
+        "StartedUtc": "2026-11-06T12:11:49.724173Z",
+        "SHA256": "E0159DE57F5C8D22D257729DEB22B165058622AB56F6BA628053338D7EE487FE",
+        "Label": "socket"
+      },
+      {
+        "Project": "NexusForever.StsServer",
+        "Pid": 15384,
+        "Executable": "I:\\GIT\\NexusForever-iccomm-20261106\\artifacts\\iccomm-socket-reconnect-20261106\\hosted\\NexusForever.StsServer\\NexusForever.StsServer.exe",
+        "StartedUtc": "2026-11-06T12:11:49.7722057Z",
+        "SHA256": "65083CD57A213C5D59B2588BC1912B1A4D0FDE38C9A4C5440D4C532156185EC6",
+        "Label": "socket"
+      },
+      {
+        "Project": "NexusForever.AuthServer",
+        "Pid": 18644,
+        "Executable": "I:\\GIT\\NexusForever-iccomm-20261106\\artifacts\\iccomm-socket-reconnect-20261106\\hosted\\NexusForever.AuthServer\\NexusForever.AuthServer.exe",
+        "StartedUtc": "2026-11-06T12:11:49.8229269Z",
+        "SHA256": "7D4070DF8402D99DEEAB304DB753060F74160FCDBA27E5598A968798C37ECF4E",
+        "Label": "socket"
+      },
+      {
+        "Project": "NexusForever.WorldServer",
+        "Pid": 26308,
+        "Executable": "I:\\GIT\\NexusForever-iccomm-20261106\\artifacts\\iccomm-socket-reconnect-20261106\\hosted\\NexusForever.WorldServer\\NexusForever.WorldServer.exe",
+        "StartedUtc": "2026-11-06T12:11:49.8725963Z",
+        "SHA256": "B149DE54428AD7B352E92A8A0BEB5A3AF8CC8C0E773E72579C3AC8E959BBB3E3",
+        "Label": "socket"
+      }
+    ],
+    "ScenarioAudit": [
+      {
+        "TransportResetCapture": false,
+        "AbortiveRequested": 1,
+        "FinalOfflineAndClosed": true,
+        "RawWireHashesVerified": true,
+        "Peers": 7,
+        "BobEpochs": [
+          13,
+          14,
+          15,
+          16
+        ],
+        "ExcludedDeliveryAbsentThroughTranscriptEnd": true,
+        "EconomyAndEntitlementsUnchanged": true,
+        "Messages": 18,
+        "Frames": 55,
+        "Passed": true,
+        "Scenario": "global-final"
+      },
+      {
+        "TransportResetCapture": false,
+        "AbortiveRequested": 1,
+        "FinalOfflineAndClosed": true,
+        "RawWireHashesVerified": true,
+        "Peers": 7,
+        "BobEpochs": [
+          17,
+          18,
+          19,
+          20
+        ],
+        "ExcludedDeliveryAbsentThroughTranscriptEnd": true,
+        "EconomyAndEntitlementsUnchanged": true,
+        "Messages": 18,
+        "Frames": 55,
+        "Passed": true,
+        "Scenario": "guild-final"
+      }
+    ],
+    "AssetIdentitySHA256": "712d16ac33ebb7fab877fe16adc7baf9358696af5d01abcfc6e6f5a15161f122",
+    "CandidateManifestSHA256": "9664e579e1f88f35acc5a1885fc8f6c1674a3bbc53cbea48f48313ed1880dacc",
+    "RuntimePreservation": {
+      "Unchanged": true,
+      "Files": 1258
+    }
+  },
+  "Fixtures": {
+    "Authority": "Three newly seeded numbered Load accounts in copied schemas; Guild membership prepared offline",
+    "PreparedGuild": 1,
+    "Accounts": [
+      28,
+      29,
+      30
+    ],
+    "ExistingEntitlementsEdited": false,
+    "OrdinaryRank": 9,
+    "Characters": [
+      75,
+      76,
+      77
+    ],
+    "OutsiderGuild": null,
+    "Schemas": 7
+  },
+  "Cleanup": {
+    "PortsAbsent": [
+      5687,
+      43687,
+      25687,
+      6609,
+      23119,
+      24009,
+      4009,
+      4019,
+      5009
+    ],
+    "OwnedServicesStopped": 9,
+    "BrokerStopped": true,
+    "OwnedProcessesAbsent": true,
+    "OriginalSchemasPreserved": 7,
+    "OwnedSchemasRemoved": 7,
+    "EpmdStopped": true,
+    "MySQL80": "Running"
+  },
+  "OriginalPreservation": [
+    {
+      "Equal": true,
+      "Schema": "nexus_assessment_20261029_auth",
+      "SHA256": "697C452913390159B76307EA35B78345092F38B63BD19CD7487346D180BD18D3"
+    },
+    {
+      "Equal": true,
+      "Schema": "nexus_assessment_20261029_character",
+      "SHA256": "177B1A7DBEB3018F9814B5706600172710CC3548C9FDDDA22B9B1257DD0C1EBE"
+    },
+    {
+      "Equal": true,
+      "Schema": "nexus_assessment_20261029_world",
+      "SHA256": "09140C356819ABCE185893F019B31799010DD83FA29238A12CF2C887B5D47788"
+    },
+    {
+      "Equal": true,
+      "Schema": "nexus_assessment_20261029_group",
+      "SHA256": "4A4EDFF09F82E721A4F19127C4F47267A32841A821183CEB133588DCB114ED06"
+    },
+    {
+      "Equal": true,
+      "Schema": "nexus_assessment_20261029_chat",
+      "SHA256": "2D30B06775113D444071523E4CE0CA268F5AE28768C23E72A985A09A32A3C8E2"
+    },
+    {
+      "Equal": true,
+      "Schema": "nexus_assessment_20261029_friendship",
+      "SHA256": "46E1D34195FAF411F3B61647E2312A99E2885554F1F61872E498170B8F27285D"
+    },
+    {
+      "Equal": true,
+      "Schema": "nexus_assessment_20261029_query",
+      "SHA256": "24C05FC98D97923531946B720F44BEE51BCF71A830CFA74286868125F2ADC1C7"
+    }
+  ],
+  "QueueProof": {
+    "AfterServices": "Six queues: ready=0, unacknowledged=0, consumers=0",
+    "BeforeStopSHA256": "8fcba7aef9a03e5e9d84bee7fca0a16d62b02eced324116558dfa891733d17cf",
+    "AfterServicesSHA256": "90a562371ab7a8db8b02dd756910d6122791ae86e03bad57ecef654531100913",
+    "BeforeStop": "Six queues: ready=0, unacknowledged=0"
+  },
+  "Reviews": {
+    "IndependentReviewer": false,
+    "Spec": "Primary-agent self-review: actual production wire schemas, ordered results, ownership and explicit reconnect, SQL/lifecycle cleanup and limits checked; no open ICComm finding",
+    "Standards": "Primary-agent self-review: loopback/copy/account opt-in guards, cleanup failure handling, acquired-socket disposal, credential-free reports, scoped builds/tests and explicit staging checked; no open ICComm finding"
+  },
+  "Limitations": [
+    "Linger(0) abortive request; no packet-captured TCP RST or server reset-error witness",
+    "500 ms negative windows plus absence through transcript end; no unbounded absence claim",
+    "Prepared Guild membership; public guild creation and positive Group not qualified",
+    "Character-list costume preview logs null-Player exception; selection and ClientEnteredWorld complete; error-free presentation unqualified",
+    "Native callbacks/automatic reconnect, live scope changes, simultaneous replacement, cross-realm, circles, entitlements, quotas, throttling and persistence remain open",
+    "Achievement earning/recovery and retail parity are separate gates",
+    "Ignored evidence requires private transfer; configs and original dumps are not committed"
+  ],
+  "NativeClientLaunched": false,
+  "ComputerUse": false,
+  "Q3777WorkPreserved": true,
+  "ProductionServerChanged": false,
+  "EvidenceIndexSHA256": "4db56f02a6781186c33d70577c9302179c6236a919e13b10b6294c4edf03ade9",
+  "EvidenceSHA256": {
+    "queues-before.log": "69848ac9903a9e4a3d657329779102eda0e944f2e5ddeaad387408459a42aa63",
+    "Stop-cleanup.json": "491251cbd4940a573c6647baba72cbc15753cebb15c4be0f55b40af0b2949c52",
+    "fixture-build.log": "c85ef5374c4d14b6765d3638af231713d10deaf962f9508d01a616ba8e7beeb9",
+    "NexusForever.Server.Friendship.socket.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "broker-owner.json": "eeb75ca4a76ad52b1f316def788781a69b1117d1cf6eb18fb93e9c28d8070774",
+    "world-build.log": "7757fbf7628a1555ebe0ca867fc69cd32be96a6c84860039eaf927d7d011b03a",
+    "global-01.log": "64ed9435375e979145784c060682ccf9f568e882c95a8e951e18b22a8e5b4bd1",
+    "compiler-source-proof.json": "55faf1dea524dc6cc90f1a28c86c07000399ad557687ea9bfe04f25399949504",
+    "original-preservation.json": "177c8a84675ec5ab1a67a3dc4fec1ac8b65709a33e2441308ba00914608590bd",
+    "NexusForever.WorldServer.socket.stdout.log": "d661ce95f1f0ab6a73894fe058c838215ee305d9e9998e4adcd22a90b2ce76f4",
+    "scoped-final.log": "c5f03d89978c418e08c81c237d9f3bc3679070211206b44b72047a28ecb000e2",
+    "start-broker.ps1": "096ef53ba088b3e5e153548c2f2236b9e8881e9ffc61bce96475ab8d2dcd146e",
+    "epmd-before-stop-02.log": "f55db2f8a4fabdfcb166d5c84ab2713b33329342db29d2e0cf399672d49ee006",
+    "asset-identity.json": "712d16ac33ebb7fab877fe16adc7baf9358696af5d01abcfc6e6f5a15161f122",
+    "database-copies/manifest.json": "aea50ba4f077f7444a35b1bef81eceb74a509785fe8e0237fd90bb07ae14cea2",
+    "NexusForever.Server.ChatServer.socket.stdout.log": "522906b8dc9bd803aca993977edf42523822cea704e5a6120d94759b29ad984f",
+    "fixture.log": "0de56c81cd9562b51fbbf87da239a674c788763feca434ad07cb1edce6eb981e",
+    "epmd-before-stop.log": "68748c127307a8410d6fff670ae517d8e4242e46b4fdfa62d6166fb8cad0e518",
+    "final-bin/NexusForever.Game.dll": "32be5b774a93d6502215dc8a5482f8779613b697eba55eb9a8a2f6bf27247f86",
+    "NexusForever.WorldServer.socket.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "harness-build-02.log": "02c73f90921c9fcd1aff7a516d3c349f0822e52c31b805cc038d01532b70bb91",
+    "NexusForever.Server.Friendship.build.log": "d1ec503de03bdefbb37afc6375feadf0f6c0da8bb3bddc79829b1c33ff76c062",
+    "broker-stop.log": "8da2a42818f6ae2af5da10f472d73bd9ff2399f6700f194b2f9db2fb349e7872",
+    "NexusForever.API.Account.socket.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "NexusForever.Server.GroupServer.build.log": "8b68002bb5c69c7367b6e65d362318996a86b4b45678e06c663f4bae5a135036",
+    "broker-start.log": "a94568bdd95bbfb081ebf58a60eba7f6c81373b0877c3c2625a576c7f8c60d0d",
+    "NexusForever.Server.ChatServer.build.log": "8b68002bb5c69c7367b6e65d362318996a86b4b45678e06c663f4bae5a135036",
+    "test-build-final.log": "8d6d62c0e1a121cadcca9e1d28f6200a1a8b29380838e35aeaa4d81c4783728e",
+    "migrations.log": "3f89a90cfa72eae557540090dbf5b5fbe2b06b5bbc6d0830e67ac849d32a33e8",
+    "broker.stderr.log": "f8e842590e1674b13ccbe7c587a2dd4ef13f68436ae25828c6d74fd12ba2975d",
+    "global-02.log": "64ed9435375e979145784c060682ccf9f568e882c95a8e951e18b22a8e5b4bd1",
+    "NexusForever.Aspire.Database.Migrations.build.log": "ac35f7a8d4b8cb3f50f6f68a480a6922d369f0c78dd4c8666aa05502aadd5456",
+    "seal.ps1": "203e25168e74449069fd31bdaa9f70cf1fc7e8deb34250a37091ee2ac16a159f",
+    "fixture/Fixture.csproj": "34904b7bc3c4168f0d5119a74ac47659ca0ff95317f7db3834ca264435807be6",
+    "results/scoped-02.trx": "d227ecd894bf9c9a5491bb519f8cf53850d6899d81858dfcb598bb7d926a9dee",
+    "services.ps1": "a1413b05b86a296c6b466e6603a66b658f5d6977e3da90b1c39391d75f4cf195",
+    "transcript-audit.json": "6d1a7a2534b1a2a1ec87fda126c1d06b8c0a81ba3b1a0845302c193368979b9b",
+    "source-proof/Program.cs": "e3e9b48117bbb3bdc9eace8933c6c7b4c9c7f57b4e88bb58eaec0e0c7cdb84f5",
+    "NexusForever.Server.Friendship.socket.stdout.log": "a97c6b5812a0b28d0f7ec2c6b78ebe2fcbd4e0d7e2176dc51c8eca84ae365253",
+    "test-build-01.log": "d15361a465e48ffe7cdccbe9391906a0f08d7fc54319750dd45f955c038c9a81",
+    "Start-socket.json": "c0b5dae974fb0dc0a5dd03aa28ff271397017470921f739920f498a12403242c",
+    "final-bin/NexusForever.LoadTest.dll": "3dda769ef0a57efeec096f9dd456020e0b1722b1889b57b71d73519210e50147",
+    "guild-01.log": "4ebeec7a182716cda5b8d6e8f2b7ff15949a93df7e8434b616c4252a205e5e1f",
+    "asset-validation.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "harness-attempt-01/NexusForever.LoadTest.dll": "d34ebc5a8360eabcc44654d60dacc3722728ad1a00bb2d7cf30e57c99320fb75",
+    "final-bin/NexusForever.Game.pdb": "ec9a2532ac3319782523a30191306d9d053ec243f92d03728812cf2ad6dad69b",
+    "results/scoped-final.trx": "0818a60acd2b5af9c59d7e15d261d496d842e9bedb772fcfc9a8378d7836f85f",
+    "global-02/transcripts.json": "7a5abd84194bbf4e53d72c83645c6f778c56283f571c5616e126bf75a414992c",
+    "guild-final/iccomm-reconnect.json": "3bf691cc73297e25d244ea11e0eae44f9dd89798581b12ea1f26ad61d9eda6a7",
+    "guild-01/transcripts.json": "8039e9fc12bbfa8995a84d97a57cdd7a6f54872ee63ccd5a4698fee1ac7c1b8d",
+    "service-owners.json": "a5338d955b09046ec0b16f3a9625b7955c763aae07dc722e474e6078745f932f",
+    "verify-originals.ps1": "028642164eb4e3597c772feec59145c59405ce9115f12ef59f98ac9a2dda7690",
+    "cleanup-hosted-schemas.ps1": "21ab013d4b63458a4c95d92e2e95259cfba67609749808d0dc3905e6f7de3b51",
+    "broker.stdout.log": "d7842c10908d29673a915fb1a14ddf773d0d101d164a8f513d9d831a6dfbcbc0",
+    "final-bin/NexusForever.WorldServer.pdb": "a23b7e4e2c42402a45979b9c1581a7abd1207ac613984c799da74864452f8a7b",
+    "NexusForever.Server.Character.socket.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "NexusForever.API.Character.socket.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "NexusForever.API.Character.socket.stdout.log": "b2c547603585015466d1a8cda7c9e375b2905d1960d1770ba6748ede83dfd861",
+    "final-bin/NexusForever.Game.Tests.dll": "97ecd69eaeb4fbe5a2d655c48e6919f0497f4db882c3f350fa41bede529aba26",
+    "prepare-hosted.ps1": "7d5bd6a3e898db964a9d98e72d50e16e1c1a25e7528dbf311856b1e958b28203",
+    "NexusForever.AuthServer.build.log": "a406147715d71e1af2a7e8749714b89df0e278a5f366335c61d8321e23aefad4",
+    "harness-build-01.log": "03274a50d84cbc7e2bc0c9c2eb6d1d4f0f77f459775a3c507c9d24f6fc5f90e6",
+    "NexusForever.API.Character.build.log": "ab954288102e7a0250d9571deab23ff65f9163d35a4b8d43ca3fcc34f719ab85",
+    "NexusForever.StsServer.build.log": "2bef02cf98f8651b6a5d5a1b91ebda85090102c09361202c6a8aa95cab597939",
+    "final-bin/NexusForever.WorldServer.dll": "dc54e759eea91e97ce8c58d3483b202405c242489d4f5dc09adf82ebbe4a262d",
+    "broker-control.ps1": "48b9a20479a615d00d8625d01a1769a8e56be891546126acfa2cd7196323f4fd",
+    "final-bin/NexusForever.Game.Tests.pdb": "83441658af30bdf54cfbde4160f6d1e29b0a28c3c34d84838c34888c6c20ce76",
+    "NexusForever.AuthServer.socket.stdout.log": "da4d59004fe8244372414d106bda3198cc31479fdeedde7759fa1a5621026864",
+    "global-final/transcripts.json": "6b7bf4f13704dcac3fc4fa147735aa3e3a208dcd3fa58a6283bb2005aff3061f",
+    "fixture-02.log": "ed9eeb606911fcbc10fa7c48be7cbb6a263123eb5e21101bd3340c98a6a5a539",
+    "NexusForever.AuthServer.socket.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "NexusForever.StsServer.socket.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "global-final.log": "64ed9435375e979145784c060682ccf9f568e882c95a8e951e18b22a8e5b4bd1",
+    "test-build-02.log": "9a95e5395524b696dd47d1402994b2dd7dd1e076cedb7bf2ffd28d6e0ef14f2b",
+    "NexusForever.StsServer.socket.stdout.log": "1bc1cf7c62d14a95676d25c961ed92ec424519d56fe7e1330f2cb1b70ca87b09",
+    "runtime-preservation.json": "9ef79f1b4a634f0c4fe35f952e85680214cee4c8692f35cc6fa890ff927cdfe1",
+    "harness-build-03.log": "3e8bdad935de057e5a21facb54fd2b794ae31cfcc342fa6cdb36857176fa3ef2",
+    "fixture-owners.json": "2925da66a352905c60b8d328f587f70b2669b148e8f5e7bfcfa6fe861ed2152d",
+    "live-generations.json": "9314c3bc0822fde27cbdb6b20b845e6e92cc15f957531c95eefbc332bf87b6f4",
+    "prepare-hosted.log": "f28978c533fdf079abc49e64dc9f71b61bcdec84371487137683f1afa9b09eb6",
+    "final-bin/NexusForever.LoadTest.pdb": "83bc9c514c77f6d765b370be2ca8b6166e498fabd73b8560c2ce75e6eeaf76d4",
+    "fixture/Program.cs": "2166bf8223f91a5429584e727bc6179aad2d7c240265d322b26c2ef2271fff11",
+    "hosted-schema-cleanup.json": "153f1ea59ac3d3c5ebb4b869c8f7df7d031b4a26d7779ab8f00cd2d5e06a4fd5",
+    "candidate-manifest.json": "9664e579e1f88f35acc5a1885fc8f6c1674a3bbc53cbea48f48313ed1880dacc",
+    "fixture-build-03.log": "63ee9938a7710b865637bf87faec5596b66e55faff6a0b1c99cab183bba18427",
+    "NexusForever.Server.Character.build.log": "54fac3a0daa24bbd6d6277f7eca51be094bc55149bba1d2603b58515a5dbb32c",
+    "audit.ps1": "ea2482b6c0269a6d31192f645088c3eacbec85daf62ed4cc6706a93a5f6b7bb3",
+    "source-proof/SourceProof.csproj": "208a407f2466203959e3b36cd1a39d32adbeb2ce27cfd37dfb9b01cf8b3ae860",
+    "cleanup-proof.json": "beaa1e5f11ed085db17514b232c3c0e5cd1b7e717b1c50bd5f0ba5563872fec6",
+    "scoped-01.log": "8e2cb2b8d8b454fc6b81f8672eef74344b137f54acc4fea60ddc5d7b67a7b3fb",
+    "global-01/transcripts.json": "690780ff097ae892d7728697bb6533e87d943e9c808ac350987cda318d511a84",
+    "results/scoped-01.trx": "700a5edc5cb9705e7a9f2f773e87c544404fc4e2773b77a12d5d0abebb189733",
+    "epmd-stop.log": "ff53a52e09125fc51fa203d7183a4db722c617b0e62131fdcf8fd1a1ef08c079",
+    "NexusForever.Server.GroupServer.socket.stdout.log": "2c61c04353305f0370f06060588c2ff2dc3185ebf24d3e827da566e358a903c6",
+    "NexusForever.API.Account.socket.stdout.log": "95de04ab6988b77c5facf5e36237c5c4bb2a33bc3b1b0bb911250bc8e17e3944",
+    "queues-after-scenarios.log": "8fcba7aef9a03e5e9d84bee7fca0a16d62b02eced324116558dfa891733d17cf",
+    "global-final/iccomm-reconnect.json": "fb47273cd62e50094cb1e092772f356362b98ac885cd7d85fdcd6c2507809c91",
+    "NexusForever.Server.GroupServer.socket.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "harness-attempt-01/NexusForever.LoadTest.pdb": "ee09bd3c282c3a3a9e1480ecef0cdf12a3f91219320ef68a715fba7771bcaefb",
+    "queues-after-stop.log": "90a562371ab7a8db8b02dd756910d6122791ae86e03bad57ecef654531100913",
+    "NexusForever.Server.Character.socket.stdout.log": "4a59dc0f11d3a173a59f81184912b7fd79750dac02795464a96f87ddb7333a67",
+    "scoped-02.log": "17ce8d07a65207c41dd1e8be36deb62d5f715bc64f2314f9ee720924db5d9c11",
+    "fixture-build-02.log": "99a777b6d45c9bee72f926698bba064fb3a9654124709baf570d1becd37270b3",
+    "NexusForever.API.Account.build.log": "80a50f066ba0dbab3217e71949cdea1c50a7967d3a3a69db4e59a3a8d77d7a09",
+    "global-01/iccomm-reconnect.json": "df9108a8ffabc6c00d419f94534fe3af625c32fe9f05af26346761612a67543a",
+    "guild-01/iccomm-reconnect.json": "3cbc91bfa61e7cb6032efb0d7d93b7cb66e1205643c78eba49fe96045aaed8e0",
+    "NexusForever.Server.ChatServer.socket.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "global-02/iccomm-reconnect.json": "17ce78de11001c9f85899572bfdd70499934157cfa189a79c4a7e492ffc93dfc",
+    "guild-final.log": "4ebeec7a182716cda5b8d6e8f2b7ff15949a93df7e8434b616c4252a205e5e1f",
+    "guild-final/transcripts.json": "006bb1031577a5ccb3cafda0793fca728760ae3b41e57027d332c7daf6828cb4"
+  }
+}

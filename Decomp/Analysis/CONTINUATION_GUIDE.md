@@ -1,13 +1,14 @@
 # Client Binary Decompile Continuation Guide
 
-[ICComm membership ownership](ICCOMM_MEMBERSHIP_OWNERSHIP.md) now keeps public join/send/cleanup and
-accepted delivery bound to the original Player, session and membership handle.
-The same final 24 cases reproduce 23 baseline failures and one control; all
-50 scoped ICComm cases pass with isolated owning/test builds and both self-review
-axes. Stale GUIDs, sessions, scope changes and leave/rejoin handles cannot inherit
-old traffic. No database/service/native/CUA activity occurred. F-012 and overall
-restoration remain partial; socket/native, entitlement/quota/throttle/reconnect
-and retail gates stay open. Concurrent Q3777 work is preserved separately.
+[ICComm socket and explicit reconnect qualification](ICCOMM_SOCKET_RECONNECT_QUALIFICATION.md) passes Global and
+prepared-Guild runs on the frozen ownership candidate: seven sessions, 55 wire
+frames and 18 message attempts per scope; 66 scoped tests pass. Normal and
+requested abortive closes require saved offline/closed presence and fresh epochs;
+old membership requires explicit rejoin. All nine services, isolated broker/EPMD
+and seven copied schemas are cleaned up; original data and Q3777 work are preserved.
+The separate null-Player costume presentation exception is recorded for the next
+fix. F-012/retail remain partial: native callbacks, automatic reconnect, positive
+Group, live scope changes and policy gates remain open. Native/CUA stay stopped.
 
 6 November resumed continuation: [provider packet and hosted World/Auth qualification](PROVIDER_PACKET_HOSTED_RESTART_HANDOFF.md)
 passes 16 SQLite/16 configured MySQL timestamp probes and 118 scoped Guild cases.
