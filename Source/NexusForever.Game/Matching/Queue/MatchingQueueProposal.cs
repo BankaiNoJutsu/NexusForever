@@ -129,14 +129,20 @@ namespace NexusForever.Game.Matching.Queue
 
             this.matchingQueueGroup = matchingQueueGroup;
 
-            Broadcast(BuildServerMatchingQueueJoin());
-            matchingManager.BroadcastAverageWaitTimeUpdate(MatchType);
-
             foreach (IMatchingQueueProposalMember matchingQueueProposalMember in GetMembers())
             {
                 IMatchingCharacter character = matchingManager.GetMatchingCharacter(matchingQueueProposalMember.Identity);
                 character.AddMatchingQueueProposal(this, matchingQueueGroup);
             }
+
+            foreach (IMatchingQueueProposalMember member in GetMembers())
+            {
+                if (!ReferenceEquals(this.matchingQueueGroup, matchingQueueGroup))
+                    break;
+                member.Send(BuildServerMatchingQueueJoin());
+            }
+            if (ReferenceEquals(this.matchingQueueGroup, matchingQueueGroup))
+                matchingManager.BroadcastAverageWaitTimeUpdate(MatchType);
 
             log.LogTrace($"Set matching queue group {matchingQueueGroup.Guid} for matching queue proposal {Guid}.");
         }
@@ -146,17 +152,31 @@ namespace NexusForever.Game.Matching.Queue
         /// </summary>
         public void RemoveMatchingQueueGroup(MatchingQueueResult? leaveReason = MatchingQueueResult.Left)
         {
-            if (matchingQueueGroup == null)
-                throw new InvalidOperationException();
+            DetachMatchingQueueGroup(leaveReason)?.Invoke();
+        }
 
-            foreach (IMatchingQueueProposalMember matchingQueueProposalMember in GetMembers())
+        public Action DetachMatchingQueueGroup(MatchingQueueResult? leaveReason = MatchingQueueResult.Left)
+        {
+            IMatchingQueueGroup group = matchingQueueGroup;
+            if (group == null)
+                return null;
+
+            matchingQueueGroup = null;
+            var publications = new List<Action>();
+            foreach (IMatchingQueueProposalMember member in GetMembers())
             {
-                IMatchingCharacter character = matchingManager.GetMatchingCharacter(matchingQueueProposalMember.Identity);
-                character.RemoveMatchingQueueProposal(matchingQueueGroup.MatchType, leaveReason);
+                IMatchingCharacter character = matchingManager.GetMatchingCharacter(member.Identity);
+                Action publish = character.DetachMatchingQueueProposal(this, group, leaveReason);
+                if (publish != null)
+                    publications.Add(publish);
             }
 
-            log.LogTrace($"Removed matching queue group {matchingQueueGroup.Guid} from matching queue proposal {Guid}.");
-            matchingQueueGroup = null;
+            log.LogTrace($"Removed matching queue group {group.Guid} from matching queue proposal {Guid}.");
+            return () =>
+            {
+                foreach (Action publish in publications)
+                    publish();
+            };
         }
 
         private IWritable BuildServerMatchingQueueJoin()

@@ -80,6 +80,8 @@ namespace NexusForever.Game.Matching.Queue
                 log.LogTrace($"Matching queue proposal {matchingQueueProposal.Guid} is a solo group, matched right away.");
 
                 IMatchingQueueGroup newMatchingQueueGroup = AddToQueue(matchingQueueProposal);
+                if (newMatchingQueueGroup.IsFinalised || newMatchingQueueGroup.GetMatchingMaps().Count == 0)
+                    return;
                 Matched(newMatchingQueueGroup, new MatchingMapSelectorResult
                 {
                     MatchingMap = newMatchingQueueGroup.GetMatchingMaps()[Random.Shared.Next(newMatchingQueueGroup.GetMatchingMaps().Count)]
@@ -92,6 +94,9 @@ namespace NexusForever.Game.Matching.Queue
             {
                 IMatchingQueueGroup matchingQueueGroup = matchDetails.Value.MatchingQueueGroup;
                 matchingQueueGroup.AddMatchingQueueProposal(matchingQueueProposal, matchDetails.Value.MatchingQueueGroupTeam);
+
+                if (matchingQueueGroup.IsFinalised || matchingQueueGroup.IsPaused)
+                    return;
 
                 IMatchingMapSelectorResult matchingMapSelectorResult = matchingMapSelector.Select(matchingQueueGroup);
                 if (matchingMapSelectorResult != null)
@@ -112,7 +117,8 @@ namespace NexusForever.Game.Matching.Queue
         {
             IMatchingQueueGroup matchingGroup = matchingQueueGroupFactory.Resolve();
             matchingGroup.Initialise(matchingQueueProposal);
-            matchingGroups.Add(matchingGroup);
+            if (!matchingGroup.IsFinalised)
+                matchingGroups.Add(matchingGroup);
 
             log.LogTrace($"Matching queue group {matchingGroup.Guid} added to store.");
 

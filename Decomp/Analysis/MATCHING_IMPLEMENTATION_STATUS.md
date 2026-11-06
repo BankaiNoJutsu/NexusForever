@@ -1,5 +1,13 @@
 # Matching Implementation Status
 
+[Real queue lifecycle](MATCHING_QUEUE_LIFECYCLE.md) now covers the handoff from
+public admission through actual queues/groups/teams/matcher/map selector.
+Complete state precedes join feedback; all leave/all targets detach before
+publication, and new same/different-type admissions survive without old tails.
+Five baseline/four review failures are fixed;19 new/all139 selected cases pass
+with clean builds. F-010 remains partial beyond the MatchManager boundary and
+for actual catalogs, broader transfer/merge/raid/diagnostic and native/retail.
+
 6 November2026 Source update: [admission cancellation and role confirmation](MATCHING_ADMISSION_CANCELLATION.md)
 now honors pending leave/leave-all/logout, party-role cancellation after
 responses, original actor/MatchType and per-notice context. Eight baseline and

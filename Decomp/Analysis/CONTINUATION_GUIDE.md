@@ -1,5 +1,11 @@
 # Client Binary Decompile Continuation Guide
 
+[Matching queue lifecycle](MATCHING_QUEUE_LIFECYCLE.md) completes real backend
+state installation and leave/all detachment before feedback, preserving later
+admissions and suppressing old tails.19 new/all139 scoped cases and clean builds
+pass. Transfer/actual-table/socket/native/retail and wider F-010 stay open; continue
+the broader roadmap with client/CUA stopped.
+
 [Matching admission cancellation](MATCHING_ADMISSION_CANCELLATION.md) now
 honors pending leave/all/logout, original role-response type/actor and retained
 role notice ownership. Eight baseline and three review negatives are fixed;

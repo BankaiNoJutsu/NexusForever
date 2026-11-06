@@ -15,6 +15,8 @@ namespace NexusForever.Game.Matching.Queue
 
         private readonly Dictionary<Static.Matching.MatchType, IMatchingCharacterQueue> matchingCharacterGroups = [];
 
+        private ulong admissionRevision;
+
         #region Dependency Injection
 
         private readonly ILogger<MatchingCharacter> log;
@@ -76,6 +78,8 @@ namespace NexusForever.Game.Matching.Queue
                 MatchingQueueGroup    = matchingQueueGroup,
             });
 
+            ++admissionRevision;
+
             log.LogTrace($"Added matching queue proposal for {matchingQueueProposal.MatchType} to matching character {Identity}.");
         }
 
@@ -87,24 +91,40 @@ namespace NexusForever.Game.Matching.Queue
         /// </remarks>
         public void RemoveMatchingQueueProposal(Static.Matching.MatchType matchType, MatchingQueueResult? leaveReason = MatchingQueueResult.Left)
         {
-            if (!matchingCharacterGroups.ContainsKey(matchType))
-                return;
+            IMatchingCharacterQueue queue = GetMatchingCharacterQueue(matchType);
+            if (queue != null)
+                DetachMatchingQueueProposal(queue.MatchingQueueProposal, queue.MatchingQueueGroup, leaveReason)?.Invoke();
+        }
+
+        public Action DetachMatchingQueueProposal(IMatchingQueueProposal proposal, IMatchingQueueGroup group, MatchingQueueResult? leaveReason)
+        {
+            Static.Matching.MatchType matchType = proposal.MatchType;
+            IMatchingCharacterQueue queue = GetMatchingCharacterQueue(matchType);
+            if (queue == null || !ReferenceEquals(queue.MatchingQueueProposal, proposal)
+                || !ReferenceEquals(queue.MatchingQueueGroup, group))
+                return null;
 
             matchingCharacterGroups.Remove(matchType);
-
-            if (leaveReason != null)
-            {
-                Send(new ServerMatchingQueueResultAnnounce()
-                {
-                    Result = leaveReason.Value,
-                });
-
-                Send(new ServerMatchingLeftQueue());
-            }
-
-            SendMatchingStatus();
+            ulong revision = admissionRevision;
+            IPlayer player = playerManager.GetPlayer(Identity);
+            var session = player?.Session;
+            bool CanPublish() => admissionRevision == revision
+                && player != null && session != null
+                && ReferenceEquals(playerManager.GetPlayer(Identity), player)
+                && ReferenceEquals(player.Session, session);
 
             log.LogTrace($"Removed matching queue proposal for {matchType} from matching character {Identity}.");
+            return () =>
+            {
+                if (leaveReason != null)
+                {
+                    if (!CanPublish()) return;
+                    session.EnqueueMessageEncrypted(new ServerMatchingQueueResultAnnounce { Result = leaveReason.Value });
+                    if (!CanPublish()) return;
+                    session.EnqueueMessageEncrypted(new ServerMatchingLeftQueue());
+                }
+                if (CanPublish()) SendMatchingStatus();
+            };
         }
 
         /// <summary>

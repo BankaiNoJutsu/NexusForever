@@ -1,5 +1,12 @@
 # Continue on another machine
 
+Latest matching Source result: [real queue lifecycle](Decomp/Analysis/MATCHING_QUEUE_LIFECYCLE.md)
+installs complete admitted state before feedback and detaches all original
+leave/all targets before role/leave publication. Five baseline/four review
+failures are fixed;19 new/all139 scoped cases and clean builds pass. Exact
+Source/DLL identities and review status are linked in the portable record.
+MatchManager/transfer, actual catalogs and socket/native/retail remain open.
+
 Latest matching Source result: [admission cancellation and role context](Decomp/Analysis/MATCHING_ADMISSION_CANCELLATION.md)
 completes pending solo/random and party-role cancellation, original response/
 notice ownership and new-request preservation. Eight baseline/three review

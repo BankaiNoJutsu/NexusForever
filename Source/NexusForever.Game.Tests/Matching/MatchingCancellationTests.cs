@@ -23,7 +23,7 @@ using MatchType = NexusForever.Game.Static.Matching.MatchType;
 
 namespace NexusForever.Game.Tests.Matching;
 
-public sealed class MatchingCancellationTests
+public sealed partial class MatchingCancellationTests
 {
     [Theory]
     [InlineData(false, false)] [InlineData(false, true)]
@@ -262,8 +262,10 @@ public sealed class MatchingCancellationTests
         internal readonly IPlayer Leader, Member;
         internal readonly IWorldSession LeaderSession, MemberSession;
         internal Action BeforeValidation;
+        internal readonly List<IMatchingQueueGroup> RealGroups = [];
+        internal readonly List<IMatchingQueueGroup> Matched = [];
 
-        internal Fixture()
+        internal Fixture(bool realBackend = false, bool instant = false, uint teamSize = 5)
         {
             var registry = RecordingDispatchProxy<IPlayerManager>.Create(out var players);
             players.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => Players.GetValueOrDefault((Identity)args[0]));
@@ -277,10 +279,17 @@ public sealed class MatchingCancellationTests
             var matchMap = new NexusForever.Game.Matching.MatchingMap
             {
                 GameMapEntry = new MatchingGameMapEntry { Id = 71, WorldId = 123 },
-                GameTypeEntry = new MatchingGameTypeEntry { Id = 1, MatchTypeEnum = MatchType.Dungeon, TeamSize = 5, MinLevel = 1, MaxLevel = 50 }
+                GameTypeEntry = new MatchingGameTypeEntry { Id = 1, MatchTypeEnum = MatchType.Dungeon, TeamSize = teamSize, MinLevel = 1, MaxLevel = 50 }
             };
-            catalog.SetMethodReturn(nameof(IMatchingDataManager.GetMatchingMap), matchMap);
-            catalog.SetMethodReturn(nameof(IMatchingDataManager.GetMatchingMaps), new[] { matchMap });
+            catalog.SetProperty(nameof(IMatchingDataManager.DebugInstantQueue), instant);
+            var adventureMap = new NexusForever.Game.Matching.MatchingMap
+            {
+                GameMapEntry = new MatchingGameMapEntry { Id = 72, WorldId = 124 },
+                GameTypeEntry = new MatchingGameTypeEntry { Id = 2, MatchTypeEnum = MatchType.Adventure, TeamSize = teamSize, MinLevel = 1, MaxLevel = 50 }
+            };
+            catalog.SetMethodHandler(nameof(IMatchingDataManager.GetMatchingMap), args => (uint)args[0] == 72 ? adventureMap : matchMap);
+            catalog.SetMethodHandler(nameof(IMatchingDataManager.GetMatchingMaps), args =>
+                new[] { (MatchType)args[0] == MatchType.Adventure ? adventureMap : matchMap });
             catalog.SetMethodReturn(nameof(IMatchingDataManager.GetMapEntrance), new NexusForever.Game.Matching.MapEntrance { MapId = 123, Team = 0, Position = default, Rotation = default });
             var times = RecordingDispatchProxy<IMatchingQueueTimeManager>.Create(out _);
             var matches = RecordingDispatchProxy<IMatchCharacterStore>.Create(out var matchStore);
@@ -298,9 +307,27 @@ public sealed class MatchingCancellationTests
                 groupProxy.SetProperty(nameof(IMatchingQueueGroup.Guid), Guid.NewGuid());
                 groupProxy.SetProperty(nameof(IMatchingQueueGroup.MatchType), proposal.MatchType);
                 groupProxy.SetMethodHandler(nameof(IMatchingQueueGroup.RemoveMatchingQueueProposal), _ => { proposal.RemoveMatchingQueueGroup(); return null; });
+                groupProxy.SetMethodHandler(nameof(IMatchingQueueGroup.DetachMatchingQueueProposal), _ => proposal.DetachMatchingQueueGroup());
                 proposal.SetMatchingQueueGroup(group); return null;
             });
-            Manager = new(NullLogger<MatchingManager>.Instance, data, times, Factory(() => backend),
+            var roles = new MatchingRoleEnforcer(Factory<IMatchingRoleEnforcerResult>(() => new MatchingRoleEnforcerResult()));
+            var matchManager = RecordingDispatchProxy<IMatchManager>.Create(out var matched);
+            matched.SetMethodHandler(nameof(IMatchManager.CreateMatchProposal), args => { Matched.Add((IMatchingQueueGroup)args[0]); return null; });
+            Func<IMatchingQueueManager> createBackend = () => realBackend
+                ? new MatchingQueueManager(Factory<IMatchingQueue>(() => new MatchingQueue(
+                    NullLogger<MatchingQueue>.Instance,
+                    new MatchingQueueMatcher(NullLogger<MatchingQueueMatcher>.Instance,
+                        new MatchingQueueGroupMatcher(NullLogger<MatchingQueueGroupMatcher>.Instance, data, roles, registry)),
+                    new MatchingMapSelector(data, roles),
+                    Factory<IMatchingQueueGroup>(() =>
+                    {
+                        var group = new MatchingQueueGroup(NullLogger<MatchingQueueGroup>.Instance, data,
+                            Factory<IMatchingQueueGroupTeam>(() => new MatchingQueueGroupTeam(NullLogger<MatchingQueueGroupTeam>.Instance)));
+                        RealGroups.Add(group); return group;
+                    }), matchManager)),
+                    Factory<IMatchingQueueValidator>(() => validator))
+                : backend;
+            Manager = new(NullLogger<MatchingManager>.Instance, data, times, Factory(createBackend),
                 Factory<IMatchingQueueProposal>(() => new MatchingQueueProposal(NullLogger<MatchingQueueProposal>.Instance, Manager,
                     times, Factory<IMatchingQueueProposalMember>(() => new MatchingQueueProposalMember(registry)), data)),
                 Factory<IMatchingRoleCheck>(() => new MatchingRoleCheck(NullLogger<MatchingRoleCheck>.Instance,
@@ -326,17 +353,17 @@ public sealed class MatchingCancellationTests
             var factory = RecordingDispatchProxy<IFactory<T>>.Create(out var resolver);
             resolver.SetMethodReturnFactory(nameof(IFactory<T>.Resolve), () => create()); return factory;
         }
-        internal void Join(bool random, IWorldSession session = null)
+        internal void Join(bool random, IWorldSession session = null, MatchType type = MatchType.Dungeon)
         {
             session ??= LeaderSession;
             if (random) new ClientMatchingQueueRandomHandler(Manager).HandleMessage(session,
                 Read<ClientMatchingQueueRandom>(writer => { writer.Write((uint)MatchType.Dungeon, 5); writer.Write(0u); writer.Write((uint)Role.DPS); }));
-            else new ClientMatchingQueueHandler(Manager).HandleMessage(session, Read<ClientMatchingQueue>(JoinBody));
+            else new ClientMatchingQueueHandler(Manager).HandleMessage(session, Read<ClientMatchingQueue>(writer => JoinBody(writer, type)));
         }
-        internal void JoinParty(IWorldSession session = null) => new ClientMatchingQueuePartyHandler(Manager).HandleMessage(session ?? LeaderSession, Read<ClientMatchingQueueParty>(JoinBody));
-        private static void JoinBody(GamePacketWriter writer)
+        internal void JoinParty(IWorldSession session = null) => new ClientMatchingQueuePartyHandler(Manager).HandleMessage(session ?? LeaderSession, Read<ClientMatchingQueueParty>(writer => JoinBody(writer)));
+        private static void JoinBody(GamePacketWriter writer, MatchType type = MatchType.Dungeon)
         {
-            writer.Write((uint)MatchType.Dungeon, 5); writer.Write(1u); writer.Write(71u); writer.Write(0u, 14);
+            writer.Write((uint)type, 5); writer.Write(1u); writer.Write(type == MatchType.Adventure ? 72u : 71u); writer.Write(0u, 14);
             writer.Write(0u); writer.Write((uint)Role.DPS); writer.Write(0u);
         }
         internal void Leave(bool all, MatchType type = MatchType.Dungeon)

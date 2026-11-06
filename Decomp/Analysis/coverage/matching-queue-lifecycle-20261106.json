@@ -1,0 +1,709 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-06T01:06:10.786055+00:00",
+  "baseCommit": "c859448a9836f57969856d38c5024215eb517e68",
+  "milestone": "Public matching real queue/group installation, leave publication and replacement ownership",
+  "classification": "Implemented with scoped Source verification; F-010 and overall Goal remain partial",
+  "sources": [
+    {
+      "path": "Source/NexusForever.Game/Matching/Queue/MatchingCharacter.cs",
+      "sha256": "ef1e854c9d16b9ef7ac8aabc0db47ca6e6fd9d507764e90b06d78feb6a9710da",
+      "gitBlob": "02757881436d4670102e3c8f365b137e91ec4342"
+    },
+    {
+      "path": "Source/NexusForever.Game/Matching/Queue/MatchingQueueProposal.cs",
+      "sha256": "4b467e2df3c8fb65bff149f6269c6fa10f10e6549848df4829fb6497f7489b3c",
+      "gitBlob": "942a23b3a89eb8308c9ba1739759e305407dd6c5"
+    },
+    {
+      "path": "Source/NexusForever.Game/Matching/Queue/MatchingQueueGroup.cs",
+      "sha256": "9dfd63fae7eeebdde9966c26a20de7fafe32c20c6ffca6794d1d3ecae21c4028",
+      "gitBlob": "6e7fa145865d0b18bd5b4cc92d916ad8639d8ec0"
+    },
+    {
+      "path": "Source/NexusForever.Game/Matching/Queue/MatchingQueue.cs",
+      "sha256": "ff1ee3e2353c9f601b95a668859a75325bc8d307e8bcc405b64897e6b0984bf8",
+      "gitBlob": "fe73e793fa42425e16e506b65c9fcfa2389924fe"
+    },
+    {
+      "path": "Source/NexusForever.Game/Matching/Queue/MatchingQueueMatcher.cs",
+      "sha256": "fd5c777e678f7ced5320c013eba6d44397f4880fb964308281b122f03c7d3afa",
+      "gitBlob": "92481c423c9ccb0c36eea141ab7cd983dcc9babd"
+    },
+    {
+      "path": "Source/NexusForever.Game.Abstract/Matching/Queue/IMatchingCharacter.cs",
+      "sha256": "b93cfb736e6e1fb7f8459983a6511d184983f521dbff584d231501d3f9eee5ce",
+      "gitBlob": "73a737ed80bd631b033ed914de8f1fdc03c45c71"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Matching/MatchingCancellationTests.cs",
+      "sha256": "0a3f3b8aad66a14110c37fab6fe2eff98b6c62db1d2e0a0cffc064fa1cc71201",
+      "gitBlob": "f66d32a9e8a83279d81c709e7a7eaefd885909fd"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Matching/MatchingQueueLifecycleTests.cs",
+      "sha256": "86260201d86f54cedd4120a039c8464f220cdb31fb296de1327b15d5bb175471",
+      "gitBlob": "e60092c5be873c650de6fc20f4d9c563433a08ef"
+    },
+    {
+      "path": "Source/NexusForever.Game/Matching/Queue/MatchingManager.cs",
+      "sha256": "dfb0f6dc766d0dbcfb99286c87041c0c5af76e7b672c422a180124c91fb8b4b0",
+      "gitBlob": "8a4319858852753ff0a02fc78cb285ad749b7bcc"
+    },
+    {
+      "path": "Source/NexusForever.Game.Abstract/Matching/Queue/IMatchingQueueGroup.cs",
+      "sha256": "691ed7d0543fe20b25b4c601d963e168407ab09db81e9a7285144b4535667912",
+      "gitBlob": "c5be44388e8fca977f6738d97d6e016123e46be0"
+    },
+    {
+      "path": "Source/NexusForever.Game.Abstract/Matching/Queue/IMatchingQueueProposal.cs",
+      "sha256": "064b328ac2290724badf599c95337c2cafad02d894fbf1124c924e6117eb1e66",
+      "gitBlob": "b57967fa091e0af6ba5e341160b713843d1e92e2"
+    }
+  ],
+  "binaries": [
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.dll",
+      "sha256": "8375e6b84d1553d9373e5a9c2ee2f67e7284a133c237ea36f0d5af60601a15fc"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Abstract.dll",
+      "sha256": "777dd151b26100b93e2bb3e4ddd5e754db901d444b35d8b976c293fac2da639f"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+      "sha256": "3ad63a1e60d93467e6aa177efcc204d76332d5b9ab2d0d3093c7900a0c3d18bb"
+    },
+    {
+      "path": "artifacts/continuation-20261105/incoming-chat-ownership/candidate/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+      "sha256": "63501865c7ef296e44465abe3ca20c7aeb55b959626bccb4e23244f8cbe45396"
+    }
+  ],
+  "sourceBoundary": {
+    "head": "c859448a9836f57969856d38c5024215eb517e68",
+    "trackedSourceFiles": 6280,
+    "missing": [],
+    "differences": [
+      {
+        "path": "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+        "head": "9b4e604e08391bf229552fa04081ecf9c74fec4d",
+        "candidate": "7de92fafe0c2474ba8428ca9ceee883d39138b46"
+      },
+      {
+        "path": "Source/NexusForever.ClientConnector/packages.config",
+        "head": "fa4b77dc45783358023c1cd38e6ff9bad122aea4",
+        "candidate": "8ab13a9023dec3cf548ee61ba183013bd098a297"
+      },
+      {
+        "path": "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+        "head": "64769a2266f7feab861fcc61cd2b00a0a05da8c4",
+        "candidate": "74272fd6bf29afac14c5d62cb172e81b4edee19a"
+      },
+      {
+        "path": "Source/NexusForever.Database/NexusForever.Database.csproj",
+        "head": "61f9d5326c59ec7018164eba605a01f4081dfded",
+        "candidate": "163c4f01e198e71066afcd9089a367c78b4c3de6"
+      },
+      {
+        "path": "Source/NexusForever.Game.Abstract/Matching/Queue/IMatchingCharacter.cs",
+        "head": "e692cbe4f748931e8a8e0db46263a7ba3d6f1e58",
+        "candidate": "73a737ed80bd631b033ed914de8f1fdc03c45c71"
+      },
+      {
+        "path": "Source/NexusForever.Game.Abstract/Matching/Queue/IMatchingQueueGroup.cs",
+        "head": "136ad6903dbe163b19067e7da1d31278308ab8fc",
+        "candidate": "c5be44388e8fca977f6738d97d6e016123e46be0"
+      },
+      {
+        "path": "Source/NexusForever.Game.Abstract/Matching/Queue/IMatchingQueueProposal.cs",
+        "head": "74f1b3733a3d5e0f5c5a2314ccb9b29b81951da3",
+        "candidate": "b57967fa091e0af6ba5e341160b713843d1e92e2"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Matching/MatchingCancellationTests.cs",
+        "head": "c7cc3121e19f5a07de5d08299c112e79e3372bef",
+        "candidate": "f66d32a9e8a83279d81c709e7a7eaefd885909fd"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+        "head": "1ffaefc3cf8c1eb7c5b0534d4d91f28eb7001347",
+        "candidate": "6c145b847fa7316e7982ab44cfa404f4e1e7fc70"
+      },
+      {
+        "path": "Source/NexusForever.Game/Matching/Queue/MatchingCharacter.cs",
+        "head": "43d8bac7709f66b938d14f57964a2fb45bcd12c8",
+        "candidate": "02757881436d4670102e3c8f365b137e91ec4342"
+      },
+      {
+        "path": "Source/NexusForever.Game/Matching/Queue/MatchingManager.cs",
+        "head": "736194293471cae7d4599df5c9d53ef587872687",
+        "candidate": "8a4319858852753ff0a02fc78cb285ad749b7bcc"
+      },
+      {
+        "path": "Source/NexusForever.Game/Matching/Queue/MatchingQueue.cs",
+        "head": "7e6752130dc3a6c630ff39cac72e17c2e1dede24",
+        "candidate": "fe73e793fa42425e16e506b65c9fcfa2389924fe"
+      },
+      {
+        "path": "Source/NexusForever.Game/Matching/Queue/MatchingQueueGroup.cs",
+        "head": "507b909ae058d8993f8e1fd39c1a0a6bd11f8f3b",
+        "candidate": "6e7fa145865d0b18bd5b4cc92d916ad8639d8ec0"
+      },
+      {
+        "path": "Source/NexusForever.Game/Matching/Queue/MatchingQueueMatcher.cs",
+        "head": "d26d17f0cc5a1eab2c7ec3b370cf06284f21e3f5",
+        "candidate": "92481c423c9ccb0c36eea141ab7cd983dcc9babd"
+      },
+      {
+        "path": "Source/NexusForever.Game/Matching/Queue/MatchingQueueProposal.cs",
+        "head": "32b9692ab2c38c4e5eb51c9e251ca2f8dd0aa2d9",
+        "candidate": "942a23b3a89eb8308c9ba1739759e305407dd6c5"
+      },
+      {
+        "path": "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj",
+        "head": "74f0ec9ebbf4894dd7ef64f379a773a9e4ce1295",
+        "candidate": "ecd970da6d0d220f3caaf6780656c1809e18a9af"
+      }
+    ],
+    "newOwned": [
+      "Source/NexusForever.Game.Tests/Matching/MatchingQueueLifecycleTests.cs"
+    ],
+    "historicalNonTaskDifferences": "Seven retained literal/clean-filter project/config variants and ItemRuneSocketMaskBuilder BOM/newline variant already qualified in preceding candidate; no foreign root Source copied."
+  },
+  "acceptance": [
+    "All Character members and group map/team state precede queue join feedback",
+    "Leave removes old proposal/group/all member state before feedback",
+    "Reentrant new requests of either queue type remain owned; all original leave-all targets detach before any feedback and old untyped tail stops",
+    "Cancellation prevents empty/finalised immediate handoff and stale peer join",
+    "Normal merge/map selection, debug immediate and admitted reconnect controls remain supported"
+  ],
+  "tests": [
+    {
+      "path": "artifacts/continuation-20261106/matching-queue-lifecycle/baseline.trx",
+      "sha256": "f716b9b62ce9313d4163c43493cffab1b89e9f8a88e7c2e889c5f101d75d38f3",
+      "counts": {
+        "total": 7,
+        "passed": 2,
+        "failed": 5,
+        "notExecuted": 0
+      },
+      "failedCases": [
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.CancelledDebugImmediateQueueCannotBecomeAMatch",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.RealQueueJoinFeedbackCanCancelBeforeTheBackendReturns(all: True)",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.RealPartyCancellationDuringFirstJoinDoesNotPublishALaterJoinToItsPeer",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.PartyLeaveDetachesEveryMemberAndGroupBeforeItsFirstNotice",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.RealQueueJoinFeedbackCanCancelBeforeTheBackendReturns(all: False)"
+      ]
+    },
+    {
+      "path": "artifacts/continuation-20261106/matching-queue-lifecycle/candidate.trx",
+      "sha256": "36c054aba202bfcb0f7037417b62b6a147ead08ddcf389863583361288306e90",
+      "counts": {
+        "total": 7,
+        "passed": 7,
+        "failed": 0,
+        "notExecuted": 0
+      }
+    },
+    {
+      "path": "artifacts/continuation-20261106/matching-queue-lifecycle/expanded-scoped.trx",
+      "sha256": "002793087c8a22ffb3297095280b8287a46aa24c1b8f5b62c100eef0e09d368e",
+      "counts": {
+        "total": 133,
+        "passed": 133,
+        "failed": 0,
+        "notExecuted": 0
+      }
+    },
+    {
+      "path": "artifacts/continuation-20261106/matching-queue-lifecycle/review-negative.trx",
+      "sha256": "fa20c3e7379354c93c3915779f67ceee5a3ac43de0e30fee90139415f43242f2",
+      "counts": {
+        "total": 1,
+        "passed": 0,
+        "failed": 1,
+        "notExecuted": 0
+      },
+      "failedCases": [
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.LeaveNoticeCannotPublishAnOldTailAfterANewDifferentTypeQueueJoin"
+      ]
+    },
+    {
+      "path": "artifacts/continuation-20261106/matching-queue-lifecycle/review-role-negative.trx",
+      "sha256": "a90b7f5e79bd9c56f99ec4debe709adc4ec37238d961e28a80a984a0d54ba748",
+      "counts": {
+        "total": 2,
+        "passed": 0,
+        "failed": 2,
+        "notExecuted": 0
+      },
+      "failedCases": [
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.RoleCancellationFeedbackCannotMakeLeaveRemoveTheReplacementParty(all: False)",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.RoleCancellationFeedbackCannotMakeLeaveRemoveTheReplacementParty(all: True)"
+      ]
+    },
+    {
+      "path": "artifacts/continuation-20261106/matching-queue-lifecycle/final-scoped.trx",
+      "sha256": "fed93f7692c713c80b6cd8607e079d1677e78d1e3d77a24f6d8ba0f271d74334",
+      "counts": {
+        "total": 136,
+        "passed": 136,
+        "failed": 0,
+        "notExecuted": 0
+      }
+    },
+    {
+      "path": "artifacts/continuation-20261106/matching-queue-lifecycle/review-multiqueue-negative.trx",
+      "sha256": "bb6bfee9354e27f0142454fb5971672a1eca4373d19a36a4770a7875b28e00fa",
+      "counts": {
+        "total": 1,
+        "passed": 0,
+        "failed": 1,
+        "notExecuted": 0
+      },
+      "failedCases": [
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.LeaveAllDetachesBothOldQueueTypesBeforeFeedbackAndPreservesTheNewJoin"
+      ]
+    },
+    {
+      "path": "artifacts/continuation-20261106/matching-queue-lifecycle/batch-final-scoped.trx",
+      "sha256": "230c583fa06f4d60aa1a048cfbcd0168d02f04b8ac303006871c733792556a36",
+      "counts": {
+        "total": 139,
+        "passed": 139,
+        "failed": 0,
+        "notExecuted": 0
+      },
+      "passedCases": [
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.WrongMatchTypeCannotConfirmTheCurrentRoleCheck",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.ServerMatchingMatchLeft_WritesSharedUInt5MatchType",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.PartyJoinPacketsAreIndependentOfTheFirstRecipientsRetainedPacket",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.RealDebugImmediateQueueStillCreatesOneNonemptyMatch",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.ServerMatchingGroupMemberRoleSelection_WritesHousingReservationShape",
+        "NexusForever.Game.Tests.Matching.MatchingAverageWaitTimeTests.SendAverageWaitTimeUpdate_WhenNotQueued_DoesNotSend",
+        "NexusForever.Game.Tests.Matching.MatchingLookingForReplacementsValidationTests.IsValidReplacementRoleMask_AllowsMappedClientRoleBits(roles: Tank | Healer | DPS)",
+        "NexusForever.Game.Tests.Matching.MatchingLookingForReplacementsValidationTests.IsValidReplacementRoleMask_AllowsMappedClientRoleBits(roles: DPS)",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.ClientMatchingMatchCastVoteKick_ReadsIdentityAndVoteBit",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.RealQueueJoinFeedbackCanCancelBeforeTheBackendReturns(all: True)",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.PartyLeaveDuringEligibilityValidationStillStopsAdmission",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.DuplicateRoleResponseIsInertAndDoesNotBreakThePendingParty",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.LeaveAllDetachesBothOldQueueTypesBeforeFeedbackAndPreservesTheNewJoin",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.ServerMatchingPvpKillNotification_WritesMappedOpponentVariants",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.PublicLeaveCancelsTheJoinWaitingForItsMatchingTick(random: True, all: False)",
+        "NexusForever.Game.Tests.Matching.MatchingRoleEnforcerTests.Check_RejectsMemberWithoutRole",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.LeavingAnotherMatchTypeDoesNotCancelTheRequestedQueue",
+        "NexusForever.Game.Tests.Matching.MatchingCharacterStatusTests.RemoveMatchingQueueProposal_WhenQueueIsAbsent_DoesNotThrowOrSendPackets",
+        "NexusForever.Game.Tests.Matching.MatchingGameMap126Tests.PrimeUltimateProtogamesMap126_QueueValidatorRejectsInvalidBoundary(level: 50, matchType: ScaledPrimeLevelDungeon, hasMapEntrance: True, roles: DPS, expected: TypeMismatch)",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.PartyJoinFeedbackSeesAllMembersAndTheGroupCacheAlreadyInstalled",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.NewSoloRequestAfterCancellationCanEnterOnTheSameTick",
+        "NexusForever.Game.Tests.Matching.MatchingGameMap71Tests.ScaledPrimeUltimateProtogamesMap71_QueueValidatorRejectsInvalidBoundary(level: 50, matchType: PrimeLevelDungeon, hasMapEntrance: True, roles: DPS, expected: TypeMismatch)",
+        "NexusForever.Game.Tests.Matching.MatchCleanupSnapshotTests.ContentUnloadCompletesItsOriginalMatchAndPublicEvents(callback: \"finish-failure\")",
+        "NexusForever.Game.Tests.Matching.MatchingLookingForReplacementsValidationTests.IsValidReplacementRoleMask_AllowsMappedClientRoleBits(roles: Tank)",
+        "NexusForever.Game.Tests.Matching.MatchingGameMap71Tests.ScaledPrimeUltimateProtogamesMap71_QueueValidatorRejectsInvalidBoundary(level: 50, matchType: ScaledPrimeLevelDungeon, hasMapEntrance: False, roles: DPS, expected: UnableToQueue)",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.LogoutCancelsAnUnadmittedJoinEvenBeforeTheRegistryRemovesItsPlayer(offline: False)",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.OldSessionCannotRespondToAReplacementPlayersRoleCheck",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.ClientMatchingQueuePackets_ReadSharedMapRoleAndPrimeLevelFields",
+        "NexusForever.Game.Tests.Matching.RetailPartyQueueRulesTests.ValidateGroupLeader_WhenNotLeader_ReturnsRestricted",
+        "NexusForever.Game.Tests.Matching.MatchingDeserterManagerTests.GetMatchingPenaltyTimesMilliseconds_FillsSameActivityMatchTypesOnly",
+        "NexusForever.Game.Tests.Matching.RetailMatchingDeserterSpellsTests.GetPveDeserterSpell4Id_ScalesWithCompletion(completionRatio: 0.5, expectedSpell4Id: 45553)",
+        "NexusForever.Game.Tests.Matching.MatchingRoleEnforcerTests.Check_AllowsNonTrinityComposition",
+        "NexusForever.Game.Tests.Matching.MatchingCharacterStatusTests.GetMatchingCharacterQueues_ReturnsSnapshotWhenQueuesMutate",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.ARespondedPartyMemberCanCancelItsPendingRoleCheck",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.LeaveDuringEligibilityValidationStillStopsAdmission",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.ClientMatchingQueueRandomPackets_ReadSharedMatchTypeFlagsAndRoles",
+        "NexusForever.Game.Tests.Matching.MatchingDeserterManagerTests.SyncDeserterUi_SendsMatchingPenaltyUpdate",
+        "NexusForever.Game.Tests.Matching.MatchingDeserterManagerTests.CrossActivity_PvPDeserterStillAllowsPveQueue",
+        "NexusForever.Game.Tests.Matching.MatchCleanupSnapshotTests.MatchCleanup_SnapshotsTeamMembersBeforeLeaveMutatesTeam",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.ServerMatchingAverageWaitTimeUpdate_WritesSharedUInt5UInt32Shape",
+        "NexusForever.Game.Tests.Matching.MatchProposalTeamTests.ResponseCounts_TrackPendingAcceptedAndDeclinedMembers",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.PartyLeaveDetachesEveryMemberAndGroupBeforeItsFirstNotice",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.AlreadyAdmittedQueueKeepsItsExistingLogoutAndLoginReadback",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.ServerMatchingMatchPvpPoolUpdated_WritesTwoUInt32LivesFields",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.ClientMatchingEmptyLeavePackets_ReadEmptyPayloads",
+        "NexusForever.Game.Tests.Matching.MatchCleanupSnapshotTests.MatchCleanup_ReturnsOnlyActivePlayersStillOnTheMatchMap(entered: False, onMap: False)",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.ServerPveRatingUpdate_WritesPvpAlignedRatingCounters",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.RoleCancellationFeedbackCannotMakeLeaveRemoveTheReplacementParty(all: False)",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.PendingRoleCancellationIsNotPublishedToAReplacementPlayer",
+        "NexusForever.Game.Tests.Matching.MatchingLookingForReplacementsValidationTests.IsValidReplacementRoleMask_RejectsUnmappedRoleBits(roles: 8)",
+        "NexusForever.Game.Tests.Matching.RetailPartyQueueRulesTests.TryCreateFinishedGroupRequeueProposal_WhenAllFinished_CreatesProposal",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.FirstPartyLeaveNoticeCanAdmitANewPartyWithoutOldCleanupOrTailPackets",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.CancellationNoticeCanStartANewPartyWithoutOldCleanupRemovingIt",
+        "NexusForever.Game.Tests.Matching.MatchingDeserterManagerTests.PersistentPenaltyStore_RestoresQueueDenialAfterManagerRestart",
+        "NexusForever.Game.Tests.Matching.RetailMatchingDeserterSpellsTests.GetPveDeserterSpell4Id_ScalesWithCompletion(completionRatio: 0.90000000000000002, expectedSpell4Id: 45453)",
+        "NexusForever.Game.Tests.Matching.MatchCleanupSnapshotTests.LeaveRequestBeforeMapAdmissionRemovesOnlyTheRequestingMember(anotherPending: True)",
+        "NexusForever.Game.Tests.Matching.MatchingGameMap71Tests.ScaledPrimeUltimateProtogamesMap71_QueueValidatorRejectsInvalidBoundary(level: 49, matchType: ScaledPrimeLevelDungeon, hasMapEntrance: True, roles: DPS, expected: Level)",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.ClientMatchingTransferIntoMatch_ReadsEmptyPayload",
+        "NexusForever.Game.Tests.Matching.MatchingLookingForReplacementsValidationTests.IsValidReplacementRoleMask_RejectsUnmappedRoleBits(roles: 9)",
+        "NexusForever.Game.Tests.Matching.MatchingRoleEnforcerTests.Check_PreservesFlexibleRoleMasks",
+        "NexusForever.Game.Tests.Matching.MatchingLookingForReplacementsValidationTests.StopLookingForReplacements_InProgressMatch_DoesNotEmitBlockedBackfillPackets",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.PublicLeaveCancelsTheJoinWaitingForItsMatchingTick(random: True, all: True)",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.ClientMatchingQueueLeavePackets_ReadSharedMatchTypePayload",
+        "NexusForever.Game.Tests.Matching.MatchingDeserterManagerTests.RestoreDeserter_UsesPersistentPenaltyForUiSync",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.ServerMatchingListPlayersQueuedForMap_WritesMappedQueuedPlayerFields",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.ServerMatchingQueueJoin_WritesMappedMapQueueAndRoleFields",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.ServerMatchingPenaltyUpdated_WritesFixedSixteenUInt32Slots",
+        "NexusForever.Game.Tests.Matching.MatchingGameMap126Tests.PrimeUltimateProtogamesMap126_QueueValidatorRejectsInvalidBoundary(level: 49, matchType: PrimeLevelDungeon, hasMapEntrance: True, roles: DPS, expected: Level)",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.InitialRoleNoticesStopWhenTheFirstRecipientCancels",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.CancelledPartyCanStartANewRoleCheckBeforeTheNextTick",
+        "NexusForever.Game.Tests.Matching.MatchCleanupSnapshotTests.MatchCleanup_ReturnsOnlyActivePlayersStillOnTheMatchMap(entered: True, onMap: False)",
+        "NexusForever.Game.Tests.Matching.MatchCleanupSnapshotTests.MatchCleanup_ReturnsOnlyActivePlayersStillOnTheMatchMap(entered: True, onMap: True)",
+        "NexusForever.Game.Tests.Matching.MatchingLookingForReplacementsValidationTests.IsValidReplacementRoleMask_RejectsUnmappedRoleBits(roles: 16)",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.FailedEligibilityCannotPublishTheOldRequestToAReplacementPlayer",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.ClientMatchingMatchCastVoteSurrender_ReadsVoteBit",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.ServerMatchingMatchVoteKickBegin_WritesTwoIdentityPayloads",
+        "NexusForever.Game.Tests.Matching.MatchingQueueValidatorTests.CanQueue_WithExistingSoloQueueAndIncomingPartyQueueReturnsCannotQueueSoloAndGroup",
+        "NexusForever.Game.Tests.Matching.MatchingGameMap71Tests.ScaledPrimeUltimateProtogamesMap71_QueueValidatorRejectsInvalidBoundary(level: 50, matchType: ScaledPrimeLevelDungeon, hasMapEntrance: True, roles: None, expected: GroupSize)",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.ServerMatchingQueueResultAnnounce_WritesMappedResultAndStatusBits",
+        "NexusForever.Game.Tests.Matching.MatchingGameMap71Tests.ScaledPrimeUltimateProtogamesMap71_ExactMetadataRequiresRoleSelection",
+        "NexusForever.Game.Tests.Matching.MatchCleanupSnapshotTests.ContentUnloadCompletesItsOriginalMatchAndPublicEvents(callback: \"reattach\")",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.MatchingReadyPackets_WriteSharedMatchTypeAndCountShape",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.ServerMatchingMatchJoined_WritesSharedFourteenBitMapId",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.OrdinaryLeaveAllStillPublishesBothOldQueueRemovalsAfterDetachment",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.UncancelledPublicJoinReachesTheValidatedQueue(random: False)",
+        "NexusForever.Game.Tests.Matching.MatchingLookingForReplacementsValidationTests.IsValidReplacementRoleMask_AllowsMappedClientRoleBits(roles: None)",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.OfflineEligibilityRefusesCleanlyWithoutLogoutNotification",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.ExplicitDeclineCannotBecomeRoleConsent(roles: None)",
+        "NexusForever.Game.Tests.Matching.MatchingGameMap71Tests.ScaledPrimeUltimateProtogamesMap71_QueueValidatorAcceptsExactLevelAndRole",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.LeaveNoticeCannotPublishAnOldTailAfterANewDifferentTypeQueueJoin",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.RoleCancellationNoticeSeesTheOriginalAdmittedQueueAlreadyDetached",
+        "NexusForever.Game.Tests.Matching.RetailMatchingDeserterSpellsTests.GetPveDeserterSpell4Id_ScalesWithCompletion(completionRatio: 0, expectedSpell4Id: 45554)",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.CompletedRoleCheckCannotBeExpiredByTheFollowingLongTick",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.LogoutAfterAllRolesRespondedCannotThrowOrAdmitTheParty",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.RealPartyCancellationDuringFirstJoinDoesNotPublishALaterJoinToItsPeer",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.ClientMatchingRoleCheckResponse_ReadsMatchTypeRolesAndResponse",
+        "NexusForever.Game.Tests.Matching.MatchingLookingForReplacementsValidationTests.InitiateLookingForReplacements_InProgressMatch_DoesNotEmitBlockedBackfillPackets",
+        "NexusForever.Game.Tests.Matching.MatchCleanupSnapshotTests.MatchFinishCallbackCanCleanUpWithoutASecondTimerCleanup",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.PublicLeaveCancelsTheJoinWaitingForItsMatchingTick(random: False, all: True)",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.PublicLeaveCancelsTheJoinWaitingForItsMatchingTick(random: False, all: False)",
+        "NexusForever.Game.Tests.Matching.ClientMatchingQueueLeaveAsGroupHandlerTests.HandleMessage_WithGroupLeavesQueueForOnlineMembers",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.CancelledDebugImmediateQueueCannotBecomeAMatch",
+        "NexusForever.Game.Tests.Matching.ClientMatchingQueueLeaveAsGroupHandlerTests.HandleMessage_WithoutGroupLeavesQueueForRequesterOnly",
+        "NexusForever.Game.Tests.Matching.MatchingRoleEnforcerTests.Check_RejectsUndefinedRoleBits",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.ServerMatching0x05CF_WritesSharedRawUInt32Shape",
+        "NexusForever.Game.Tests.Matching.MatchingDeserterManagerTests.CrossActivity_PvEDeserterStillAllowsPvpQueue",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.DuplicatePartyRequestKeepsItsOriginalRoleCheckAndResponses",
+        "NexusForever.Game.Tests.Matching.MatchingCharacterStatusTests.SendMatchingStatus_IncludesActiveRoleCheckMatchType",
+        "NexusForever.Game.Tests.Matching.MatchingCharacterStatusTests.RemoveMatchingQueueProposal_WhenQueueExists_SendsLeftQueueAndStatus",
+        "NexusForever.Game.Tests.Matching.MatchCleanupSnapshotTests.ContentUnloadCompletesItsOriginalMatchAndPublicEvents(callback: \"cleanup\")",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.MatchingVoteTerminalPackets_WriteSharedEmptyPayloads",
+        "NexusForever.Game.Tests.Network.ClientUnresolvedDiagnosticHandlerTests.DiagnosticHandlers_LogOnlyAndDoNotEmitServerState",
+        "NexusForever.Game.Tests.Matching.RetailMatchingRealmRulesTests.AreRealmCompatible_WhenRealmOnly_MatchesSameRealmMembers",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.ClientMatchingReadyAndVoteInitiationPackets_ReadMappedShapes",
+        "NexusForever.Game.Tests.Matching.MatchingLookingForReplacementsValidationTests.IsValidReplacementRoleMask_AllowsMappedClientRoleBits(roles: Healer)",
+        "NexusForever.Game.Tests.Matching.MatchingGameMap126Tests.PrimeUltimateProtogamesMap126_QueueValidatorAcceptsExactLevelAndRole",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.ExistingQueueAndMapSelectorCanMatchTwoPublicSoloRequests",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.ReentrantLeaveAndRepeatedOldGroupRemovalPublishOnlyOnce",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.MatchingVoteCooldownPackets_WriteSharedResultAndWaitTimeShape",
+        "NexusForever.Game.Tests.Matching.MatchProposalTeamTests.TeamReady_RequiresEveryMemberToAccept",
+        "NexusForever.Game.Tests.Matching.RetailPartyQueueRulesTests.ResolvePartyMemberIdentities_UsesGroupMembers_NotOnlyNearby",
+        "NexusForever.Game.Tests.Matching.MatchCleanupSnapshotTests.LeaveRequestBeforeMapAdmissionRemovesOnlyTheRequestingMember(anotherPending: False)",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.UncancelledPublicJoinReachesTheValidatedQueue(random: True)",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.ExplicitDeclineCannotBecomeRoleConsent(roles: DPS)",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.OldLogoutCannotCancelAReplacementPlayersNewPendingRequest",
+        "NexusForever.Game.Tests.Matching.MatchingGameMap126Tests.PrimeUltimateProtogamesMap126_ExactMetadataRequiresRoleSelection",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.ServerMatchingMatchParticipantCountUpdate_WritesSharedOneFlagShape",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.OldCancellationCannotFollowTheReplacementPartysStartedNotice",
+        "NexusForever.Game.Tests.Matching.MatchingDeserterManagerTests.ClearDeserter_RestoresQueueAccess",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.LogoutCancelsAnUnadmittedJoinEvenBeforeTheRegistryRemovesItsPlayer(offline: True)",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.ServerMatchingQueueStatus_WritesMappedHeaderAndQueueBits",
+        "NexusForever.Game.Tests.Matching.MatchingGameMap126Tests.PrimeUltimateProtogamesMap126_QueueValidatorRejectsInvalidBoundary(level: 50, matchType: PrimeLevelDungeon, hasMapEntrance: False, roles: DPS, expected: UnableToQueue)",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.CancellingTheLastJoinPreservesTheEarlierProposalAndPreventsAMatch",
+        "NexusForever.Game.Tests.Matching.MatchingAverageWaitTimeTests.SendAverageWaitTimeUpdate_WhenQueued_SendsOpcode0628",
+        "NexusForever.Game.Tests.Matching.MatchingGameMap126Tests.PrimeUltimateProtogamesMap126_QueueValidatorRejectsInvalidBoundary(level: 50, matchType: PrimeLevelDungeon, hasMapEntrance: True, roles: None, expected: GroupSize)",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.RoleCancellationFeedbackCannotMakeLeaveRemoveTheReplacementParty(all: True)",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.RealQueueJoinFeedbackCanCancelBeforeTheBackendReturns(all: False)",
+        "NexusForever.Game.Tests.Network.MatchingPacketShapeTests.MatchingServerStatusPackets_WriteSharedUInt32AndEmptyShapes",
+        "NexusForever.Game.Tests.Matching.MatchingCancellationTests.RealQueueNormalJoinLeaveAndAdmittedReconnectRemainSupported"
+      ]
+    }
+  ],
+  "newCases": 19,
+  "finalScopedCases": 139,
+  "baselineProductionFailures": 5,
+  "reviewProductionFailures": 4,
+  "reviews": {
+    "initial": {
+      "standards": 0,
+      "spec": 2
+    },
+    "materialReview": {
+      "standards": 1,
+      "spec": 1,
+      "sameFinding": "multi-original-queue batch detachment/publication"
+    },
+    "final": {
+      "standards": 0,
+      "spec": 0
+    },
+    "reviewers": [
+      "/root/iccomm_standards",
+      "/root/iccomm_spec"
+    ],
+    "finalSpec": "Manager detaches every original target before role/leave feedback. Narrow Group/Proposal detach operations retain immediate compatibility. Admission generation preserves ordinary both-queue notices and suppresses old batches after any replacement. No remaining findings.",
+    "finalStandards": "No remaining documented-standard or actionable smell findings. Batch detachment precedes feedback; admission-only revision preserves ordinary notices and suppresses obsolete notices after a new admission."
+  },
+  "builds": {
+    "finalOwningSeconds": 14.72,
+    "finalTestSeconds": 14.09,
+    "warnings": 0,
+    "errors": 0,
+    "finalTestBodySeconds": 0.416
+  },
+  "fixtureFailures": [
+    {
+      "path": "artifacts/continuation-20261106/matching-queue-lifecycle/fixture-compile-failure.log",
+      "classification": "Ambiguous MatchType import, corrected before executed baseline; excluded from production negatives"
+    }
+  ],
+  "evidenceDirectory": "artifacts/continuation-20261106/matching-queue-lifecycle",
+  "upstream": {
+    "repository": "NexusForever/NexusForever",
+    "source": "GitHub connector latest20 updated all-state",
+    "rows": [
+      {
+        "number": 604,
+        "state": "open",
+        "merged": false,
+        "base": "game_rework",
+        "base_sha": "d8e43d2c3cc5a05f03e56dfc388288a4126c7ed9",
+        "head": "fix/taxi",
+        "head_sha": "36b59aaaaebbcd0ec3e23a94fd3cf9de8975923b",
+        "updated_at": "2026-11-01T03:41:35Z",
+        "url": "https://github.com/NexusForever/NexusForever/pull/604"
+      },
+      {
+        "number": 609,
+        "state": "closed",
+        "merged": false,
+        "base": "game_rework",
+        "base_sha": "d8e43d2c3cc5a05f03e56dfc388288a4126c7ed9",
+        "head": "communicator-calls",
+        "head_sha": "f9b6f7356798a41beea0768ff1f6b5a758ffeca3",
+        "updated_at": "2026-11-01T02:58:37Z",
+        "url": "https://github.com/NexusForever/NexusForever/pull/609"
+      },
+      {
+        "number": 608,
+        "state": "open",
+        "merged": false,
+        "base": "expedition-evil-from-the-ether",
+        "base_sha": "3588ca5f578387928e6593e3808bf15f6192b094",
+        "head": "fix/spell-cast-client-id",
+        "head_sha": "7db12d9a7c694bc5e66d9e0f4cdbc1b82155e69b",
+        "updated_at": "2026-10-30T18:53:13Z",
+        "url": "https://github.com/NexusForever/NexusForever/pull/608"
+      },
+      {
+        "number": 595,
+        "state": "open",
+        "merged": false,
+        "base": "expedition-evil-from-the-ether",
+        "base_sha": "3588ca5f578387928e6593e3808bf15f6192b094",
+        "head": "feature/heal-healshield",
+        "head_sha": "ba30ae14513461ab6bd83d691543b6a155846e1c",
+        "updated_at": "2026-10-30T06:28:59Z",
+        "url": "https://github.com/NexusForever/NexusForever/pull/595"
+      },
+      {
+        "number": 598,
+        "state": "closed",
+        "merged": true,
+        "base": "game_rework",
+        "base_sha": "d0817fdf40e4832dbc578b7b2ea82a1b1fa378bf",
+        "head": "fix/datacube-reactivate-throws",
+        "head_sha": "f88b196f11b909b4e0db94db2affff3c585d971f",
+        "updated_at": "2026-10-30T02:09:40Z",
+        "url": "https://github.com/NexusForever/NexusForever/pull/598"
+      },
+      {
+        "number": 607,
+        "state": "open",
+        "merged": false,
+        "base": "game_rework",
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head": "fix/mount-summon",
+        "head_sha": "7f044aad0a20419a788b8140d263ac83fcd93217",
+        "updated_at": "2026-10-28T06:05:47Z",
+        "url": "https://github.com/NexusForever/NexusForever/pull/607"
+      },
+      {
+        "number": 588,
+        "state": "open",
+        "merged": false,
+        "base": "game_rework",
+        "base_sha": "f9bb26efddbf304003fc8ebf484ac75bc6be84da",
+        "head": "galactic-archive",
+        "head_sha": "e41fb57514cc202425430684e11e5fdd8f1b71f0",
+        "updated_at": "2026-10-28T05:57:43Z",
+        "url": "https://github.com/NexusForever/NexusForever/pull/588"
+      },
+      {
+        "number": 599,
+        "state": "closed",
+        "merged": false,
+        "base": "game_rework",
+        "base_sha": "845651e68fa1416931ea6507de1d3404d88f192e",
+        "head": "fix/travel",
+        "head_sha": "38f8c19409c6fc9c3afc08744ce49cb6ed0de1db",
+        "updated_at": "2026-10-27T14:11:52Z",
+        "url": "https://github.com/NexusForever/NexusForever/pull/599"
+      },
+      {
+        "number": 606,
+        "state": "open",
+        "merged": false,
+        "base": "game_rework",
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head": "fix/instance-return",
+        "head_sha": "4ffa050ba994a82e0fb52f0b5b733c94b139367e",
+        "updated_at": "2026-10-27T14:11:20Z",
+        "url": "https://github.com/NexusForever/NexusForever/pull/606"
+      },
+      {
+        "number": 605,
+        "state": "open",
+        "merged": false,
+        "base": "game_rework",
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head": "fix/riding-licences",
+        "head_sha": "972ad3b4f9c7bce0a460ad0e5b5410f311b8573c",
+        "updated_at": "2026-10-27T14:11:18Z",
+        "url": "https://github.com/NexusForever/NexusForever/pull/605"
+      },
+      {
+        "number": 603,
+        "state": "open",
+        "merged": false,
+        "base": "game_rework",
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head": "fix/recall-house",
+        "head_sha": "6faa74d029f95b5e29684690ee2628c10dc80b59",
+        "updated_at": "2026-10-27T14:11:12Z",
+        "url": "https://github.com/NexusForever/NexusForever/pull/603"
+      },
+      {
+        "number": 602,
+        "state": "open",
+        "merged": false,
+        "base": "game_rework",
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head": "fix/recall-transmat",
+        "head_sha": "ffe5dc0512452fe3e383b8a8b454017c04120df4",
+        "updated_at": "2026-10-27T14:11:10Z",
+        "url": "https://github.com/NexusForever/NexusForever/pull/602"
+      },
+      {
+        "number": 601,
+        "state": "open",
+        "merged": false,
+        "base": "game_rework",
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head": "fix/bind-point",
+        "head_sha": "79a36684101423cfd199047b466a2c2c839e9c2e",
+        "updated_at": "2026-10-27T14:11:07Z",
+        "url": "https://github.com/NexusForever/NexusForever/pull/601"
+      },
+      {
+        "number": 600,
+        "state": "open",
+        "merged": false,
+        "base": "game_rework",
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head": "fix/prerequisite-checks",
+        "head_sha": "1bf8de1caba3baa70620998b82317d65c96b07c8",
+        "updated_at": "2026-10-27T14:11:04Z",
+        "url": "https://github.com/NexusForever/NexusForever/pull/600"
+      },
+      {
+        "number": 593,
+        "state": "closed",
+        "merged": true,
+        "base": "game_rework",
+        "base_sha": "f9bb26efddbf304003fc8ebf484ac75bc6be84da",
+        "head": "fix/issue-23-matchingqueuerandomparty-registration",
+        "head_sha": "17ef256c2f38ef6d010db807b69452d1bb2be614",
+        "updated_at": "2026-10-26T18:24:11Z",
+        "url": "https://github.com/NexusForever/NexusForever/pull/593"
+      },
+      {
+        "number": 591,
+        "state": "closed",
+        "merged": true,
+        "base": "game_rework",
+        "base_sha": "845651e68fa1416931ea6507de1d3404d88f192e",
+        "head": "Opcode-fixes",
+        "head_sha": "eb4db38857bb263493f56912a99184a9992d4e36",
+        "updated_at": "2026-10-26T18:23:58Z",
+        "url": "https://github.com/NexusForever/NexusForever/pull/591"
+      },
+      {
+        "number": 597,
+        "state": "open",
+        "merged": false,
+        "base": "game_rework",
+        "base_sha": "d0817fdf40e4832dbc578b7b2ea82a1b1fa378bf",
+        "head": "fix/group-dirty-jobs-stale-tracking",
+        "head_sha": "8ca89ccb31c20a286a64ac632fca8885d812cba5",
+        "updated_at": "2026-10-26T15:50:33Z",
+        "url": "https://github.com/NexusForever/NexusForever/pull/597"
+      },
+      {
+        "number": 587,
+        "state": "closed",
+        "merged": true,
+        "base": "game_rework",
+        "base_sha": "f9bb26efddbf304003fc8ebf484ac75bc6be84da",
+        "head": "archive-packet-ids",
+        "head_sha": "56b816084bb2cdd3bcd990a52f47f9d2cb621871",
+        "updated_at": "2026-10-26T04:08:09Z",
+        "url": "https://github.com/NexusForever/NexusForever/pull/587"
+      },
+      {
+        "number": 589,
+        "state": "closed",
+        "merged": true,
+        "base": "game_rework",
+        "base_sha": "f9bb26efddbf304003fc8ebf484ac75bc6be84da",
+        "head": "console-character-target",
+        "head_sha": "121f4c3ec7472b8a6c0f6e3054fd788f939dd028",
+        "updated_at": "2026-10-26T04:00:28Z",
+        "url": "https://github.com/NexusForever/NexusForever/pull/589"
+      },
+      {
+        "number": 596,
+        "state": "open",
+        "merged": false,
+        "base": "expedition-evil-from-the-ether",
+        "base_sha": "3588ca5f578387928e6593e3808bf15f6192b094",
+        "head": "feature/modify-spell-cooldown",
+        "head_sha": "e100f4c29a1571a7181d06967ed8133612d99074",
+        "updated_at": "2026-10-25T15:27:59Z",
+        "url": "https://github.com/NexusForever/NexusForever/pull/596"
+      }
+    ],
+    "comparison_previous": "artifacts/continuation-20261106/matching-cancellation/upstream-refresh.json",
+    "changed": []
+  },
+  "limitations": [
+    "MatchManager is a recording collaborator/end boundary; match proposal/transfer not newly qualified",
+    "Synthetic supported maps71/72 and configured test team sizes, no actual-table or retail queue-policy qualification",
+    "No database/provider work, broker/socket/deployment/native/client/CUA work",
+    "No full solution build or full test suite",
+    "Foreign dirty Source/docs and provider/data recovery workloads excluded and preserved"
+  ],
+  "historicalCandidates": {
+    "final-scoped.trx": "Pre-batch material-fix candidate,136 passed; superseded by batch-final-scoped139.",
+    "expanded-scoped.trx": "Initial candidate133, before four review-negative probes."
+  },
+  "baselineProductionRuntime": "Original Game/Abstract/World DLL bytes retained; baseline-inputs includes pre-fixture prior test DLL separately, not a claim that the later baseline test assembly is byte-identical."
+}

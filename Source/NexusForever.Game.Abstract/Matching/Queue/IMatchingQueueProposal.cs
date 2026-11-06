@@ -48,6 +48,11 @@ namespace NexusForever.Game.Abstract.Matching.Queue
         void RemoveMatchingQueueGroup(MatchingQueueResult? leaveReason = MatchingQueueResult.Left);
 
         /// <summary>
+        /// Detach this proposal and all its character state without publishing; return the owned leave feedback.
+        /// </summary>
+        Action DetachMatchingQueueGroup(MatchingQueueResult? leaveReason = MatchingQueueResult.Left);
+
+        /// <summary>
         /// Broadcast <see cref="IWritable"/> to all members.
         /// </summary>
         void Broadcast(IWritable message);

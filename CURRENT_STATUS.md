@@ -1,5 +1,11 @@
 # NexusForever Feature Restoration - Current Status
 
+[Matching real queue lifecycle](Decomp/Analysis/MATCHING_QUEUE_LIFECYCLE.md)
+now installs complete queue state before join feedback and detaches all original
+leave/all targets before notices. Reentrant replacement admissions remain owned;
+five baseline/four review failures are fixed and all139 selected cases pass.
+MatchManager/transfer, actual catalogs and socket/native/retail gates remain open.
+
 [Matching admission cancellation](Decomp/Analysis/MATCHING_ADMISSION_CANCELLATION.md)
 now keeps cancelled solo/random requests out of deferred admission and binds
 party role responses/notices to their original context. Eight baseline and

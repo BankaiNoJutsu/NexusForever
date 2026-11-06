@@ -33,7 +33,7 @@ namespace NexusForever.Game.Matching.Queue
             foreach (IMatchingQueueGroup matchingQueueGroup in matchingQueueGroups
                 .OrderBy(GetOldestQueueTime))
             {
-                if (matchingQueueGroup.IsPaused)
+                if (matchingQueueGroup.IsPaused || matchingQueueGroup.IsFinalised)
                     continue;
 
                 IMatchingQueueGroupTeam matchingQueueGroupTeam = matchingQueueGroupMatcher.Match(matchingQueueGroup, matchingQueueProposal);

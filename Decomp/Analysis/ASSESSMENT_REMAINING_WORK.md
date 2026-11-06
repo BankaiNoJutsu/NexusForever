@@ -1,5 +1,14 @@
 # Assessment follow-through goal
 
+[Matching queue lifecycle](MATCHING_QUEUE_LIFECYCLE.md) extends the published
+admission result through real Queue/Group/Team/Matcher/Selector. State precedes
+join feedback; all original leave/all targets detach before role/leave notices.
+Later admissions of either type survive without old untyped tails. Five baseline
+and four review failures are fixed;19 new/all139 scoped cases and clean builds
+pass. F-010 remains partial beyond the MatchManager boundary; actual catalogs,
+broader transfer/merge/raid/diagnostic, socket/native/retail remain open. Continue
+independent gameplay/progression and preserve concurrent work.
+
 [Matching admission cancellation](MATCHING_ADMISSION_CANCELLATION.md) completes
 public pending join/leave/all/logout and party-role cancellation/context in
 Source. Original participants, both eligibility outcomes and per-role notice

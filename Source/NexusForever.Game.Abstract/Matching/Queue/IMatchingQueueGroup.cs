@@ -50,5 +50,10 @@ namespace NexusForever.Game.Abstract.Matching.Queue
         /// Remove <see cref="IMatchingQueueProposal"/> from <see cref="IMatchingQueueGroup"/>, optionally with a <see cref="MatchingQueueResult"/>.
         /// </summary>
         void RemoveMatchingQueueProposal(IMatchingQueueProposal matchingQueueProposal, MatchingQueueResult? leaveReason = MatchingQueueResult.Left);
+
+        /// <summary>
+        /// Detach the proposal and all its character state without publishing; return the owned leave feedback.
+        /// </summary>
+        Action DetachMatchingQueueProposal(IMatchingQueueProposal proposal, MatchingQueueResult? leaveReason = MatchingQueueResult.Left);
     }
 }

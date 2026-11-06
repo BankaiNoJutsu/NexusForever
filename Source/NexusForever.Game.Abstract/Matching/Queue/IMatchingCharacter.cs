@@ -32,6 +32,15 @@ namespace NexusForever.Game.Abstract.Matching.Queue
         void RemoveMatchingQueueProposal(Static.Matching.MatchType matchType, MatchingQueueResult? leaveReason = MatchingQueueResult.Left);
 
         /// <summary>
+        /// Detach only the supplied proposal/group and return its deferred leave publication.
+        /// </summary>
+        /// <remarks>
+        /// The caller detaches every proposal member before invoking any returned action.
+        /// Later admissions or session replacement suppress obsolete feedback.
+        /// </remarks>
+        Action DetachMatchingQueueProposal(IMatchingQueueProposal proposal, IMatchingQueueGroup group, MatchingQueueResult? leaveReason);
+
+        /// <summary>
         /// Send match and queue status for character.
         /// </summary>
         void SendMatchingStatus();

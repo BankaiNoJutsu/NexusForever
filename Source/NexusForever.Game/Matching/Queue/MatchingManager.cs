@@ -387,13 +387,14 @@ namespace NexusForever.Game.Matching.Queue
             if (player == null)
                 return;
 
+            IMatchingCharacter character = GetMatchingCharacter(player.Identity);
+            IMatchingCharacterQueue matchingCharacterQueue = character.GetMatchingCharacterQueue(matchType);
             CancelPendingJoin(player, matchType);
+            Action publish = matchingCharacterQueue?.MatchingQueueGroup.DetachMatchingQueueProposal(matchingCharacterQueue.MatchingQueueProposal);
             CancelRoleCheck(player, matchType);
             log.LogTrace($"Leave queue request, Character: {player.Identity}, MatchType: {matchType}.");
 
-            IMatchingCharacter character = GetMatchingCharacter(player.Identity);
-            IMatchingCharacterQueue matchingCharacterQueue = character.GetMatchingCharacterQueue(matchType);
-            matchingCharacterQueue?.MatchingQueueGroup.RemoveMatchingQueueProposal(matchingCharacterQueue.MatchingQueueProposal);
+            publish?.Invoke();
         }
 
         /// <summary>
@@ -404,13 +405,17 @@ namespace NexusForever.Game.Matching.Queue
             if (player == null)
                 return;
 
+            var matchingCharacterQueues = GetMatchingCharacter(player.Identity).GetMatchingCharacterQueues().ToList();
             CancelPendingJoin(player, null);
+            var publications = matchingCharacterQueues
+                .Select(queue => queue.MatchingQueueGroup.DetachMatchingQueueProposal(queue.MatchingQueueProposal))
+                .Where(publish => publish != null)
+                .ToList();
             CancelRoleCheck(player, null);
             log.LogTrace($"Leave queue request, Character: {player.Identity}.");
 
-            IMatchingCharacter character = GetMatchingCharacter(player.Identity);
-            foreach (IMatchingCharacterQueue matchingCharacterQueue in character.GetMatchingCharacterQueues().ToList())
-                matchingCharacterQueue.MatchingQueueGroup.RemoveMatchingQueueProposal(matchingCharacterQueue.MatchingQueueProposal);
+            foreach (Action publish in publications)
+                publish();
         }
 
         /// <summary>

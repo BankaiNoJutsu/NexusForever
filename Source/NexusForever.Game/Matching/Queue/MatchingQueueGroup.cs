@@ -76,24 +76,13 @@ namespace NexusForever.Game.Matching.Queue
             Guid      = Guid.NewGuid();
             MatchType = matchingQueueProposal.MatchType;
 
-            if (matchingDataManager.IsSingleFactionEnforced(MatchType))
-            {
-                IMatchingQueueGroupTeam matchingQueueGroupTeam = AddTeam(matchingQueueProposal.Faction);
-                AddMatchingQueueProposal(matchingQueueProposal, matchingQueueGroupTeam);
-
-                if (matchingDataManager.IsPvPMatchType(MatchType))
-                    AddTeam(matchingQueueGroupTeam.Faction == Faction.Dominion ? Faction.Exile : Faction.Dominion);
-            }
-            else
-            {
-                IMatchingQueueGroupTeam matchingQueueGroupTeam = AddTeam(null);
-                AddMatchingQueueProposal(matchingQueueProposal, matchingQueueGroupTeam);
-
-                if (matchingDataManager.IsPvPMatchType(MatchType))
-                    AddTeam(null);
-            }
-
             IsSolo = matchingQueueProposal.MatchingQueueFlags.HasFlag(MatchingQueueFlags.SoloMatch);
+            Faction? faction = matchingDataManager.IsSingleFactionEnforced(MatchType) ? matchingQueueProposal.Faction : null;
+            IMatchingQueueGroupTeam team = AddTeam(faction);
+            if (matchingDataManager.IsPvPMatchType(MatchType))
+                AddTeam(faction == null ? null : faction == Faction.Dominion ? Faction.Exile : Faction.Dominion);
+
+            AdmitMatchingQueueProposal(matchingQueueProposal, team);
 
             log.LogTrace($"Initialised new matching queue group, Guid: {Guid}, MatchType: {MatchType}, Teams: {teams.Count}");
         }
@@ -138,22 +127,21 @@ namespace NexusForever.Game.Matching.Queue
         /// </summary>
         public void AddMatchingQueueProposal(IMatchingQueueProposal matchingQueueProposal, IMatchingQueueGroupTeam matchingQueueGroupTeam)
         {
-            if (IsSolo)
+            if (IsSolo || IsFinalised)
                 throw new InvalidOperationException();
 
             if (GetTeam(matchingQueueGroupTeam.Guid) == null)
                 throw new InvalidOperationException();
 
-            matchingQueueGroupTeam.AddMatchingQueueProposal(matchingQueueProposal);
-            matchingQueueProposal.SetMatchingQueueGroup(this);
+            AdmitMatchingQueueProposal(matchingQueueProposal, matchingQueueGroupTeam);
+        }
 
-            log.LogTrace($"Added matching queue proposal {matchingQueueProposal.Guid} to matching queue group {Guid}.");
-
-            // cache maps
-            maps = teams.Values
-                .SelectMany(t => t.GetMatchingMaps())
-                .Distinct()
-                .ToList();
+        private void AdmitMatchingQueueProposal(IMatchingQueueProposal proposal, IMatchingQueueGroupTeam team)
+        {
+            team.AddMatchingQueueProposal(proposal);
+            UpdateMatchingMaps();
+            proposal.SetMatchingQueueGroup(this);
+            log.LogTrace($"Added matching queue proposal {proposal.Guid} to matching queue group {Guid}.");
         }
 
         /// <summary>
@@ -161,24 +149,33 @@ namespace NexusForever.Game.Matching.Queue
         /// </summary>
         public void RemoveMatchingQueueProposal(IMatchingQueueProposal matchingQueueProposal, MatchingQueueResult? leaveReason = MatchingQueueResult.Left)
         {
+            DetachMatchingQueueProposal(matchingQueueProposal, leaveReason)?.Invoke();
+        }
+
+        public Action DetachMatchingQueueProposal(IMatchingQueueProposal matchingQueueProposal, MatchingQueueResult? leaveReason = MatchingQueueResult.Left)
+        {
+            if (!teams.Values.SelectMany(team => team.GetMembers())
+                .Any(member => ReferenceEquals(member.MatchingQueueProposal, matchingQueueProposal)))
+                return null;
+
             foreach (IMatchingQueueGroupTeam matchingQueueGroupTeam in GetTeams())
                 matchingQueueGroupTeam.RemoveMatchingQueueProposal(matchingQueueProposal);
 
-            matchingQueueProposal.RemoveMatchingQueueGroup(leaveReason);
-
-            log.LogTrace($"Removed matching queue proposal {matchingQueueProposal.Guid} from matching queue group {Guid}.");
-
-            // cache maps
-            maps = teams.Values
-                .SelectMany(t => t.GetMatchingMaps())
-                .Distinct()
-                .ToList();
+            UpdateMatchingMaps();
 
             if (maps.Count == 0)
             {
                 IsFinalised = true;
                 log.LogTrace($"Matching queue group {Guid} is empty, finalised.");
             }
+            Action publish = matchingQueueProposal.DetachMatchingQueueGroup(leaveReason);
+            log.LogTrace($"Removed matching queue proposal {matchingQueueProposal.Guid} from matching queue group {Guid}.");
+            return publish;
+        }
+
+        private void UpdateMatchingMaps()
+        {
+            maps = teams.Values.SelectMany(team => team.GetMatchingMaps()).Distinct().ToList();
         }
     }
 }
