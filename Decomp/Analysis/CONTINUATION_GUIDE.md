@@ -1,5 +1,12 @@
 # Client Binary Decompile Continuation Guide
 
+[Q4526 catch retry](Q4526_SEQUENTIAL_CATCH.md) now uses real sequential quest
+admission without caching a rejected early attempt. Three baseline failures
+are fixed;6 new/all118 scoped and6 actual-catalog cases,clean builds and both
+reviews pass. Published-base archive isolation excludes concurrent loot Source.
+Movement/public acceptance/turnin/provider/native/retail remain open.
+
+
 [Physical BOP loot](LOOT_BOUND_PICKUP.md) now uses existing bound creation
 before publication and excludes unbound/satchel capacity. Four baseline faults
 are fixed;6 new/all136 scoped cases,clean builds and both reviews pass. Reuse the

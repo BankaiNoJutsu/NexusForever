@@ -15,6 +15,7 @@ using NexusForever.Game.Static.PlayerPath;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Static.Spell;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.Game.Tests.Quest;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
 using NexusForever.IO.Map;
@@ -340,55 +341,32 @@ public class NorthernWildsBranchInteractionTests
     [Fact]
     public void Q4526SpatialAnomaly_OnActivateSuccess_WhenQuestAccepted_CreditsCatchObjective()
     {
-        var script = new Q4526SpatialAnomalyEntityScript();
-        ICreatureEntity owner = RecordingDispatchProxy<ICreatureEntity>.Create(out _);
-        IPlayer player = CreatePlayerWithQuestState(
-            QuestState.Accepted,
-            out RecordingDispatchProxy<IQuestManager> questManagerProxy,
-            questId: SpatialAnomalyQuest);
-
-        script.OnLoad(owner);
-        script.OnActivateSuccess(player);
-
-        RecordingDispatchProxy<IQuestManager>.Invocation update = Assert.Single(
-            questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
-        Assert.Equal(SpatialAnomalyCatchObjective, update.Arguments[0]);
-        Assert.Equal(1u, update.Arguments[1]);
+        using var f = new Q4526SequentialCatchTests.CatchFixture(investigated: true);
+        var script = f.Anomaly();
+        script.OnActivateSuccess(f.Actor.Player);
+        Assert.Equal(1u, f.Objective(SpatialAnomalyCatchObjective).Progress);
+        Assert.Equal(QuestState.Achieved, f.Quest.State);
     }
 
     [Fact]
     public void Q4526SpatialAnomaly_OnEnterRange_WhenQuestAccepted_CreditsCatchObjective()
     {
-        Q4526SpatialAnomalyEntityScript script = CreateSpatialAnomalyScript(out _);
-        IPlayer player = CreatePlayerWithQuestState(
-            QuestState.Accepted,
-            out RecordingDispatchProxy<IQuestManager> questManagerProxy,
-            questId: SpatialAnomalyQuest);
-
-        script.OnEnterRange(player);
-
-        RecordingDispatchProxy<IQuestManager>.Invocation update = Assert.Single(
-            questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
-        Assert.Equal(SpatialAnomalyCatchObjective, update.Arguments[0]);
-        Assert.Equal(1u, update.Arguments[1]);
+        using var f = new Q4526SequentialCatchTests.CatchFixture(investigated: true);
+        var script = f.Anomaly();
+        script.OnEnterRange(f.Actor.Player);
+        Assert.Equal(1u, f.Objective(SpatialAnomalyCatchObjective).Progress);
+        Assert.Equal(QuestState.Achieved, f.Quest.State);
     }
 
     [Fact]
     public void Q4526SpatialAnomaly_OnEnterRangeThenActivateSuccess_WhenSamePlayer_CreditsCatchObjectiveOnce()
     {
-        Q4526SpatialAnomalyEntityScript script = CreateSpatialAnomalyScript(out _);
-        IPlayer player = CreatePlayerWithQuestState(
-            QuestState.Accepted,
-            out RecordingDispatchProxy<IQuestManager> questManagerProxy,
-            questId: SpatialAnomalyQuest);
-
-        script.OnEnterRange(player);
-        script.OnActivateSuccess(player);
-
-        RecordingDispatchProxy<IQuestManager>.Invocation update = Assert.Single(
-            questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
-        Assert.Equal(SpatialAnomalyCatchObjective, update.Arguments[0]);
-        Assert.Equal(1u, update.Arguments[1]);
+        using var f = new Q4526SequentialCatchTests.CatchFixture(investigated: true);
+        var script = f.Anomaly();
+        script.OnEnterRange(f.Actor.Player);
+        script.OnActivateSuccess(f.Actor.Player);
+        Assert.Equal(1u, f.Objective(SpatialAnomalyCatchObjective).Progress);
+        Assert.Equal(QuestState.Achieved, f.Quest.State);
     }
 
     [Fact]

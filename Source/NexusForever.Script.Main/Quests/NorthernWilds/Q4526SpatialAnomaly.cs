@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Quest;
@@ -27,7 +26,6 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
         private const float CatchRange = 5f;
 
         private ICreatureEntity owner;
-        private readonly HashSet<ulong> creditedCharacterIds = [];
 
         public void OnLoad(ICreatureEntity owner)
         {
@@ -54,14 +52,25 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
 
         private void TryCreditCatch(IPlayer player)
         {
-            if (player.QuestManager.GetQuestState(QuestSpatialAnomaly) != QuestState.Accepted)
+            IQuestManager manager = player?.QuestManager;
+            if (manager?.GetQuestState(QuestSpatialAnomaly) != QuestState.Accepted)
                 return;
 
-            if (!creditedCharacterIds.Add(player.CharacterId))
+            IQuest quest = manager.GetActiveQuests()?.SingleOrDefault(active =>
+                active.Id == QuestSpatialAnomaly && ReferenceEquals(active.Player, player));
+            if (quest == null || quest.State != QuestState.Accepted
+                || quest.GetCurrentObjectiveId() != CatchSpatialAnomalyObjective)
+                return;
+
+            IQuestObjective objective = quest.SingleOrDefault(active =>
+                active.ObjectiveInfo.Id == CatchSpatialAnomalyObjective
+                && active.ObjectiveInfo.Type == QuestObjectiveType.ActivateEntity);
+            if (objective == null || objective.IsComplete() || !ReferenceEquals(player.QuestManager, manager))
                 return;
 
             // WIP/GUESSED: client rows prove the anomaly target and catch location, but exact movement/catch timing still needs client smoke.
-            player.QuestManager.ObjectiveUpdate(CatchSpatialAnomalyObjective, 1u);
+            // The real objective owns sequential gating and repeated credit; a refused early catch must remain retryable.
+            quest.ObjectiveUpdate(CatchSpatialAnomalyObjective, 1u);
         }
     }
 }

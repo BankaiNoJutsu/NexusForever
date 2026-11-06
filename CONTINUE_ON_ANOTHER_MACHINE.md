@@ -1,5 +1,14 @@
 # Continue on another machine
 
+Latest [Q4526 sequential catch](Decomp/Analysis/Q4526_SEQUENTIAL_CATCH.md)
+allows retrying the same anomaly after wreckage investigation instead of
+retaining an early refused attempt. Three baseline failures are fixed;6 new/
+118 scoped and the same6 recovered-catalog cases pass with clean builds and
+both reviews. Full Player SQLite failure/retry/fresh Quest reload passes.
+Existing5m/WIPcatch and physical/public acceptance/turnin/provider/native/retail
+remain open. The Goal is active; concurrent loot work is separate.
+
+
 Latest [physical BOP loot result](Decomp/Analysis/LOOT_BOUND_PICKUP.md):
 supported Inventory binds before first ItemAdd,does not merge into unbound
 stacks,and retains refused capacity/save-lease pickups. Four baseline faults

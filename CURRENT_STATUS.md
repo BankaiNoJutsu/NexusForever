@@ -1,5 +1,13 @@
 # NexusForever Feature Restoration - Current Status
 
+[Q4526 sequential catch retry](Decomp/Analysis/Q4526_SEQUENTIAL_CATCH.md)
+now permits the same anomaly after an early catch is refused pending wreckage
+investigation. The real quest owns admission/duplicate protection. Three
+baseline failures are fixed;6 new/all118 scoped and the same6 actual-catalog
+cases,clean builds and both reviews pass. Existing5m/WIPmovement interpretation
+remains; public acceptance/turnin/provider/native/retail stay open.
+
+
 [Confirmed physical BOP loot](Decomp/Analysis/LOOT_BOUND_PICKUP.md) now binds
 before ItemAdd and keeps prior unbound stacks unchanged. Bound physical capacity
 and the original inventory lease prevent refused pickups becoming Delivered.
