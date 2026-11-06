@@ -43,6 +43,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
 
         public void HandleMessage(IWorldSession session, ClientEntityInteract entityInteraction)
         {
+            if (session?.Player == null)
+                return;
             IWorldEntity entity = session.Player.GetVisible<IWorldEntity>(entityInteraction.Guid);
             if (entity == null && session.Player.Map?.Entry?.Id == TutorialWorldId)
             {
@@ -54,7 +56,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             {
                 if (PendingClientSideInteractionActivationStore.TryConsume(session, entityInteraction.Guid, out PendingClientSideInteractionActivation pendingActivation))
                 {
-                    IWorldEntity pendingEntity = ResolvePendingActivationTarget(session, pendingActivation.EntityGuid);
+                    IWorldEntity pendingEntity = pendingActivation.ResolveTarget(session);
                     if (pendingEntity == null)
                     {
                         log.LogWarning("Client-side interaction success could not resolve pending activation target: player={PlayerGuid}, requestedEntity={RequestedEntity}, pendingEntity={PendingEntity}, pendingCreature={PendingCreature}, clientSideInteractionId={ClientSideInteractionId}, selectedTarget={SelectedTarget}, world={WorldId}.",
@@ -78,7 +80,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                         session.Player?.TargetGuid ?? 0u,
                         session.Player?.Map?.Entry?.Id ?? 0u);
 
-                    ActivateCastCompletion.Complete(session, pendingEntity, assetManager, gameTableManager, pendingActivation.InvokeActivateCast);
+                    ActivateCastCompletion.Complete(session, pendingEntity, assetManager, gameTableManager, pendingActivation.InvokeActivateCast, pendingActivation);
                     return;
                 }
 
@@ -191,20 +193,6 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
         private void UpdateInteractionObjectives(IWorldSession session, IWorldEntity entity)
         {
             InteractionObjectiveUpdater.UpdateDirectInteractionObjectives(session.Player, entity, assetManager, gameTableManager);
-        }
-
-        private static IWorldEntity ResolvePendingActivationTarget(IWorldSession session, uint entityGuid)
-        {
-            IPlayer player = session?.Player;
-            if (player == null || entityGuid == 0u)
-                return null;
-
-            IWorldEntity entity = player.GetVisible<IWorldEntity>(entityGuid);
-            if (entity != null)
-                return entity;
-
-            entity = player.Map?.GetEntity<IWorldEntity>(entityGuid);
-            return entity != null && player.CanSeeEntity(entity) ? entity : null;
         }
 
         private void HandleVendor(IWorldSession session, IWorldEntity worldEntity)

@@ -1,5 +1,13 @@
 # NexusForever Feature Restoration - Current Status
 
+[Deferred CSI ownership](Decomp/Analysis/CSI_ACTIVATION_OWNERSHIP.md) now retains
+the original actor/account/queue/map admission and concrete target through both
+completion routes. Superseded cast finishes and canceled waiting spells cannot
+publish later activation. Eleven baseline failures and two review negatives are
+fixed;32 new/178 related cases pass, including real Q3963 Player save refusal,
+retry/reload and same-map admission. Native cast correlation/minigame rules and
+Q3963's broader journey remain open; the full restoration Goal continues.
+
 [Personal healing scope](Decomp/Analysis/HEALING_PERSONAL_MODIFIER_EVIDENCE.md)
 now limits supported kind12 bonuses to the applying caster and affected target,
 with exact-instance expiry/removal. Recovered rows and direct tooltips close the

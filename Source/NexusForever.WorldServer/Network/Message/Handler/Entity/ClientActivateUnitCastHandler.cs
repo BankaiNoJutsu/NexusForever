@@ -176,11 +176,16 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
 
             if (isNorthernWildsShipControlsActivation)
                 log.Debug($"Northern Wilds ship controls activate-cast spell parameters: player={session.Player.Guid}, requestedEntity={activateUnitId}, entity={entity.Guid}, creature={entity.CreatureId}, spell4Id={spell4Id}, effectiveCastTime={effectiveCastTime}, skipPrimaryTargetRangeValidation={skipPrimaryTargetRangeValidation}, clientSideInteractionId={clientSideInteractionId}, contextToken={contextToken}, source={clientRequestSource}.");
-            if (effectiveCastTime != 0u && deferClientSideInteractionActivation)
+            PendingClientSideInteractionActivation pendingActivation = deferClientSideInteractionActivation
+                ? PendingClientSideInteractionActivationStore.Begin(session, entity, clientSideInteractionId, spell4BaseId, invokeActivateCast: true)
+                : null;
+            if (deferClientSideInteractionActivation)
                 spellParameters.FinishCallback = (_, wasCancelled) =>
                 {
-                    if (!wasCancelled)
-                        PendingClientSideInteractionActivationStore.Set(session, entity, clientSideInteractionId, spell4BaseId, invokeActivateCast: true);
+                    if (wasCancelled)
+                        PendingClientSideInteractionActivationStore.Cancel(session, pendingActivation);
+                    else if (effectiveCastTime != 0u)
+                        PendingClientSideInteractionActivationStore.Arm(session, pendingActivation);
                 };
 
             ClientSpellEvidenceCaptureHelper.ApplyPendingCapture(session, spellParameters);
@@ -188,6 +193,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
 
             if (castResult != CastResult.Ok)
             {
+                PendingClientSideInteractionActivationStore.Cancel(session, pendingActivation);
                 if (isNorthernWildsShipControlsActivation)
                     log.Warn($"Northern Wilds ship controls activate-cast failed: player={session.Player.Guid}, requestedEntity={activateUnitId}, entity={entity.Guid}, creature={entity.CreatureId}, spell4Id={spell4Id}, castResult={castResult}, contextToken={contextToken}, source={clientRequestSource}.");
                 if (IsTutorialSpecialActivationEntity(entity))
@@ -212,7 +218,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             if (deferClientSideInteractionActivation)
             {
                 if (effectiveCastTime == 0u)
-                    PendingClientSideInteractionActivationStore.Set(session, entity, clientSideInteractionId, spell4BaseId, invokeActivateCast: true);
+                    PendingClientSideInteractionActivationStore.Arm(session, pendingActivation);
             }
             else
             {

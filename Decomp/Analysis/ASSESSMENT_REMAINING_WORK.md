@@ -1,5 +1,14 @@
 # Assessment follow-through goal
 
+[Deferred CSI ownership](CSI_ACTIVATION_OWNERSHIP.md) completes the supported
+original-actor/concrete-target boundary through parsed requests and both reply
+routes. Eleven original failures and two later review negatives are fixed;
+32 new/178 related cases pass. Full real Q3963 Player SQLite rejection/retry/fresh
+Quest reload and same-map admission controls pass;7 hashed table inputs bind the
+fixture rows. No native cast-ID correlation, minigame/timer policy, full physical
+departure, provider/socket/native/retail claim follows. F-025/Q3963/full Goal
+remain unfinished; continue independent integrated gameplay. Native/CUA stopped.
+
 [Personal healing scope](HEALING_PERSONAL_MODIFIER_EVIDENCE.md) now binds kind12
 health-healing bonuses to the original caster/target and concrete effect instance.
 Recovered145 effect151 rows and direct localized text establish15 supported

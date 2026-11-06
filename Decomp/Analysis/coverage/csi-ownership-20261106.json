@@ -1,0 +1,242 @@
+{
+  "Date": "2026-11-06",
+  "BaseHEAD": "2cf8c5f7e8af9e6915071e6596eb820be913abb1",
+  "Outcome": "Deferred CSI original actor/target ownership implemented; full restoration unfinished",
+  "Source": [
+    {
+      "Path": "Source/NexusForever.WorldServer/Network/Message/Handler/Entity/PendingClientSideInteractionActivationStore.cs",
+      "SHA256": "F3B69BD5DF0DFF4DD9C2D80E992626E8DA04E839AE4D927471C3C48E37FDA3E1"
+    },
+    {
+      "Path": "Source/NexusForever.WorldServer/Network/Message/Handler/Entity/ClientActivateUnitCastHandler.cs",
+      "SHA256": "33E500AC3EBD20AB45EC9799E454024577FC92B8232204DC52F3BF914ABBD37E"
+    },
+    {
+      "Path": "Source/NexusForever.WorldServer/Network/Message/Handler/Entity/ClientSpellClientSideInteractionHandler.cs",
+      "SHA256": "857ADF66D434014111AC545E0E9F81C6BAE202A8DB7A550AEC9C3177B04C8BF1"
+    },
+    {
+      "Path": "Source/NexusForever.WorldServer/Network/Message/Handler/Entity/ClientEntityInteractionHandler.cs",
+      "SHA256": "740312F0FE56CC3042AF809ABC42299BF23964DB988572BA28AF3DC0775D5855"
+    },
+    {
+      "Path": "Source/NexusForever.WorldServer/Network/Message/Handler/Entity/ActivateCastCompletion.cs",
+      "SHA256": "7DDBD8314796D1E734696199D4C90D30755E0CDBE3C09708EFB8486F918AB020"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Entity/ClientSideInteractionOwnershipTests.cs",
+      "SHA256": "389955E371EE70144D085FE1C51A5FB4E7F0A4B8B9CF7D5A570E66A4102DB6C9"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Entity/Q3963InteractionOwnershipTests.cs",
+      "SHA256": "FB72CDD2C81E64D1F7CA173D21BD38B5F4BEF4AE355F1730ABDF841F7765187F"
+    }
+  ],
+  "Binaries": [
+    {
+      "Path": "Source/NexusForever.WorldServer/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+      "SHA256": "BE621FF341EC06ACF9A8C69D33C559FDCFDA4F49F2DAF7A1D4A2CE2AEBA6AB13"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+      "SHA256": "BE621FF341EC06ACF9A8C69D33C559FDCFDA4F49F2DAF7A1D4A2CE2AEBA6AB13"
+    },
+    {
+      "Path": "Source/NexusForever.Game/bin/Debug/net10.0/NexusForever.Game.dll",
+      "SHA256": "516BC9F5F83A0CF47597C0095AAAF09416DAE5F2BA4EA8E3F9D21F066DE1CAD8"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.dll",
+      "SHA256": "516BC9F5F83A0CF47597C0095AAAF09416DAE5F2BA4EA8E3F9D21F066DE1CAD8"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+      "SHA256": "A462B85DCA3A6DB9DE4B806CB6ABC0208FECFCC503E0AE88FE48D18EE9DA81BA"
+    }
+  ],
+  "OriginalBaseline": {
+    "Counters": {
+      "total": "14",
+      "executed": "14",
+      "passed": "3",
+      "failed": "11",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "Limit": "Initial late-finish fixture was subsequently strengthened; its pass is not a safety proof",
+    "Raw": "artifacts/csi-ownership/baseline-fixed/baseline.trx"
+  },
+  "ReviewNegatives": {
+    "Counters": {
+      "total": "2",
+      "executed": "2",
+      "passed": "0",
+      "failed": "2",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "Cases": [
+      "Missing zero-time waiting-spell cancellation hook",
+      "Event101 after Player removal throws"
+    ],
+    "Raw": "artifacts/csi-ownership/review-negatives/review-negatives.trx"
+  },
+  "FinalTests": {
+    "Counters": {
+      "total": "178",
+      "executed": "178",
+      "passed": "178",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "NewCases": 32,
+    "Raw": "artifacts/csi-ownership/sealed/sealed.trx"
+  },
+  "Build": {
+    "Project": "NexusForever.WorldServer",
+    "Warnings": 0,
+    "Errors": 0,
+    "ElapsedSeconds": 4.31
+  },
+  "Warnings": [
+    "Existing ASPIRE010 in selected test dependency graph"
+  ],
+  "CatalogInputs": [
+    {
+      "File": "Creature2.tbl",
+      "SHA256": "0046759E8B9C3F4A2238F4198595F13693290C6F0DBD47D8DA8F9849DA709EB7",
+      "Bytes": 42963648
+    },
+    {
+      "File": "Spell4.tbl",
+      "SHA256": "303C03CF9EE268B1556CC65C2B56C62D21D083504A7A16EAC2CAC80D34F1914D",
+      "Bytes": 35688224
+    },
+    {
+      "File": "Spell4Base.tbl",
+      "SHA256": "34E3FAEEEE7C4B9889B808A36EC69B40218EBE013CBF95E9E26FC6440005C93A",
+      "Bytes": 8346368
+    },
+    {
+      "File": "ClientSideInteraction.tbl",
+      "SHA256": "DF1D5E6EE5B30F90F915B82D82514CBF75A7086F720B63A5F21087B6B24958BB",
+      "Bytes": 112896
+    },
+    {
+      "File": "Quest2.tbl",
+      "SHA256": "A3C82F2EBA55FBDA4E64F5E392F9D86B58BAA7776F2FDE3BA83BFE70AC517092",
+      "Bytes": 2378032
+    },
+    {
+      "File": "QuestObjective.tbl",
+      "SHA256": "C3D31CEB47B7B08FDF4BDAA8431429CC48E31FFC0BF9122D99F616985E03D5F5",
+      "Bytes": 648944
+    },
+    {
+      "File": "TargetGroup.tbl",
+      "SHA256": "107D87CDB52D510FDA52D04AB5B1B2996ACD65C194EF6A75F922B6F5C5C5204D",
+      "Bytes": 444272
+    }
+  ],
+  "CheckedRows": {
+    "Creature": 27196,
+    "ActivateSpell": 32386,
+    "BaseSpell": 18613,
+    "CSI": 266,
+    "DurationMs": 60000,
+    "Quest": 3963,
+    "Objectives": [
+      5201,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "Objective": {
+      "Id": 5201,
+      "Type": 5,
+      "Flags": 16,
+      "Data": 0,
+      "Count": 1,
+      "LocalizedTextIdFull": 125911,
+      "WorldLocationsIdIndicator00": 45401,
+      "WorldLocationsIdIndicator01": 45402,
+      "WorldLocationsIdIndicator02": 0,
+      "WorldLocationsIdIndicator03": 0,
+      "MaxTimeAllowedMS": 0,
+      "LocalizedTextIdShort": 183217,
+      "TargetGroupIdRewardPane": 7573,
+      "QuestDirectionId": 0
+    },
+    "TargetGroup": {
+      "Id": 7573,
+      "LocalizedTextIdDisplayString": 468487,
+      "Type": 1,
+      "DataEntries": [
+        27196,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "Qualification": {
+    "ParsedRequests": [
+      "ClientActivateUnitCast",
+      "ClientSpellClientSideInteraction",
+      "ClientEntityInteract/event101"
+    ],
+    "RealPlayerCases": 4,
+    "Persistence": "Full Player Character flush rejection, zero SQL progress after refusal, retry and fresh Quest reload through both completion routes",
+    "Admission": "Real Player same-map generation invalidates pending credit through both routes",
+    "Lifetime": "Production parameters retain cast-finish ownership; cancellation cleanup and superseded callback controls; no full native timer trace"
+  },
+  "Reviews": {
+    "Spec": "Primary-agent consolidated self-review; review negatives corrected, no remaining actionable finding",
+    "Standards": "Primary-agent consolidated self-review; no remaining actionable finding"
+  },
+  "Limits": [
+    "Prepared accepted quest and proxy map/entity/session; actual Player/Quest/admission/save in four cases",
+    "Checked recovered row values are used by fixtures; not full-table native/minigame casts",
+    "Unchanged requested-ID aliases/actions; exact SpellCastId/success-event correlation remains unresolved",
+    "Arbitrary script-exception recovery, full cinematic/departure journey, configured provider, socket/native/retail remain open",
+    "No full solution/full suite, service/native/CUA launch or schema/configuration mutation",
+    "Earlier hosted proof retains its frozen World DLL boundary"
+  ],
+  "RawRoot": "artifacts/csi-ownership/"
+}

@@ -14,19 +14,29 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
             IWorldEntity entity,
             IAssetManager assetManager,
             IGameTableManager gameTableManager,
-            bool invokeActivateCast)
+            bool invokeActivateCast,
+            PendingClientSideInteractionActivation pendingActivation = null)
         {
+            IPlayer CompletionPlayer() => pendingActivation?.Player ?? session.Player;
+            bool Current() => pendingActivation == null || pendingActivation.ResolveTarget(session) != null;
+            if (!Current())
+                return;
             if (invokeActivateCast)
-                entity.OnActivateCast(session.Player);
+                entity.OnActivateCast(CompletionPlayer());
 
-            entity.OnActivateSuccess(session.Player);
+            if (!Current())
+                return;
+            entity.OnActivateSuccess(CompletionPlayer());
+            if (!Current())
+                return;
             InteractionObjectiveUpdater.UpdateActivateSuccessObjectives(
-                session.Player,
+                CompletionPlayer(),
                 entity,
                 assetManager,
                 includeActivateEntity: ShouldIncludeActivateEntityForActivateCast(session, entity),
                 gameTableManager);
-            ActivationAchievementUpdater.Update(session.Player, entity);
+            if (Current())
+                ActivationAchievementUpdater.Update(CompletionPlayer(), entity);
         }
 
         private static bool ShouldIncludeActivateEntityForActivateCast(IWorldSession session, IWorldEntity entity)
