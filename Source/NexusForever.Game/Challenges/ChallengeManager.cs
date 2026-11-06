@@ -619,13 +619,19 @@ namespace NexusForever.Game.Challenges
 
         private bool MatchesChallengeTarget(ChallengeEntry entry, uint creatureId)
         {
+            if (creatureId == 0u)
+                return false;
+
             if (entry.Target == 0u)
                 return MatchesMappedChallengeCreatureTarget(entry, creatureId);
 
-            if (entry.Target == creatureId)
+            TargetGroupEntry targetGroup = gameTableManager.TargetGroup?.GetEntry(entry.Target);
+            bool groupTarget = entry.ChallengeTypeEnum is (uint)ChallengeType.Combat or (uint)ChallengeType.ChecklistActivate;
+            // Known combat/checklist groups own their creature namespace. Ability
+            // and direct targets without a group retain their existing binding.
+            if (entry.Target == creatureId && (!groupTarget || targetGroup == null))
                 return true;
 
-            TargetGroupEntry targetGroup = gameTableManager.TargetGroup?.GetEntry(entry.Target);
             return TargetGroupContainsCreature(targetGroup, creatureId, new HashSet<uint>())
                 || MatchesMappedChallengeCreatureTarget(entry, creatureId);
         }

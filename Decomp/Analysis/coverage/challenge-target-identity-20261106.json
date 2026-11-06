@@ -1,0 +1,311 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-06T04:04:07.176261+00:00",
+  "baseCommit": "0aecab7ff71b63d4b44dbfbecff4fbef578182e0",
+  "milestone": "Challenge creature target identity for combat/checklist earning",
+  "classification": "Implemented supported Source producer correction with actual-table hook qualification; unsupported producers and broader reward/provider/socket/native/retail and overall Goal remain open",
+  "sources": [
+    {
+      "path": "Source/NexusForever.Game/Challenges/ChallengeManager.cs",
+      "sha256": "bf82abeeaf86680ac9b4b152d61b03f7993b4fd02b31b5e67fe7c90bd1550a26",
+      "gitBlob": "e01efa8f472c74e11bb7edccb039343132b37f1e"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Challenges/ChallengeTargetIdentityTests.cs",
+      "sha256": "232338e3a0c4ce96c455b2e4998015db395b4318c7a6cfd9e8a30bf3fc67735d",
+      "gitBlob": "75de8122d8d6bed9b5277e62e30291c1772550ef"
+    }
+  ],
+  "sourceBoundary": {
+    "base": "0aecab7ff71b63d4b44dbfbecff4fbef578182e0",
+    "trackedSourceFiles": 6288,
+    "missing": [],
+    "differences": [
+      {
+        "path": "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+        "head": "9b4e604e08391bf229552fa04081ecf9c74fec4d",
+        "candidate": "7de92fafe0c2474ba8428ca9ceee883d39138b46"
+      },
+      {
+        "path": "Source/NexusForever.ClientConnector/packages.config",
+        "head": "fa4b77dc45783358023c1cd38e6ff9bad122aea4",
+        "candidate": "8ab13a9023dec3cf548ee61ba183013bd098a297"
+      },
+      {
+        "path": "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+        "head": "64769a2266f7feab861fcc61cd2b00a0a05da8c4",
+        "candidate": "74272fd6bf29afac14c5d62cb172e81b4edee19a"
+      },
+      {
+        "path": "Source/NexusForever.Database/NexusForever.Database.csproj",
+        "head": "61f9d5326c59ec7018164eba605a01f4081dfded",
+        "candidate": "163c4f01e198e71066afcd9089a367c78b4c3de6"
+      },
+      {
+        "path": "Source/NexusForever.Game/Challenges/ChallengeManager.cs",
+        "head": "e91de6245d78d721cfa807efc9a40fd609c32343",
+        "candidate": "e01efa8f472c74e11bb7edccb039343132b37f1e"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+        "head": "1ffaefc3cf8c1eb7c5b0534d4d91f28eb7001347",
+        "candidate": "6c145b847fa7316e7982ab44cfa404f4e1e7fc70"
+      },
+      {
+        "path": "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj",
+        "head": "74f0ec9ebbf4894dd7ef64f379a773a9e4ce1295",
+        "candidate": "ecd970da6d0d220f3caaf6780656c1809e18a9af"
+      }
+    ],
+    "newOwned": [
+      "Source/NexusForever.Game.Tests/Challenges/ChallengeTargetIdentityTests.cs"
+    ],
+    "historicalNonTaskDifferencePaths": [
+      "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+      "Source/NexusForever.ClientConnector/packages.config",
+      "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+      "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+      "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+      "Source/NexusForever.Database/NexusForever.Database.csproj",
+      "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+      "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj"
+    ]
+  },
+  "inputs": {
+    "baseline": {
+      "path": "artifacts/continuation-20261106/challenge-target-identity/baseline-inputs.json",
+      "sha256": "f34a303af17caf6530b506c157954ea5ada291f7c5f5fb0f3a136cae74d937ae"
+    },
+    "final": {
+      "path": "artifacts/continuation-20261106/challenge-target-identity/final-inputs.json",
+      "sha256": "c2a7e0fdab7f50615dca0955b577b7562a6edf89af43aad3737de60c289c1707"
+    },
+    "baselineActual": {
+      "path": "artifacts/continuation-20261106/challenge-target-identity/baseline-actual-01/inputs.json",
+      "sha256": "a93a8a80e10a394863668085e8458e29a334fc1190796a6f572dc2e70505005f"
+    },
+    "finalActual": {
+      "path": "artifacts/continuation-20261106/challenge-target-identity/final-actual-01/inputs.json",
+      "sha256": "030a132cf31f75b1f7362b0c9f4f895a4159b1c137b914fb72322cc91dbdf574"
+    },
+    "verifiedRecoveredPayloads": 385,
+    "loadedTables": 6,
+    "manifestSha256": "bfb15d7824bb7ed4f4b03cc26411b3adb07317744ff2939b9fd1101c476902ad",
+    "sameTestDllBeforeAfter": true,
+    "changedDlls": [
+      "NexusForever.Game.dll"
+    ],
+    "owningTestAndRunnerCopiesExact": true
+  },
+  "dataAudit": {
+    "path": "artifacts/continuation-20261106/challenge-target-identity/table-audit.json",
+    "sha256": "8ad39169009d5198e77c2aa9e2127ecfdb35cbf1184f38e067dfc600d4e7e362",
+    "rows": 643,
+    "potentialGroupIdCollisions": 105,
+    "meaning": "Source-shaped candidate scan, not105 executed or qualified gameplay defects; unsupported/other target interpretations remain separate."
+  },
+  "baseline": {
+    "focused": {
+      "path": "artifacts/continuation-20261106/challenge-target-identity/baseline.trx",
+      "sha256": "35f08614f46cf38f5b2a8e15cbbf5c3ef6cd32f2c9434bd1ee23a1836bcdb89d",
+      "passed": 3,
+      "failed": 4,
+      "skipped": 0
+    },
+    "actual": {
+      "path": "artifacts/continuation-20261106/challenge-target-identity/baseline-actual-01/result.json",
+      "sha256": "1515096dc9e568de90f7452b3eaceee5360674717884e77886b046fd08b47dc6",
+      "cases": [
+        {
+          "Id": 103,
+          "InvalidCreature": 8851,
+          "BadCount": 1,
+          "GoodCreature": 11576,
+          "CurrentCount": 2,
+          "CurrentTier": 0,
+          "CompletionCount": 0,
+          "Passed": false
+        },
+        {
+          "Id": 103,
+          "InvalidCreature": 0,
+          "BadCount": 1,
+          "GoodCreature": 11576,
+          "CurrentCount": 2,
+          "CurrentTier": 0,
+          "CompletionCount": 0,
+          "Passed": false
+        },
+        {
+          "Id": 532,
+          "InvalidCreature": 11092,
+          "BadCount": 1,
+          "GoodCreature": 34191,
+          "CurrentCount": 0,
+          "CurrentTier": 1,
+          "CompletionCount": 0,
+          "Passed": false
+        },
+        {
+          "Id": 532,
+          "InvalidCreature": 0,
+          "BadCount": 1,
+          "GoodCreature": 34191,
+          "CurrentCount": 0,
+          "CurrentTier": 1,
+          "CompletionCount": 0,
+          "Passed": false
+        },
+        {
+          "Id": 103,
+          "AutoActivation": true,
+          "WrongActivation": true,
+          "CurrentCount": 2,
+          "Passed": false
+        }
+      ],
+      "failed": 5
+    },
+    "description": "Resolved group ID aliases and zero padding falsely progress supported attempts; one invalid+valid532 sequence reaches tier1, and8851 incorrectly auto-starts103."
+  },
+  "final": {
+    "scoped": {
+      "path": "artifacts/continuation-20261106/challenge-target-identity/final-scoped.trx",
+      "sha256": "a17f651308f83d5741a1e9fa23a0d0d4a7a8b1c70d67ec617e0c57f6810d2c7b",
+      "passed": 121,
+      "failed": 0,
+      "skipped": 0,
+      "filter": "FullyQualifiedName~ChallengeTargetIdentityTests|FullyQualifiedName~ChallengeCombatHooksTests|FullyQualifiedName~ChallengeDataMappingSliceTests|FullyQualifiedName~ChallengeLiveProducerTests|FullyQualifiedName~ChallengeManagerTests",
+      "newCases": 7,
+      "existingSelectedCases": 114,
+      "reportedDurationSeconds": 50
+    },
+    "actual": {
+      "path": "artifacts/continuation-20261106/challenge-target-identity/final-actual-01/result.json",
+      "sha256": "7d02bacfa3312509ce29ed70c7519f08a6e09c4fbccfeac0ebde1fd62bbf9414",
+      "passed": 5,
+      "failed": 0,
+      "cases": [
+        {
+          "Id": 103,
+          "InvalidCreature": 8851,
+          "BadCount": 0,
+          "GoodCreature": 11576,
+          "CurrentCount": 1,
+          "CurrentTier": 0,
+          "CompletionCount": 0,
+          "Passed": true
+        },
+        {
+          "Id": 103,
+          "InvalidCreature": 0,
+          "BadCount": 0,
+          "GoodCreature": 11576,
+          "CurrentCount": 1,
+          "CurrentTier": 0,
+          "CompletionCount": 0,
+          "Passed": true
+        },
+        {
+          "Id": 532,
+          "InvalidCreature": 11092,
+          "BadCount": 0,
+          "GoodCreature": 34191,
+          "CurrentCount": 1,
+          "CurrentTier": 0,
+          "CompletionCount": 0,
+          "Passed": true
+        },
+        {
+          "Id": 532,
+          "InvalidCreature": 0,
+          "BadCount": 0,
+          "GoodCreature": 34191,
+          "CurrentCount": 1,
+          "CurrentTier": 0,
+          "CompletionCount": 0,
+          "Passed": true
+        },
+        {
+          "Id": 103,
+          "AutoActivation": true,
+          "WrongActivation": false,
+          "CurrentCount": 1,
+          "Passed": true
+        }
+      ]
+    }
+  },
+  "productionChange": "Reject creature0; known Combat/Checklist target groups take priority over raw creature-ID equality. Preserve member traversal, mapped bridge and prior direct/Ability bindings.",
+  "builds": {
+    "owning": {
+      "path": "artifacts/continuation-20261106/challenge-target-identity/final-owning-build.log",
+      "sha256": "a2799449f0afaf5b78be35f2c8f3b9765a917376859193e6ea2dd4cc0ff340d0",
+      "project": "NexusForever.WorldServer",
+      "seconds": 12.14,
+      "warnings": 0,
+      "errors": 0
+    },
+    "test": {
+      "path": "artifacts/continuation-20261106/challenge-target-identity/final-test-build.log",
+      "sha256": "b1c068b9cdb8e09d48a5c65b135cde4436266b089bc70e6fd50598106ae7ca7e",
+      "seconds": 4.25,
+      "warnings": 0,
+      "errors": 0,
+      "buildProjectReferences": false
+    },
+    "runner": {
+      "path": "artifacts/continuation-20261106/challenge-target-identity/final-runner-build.log",
+      "sha256": "e4be536b347514b68f341b878b001a1261f69eea98d78e5faac7a8ac4b597c20",
+      "seconds": 2.67,
+      "warnings": 0,
+      "errors": 0
+    }
+  },
+  "helperDiagnostic": {
+    "path": "artifacts/continuation-20261106/challenge-target-identity/helper-declaration-diagnostics.log",
+    "sha256": "bb15b87b53cfaffc77b44b24783e2df961203bba533dd7ddce799e1432683fdc",
+    "meaning": "Initial fixture table-helper namespace and cleanup method declarations corrected before genuine runtime baseline; not production defects."
+  },
+  "reviews": {
+    "path": "artifacts/continuation-20261106/challenge-target-identity/reviews.json",
+    "sha256": "32cde6ba915d6841a36616ec69c40ea78c22fbd4a7346f32ffb838a08218365a",
+    "specFindings": 0,
+    "standardsFindings": 0
+  },
+  "upstream": {
+    "path": "artifacts/continuation-20261106/challenge-target-identity/upstream-refresh.json",
+    "sha256": "c0b884623029acc9cdefede895d34b0c699122a907b1e74cf9f4131fc7a1691b",
+    "latestPrs": 20,
+    "headsBasesStatesUnchanged": true,
+    "pr608": "open",
+    "pr609": "closed/unmerged"
+  },
+  "preserved": {
+    "foreignRootSourceExcluded": true,
+    "historicalCandidateDifferences": 8,
+    "noNewEarningTypeEnabled": true,
+    "fullSolutionOrFullSuiteRun": false,
+    "freshProviderOrDeploymentQualification": false,
+    "nativeClientAndComputerUseStopped": true,
+    "entitlements": "15:1/17:1 preserved; no automatic44/seven grants"
+  },
+  "limits": [
+    "Actual definitions103/532 use selected-source fixture tables plus complete target-group/tier data; prepared proxy Player/map/session and real hooks/ChallengeManager.",
+    "Legacy count path only; new durable medal/claim, physical kill/activation, provider or socket earning qualification is not claimed.",
+    "Existing selected live producer controls cover durable behavior; their synthetic-source scope is not the actual fixture scope.",
+    "Ability nonzero bindings and missing-group direct routes remain compatibility behavior, not newly qualified type-specific rules.",
+    "Collect/item/general/time-tiered earning, share activation and exact retail scoring/odds/reset remain open.",
+    "Previous7983 socket count-source earning/claims retain their separate completed evidence and were not repeated."
+  ]
+}

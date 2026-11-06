@@ -1,5 +1,14 @@
 # Assessment follow-through goal
 
+[Challenge creature target identity](CHARACTER_CHALLENGE_LIVE_PRODUCERS.md#creature-target-identity)
+fixes false combat/checklist earning from zero padding and target-group IDs
+misread as creature IDs. Four baseline regressions and five actual103/532
+counterexamples are fixed; seven new/all121 scoped cases and five actual-data
+cases pass, with clean builds and both reviews. Genuine members, nested/reviewed
+bridges and existing direct/Ability routes remain. This is supported producer
+correctness; collect/item/general/time-tiered rules and new reward/provider/
+socket/native/retail qualification remain open. Continue the broader queue.
+
 [Guild-bank actual formula/perk inputs](GUILD_BANK_NATIVE_CONTRACTS_2026_11_05.md#actual-formula-and-perk-inputs-qualified)
 are qualified: formula644=128 slots, selector vector0/1/2/5/10/25/50/−1, five bank
 tab IDs/raw prices/dependency chain, all25 perk/enum joins, eight activation spells

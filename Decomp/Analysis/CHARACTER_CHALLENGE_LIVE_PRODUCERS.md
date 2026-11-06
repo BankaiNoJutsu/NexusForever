@@ -1,5 +1,55 @@
 # Live Character Challenge earning producers
 
+## Creature target identity
+
+6 November 2026, parent `0aecab7ff71b63d4b44dbfbecff4fbef578182e0`.
+Combat and ChecklistActivate earning now resolves a known target group before
+considering raw creature-ID equality. A group ID cannot earn credit merely by
+sharing an integer with an unrelated creature. Creature0 is rejected before
+empty/padded group slots can match. Real members, nested group traversal and
+the reviewed Skeech bridge remain supported. Missing-group direct targets and
+nonzero Ability bindings retain their previous behavior.
+
+The actual643-row catalog supplies concrete counterexamples: Challenge103's
+group8851 excludes existing Creature8851, and Checklist Challenge532's
+group11092 excludes existing Creature11092. The unchanged production baseline
+fails four focused cases while three direct-route controls pass. All five actual
+cases fail: group aliases and zero add progress to103/532, and Creature8851
+incorrectly auto-activates103. For532, invalid credit followed by one legitimate
+activation even advances the first tier. These are target-identity faults in
+supported earning routes, not evidence for enabling another Challenge type.
+
+The corrected candidate passes all seven new cases and all121 selected Challenge
+cases, plus all five actual-data cases. Invalid events leave count/tier/completion
+unchanged; legitimate members then earn count1. Challenge103 ignores the wrong
+auto-start event and activates at count1 on a genuine member. The focused body
+includes existing combat, target mapping, live durable producer and manager
+controls. The production change is confined to the common target matcher.
+
+The actual probe uses selected unchanged Challenge103/532 definitions and full
+recovered target-group/tier data through real Combat/Activation hooks and
+ChallengeManager. Player/map/session and other managers are collaborators; it
+exercises the legacy count path before a legitimate terminal award. It does not
+qualify a new durable medal/claim transaction, native kill/activation, physical
+placement or socket earning cycle. The earlier7983 socket result retains its
+own completed boundary and was not repeated.
+
+Both final Source reviews have zero findings. Owning WorldServer/test-only
+builds are clean in12.14s/4.25s; the selected tests report50s. Only the Game DLL
+changes between baseline and final; the same test DLL consumes the updated
+runtime, with owning/test/runner copies verified. The initial helper namespace/
+cleanup-method compile diagnostics are retained separately from genuine failures.
+No full solution or full suite ran, and foreign root Source was excluded.
+
+The [portable record](coverage/challenge-target-identity-20261106.json) binds the
+two Source paths, exact baseline/final inputs, actual data cases, scoped checks
+and reviews. Raw evidence is under
+`artifacts/continuation-20261106/challenge-target-identity/`.
+Unknown collect/item/general/time-tiered producers, type-specific Ability rules,
+share activation, exact retail scoring/odds/reset and provider/deployment/native
+qualification remain open. No new earning type or entitlement grant is enabled;
+client launch and Computer Use remain stopped.
+
 ## Shared Challenge preference admission
 
 5 November 2026. Build 16042's `SetSharedChallengePreference` binding at

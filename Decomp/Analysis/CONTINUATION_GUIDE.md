@@ -1,5 +1,11 @@
 # Client Binary Decompile Continuation Guide
 
+[Challenge target identity](CHARACTER_CHALLENGE_LIVE_PRODUCERS.md#creature-target-identity)
+now gives known combat/checklist groups their own namespace and rejects zero
+creature IDs. All121 scoped cases and five actual103/532 cases pass; builds and
+final reviews are clear. The previous socket cycle was not repeated. Unsupported
+producer semantics/provider/native remain open; client/CUA remain stopped.
+
 [Actual guild-bank catalog](GUILD_BANK_NATIVE_CONTRACTS_2026_11_05.md#actual-formula-and-perk-inputs-qualified)
 now resolves bank dimensions, withdrawal selectors and all25 perk dependency/
 enum joins, including the five tab purchase rows. The owning-reader check,

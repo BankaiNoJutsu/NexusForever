@@ -1,5 +1,11 @@
 # NexusForever Feature Restoration - Current Status
 
+[Challenge creature target identity](Decomp/Analysis/CHARACTER_CHALLENGE_LIVE_PRODUCERS.md#creature-target-identity)
+now rejects invalid zero and raw group-ID aliases in combat/checklist earning.
+Actual103/532 progress/tier/autostart regressions are fixed; all121 scoped
+tests and five actual-data cases pass, with clean builds and final reviews.
+Unsupported producers and provider/socket/native/retail remain open.
+
 [Actual guild-bank catalog](Decomp/Analysis/GUILD_BANK_NATIVE_CONTRACTS_2026_11_05.md#actual-formula-and-perk-inputs-qualified)
 qualifies128 slots, the eight withdrawal choices and all25 perk dependency/enum
 joins. The five bank-tab IDs/costs are now pinned to recovered16042 tables;

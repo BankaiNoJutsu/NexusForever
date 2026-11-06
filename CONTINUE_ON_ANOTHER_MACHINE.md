@@ -1,5 +1,13 @@
 # Continue on another machine
 
+Latest Challenge Source result:
+[target identity](Decomp/Analysis/CHARACTER_CHALLENGE_LIVE_PRODUCERS.md#creature-target-identity)
+prevents group-ID aliases/zero padding from earning combat/checklist progress
+or wrongly starting103. Four baseline/five actual regressions are fixed; seven
+new/all121 scoped cases and five actual-data cases pass. Clean builds and both
+reviews pass. Genuine members/bridges and prior direct/Ability bindings remain;
+unsupported producers/provider/socket/native/retail remain open. Client/CUA stopped.
+
 Latest bank input qualification:
 [actual formula/perk catalog](Decomp/Analysis/GUILD_BANK_NATIVE_CONTRACTS_2026_11_05.md#actual-formula-and-perk-inputs-qualified)
 pins128 slots,0/1/2/5/10/25/50/−1 withdrawal selectors and the five tab perk IDs/raw
