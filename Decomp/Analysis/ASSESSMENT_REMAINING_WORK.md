@@ -1,5 +1,10 @@
 # Assessment follow-through goal
 
+[Player scalar save retry](PLAYER_SCALAR_SAVE_RETRY.md) (2026-11-06) keeps the Path, InputKeySet,
+Level, Innate, Sex, Race and Options dirty bits until the flushed row matches and the transaction
+commits. Five failed-save outcomes lost these before; fixed. Source/SQLite only: 6 new and 225
+related cases pass. MySQL/socket/native/retail not run; no parity claim.
+
 [Contract final-claim cycle reset](CONTRACT_RETAIL_RESET_EVIDENCE.md#decision-and-remaining-evidence)
 is now connected in the Character claim transaction. Claiming a track's final slot
 advances its cycle, zeroes points and leaves the next cycle unselected (initialized

@@ -1330,7 +1330,12 @@ namespace NexusForever.Game.Entity
                     StagePvPCooldownSave(context, entity);
 
                 // Staging is not a commit. These owners acknowledge their own flushed settlement.
-                ClearPlayerSave(~(PlayerSaveMask.Location | PlayerSaveMask.PvP | PlayerSaveMask.Flags));
+                PlayerSaveMask trackedScalars = ScalarSaveMasks & saveMask;
+                if (experiencePathOwner != null) trackedScalars &= ~PlayerSaveMask.Path;
+                if (KeybindingManager is CharacterKeybindingManager) trackedScalars &= ~PlayerSaveMask.InputKeySet;
+                if (experienceXpOwner != null) trackedScalars &= ~PlayerSaveMask.Level;
+                TrackScalarSave(context, model, trackedScalars);
+                ClearPlayerSave(~(PlayerSaveMask.Location | PlayerSaveMask.PvP | PlayerSaveMask.Flags | trackedScalars));
             }
 
             model.TimePlayedLevel = (uint)TimePlayedLevel;
