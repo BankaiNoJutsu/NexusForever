@@ -1,5 +1,10 @@
 # Assessment follow-through goal
 
+[Stopping-condition statement](STOPPING_CONDITION_20261107.md) (2026-11-07): after the full ledger and raw-table passes no
+actionable independent source slice remains; each remaining item is gated on a retail/native witness, a producer witness,
+a schema decision, or the MySQL adapter harness, with the exact missing input listed. This is the prompt's stopping
+condition, not completion and not retail parity.
+
 [Unmapped achievement type candidates](ACHIEVEMENT_UNMAPPED_TYPE_CANDIDATES_20261106.md) (2026-11-06): retail achievement text
 from the local reference databases gives a candidate meaning for most of the 39 unmapped types (type 12 = scripted;
 87/88/96/61/94/102 = PvP stats; 109/112/114/83 = housing). Candidates only, from third-party descriptions, not server proof.
