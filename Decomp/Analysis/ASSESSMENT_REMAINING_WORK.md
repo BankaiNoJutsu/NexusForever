@@ -1,5 +1,9 @@
 # Assessment follow-through goal
 
+[Unhandled spell effect candidates](SPELL_EFFECT_UNHANDLED_CANDIDATES_20261107.md) (2026-11-07): the carrying spells and DataBits shapes give weak to
+moderate candidates for UnlockInlaidAugment, ChangeDisplayName and ChangePhase, and nothing conclusive for FacilityModification or
+SpellCounter. No implementation; the observable behavior still needs a retail witness.
+
 [Client Lua and Ghidra evidence](CLIENT_LUA_CONTRACT_AND_REWARD_EVIDENCE_20261107.md) (2026-11-07): the Contracts UI offers all reward choices and sends the
 player's selected `nChoiceIdx` to `ClaimRewardPoint`, so the 07CE choice policy is player-selected (the reset edge rules remain
 without evidence; 07CE stays unwired). Type-10 quest rewards are not rendered by the client UI. Ghidra 12.1.4 analysis of
