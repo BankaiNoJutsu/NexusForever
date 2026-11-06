@@ -1,5 +1,8 @@
 # NexusForever Feature Restoration - Current Status
 
+[Q5597 explosive collection](Decomp/Analysis/Q5597_EXPLOSIVES_COLLECTION.md) now consumes only accepted objective progress and retries failed original-object removal without duplicate credit. Seven baseline failures are fixed;11 new/all82 scoped and the same11 recovered-catalog cases,clean builds and both reviews pass. Full Player SQLite failure/retry/fresh Quest reload preserves six credits/Achieved. Physical/public activation,accept/turnin,world respawn,provider/native/retail and broader Goal remain open. Concurrent work is preserved; Goal active.
+
+
 [Q4526 sequential catch retry](Decomp/Analysis/Q4526_SEQUENTIAL_CATCH.md)
 now permits the same anomaly after an early catch is refused pending wreckage
 investigation. The real quest owns admission/duplicate protection. Three

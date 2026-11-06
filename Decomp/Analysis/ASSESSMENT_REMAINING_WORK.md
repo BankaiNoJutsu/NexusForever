@@ -1,5 +1,8 @@
 # Assessment follow-through goal
 
+[Q5597 accepted explosive collection](Q5597_EXPLOSIVES_COLLECTION.md) completes the supported producer consumption/removal boundary. Refused or satisfied progress does not spend a pickup; failed removal retries the original object without replaying credit. Seven baseline failures are fixed;11 new/all82 scoped plus the same11 recovered-catalog cases,clean builds and both reviews pass. Full Player SQLite failure/retry/fresh reload preserves all six credits/Achieved. Existing turn-in qualification is separate. Public/physical activation,accept/turnin,world respawn,general callback repair,provider/socket/native/retail remain open. Continue independent actionable gameplay; broader Goal active.
+
+
 [Q4526 sequential anomaly catch](Q4526_SEQUENTIAL_CATCH.md) completes the
 early-attempt retry boundary through real Player/Quest state. The attempted
 character cache is removed; actual6164-before6165 admission and objective caps

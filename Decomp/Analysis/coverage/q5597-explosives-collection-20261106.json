@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-06T14:17:56.537683+00:00",
+  "baseCommit": "fba67cb84c6d834e9d8213d350b9e604f0f91c04",
+  "milestone": "Q5597 accepted explosive collection and original-object removal retry",
+  "classification": "Implemented and verified in Source/SQLite/recovered catalog; physical/public activation, NPC acceptance/turnin, provider/native/retail remain open",
+  "sources": [
+    {
+      "path": "Source/NexusForever.Script.Main/Quests/CrimsonIsle/Q5597.cs",
+      "sha256": "122735183be47df599b14cbc1b0f16e1d4638bdf2d97a9b78f62c2dc2091fee3",
+      "candidateSha256": "122735183be47df599b14cbc1b0f16e1d4638bdf2d97a9b78f62c2dc2091fee3",
+      "gitBlob": "71c112e2c12dd72f917ab43696c10ed086858113"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Quest/Q5597ExplosivesCollectionTests.cs",
+      "sha256": "b242409f4027e9aff4896863728b345e7d46bc5598c972dc2dcdb630b77218c2",
+      "candidateSha256": "b242409f4027e9aff4896863728b345e7d46bc5598c972dc2dcdb630b77218c2",
+      "gitBlob": "c69df8ce150cc75cab488f348a359ff73ff03d26"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Quests/CrimsonIsleBranchInteractionTests.cs",
+      "sha256": "e6375ee1904c9f47d5c15b43fbcb4044b09459677a559a64859fea621ce3eeb2",
+      "candidateSha256": "e6375ee1904c9f47d5c15b43fbcb4044b09459677a559a64859fea621ce3eeb2",
+      "gitBlob": "2bef66eb9ad01ddf1fc8e118c0bbc9822cef5c04"
+    }
+  ],
+  "baseline": {
+    "path": "artifacts/continuation-20261106/q5597-explosives-collection/baseline/Bankai_WINBOX11PRO-GPU_2026-11-06_15_11_40_net10.0.trx",
+    "sha256": "bb9dd1ede7004d17b6a3be9afc1033d2460fd4cb1fa98fef6c92957274178f5a",
+    "counters": {
+      "total": "11",
+      "executed": "11",
+      "passed": "4",
+      "failed": "7",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    }
+  },
+  "scoped": {
+    "path": "artifacts/continuation-20261106/q5597-explosives-collection/scoped-01/Bankai_WINBOX11PRO-GPU_2026-11-06_15_14_00_net10.0.trx",
+    "sha256": "a3edadb9e17f1791644d6a07a5327655fab5569a0197821af2e6cd403234035f",
+    "counters": {
+      "total": "82",
+      "executed": "82",
+      "passed": "82",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "filter": "FullyQualifiedName~Q5597ExplosivesCollectionTests|FullyQualifiedName~CrimsonIsleBranchInteractionTests|FullyQualifiedName~CrimsonIsleQuestChainTests|FullyQualifiedName~QuestPersistenceDurabilityTests|FullyQualifiedName~Q5597RewardPersistenceTests.TurnInAndReload",
+    "newCases": 11,
+    "strengthenedExistingPositiveBodies": 4
+  },
+  "actualCatalog": {
+    "inputManifestSha256": "bfb15d7824bb7ed4f4b03cc26411b3adb07317744ff2939b9fd1101c476902ad",
+    "verifiedRecoveredPayloads": 385,
+    "quest": 5597,
+    "objective": 8256,
+    "type": 32,
+    "data": 364,
+    "flags": 4,
+    "count": 6,
+    "creature": 24286,
+    "result": {
+      "CompletedUtc": "2026-11-06T14:15:25.7028935Z",
+      "Passed": 11,
+      "Cases": [
+        "SixDistinctExplosives/False",
+        "RefusedDeletionRetry/False",
+        "SatisfiedObjective/False",
+        "RemovalRetry/False",
+        "SixDistinctExplosives/True",
+        "RefusedDeletionRetry/True",
+        "SatisfiedObjective/True",
+        "RemovalRetry/True",
+        "ReentrantObjectiveFeedback",
+        "IndependentLoadedOwner",
+        "FailedPlayerSaveRetryReload"
+      ],
+      "Limit": "Real script and Player/Quest SQLite save/reload with actual recovered QuestInfo. Accepted quest is prepared; proxy map/session, no public NPC acceptance/turnin, physical map/activation, provider or native/retail qualification."
+    },
+    "inputsRecordSha256": "9282bbf8abcc304c0e1c5329923b94243c1a24acaa3cdd1f17b2cb01d9bc780b",
+    "resultRecordSha256": "11bded907968e9043861e3a9325c913e379e2e1f7111dd6067605e319605c6a4"
+  },
+  "buildsSeconds": {
+    "owningScript": 3.79,
+    "tests": 16.83,
+    "actualAdapter": 4.48
+  },
+  "sourceBoundary": {
+    "publishedTrackedSource": 6313,
+    "newOwnedSource": [
+      "Source/NexusForever.Game.Tests/Quest/Q5597ExplosivesCollectionTests.cs"
+    ],
+    "historicalVariants": 8,
+    "record": "artifacts/continuation-20261106/q5597-explosives-collection/final-boundary.json",
+    "recordSha256": "3f0f727a44eb7573a0dde1d6f8c36844c4c20ad7b5243ebb59384505072cf7e6",
+    "changedDlls": [
+      "NexusForever.Game.Tests.dll",
+      "NexusForever.Script.Main.dll"
+    ],
+    "managedDependencies": 138,
+    "gameUnchangedFromPublishedBaseline": true,
+    "runnerManagedAndNativeSQLiteExact": true
+  },
+  "binaries": {
+    "NexusForever.Game.dll": "159d593d2338b5dabd2e485cdd40e52e7d168d4a920ef8af20a20121197dfd52",
+    "NexusForever.Script.Main.dll": "cc9e3fbb588752d49204ffc36bb74cc2a460cd58e0f9b23d0c7da3d61a7eb5ef",
+    "NexusForever.Game.Tests.dll": "e294d54f043ce9f51de65eede9fa16e0ec6f2fd06823177db1db2d41c7b6d3ca",
+    "NexusForever.GameTable.dll": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a"
+  },
+  "reviews": {
+    "spec": {
+      "actionable": 0,
+      "sourceHashesExact": true
+    },
+    "standards": {
+      "documentedViolations": 0,
+      "actionableSmellsOrCorrectness": 0,
+      "sourceHashesExact": true
+    }
+  },
+  "retainedSetupFailure": "Initial test compile omitted NexusForever.Database.Character import; corrected before baseline. No production behavior inferred from compile failure.",
+  "upstream": {
+    "reviewedPrs": 20,
+    "changedHeadsBasesStates": 0,
+    "pr608": "open",
+    "pr609": "closed/unmerged"
+  },
+  "limits": [
+    "Prepared accepted quest, proxy map/session, manual script adapter activation; no public NPC accept/turnin or physical spatial activation proof.",
+    "Quest reward turnin qualification is separate and preserved. No new item/currency/entitlement or retail sharing/despawn policy.",
+    "General Quest callback partial-state repair, durable world pickup/respawn, producer-loss/restart, configured provider, socket/deployment and native/retail remain open.",
+    "Full Goal incomplete and active; concurrent work excluded."
+  ]
+}

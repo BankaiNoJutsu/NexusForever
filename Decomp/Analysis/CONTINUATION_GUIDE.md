@@ -1,5 +1,8 @@
 # Client Binary Decompile Continuation Guide
 
+[Q5597 explosive collection](Q5597_EXPLOSIVES_COLLECTION.md) now observes actual objective progress before consumption and retains original-object removal retry. Seven baseline faults are fixed;11 new/all82 scoped and11 recovered-catalog cases,clean builds and both reviews pass. Full Player SQLite failure/retry/fresh reload passes; Source/binary boundary excludes concurrent work. Public/physical activation,world respawn,general callback repair,provider/native/retail remain open. The Goal continues.
+
+
 [Q4526 catch retry](Q4526_SEQUENTIAL_CATCH.md) now uses real sequential quest
 admission without caching a rejected early attempt. Three baseline failures
 are fixed;6 new/all118 scoped and6 actual-catalog cases,clean builds and both

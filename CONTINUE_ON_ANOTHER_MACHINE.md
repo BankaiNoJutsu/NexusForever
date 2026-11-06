@@ -1,5 +1,8 @@
 # Continue on another machine
 
+Latest [Q5597 explosive collection](Decomp/Analysis/Q5597_EXPLOSIVES_COLLECTION.md) retains refused/satisfied pickups and retries original removal after accepted credit. Seven baseline faults are fixed;11 new/all82 scoped and11 actual-catalog cases pass with clean builds and both reviews. Full Player SQLite save failure/retry/fresh Quest reload passes. Public/physical activation,accept/turnin,respawn,provider/native/retail remain open. Reuse these checks and continue the active Goal; preserve concurrent work.
+
+
 Latest [Q4526 sequential catch](Decomp/Analysis/Q4526_SEQUENTIAL_CATCH.md)
 allows retrying the same anomaly after wreckage investigation instead of
 retaining an early refused attempt. Three baseline failures are fixed;6 new/

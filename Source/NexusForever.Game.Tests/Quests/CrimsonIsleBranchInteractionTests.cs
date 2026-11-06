@@ -445,47 +445,21 @@ public class CrimsonIsleBranchInteractionTests
     [Fact]
     public void Q5597ChuaExplosives_OnActivateSuccess_WhenQuestAccepted_CreditsVirtualCollectAndRemoves()
     {
-        IPlayer player = CreatePlayer(
-            DregsAndThievesQuest,
-            QuestState.Accepted,
-            canTeleport: false,
-            out RecordingDispatchProxy<IQuestManager> questManagerProxy,
-            out _);
-        ICollectableUnitEntity owner = RecordingDispatchProxy<ICollectableUnitEntity>.Create(out RecordingDispatchProxy<ICollectableUnitEntity> ownerProxy);
-        var script = new Q5597ChuaExplosivesEntityScript();
-
-        script.OnLoad(owner);
-        script.OnActivateSuccess(player);
-
-        RecordingDispatchProxy<IQuestManager>.Invocation objectiveUpdate = Assert.Single(
-            questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
-        Assert.Equal(QuestObjectiveType.VirtualCollect, objectiveUpdate.Arguments[0]);
-        Assert.Equal(DregsAndThievesChuaExplosivesVirtualItem, objectiveUpdate.Arguments[1]);
-        Assert.Equal(1u, objectiveUpdate.Arguments[2]);
-        Assert.Single(ownerProxy.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
+        using var f = new NexusForever.Game.Tests.Quest.Q5597ExplosivesCollectionTests.PickupFixture();
+        var pickup = f.Pickup(false);
+        pickup.Script.OnActivateSuccess(f.Actor.Player);
+        Assert.Equal(1u, f.Objective.Progress);
+        Assert.Single(pickup.Owner.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
     }
 
     [Fact]
     public void Q5597ChuaExplosivesCreature_OnActivateSuccess_WhenQuestAccepted_CreditsVirtualCollectAndRemoves()
     {
-        IPlayer player = CreatePlayer(
-            DregsAndThievesQuest,
-            QuestState.Accepted,
-            canTeleport: false,
-            out RecordingDispatchProxy<IQuestManager> questManagerProxy,
-            out _);
-        ICreatureEntity owner = CreateCreature(maxHealth: 1u, out RecordingDispatchProxy<ICreatureEntity> ownerProxy);
-        var script = new Q5597ChuaExplosivesCreatureEntityScript();
-
-        script.OnLoad(owner);
-        script.OnActivateSuccess(player);
-
-        RecordingDispatchProxy<IQuestManager>.Invocation objectiveUpdate = Assert.Single(
-            questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
-        Assert.Equal(QuestObjectiveType.VirtualCollect, objectiveUpdate.Arguments[0]);
-        Assert.Equal(DregsAndThievesChuaExplosivesVirtualItem, objectiveUpdate.Arguments[1]);
-        Assert.Equal(1u, objectiveUpdate.Arguments[2]);
-        Assert.Single(ownerProxy.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
+        using var f = new NexusForever.Game.Tests.Quest.Q5597ExplosivesCollectionTests.PickupFixture();
+        var pickup = f.Pickup(true);
+        pickup.Script.OnActivateSuccess(f.Actor.Player);
+        Assert.Equal(1u, f.Objective.Progress);
+        Assert.Single(pickup.Owner.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
     }
 
     [Theory]
@@ -513,53 +487,30 @@ public class CrimsonIsleBranchInteractionTests
     [Fact]
     public void Q5597ChuaExplosives_OnActivateSuccess_WhenRepeated_CreditsOnce()
     {
-        IPlayer player = CreatePlayer(
-            DregsAndThievesQuest,
-            QuestState.Accepted,
-            canTeleport: false,
-            out RecordingDispatchProxy<IQuestManager> questManagerProxy,
-            out _);
-        ICollectableUnitEntity owner = RecordingDispatchProxy<ICollectableUnitEntity>.Create(out RecordingDispatchProxy<ICollectableUnitEntity> ownerProxy);
-        var script = new Q5597ChuaExplosivesEntityScript();
-
-        script.OnLoad(owner);
-        script.OnActivateSuccess(player);
-        script.OnActivateSuccess(player);
-
-        Assert.Single(questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
-        Assert.Single(ownerProxy.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
+        using var f = new NexusForever.Game.Tests.Quest.Q5597ExplosivesCollectionTests.PickupFixture();
+        var pickup = f.Pickup(false);
+        pickup.Script.OnActivateSuccess(f.Actor.Player);
+        pickup.Script.OnActivateSuccess(f.Actor.Player);
+        Assert.Equal(1u, f.Objective.Progress);
+        Assert.Single(pickup.Owner.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
     }
 
     [Fact]
     public void Q5597ChuaExplosives_OnAllPromotedPlacementsActivated_CreditsVirtualCollectUpdatesAndRemovesEach()
     {
-        IPlayer player = CreatePlayer(
-            DregsAndThievesQuest,
-            QuestState.Accepted,
-            canTeleport: false,
-            out RecordingDispatchProxy<IQuestManager> questManagerProxy,
-            out _);
-
-        for (int i = 0; i < DregsAndThievesChuaExplosivesPositions.Length; i++)
+        using var f = new NexusForever.Game.Tests.Quest.Q5597ExplosivesCollectionTests.PickupFixture();
+        Assert.True(DregsAndThievesChuaExplosivesPositions.Length >= 6);
+        foreach (var position in DregsAndThievesChuaExplosivesPositions)
         {
-            ICollectableUnitEntity owner = RecordingDispatchProxy<ICollectableUnitEntity>.Create(out RecordingDispatchProxy<ICollectableUnitEntity> ownerProxy);
-            var script = new Q5597ChuaExplosivesEntityScript();
-
-            script.OnLoad(owner);
-            script.OnActivateSuccess(player);
-
-            Assert.Single(ownerProxy.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
+            var pickup = f.Pickup(false);
+            pickup.Owner.SetProperty(nameof(IWorldEntity.Position), position);
+            uint before = f.Objective.Progress;
+            pickup.Script.OnActivateSuccess(f.Actor.Player);
+            Assert.Equal(Math.Min(before + 1, 6u), f.Objective.Progress);
+            Assert.Equal(before < 6 ? 1 : 0, pickup.Owner.GetInvocations(nameof(IGridEntity.RemoveFromMap)).Count);
         }
-
-        IReadOnlyList<RecordingDispatchProxy<IQuestManager>.Invocation> objectiveUpdates =
-            questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate));
-        Assert.Equal(DregsAndThievesChuaExplosivesPositions.Length, objectiveUpdates.Count);
-        foreach (RecordingDispatchProxy<IQuestManager>.Invocation objectiveUpdate in objectiveUpdates)
-        {
-            Assert.Equal(QuestObjectiveType.VirtualCollect, objectiveUpdate.Arguments[0]);
-            Assert.Equal(DregsAndThievesChuaExplosivesVirtualItem, objectiveUpdate.Arguments[1]);
-            Assert.Equal(1u, objectiveUpdate.Arguments[2]);
-        }
+        Assert.Equal(6u, f.Objective.Progress);
+        Assert.Equal(QuestState.Achieved, f.Quest.State);
     }
 
     private static ICreatureEntity CreateCreature(
