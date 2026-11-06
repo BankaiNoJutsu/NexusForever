@@ -1,5 +1,14 @@
 # Client Binary Decompile Continuation Guide
 
+[Contract actual-catalog MySQL recovery](CONTRACT_ACTUAL_MYSQL_RECOVERY.md)
+now passes eight representative windows, seven producer kills and seven spent
+original-claim replays with configured retries and exact 42/49 migrations.
+All leased schemas, recorded temporary directories/process generations and the
+engine listener are absent. Both final reviews pass; production is unchanged.
+Reuse the completed proof. Public reset/claim policy, autonomous hosted recovery,
+copied upgrades and native/retail remain open; client/CUA stopped.
+
+
 [Rotation refresh authority](REWARD_ROTATION_REFRESH_AUTHORITY.md) now keeps
 native07CC index-only and cannot turn extra bytes into persisted grants/upserts.
 Five baseline failures are fixed;8 new/all56 scoped cases, clean builds and both

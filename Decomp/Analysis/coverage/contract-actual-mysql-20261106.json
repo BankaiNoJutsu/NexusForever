@@ -1,0 +1,2917 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-06T07:48:29.522343+00:00",
+  "baseCommit": "3ac409ac10bf8bcd4cf49e4e79e649f49cb32377",
+  "milestone": "Actual-catalog Contract MySQL physical producer loss and spent-claim recovery",
+  "classification": "Configured fresh MySQL internal claim recovery qualification; production and public gameplay behavior unchanged; overall Goal remains unfinished",
+  "sources": [
+    {
+      "path": "Source/NexusForever.Game.Tests/Quest/ContractActualProcessRecovery.cs",
+      "sha256": "b2863c4df7930a9afb0f8a70536dcf68e3f551df38785e2176d6668646390b2e",
+      "gitBlob": "cf56477abe11eb393fe2d3cbfe2a1aab963d98aa"
+    }
+  ],
+  "sourceBoundary": {
+    "base": "3ac409ac10bf8bcd4cf49e4e79e649f49cb32377",
+    "trackedSourceFiles": 6298,
+    "differences": [
+      {
+        "path": "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+        "head": "9b4e604e08391bf229552fa04081ecf9c74fec4d",
+        "candidate": "7de92fafe0c2474ba8428ca9ceee883d39138b46"
+      },
+      {
+        "path": "Source/NexusForever.ClientConnector/packages.config",
+        "head": "fa4b77dc45783358023c1cd38e6ff9bad122aea4",
+        "candidate": "8ab13a9023dec3cf548ee61ba183013bd098a297"
+      },
+      {
+        "path": "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+        "head": "64769a2266f7feab861fcc61cd2b00a0a05da8c4",
+        "candidate": "74272fd6bf29afac14c5d62cb172e81b4edee19a"
+      },
+      {
+        "path": "Source/NexusForever.Database/NexusForever.Database.csproj",
+        "head": "61f9d5326c59ec7018164eba605a01f4081dfded",
+        "candidate": "163c4f01e198e71066afcd9089a367c78b4c3de6"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Quest/ContractActualProcessRecovery.cs",
+        "head": "b8633f2aaa5a9cb7338507d02b932b6792c8e980",
+        "candidate": "cf56477abe11eb393fe2d3cbfe2a1aab963d98aa"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+        "head": "1ffaefc3cf8c1eb7c5b0534d4d91f28eb7001347",
+        "candidate": "6c145b847fa7316e7982ab44cfa404f4e1e7fc70"
+      },
+      {
+        "path": "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj",
+        "head": "74f0ec9ebbf4894dd7ef64f379a773a9e4ce1295",
+        "candidate": "ecd970da6d0d220f3caaf6780656c1809e18a9af"
+      }
+    ],
+    "historicalDifferences": [
+      "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+      "Source/NexusForever.ClientConnector/packages.config",
+      "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+      "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+      "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+      "Source/NexusForever.Database/NexusForever.Database.csproj",
+      "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+      "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj"
+    ],
+    "missing": [],
+    "newFiles": [],
+    "comparisonConvention": "Git clean-filtered blob identities for tracked Source; raw SHA256 separately binds the owned source and binaries."
+  },
+  "assertionPreservation": {
+    "onlyChanges": [
+      "Two optional DbContextOptions parameters",
+      "Character provider option fallback",
+      "Auth provider option fallback"
+    ],
+    "allOtherTextExact": true,
+    "beforeSha256": "a581162d24172a81bc3234246186bd29bdfdc5f5243e0589a0737d4ef7b10b95",
+    "afterSha256": "b2863c4df7930a9afb0f8a70536dcf68e3f551df38785e2176d6668646390b2e"
+  },
+  "binaries": {
+    "baseCommit": "3ac409ac10bf8bcd4cf49e4e79e649f49cb32377",
+    "Dependencies": {
+      "Aspire.Hosting.AppHost.dll": "9d241fac4ea6f912abe94bdaa1043633ce62c3989be4aadbee61cba7bd16c09f",
+      "Aspire.Hosting.dll": "9c5f526f0d2474bf1d547e09ccb2015522f4e92c48e3feb69538f0b7844f1d92",
+      "Aspire.Hosting.Docker.dll": "513608d74a705e3ad9319881a55ab245ebd0bf7127777ee5d3cbbcf66a27d358",
+      "Aspire.Hosting.MySql.dll": "91c9f18a1c51e6cfb39d8e6e3703181b113c07dad431c2d83af95d62877b453b",
+      "Aspire.Hosting.RabbitMQ.dll": "7b22016ca210d666f09f83e332ef8900db218c196b117dd1ad52c4cc53a55334",
+      "Azure.Core.Amqp.dll": "d53d832629b76fcae7f0e0352788c43c79e13480247dba11e37961b60e52c142",
+      "Azure.Core.dll": "1d6df436afdc73c30d476be938f6513c90ef8fc884a7bae280091a9bed0a5490",
+      "Azure.Identity.dll": "31574a3d35ffeb0e25a00ebb317937222fe5283b91af608613f2e3bf0f26c50a",
+      "Azure.Messaging.ServiceBus.dll": "6895bb412db0242bed71d10d3325b86d51611e578529c91108afdeb96bff08fc",
+      "Basic.Reference.Assemblies.Net100.dll": "35ce19c341334cc79951576712d105a75b681b58532c0dd010ac302936d208ba",
+      "CommandLine.dll": "8a55501cd1a1590a4bd93a17c6fdd2c01a0ed5bff1aea9036bdc78d98c9a3fad",
+      "DotNet.Glob.dll": "5263008e364a7a072eddf6d483ed988baf4f50dc0391e358b490ac6c01a6acf5",
+      "Fractions.dll": "e8407a878af8aec1f485f50a9f356c439371610fff20756d4f2284ac6c995cbf",
+      "Google.Protobuf.dll": "8997a69619b59db587a45e75a03c164a44afb613f82db138d35e1636e4cbdc73",
+      "Grpc.AspNetCore.Server.ClientFactory.dll": "c57f69775e2b8acda401efb5f152eba6cfd23d0fc9277b7d2e0ed1f1533158e3",
+      "Grpc.AspNetCore.Server.dll": "a66e142b1a3cbaf8ed3f0835faac72e0484d4eb8b1295e0d3d1de69d72e575b2",
+      "Grpc.Core.Api.dll": "440b6b0a5beca40718a01b3e892baa6e2fd03933f3f501fc40e2a956b0d937a1",
+      "Grpc.Net.Client.dll": "4070680267f1eba977958284088f8bf63bccb2f9fea873d6b244fd7d4b76afd3",
+      "Grpc.Net.ClientFactory.dll": "b62b17995c8576378e790ce1c5dff994c0cf605a6d7da7510078857f59f09d97",
+      "Grpc.Net.Common.dll": "c6ee8099f5fd7013825d2ff636375391c8992704ad40b9819f6c9078c25c6574",
+      "HealthChecks.MySql.dll": "9947a05820c92ceb061edf02271844da0fe5d6bd47a2364f6e14287f9ba1fc7d",
+      "HealthChecks.Rabbitmq.dll": "258cf95771cab344da41843ad69f19598fafe6847ce4200ea3045819ca654983",
+      "HealthChecks.Uris.dll": "32f8e0615a70e07c6c37c3e2e0774207c84d2f2695942fba82e7bc3bee1a5708",
+      "Hex1b.dll": "1113557a5737e1fac2fdda1f6579737c50eac4620e83fefb3c29fa2ecc9b12bc",
+      "KubernetesClient.dll": "1fdb3ddc3db829a3f4015afc328a00d3747fb228c7866df6f765be4cedb800ce",
+      "MessagePack.Annotations.dll": "bd364b1513c9df5d4063b6ee3602a5bf951507484f46a2366a6f2a9aeb1c4cf2",
+      "MessagePack.dll": "1ebc0c2baec5a89b3738e892d61c92f037dd588db52412e1e3bdf2adc407aa94",
+      "Microsoft.Azure.Amqp.dll": "eb58a9058b6cde95081608e1921967cc704d6e411745436b20c68caa37389980",
+      "Microsoft.Bcl.AsyncInterfaces.dll": "f1e1d6e1a2990071b450bdf6c9618408ac0e3f24a3c7a3bef1f50508ba732ca5",
+      "Microsoft.CodeAnalysis.CSharp.dll": "54142770a00e594942ee8923726ea49126303d0c523932886c2417eb66dc07f8",
+      "Microsoft.CodeAnalysis.dll": "ad857f1ce7f8e26c2722ade705fac3f90502a47590c14075df1327210f10b1ef",
+      "Microsoft.Data.Sqlite.dll": "1078d41c6c0f2cee48a8b706e3a54ce145705993f19f703d2b3bdf2abcc59088",
+      "Microsoft.EntityFrameworkCore.Abstractions.dll": "98c8252995283ef0884b904dbab03696ca7f71a05b8dde34dace5eeb9bf4382c",
+      "Microsoft.EntityFrameworkCore.dll": "acb89dff050d681fab6f86d2175929471200b9bed66ac9321cbe6a17eaa26933",
+      "Microsoft.EntityFrameworkCore.Relational.dll": "ac1146e68d53d56b79e9473f68c557999de99674be392bbbbb02ae93a296b93e",
+      "Microsoft.EntityFrameworkCore.Sqlite.dll": "b8c5027b27be2012094699cbd5260239778a1891dc5c1887797d331b67f0ef89",
+      "Microsoft.Extensions.AI.Abstractions.dll": "dd444efc3b9e2db2e4e7616909731b8dde824b554455014002167918b823eac4",
+      "Microsoft.Extensions.DependencyModel.dll": "2385bfbc9344e03acb2ff44f1ed21a3770fbafdf1ba4be2dbcacd42027b8c3bd",
+      "Microsoft.Extensions.Hosting.Systemd.dll": "b83961fadb9b88ed05ccb4dea45165b5393b4eaf1258dce0b7d0f60e9c0c1d46",
+      "Microsoft.Extensions.Hosting.WindowsServices.dll": "caa306587f796d0290aada4fdfaec1394f1f206409ea4d5a20f309b61fc59959",
+      "Microsoft.Identity.Client.dll": "5795027e9ae95eececb310a4fed3c502bb368039d186ab0884f64b7792b84717",
+      "Microsoft.Identity.Client.Extensions.Msal.dll": "07109a2f30df782300077a567ade47cbd0a0502c75cd7c8a62192f7d64bb004e",
+      "Microsoft.IdentityModel.Abstractions.dll": "24e97b54b6b5c234a124a336757e3116617ac6c30b655cdae74517dc2ecb5746",
+      "Microsoft.NET.StringTools.dll": "887dec541cd0a719b7111458eb90a83b4491d6dd24eff2b16cf03d2782fd26a0",
+      "Microsoft.TestPlatform.CommunicationUtilities.dll": "7ed97ccfd6f9c74f054de4cf84a7b4b0179eb6064e3a406e746849c6989e0d6a",
+      "Microsoft.TestPlatform.CoreUtilities.dll": "db70e6632a13a6d46cc3bb75f71273b3e9c64ca1e5dd0537572fb0dadf444009",
+      "Microsoft.TestPlatform.CrossPlatEngine.dll": "eaf5a87745d6ab7f7ef7db6e85dfa96817ecdb06b51a642edd6f9c6b805c3616",
+      "Microsoft.TestPlatform.PlatformAbstractions.dll": "f5541efe526d719aef103026770faf0435218afc5be90f653a01886ff8bebc80",
+      "Microsoft.TestPlatform.Utilities.dll": "358ae71a7f820dfd7e3b2d86ad9a7402c72166c7197bccd89f39b9d62ec3f0ae",
+      "Microsoft.VisualStudio.CodeCoverage.Shim.dll": "ef1f649984cf2ff2d4f51944270d6b1557752ba0099ec97894361abe3e6640c1",
+      "Microsoft.VisualStudio.TestPlatform.Common.dll": "6e16cf009ff956b97eef96aefc64a33a9bff7df86a8e7e6e5664ec03e648bcc1",
+      "Microsoft.VisualStudio.TestPlatform.ObjectModel.dll": "9d0a31a406ab064d2bc009a5523b5e73b71d3fe1dddd19cffe4a70f14cde3f75",
+      "Microsoft.VisualStudio.Threading.dll": "138e3548e487152de355b81303ae98e1bb52a31fe5c9107fa81a15f66404f426",
+      "Microsoft.VisualStudio.Validation.dll": "59cd5e953cce597847e515a73a1c0975cd5a6b94921a7b91e81045fa9922f57c",
+      "Microsoft.Win32.SystemEvents.dll": "ca495bf6c86b7f092d624928101985a941532d149dcd8acfea170f8a53be8850",
+      "Microting.EntityFrameworkCore.MySql.dll": "c8dc4aff0fa81bcb09c11c7bbd15780378e39317c32b23f75a85dea4a9894171",
+      "ModelContextProtocol.Core.dll": "cd434634473f1d6b945a5583d48782207a1e79b8202cf6adb174e41ed2ca4643",
+      "ModelContextProtocol.dll": "1f0760611e72588fbffe2c7bacfce55b9942d7ed5cb5cd4a3ded5d5f7600e930",
+      "MySqlConnector.dll": "a3104353e86cc96123d8015fc5a3bf4ab88b127b9180caaa4db9a006c49f467b",
+      "Nerdbank.MessagePack.dll": "fc086ce3623a9a3f9213159d438c642d225046e371489e8e7f126d4c62f188fa",
+      "Nerdbank.Streams.dll": "e5c90ffcb7a0bd0cedf51ac33e818b9f64045e9839b19701eb73460356631872",
+      "Newtonsoft.Json.dll": "a28c251dfe36d881e9e2462e171441b8b0ec156fe3f452602c9149b1b9efe05b",
+      "Nexus.Archive.dll": "fd2fc160b92cd14a6f226a5095cde744d81a3c807ca45bf78c91cf2a2ba0237b",
+      "NexusForever.API.Account.Client.dll": "dcc138d6ebbedc6142fecadbcd0512815a32f0eb7c0266a03bbf461824951418",
+      "NexusForever.API.Character.Client.dll": "8b6ec8947c3c48537b39ee8eb5927ea4a873a149d27f25fbed2c518f820fdcc3",
+      "NexusForever.API.dll": "2cab2612f5a2463d1d091d55619dec8c718609ea3df939ecfba8e8373b2aacbe",
+      "NexusForever.Aspire.AppHost.dll": "502a444ce79cb4b804299940f807544e7ea50fa9ac0194f022bc07a46bbe60a9",
+      "NexusForever.Aspire.Database.Migrations.dll": "4924c36a806c4707d68da5e6541f0b6bd462a1eafa382e7a5710403ab80d0491",
+      "NexusForever.Cryptography.dll": "0be240820a34f144d7a0bcbf5604e493949dc092582b850ec06a4dbb5fe41a02",
+      "NexusForever.Database.Auth.dll": "a5f2852d869f372f13809519c4745940496159001a417b551a3a8aa2677cf382",
+      "NexusForever.Database.Character.dll": "e07deffeb14813d67ecf1bb0422707d3a108208fa0228ebf89e7f0c34b46e535",
+      "NexusForever.Database.Chat.dll": "1ca123c52f3930de7eaaf49ff296f817242c45fc5cac4e24ac6ac0e9e8762a2c",
+      "NexusForever.Database.dll": "a30b2064fd1410686eded7ab814429988ebccea3cbad8e2a18d5f07191c56c20",
+      "NexusForever.Database.Friendship.dll": "c34de843d4336bfee2edd1b4d7f8b25b873d6ae1712c6e3af2a652af2b71acb3",
+      "NexusForever.Database.Group.dll": "e6a745dac3fb9ef3e2c78ad6d685347aa1b50825bf631834c63279d4d366eabd",
+      "NexusForever.Database.Query.dll": "22058e812ee2ff729630958815a8559bdc189af43397e75888e6f09d304c70b2",
+      "NexusForever.Database.Sqlite.Migrations.dll": "773cafb72de8fa05f99e51bac4bf08a08ff29deece50e26505d41b333a7d07e9",
+      "NexusForever.Database.World.dll": "02b482a13ddcd662a69c8e0aebaf1d6dfcef7a8d263e561569d02dc94115c1e4",
+      "NexusForever.Game.Abstract.dll": "d60e08db57dc4eb27fd913965d01c07d456dad3ddabb4ccea144786583b55329",
+      "NexusForever.Game.dll": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+      "NexusForever.Game.Static.dll": "779eb188ecdfdbd6d3f50dfa60466b11e4472a4762e4c827d998eeae7136961e",
+      "NexusForever.Game.Tests.dll": "83632cdacb44824b0f9b244986d452f0647927658a45a2e1acca04071c128141",
+      "NexusForever.GameTable.dll": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+      "NexusForever.IO.dll": "730c11e787d926cc0740c8277e1bc1666ab38e533d8ed07b4678ba97c6b6e0ca",
+      "NexusForever.LoadTest.dll": "77a5e488f9be259dc1762280bcde6fcd6c7ec0cb56953b78454d5b11fd1013fb",
+      "NexusForever.MapGenerator.dll": "ea62235d26f8d42b1090d906202a125a8a360473dd1d9bf93733fb7af60f0778",
+      "NexusForever.Network.Auth.dll": "de7bf01546c28442714e0c7486aa37d01bc142f6168e0fbff883e116f4ebbaa9",
+      "NexusForever.Network.dll": "ab9aa9f265093846927da9b4b2871e6573b8cdaab304f7bfc5a9329d3f3ee290",
+      "NexusForever.Network.Internal.dll": "f8223b4b8b4e65db8b10af9a13959915e8e35b95a49443ec000188a0524efcae",
+      "NexusForever.Network.Sts.dll": "c567a1260a9e6c00dce554d67e9df25511a2e1295cac59e2497735349f381232",
+      "NexusForever.Network.World.dll": "f4bfeb4c4723c21796e91f9cab17d81121bfb80f2c82be6afb7696363f0d702d",
+      "NexusForever.Script.dll": "582af4ca58b07ed2ee2e109aa76660122e23bc9c680e7ff13f306bb516a66476",
+      "NexusForever.Script.Instance.dll": "69c624fe68d2993ad75773be5287681ce65895e8e0a6d5b9215a6c16c957498c",
+      "NexusForever.Script.Main.dll": "d3e958b67b19dadb7c1ae2774af67e17fbf770369186aa500433511be3b0d48c",
+      "NexusForever.Server.Character.dll": "19e92c61311aa4a58953aaf4f4bb9eba985663a29984a562dc7f652322596b31",
+      "NexusForever.Server.ChatServer.dll": "534e5e3a67d5e641ed3e1782ff80432a0ac9e01913b12f1125f44264876f0365",
+      "NexusForever.Server.Friendship.dll": "fcedff6e42584776a6c2e538eb3ab560509cebb33b816fe807f0ad6960eac9d7",
+      "NexusForever.Server.GroupServer.dll": "d916050d197079a147561667b0402af0857a42386173497ba8a4fdf21f6fc28b",
+      "NexusForever.Shared.dll": "0ed6771d65fededb95a55bb4463d1f7a102dd7d22ff84063e80e7301cd2304f0",
+      "NexusForever.StsServer.dll": "1d9624ba15b8c39c4af097cd8fd9b830bcf268eef6657f88b8c6687239133f78",
+      "NexusForever.WorldServer.dll": "190e1c0341aebc90d3b1fb73ea5f66e3e03ae71b87258b95b76b76484b318586",
+      "NLog.dll": "9a706ace1a30cf5a9e169ceddf39d69df30ad99da5c4775d86413ac766cbb825",
+      "NLog.Extensions.Logging.dll": "9372ad36ff9c48826905d6eee58598b5df42334f9b35b93527927f38ae273504",
+      "OpenTelemetry.Api.dll": "9c636063c335902c73f916c133de22fe8af476c68189080176443b0b82d4d399",
+      "OpenTelemetry.Api.ProviderBuilderExtensions.dll": "fcd57330a4a3252773a0c71b9a497ee7834f415210fa405151275f97575ed164",
+      "OpenTelemetry.dll": "a19a8b4d39a00dca043919473c0d5b46a174a4363d611c8dd237b8f2b3f8a5b8",
+      "OpenTelemetry.Exporter.OpenTelemetryProtocol.dll": "3297002036e73a2ea7385d9521464dee725bbbd6491e20c559498cbe81598a3c",
+      "OpenTelemetry.Extensions.Hosting.dll": "97e52b88bfbad51767829ba834a3a35a63692170109c21a7103f5170c389d6f9",
+      "Polly.Core.dll": "f7f50017ca9f457b854498358ae595c2a8ab69c1fd8b915139d22bed8f7e4f2a",
+      "PolyType.dll": "33d30bc1baf80b85ad9b428a388d9999eaf20999d555a6e684aa758f4f679968",
+      "QRCoder.dll": "2c9a588e08ec91f00fac37a4a43995c8f1966a6cce615e9e8c063eec3d0f145a",
+      "Quartz.dll": "b195bbaec686ec9d3a8c38fdf961cf0f3818455c99c9553e1c317a55a6024069",
+      "Quartz.Extensions.DependencyInjection.dll": "9e53ba9d6862cf12b11bd92b07527b1398b905a1adcf72b7c40076695c707a9d",
+      "Quartz.Extensions.Hosting.dll": "6cc40edeb789e85b7455045dc864b91a369fb3415323d4d45537bbaf3849e361",
+      "RabbitMQ.Client.dll": "22d9ffa8cc2de798c61ec95b3f0b576c90d3370afa7128998859d3b2734d2910",
+      "Rebus.AzureServiceBus.dll": "522bb2cc849518f9178bcb0611c7235336fe823567383f43c33bf16ae97a920f",
+      "Rebus.dll": "93ae1869924a4a114ecc2c01046369819c0f4ffffba044bc5655013846ef4dea",
+      "Rebus.RabbitMq.dll": "911aedfb5da1a76585928888d694d54880af8a1c2ec94275d8efc4ed77562413",
+      "Rebus.ServiceProvider.dll": "ddc438278adb90788513722b7ad07ae6c3cbc92f491954fed7251f9b4a4bcdc4",
+      "Semver.dll": "a99edcb96efce3d6ff019c667e132d81d879f5a92bc9337591e0b7309d7f493f",
+      "SharpCompress.dll": "db4d49f11b30f2ababc6ed98551de818d8b6f15da88fada8bccd360ea3e12d73",
+      "SQLitePCLRaw.batteries_v2.dll": "94ac800c6b93ae50a025f247547781debe18391110667c5e242f51d8ac188ffb",
+      "SQLitePCLRaw.core.dll": "3d2ed8e186f124f988ebdb45d0354185b424357be2433bba0033ab9ec31bd25b",
+      "SQLitePCLRaw.provider.e_sqlite3.dll": "232990c8372aff30574eef9cc280b486ee6f39f8a66f83ea495dd0dbae98740c",
+      "StreamJsonRpc.dll": "ddc6a4d60e6cc940aae31faafc1fdcdbe520dfa51bec8dfc7f505449291536d5",
+      "System.ClientModel.dll": "dec5e22b71a1685c5e6e97cd28b629f0aa6703fb87b6950df28e79fc1804290c",
+      "System.Drawing.Common.dll": "98d07e6b1e7d3641a8608a360b3dc273fe8a0f78926b6e1e5f679a7a074d491f",
+      "System.IO.Hashing.dll": "cea6795cf9f7b139b2215ff6de794a6f6e44e78640fb30fa4c0d5fa8472df8e5",
+      "System.Memory.Data.dll": "2c1035b0106dbb2de7913d151e06071ed617bb58bbb3d6cd46a2dd0f6a03617b",
+      "System.Security.Cryptography.ProtectedData.dll": "80566f0839ece5946e66bf9f00d723e59e371ba1341a18e00c7c7a7c49298e1d",
+      "System.ServiceProcess.ServiceController.dll": "486a4fbb24ab089926fb05ab6b95af7bb04d2ff35eef55b6858437ebc4d040dc",
+      "testhost.dll": "3c2a3ed4b330b9cdaf1ee62580b7d373ec58ccf8b71fc34e0a51de28620899e9",
+      "xunit.abstractions.dll": "3166dc70323fb30ccf1cedb0fe86f2ad122c46d254542342d90386efc4c9285c",
+      "xunit.assert.dll": "bcd9711b22d227ac8cd4c1568e72433a0f576d2ec8aae64ac508081892015b1d",
+      "xunit.core.dll": "2f7feeec8c6dec7df684c25fb80aadb292b963d09723460f03d53c5ad2088acc",
+      "xunit.execution.dotnet.dll": "e70febe547c15f8155db3e2d95c3ba4445a59cbc21a3e7541ab22ed49d3dcf7b",
+      "xunit.runner.visualstudio.testadapter.dll": "384aba4bad96399a7fd2205a5a3517b643a16f4d7e843bd0b92e1e42f81fce2a",
+      "YamlDotNet.dll": "d618138109a40e4a7250e49e2abad8c450e3636bee18d7499ab231e37fa9150a"
+    },
+    "ProbeSha256": "7018403ef54413c90925d150c64dea1f3e8a4b06eb39784c8d3ea6fb1e4a5538",
+    "changedFromPublishedRotationTestCandidate": [
+      "NexusForever.Game.Tests.dll"
+    ],
+    "probeSources": {
+      "Program.cs": "918cedf2eb74d2dd745c80c58e203c89915aa02d93406922b9df91bdcf91a4b8",
+      "OwnedMySql.cs": "a7485d251d9c3ef0076a89973a89a03f0228455a036ff7604b811c84a5309393",
+      "Probe.csproj": "3d4eb19414eb3aad9ed942af981695bb67e76efbe442a6981d162b953ed90ffc"
+    }
+  },
+  "postExecutionIdentityVerification": {
+    "dependencyCount": 138,
+    "probeAndAllDependenciesStillExact": true,
+    "rootAndCandidateSourceExact": true,
+    "changedFromPublishedRotationCandidate": [
+      "NexusForever.Game.Tests.dll"
+    ],
+    "productionAndReaderDependenciesUnchanged": true
+  },
+  "actualInputs": {
+    "recoveryManifestSha256": "bfb15d7824bb7ed4f4b03cc26411b3adb07317744ff2939b9fd1101c476902ad",
+    "all385HashesAndExtentsCheckedByOriginalLoader": true,
+    "sixteenOwningReaderTables": [
+      {
+        "File": "recovered-tables\\AccountCurrencyType.tbl",
+        "Sha256": "51b1aa86d32edd02ccff95ce81decb93396239516ccee738e0faa5de26624417",
+        "Bytes": 2368
+      },
+      {
+        "File": "recovered-tables\\AccountItem.tbl",
+        "Sha256": "13a07fbbe1737851ebc67a88697d3cd80fd2281795ae85bfb49c3f79855510aa",
+        "Bytes": 219248
+      },
+      {
+        "File": "recovered-tables\\CurrencyType.tbl",
+        "Sha256": "2d2a28abc4d9054c9f12008d8ae59618feed5306ee3f335a225ea527bac7b692",
+        "Bytes": 2512
+      },
+      {
+        "File": "recovered-tables\\GameFormula.tbl",
+        "Sha256": "541e1781b8ed5e890cd194e0ad8bf1ceae63cbbb5308026679bc8459e2c1c007",
+        "Bytes": 63872
+      },
+      {
+        "File": "recovered-tables\\Item2.tbl",
+        "Sha256": "f51673fdbf5e97678cf67f62d0a1975fbb60be98bfe79a9c354f7fc5498b0ce2",
+        "Bytes": 15659408
+      },
+      {
+        "File": "recovered-tables\\Item2Category.tbl",
+        "Sha256": "9e7a454f51b5158a3f3d92b5b190ed31b298485058112268dfa46ae20e698ee7",
+        "Bytes": 9760
+      },
+      {
+        "File": "recovered-tables\\Item2Family.tbl",
+        "Sha256": "791eb8c61ed6e2f1ea0a9919afeaeb5fbf3f444269c1fc164cb7336e16a25e1b",
+        "Bytes": 1520
+      },
+      {
+        "File": "recovered-tables\\Item2Type.tbl",
+        "Sha256": "4349684d6bc7a0f3819e8d8eef698e23603af48a06c18a3800aa61bf8aa9c3fb",
+        "Bytes": 29168
+      },
+      {
+        "File": "recovered-tables\\ItemBudget.tbl",
+        "Sha256": "a9f2e6e09e9d982b48764bd555288d802561de74fc9ced7d9285e706ee6f971e",
+        "Bytes": 2384
+      },
+      {
+        "File": "recovered-tables\\ItemQuality.tbl",
+        "Sha256": "0f90558d988e1d88a9e9b61b440cc32af9d8005d02e7d09abdde34ceb7383134",
+        "Bytes": 2160
+      },
+      {
+        "File": "recovered-tables\\ItemRandomStat.tbl",
+        "Sha256": "806137ef8a907e126fc864b9958101e95a3e34ac3c29f42da1fdbc230893c396",
+        "Bytes": 1680
+      },
+      {
+        "File": "recovered-tables\\ItemSlot.tbl",
+        "Sha256": "17fe0ecc810be365b8218b79f8ed7d5ff27dcc37989754fc2d354ffdbcbe93bd",
+        "Bytes": 3968
+      },
+      {
+        "File": "recovered-tables\\ItemStat.tbl",
+        "Sha256": "f5ad85408bffa6a9e600c1c377db2b140cf18f173d00111db527d0f50da5a5c2",
+        "Bytes": 22640
+      },
+      {
+        "File": "recovered-tables\\RewardTrack.tbl",
+        "Sha256": "aa2d04411e1db7b22eaa0d73ffd0b8d298bb3d62d9a24ac5fa0c4caa6b000d4f",
+        "Bytes": 5376
+      },
+      {
+        "File": "recovered-tables\\RewardTrackRewards.tbl",
+        "Sha256": "81f726003fb85ec5506fc9cdfc2550cc62c82d90a7379666715f19f8f1c1c1d6",
+        "Bytes": 32000
+      },
+      {
+        "File": "recovered-tables\\UnitProperty2.tbl",
+        "Sha256": "6edfb62a0235018b8fdde42c417fdc8a0ae2284eb938cccaeb7a849e5e481d2d",
+        "Bytes": 25840
+      }
+    ],
+    "catalogAwardCount": 726,
+    "priorAllChoiceQualification": "Decomp/Analysis/coverage/contract-actual-delivery-20261106.json",
+    "all726ChoiceAnd967AffectedBatchesRepeated": false
+  },
+  "provider": {
+    "version": "8.4.13",
+    "isolation": "REPEATABLE-READ",
+    "requiredTls": true,
+    "observedControlCipher": "TLS_AES_256_GCM_SHA384",
+    "tlsScope": "Control observations record negotiated cipher; EF connections require TLS in configuration.",
+    "engine": {
+      "Pid": 42400,
+      "StartedUtc": "2026-11-06T07:19:58.5967547Z",
+      "Executable": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261031\\provider-mysql8\\runtime\\mysql-8.4.13-winx64\\bin\\mysqld.exe",
+      "EngineSHA256": "7a976874ef3974d612081960b1c193c663b4434692b6257382352c587e367ad6",
+      "DataRoot": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261031\\provider-mysql8\\private-00eb166874374f73\\data",
+      "Port": 56847,
+      "Scope": "00eb166874374f73",
+      "NoMonitor": true,
+      "ServiceInstalled": false
+    },
+    "sameEngineStartupConnectionRefusals": 19,
+    "engineRestartedAfterReadiness": false,
+    "migrations": {
+      "Auth": [
+        "20200229014621_HelloWorld",
+        "20200521145304_AccountRBAC",
+        "20200522025519_ItemLookupPermission",
+        "20200523051100_InstantLogout",
+        "20200606111612_RealmMOTD",
+        "20200612112459_StoryBuilder",
+        "20200627002155_RBACPrimaryKeys",
+        "20200704005118_CharacterReputation",
+        "20201119110054_RBACSignature",
+        "20210423124959_MapInstance",
+        "20210904122547_GuildMissingRBAC",
+        "20210929151553_GMFlag",
+        "20211031052535_RealmRestartCommandRBAC",
+        "20211122162603_QuestList Permissions",
+        "20211125025917_RealmMaxPlayersPermission",
+        "20220214062812_EntitlementRBAC",
+        "20230423114106_ScriptRBAC",
+        "20230524232136_RBAC-ItemInfo",
+        "20230725012211_AccountBanAndSuspensions",
+        "20230725022144_AccountBanAndSuspensionsRBAC",
+        "20230917125110_EntityThreatPermissions",
+        "20241129014903_AccountExternalReference",
+        "20241129224234_AccountExternalReferenceMultiple",
+        "20260516120000_AccountInventory",
+        "20260517120000_AccountItemCooldown",
+        "20260522120000_AccountPendingItem",
+        "20260522130000_AccountCREDDExchange",
+        "20260522140000_AccountDailyLoginAndStoreHistory",
+        "20260522150000_AccountRewardRotationGrant",
+        "20260522190000_AccountFortuneSession",
+        "20260604120000_DailyLoginLastClaimedDay",
+        "20260608120000_BaselineAccountEntitlements",
+        "20260609224418_StorePurchaseHistoryIdentity",
+        "20260610114005_StorePurchaseHistoryAccountPurchasedUtcIndex",
+        "20261029200000_AccountPendingItemSequence",
+        "20261029210000_AccountLoyalty",
+        "20261029220000_AccountInventoryDurability",
+        "20261029230000_AccountInventorySourceIdentity",
+        "20261030165039_AccountWorldSessionEpoch",
+        "20261031050655_AccountCurrencyOperations",
+        "20261102061747_RepairCreddHistoryIdentity",
+        "20261105080121_CraftingAccountAwards"
+      ],
+      "Character": [
+        "20200229014638_HelloWorld",
+        "20200331222803_CharacterXp",
+        "20200404023142_CharacterTradeskillMaterials",
+        "20200413023902_CharacterLastOnline",
+        "20200704001002_CharacterReputation",
+        "20210102050727_Guilds",
+        "20210118051339_CharacterNet5Migration",
+        "20210219004038_ChatChannels",
+        "20210305042232_GuildAchievements",
+        "20210717152515_Communities",
+        "20210906140425_StartingLocations",
+        "20210906140942_PlayerRotation",
+        "20230524231831_BaseProperties",
+        "20241208062241_BoneIndexFix",
+        "20250805092649_CharacterOnline",
+        "20260516125523_CostumeMessageChanges",
+        "20260517120000_ItemSoulbound",
+        "20260518000000_CharacterTradeskill",
+        "20260518120000_CharacterSchematicArchive",
+        "20260522091203_ResidenceNeighbors",
+        "20260522114611_MarketplacePersistence",
+        "20260522180000_RealmBankItems",
+        "20260522190000_CharacterChallenges",
+        "20260522191000_LeaderboardScores",
+        "20260523125655_CharacterMatchingPenalty",
+        "20260527191317_CharacterPathMissionState",
+        "20260531224115_ItemMicrochipIdsAndRuneSlots",
+        "20260603120000_MailContentType",
+        "20260603153000_CharacterPvpFlagDisableCooldown",
+        "20260604130000_CostumeMessageSemantics",
+        "20260714083313_CharacterBonusAbilityTierPoints",
+        "20260726061619_StatData",
+        "20261029120419_CharacterBind",
+        "20261029122531_CharacterTaxiNode",
+        "20261029215652_CharacterChallengeRewardTracks",
+        "20261030230416_ContractQuestAcceptance",
+        "20261030234801_ContractCompletionReceipts",
+        "20261031030109_ContractRewardSelections",
+        "20261031033000_RepairLegacyCharacterColumns",
+        "20261031043515_ContractRewardClaims",
+        "20261031055232_ContractClaimDelivery",
+        "20261031085420_RealmBankItemCodecs",
+        "20261101100717_MarketplaceBidReceipts",
+        "20261102061753_AlignNullableItemAndLeaderboardColumns",
+        "20261102073206_RepairCostumeTimestampGeneration",
+        "20261102182000_BankReconciliationReceipts",
+        "20261103170256_RealmFirstClaims",
+        "20261104102636_CharacterBonusAmpPower",
+        "20261105080127_CraftingAccountAwards"
+      ]
+    },
+    "configuredUseConfigurationAndRetryStrategy": true,
+    "freshSchemasOnly": true,
+    "originalDatabasesOrGlobalServicesChanged": false
+  },
+  "resultSummary": {
+    "scenarios": 8,
+    "physicalProducerTerminations": 7,
+    "spentReplays": 7,
+    "leasedSchemas": 16,
+    "caseProbeGenerations": 54,
+    "qualifiedCaseGenerations": 53,
+    "retainedPreSchemaSetupFailure": 1,
+    "uniqueRecordedTemporaryDirectories": 19,
+    "recordedGenerationsToAudit": 81,
+    "receiptQuoteAndOperationIdentityChecks": true
+  },
+  "cases": [
+    {
+      "window": "control",
+      "passed": true,
+      "caseId": "8c87cd42d92748ee90bb11c2aea53ba0",
+      "schemas": {
+        "AuthSchema": "nf_contr_phys_8c87cd42d927_a",
+        "CharacterSchema": "nf_contr_phys_8c87cd42d927_c",
+        "AuthCreated": true,
+        "CharacterCreated": true
+      },
+      "appliedMigrationsMatchExactInventory": true,
+      "bothSchemasAbsent": true,
+      "producer": {
+        "Window": "control",
+        "ProcessId": 30564,
+        "StartedUtc": "2026-11-06T07:26:01.1405165Z",
+        "Exe": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+        "ManifestSha256": "bfb15d7824bb7ed4f4b03cc26411b3adb07317744ff2939b9fd1101c476902ad",
+        "ClaimId": "00ab3c10005a45c4ac334ad3bba0020d",
+        "RewardRowId": 69,
+        "Choice": 0,
+        "TrackId": 5,
+        "Ordinal": 4,
+        "QuoteJson": "{\"Version\":1,\"CharacterId\":42,\"CycleId\":7,\"Revision\":1,\"Points\":5017,\"SelectionJson\":\"{\\u0022Version\\u0022:2,\\u0022Policy\\u0022:\\u0022contract-eligible-uniform-v1\\u0022,\\u0022TrackId\\u0022:5,\\u0022CycleId\\u0022:7,\\u0022OperationId\\u0022:\\u00227a25fd438a7d48fcb48c3c04b31150fb\\u0022,\\u0022Satisfied\\u0022:[3,4,5,6,7,9],\\u0022Rewards\\u0022:[22,17,32,27,69]}\",\"Award\":{\"TrackId\":5,\"TrackType\":1,\"Ordinal\":4,\"RequiredPoints\":5000,\"RewardRowId\":69,\"Choice\":0,\"ChoiceType\":0,\"ChoiceId\":90844,\"ChoiceCount\":1,\"Item\":{\"ItemId\":90844,\"Count\":1,\"ForceSoulbind\":true},\"CharacterCurrency\":{\"Type\":1,\"Amount\":2500000,\"CapAmount\":0},\"AccountCurrency\":null}}",
+        "QuoteSha256": "6ee654753a5ef1e07cd421412f83433b3ab1f888e377c36abff031279b96398e",
+        "ItemId": 90844,
+        "ItemCount": 1,
+        "Credit": 2500000,
+        "AccountAmount": 0,
+        "OwnedTemporaryDirectories": [
+          "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-ContractClaim-8d9c6c0bda3e48388485d20491ab4628",
+          "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-InventoryReward-25d2f4a3d04d45159644a4265dcfafb8"
+        ]
+      },
+      "termination": null,
+      "recovered": {
+        "ProcessId": 43416,
+        "Mode": "recover",
+        "window": "control",
+        "Committed": true,
+        "Spent": false,
+        "ReplayedOriginalClaim": false,
+        "ReplayTemporaryDirectory": null,
+        "ReceiptIdentity": {
+          "ClaimId": "00ab3c10005a45c4ac334ad3bba0020d",
+          "AccountId": 27,
+          "RewardRowId": 69,
+          "Choice": 0,
+          "CreatedUtc": "2026-11-06T07:26:06.117269",
+          "QuoteSha256": "6ee654753a5ef1e07cd421412f83433b3ab1f888e377c36abff031279b96398e",
+          "DeliverySha256": "98cf6d36967d04e3953cdf3fc7ff606f68757fe0b49ad3da03ca897482bc5fd9",
+          "CharacterCurrencyJson": "{\"Version\":1,\"CurrencyId\":1,\"BeforeExists\":true,\"BeforeAmount\":1234,\"AfterAmount\":2501234,\"Requested\":2500000,\"Granted\":2500000}"
+        },
+        "ReceiptIdentitySha256": "a2ea82aa8bd6530627ff29ce77c802e2d81022ddd0d0c299351137331353e223",
+        "OriginalItemIds": [
+          500
+        ],
+        "ItemRows": 1,
+        "AccountOperations": [],
+        "TrackRevision": 2,
+        "ReaderSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+        "GameSha256": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+        "ProbeSha256": "83632cdacb44824b0f9b244986d452f0647927658a45a2e1acca04071c128141"
+      },
+      "spentReplay": {
+        "ProcessId": 22148,
+        "Mode": "replay-spent",
+        "window": "control",
+        "Committed": true,
+        "Spent": true,
+        "ReplayedOriginalClaim": true,
+        "ReplayTemporaryDirectory": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-InventoryReward-49fd00ffee1c4a7a8702133c5dc06e68",
+        "ReceiptIdentity": {
+          "ClaimId": "00ab3c10005a45c4ac334ad3bba0020d",
+          "AccountId": 27,
+          "RewardRowId": 69,
+          "Choice": 0,
+          "CreatedUtc": "2026-11-06T07:26:06.117269",
+          "QuoteSha256": "6ee654753a5ef1e07cd421412f83433b3ab1f888e377c36abff031279b96398e",
+          "DeliverySha256": "98cf6d36967d04e3953cdf3fc7ff606f68757fe0b49ad3da03ca897482bc5fd9",
+          "CharacterCurrencyJson": "{\"Version\":1,\"CurrencyId\":1,\"BeforeExists\":true,\"BeforeAmount\":1234,\"AfterAmount\":2501234,\"Requested\":2500000,\"Granted\":2500000}"
+        },
+        "ReceiptIdentitySha256": "a2ea82aa8bd6530627ff29ce77c802e2d81022ddd0d0c299351137331353e223",
+        "OriginalItemIds": [],
+        "ItemRows": 0,
+        "AccountOperations": [],
+        "TrackRevision": 2,
+        "ReaderSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+        "GameSha256": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+        "ProbeSha256": "83632cdacb44824b0f9b244986d452f0647927658a45a2e1acca04071c128141"
+      },
+      "spentVerified": {
+        "ProcessId": 48372,
+        "Mode": "verify-spent",
+        "window": "control",
+        "Committed": true,
+        "Spent": true,
+        "ReplayedOriginalClaim": false,
+        "ReplayTemporaryDirectory": null,
+        "ReceiptIdentity": {
+          "ClaimId": "00ab3c10005a45c4ac334ad3bba0020d",
+          "AccountId": 27,
+          "RewardRowId": 69,
+          "Choice": 0,
+          "CreatedUtc": "2026-11-06T07:26:06.117269",
+          "QuoteSha256": "6ee654753a5ef1e07cd421412f83433b3ab1f888e377c36abff031279b96398e",
+          "DeliverySha256": "98cf6d36967d04e3953cdf3fc7ff606f68757fe0b49ad3da03ca897482bc5fd9",
+          "CharacterCurrencyJson": "{\"Version\":1,\"CurrencyId\":1,\"BeforeExists\":true,\"BeforeAmount\":1234,\"AfterAmount\":2501234,\"Requested\":2500000,\"Granted\":2500000}"
+        },
+        "ReceiptIdentitySha256": "a2ea82aa8bd6530627ff29ce77c802e2d81022ddd0d0c299351137331353e223",
+        "OriginalItemIds": [],
+        "ItemRows": 0,
+        "AccountOperations": [],
+        "TrackRevision": 2,
+        "ReaderSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+        "GameSha256": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+        "ProbeSha256": "83632cdacb44824b0f9b244986d452f0647927658a45a2e1acca04071c128141"
+      },
+      "generations": [
+        {
+          "Pid": 43112,
+          "StartedUtc": "2026-11-06T07:22:22.5478457Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--prepare",
+          "Label": "prepare",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-8c87cd42d92748ee90bb11c2aea53ba0\\manifest.json",
+          "ExitCode": 1,
+          "Absent": true
+        },
+        {
+          "Pid": 8784,
+          "StartedUtc": "2026-11-06T07:25:39.7728521Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--prepare",
+          "Label": "prepare-resumed",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-8c87cd42d92748ee90bb11c2aea53ba0\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 30564,
+          "StartedUtc": "2026-11-06T07:26:01.1405165Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--produce",
+          "Label": "producer",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-8c87cd42d92748ee90bb11c2aea53ba0\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 43416,
+          "StartedUtc": "2026-11-06T07:26:07.0292326Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--recover",
+          "Label": "recover",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-8c87cd42d92748ee90bb11c2aea53ba0\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 43052,
+          "StartedUtc": "2026-11-06T07:26:11.4022846Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--spend",
+          "Label": "spend",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-8c87cd42d92748ee90bb11c2aea53ba0\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 22148,
+          "StartedUtc": "2026-11-06T07:26:15.7205510Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--replay-spent",
+          "Label": "replay-spent",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-8c87cd42d92748ee90bb11c2aea53ba0\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 48372,
+          "StartedUtc": "2026-11-06T07:26:20.4734327Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--verify-spent",
+          "Label": "verify-spent",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-8c87cd42d92748ee90bb11c2aea53ba0\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 15256,
+          "StartedUtc": "2026-11-06T07:26:24.7593389Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--cleanup",
+          "Label": "cleanup",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-8c87cd42d92748ee90bb11c2aea53ba0\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        }
+      ],
+      "temporaryDirectoriesAbsent": [
+        "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-ContractClaim-8d9c6c0bda3e48388485d20491ab4628",
+        "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-InventoryReward-25d2f4a3d04d45159644a4265dcfafb8",
+        "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-InventoryReward-49fd00ffee1c4a7a8702133c5dc06e68"
+      ],
+      "startedUtc": "2026-11-06T07:22:22.5253723Z",
+      "completedUtc": "2026-11-06T07:26:28.6144830Z"
+    },
+    {
+      "window": "character-before",
+      "passed": true,
+      "caseId": "9e499ec6f8a7486d903dad50f24adfd2",
+      "schemas": {
+        "AuthSchema": "nf_contr_phys_9e499ec6f8a7_a",
+        "CharacterSchema": "nf_contr_phys_9e499ec6f8a7_c",
+        "AuthCreated": true,
+        "CharacterCreated": true
+      },
+      "appliedMigrationsMatchExactInventory": true,
+      "bothSchemasAbsent": true,
+      "producer": {
+        "Window": "character-before",
+        "ProcessId": 36716,
+        "StartedUtc": "2026-11-06T07:26:50.3989524Z",
+        "Exe": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+        "ManifestSha256": "bfb15d7824bb7ed4f4b03cc26411b3adb07317744ff2939b9fd1101c476902ad",
+        "ClaimId": "e4e2bc85cacc41a8802531ef411e59a3",
+        "RewardRowId": 69,
+        "Choice": 0,
+        "TrackId": 5,
+        "Ordinal": 4,
+        "QuoteJson": "{\"Version\":1,\"CharacterId\":42,\"CycleId\":7,\"Revision\":1,\"Points\":5017,\"SelectionJson\":\"{\\u0022Version\\u0022:2,\\u0022Policy\\u0022:\\u0022contract-eligible-uniform-v1\\u0022,\\u0022TrackId\\u0022:5,\\u0022CycleId\\u0022:7,\\u0022OperationId\\u0022:\\u0022946593f25c944cdf85dc06f0d4efac51\\u0022,\\u0022Satisfied\\u0022:[3,4,5,6,7,9],\\u0022Rewards\\u0022:[22,17,32,27,69]}\",\"Award\":{\"TrackId\":5,\"TrackType\":1,\"Ordinal\":4,\"RequiredPoints\":5000,\"RewardRowId\":69,\"Choice\":0,\"ChoiceType\":0,\"ChoiceId\":90844,\"ChoiceCount\":1,\"Item\":{\"ItemId\":90844,\"Count\":1,\"ForceSoulbind\":true},\"CharacterCurrency\":{\"Type\":1,\"Amount\":2500000,\"CapAmount\":0},\"AccountCurrency\":null}}",
+        "QuoteSha256": "455bf6013878f4fe9df76481d33f7b85c617355f5f3d10026e6179df1013792e",
+        "ItemId": 90844,
+        "ItemCount": 1,
+        "Credit": 2500000,
+        "AccountAmount": 0,
+        "OwnedTemporaryDirectories": [
+          "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-ContractClaim-40e995d66f204c8eac01f66c47d467e9",
+          "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-InventoryReward-68ae641ed5c6419090852341647e0487"
+        ]
+      },
+      "termination": {
+        "StartedUtc": "2026-11-06T07:26:50.3989524Z",
+        "ObservedUtc": "2026-11-06T07:26:56.6099969Z",
+        "ExitCode": -1,
+        "GenerationVerified": true,
+        "Window": "character-before",
+        "Pid": 36716
+      },
+      "recovered": {
+        "ProcessId": 37244,
+        "Mode": "recover",
+        "window": "character-before",
+        "Committed": false,
+        "Spent": false,
+        "ReplayedOriginalClaim": false,
+        "ReplayTemporaryDirectory": null,
+        "ReceiptIdentity": null,
+        "ReceiptIdentitySha256": null,
+        "OriginalItemIds": [],
+        "ItemRows": 0,
+        "AccountOperations": [],
+        "TrackRevision": 1,
+        "ReaderSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+        "GameSha256": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+        "ProbeSha256": "83632cdacb44824b0f9b244986d452f0647927658a45a2e1acca04071c128141"
+      },
+      "spentReplay": null,
+      "spentVerified": null,
+      "generations": [
+        {
+          "Pid": 16972,
+          "StartedUtc": "2026-11-06T07:26:28.6762882Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--prepare",
+          "Label": "prepare",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-9e499ec6f8a7486d903dad50f24adfd2\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 36716,
+          "StartedUtc": "2026-11-06T07:26:50.3989524Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--produce",
+          "Label": "producer",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-9e499ec6f8a7486d903dad50f24adfd2\\manifest.json",
+          "ExitCode": -1,
+          "Absent": true
+        },
+        {
+          "Pid": 37244,
+          "StartedUtc": "2026-11-06T07:26:56.6158319Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--recover",
+          "Label": "recover",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-9e499ec6f8a7486d903dad50f24adfd2\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 21676,
+          "StartedUtc": "2026-11-06T07:27:00.9350040Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--cleanup",
+          "Label": "cleanup",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-9e499ec6f8a7486d903dad50f24adfd2\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        }
+      ],
+      "temporaryDirectoriesAbsent": [
+        "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-ContractClaim-40e995d66f204c8eac01f66c47d467e9",
+        "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-InventoryReward-68ae641ed5c6419090852341647e0487"
+      ],
+      "startedUtc": "2026-11-06T07:26:28.6692221Z",
+      "completedUtc": "2026-11-06T07:27:04.7741854Z"
+    },
+    {
+      "window": "item-after-character",
+      "passed": true,
+      "caseId": "14495be542d745059b9fa81bbd3b4c4a",
+      "schemas": {
+        "AuthSchema": "nf_contr_phys_14495be542d7_a",
+        "CharacterSchema": "nf_contr_phys_14495be542d7_c",
+        "AuthCreated": true,
+        "CharacterCreated": true
+      },
+      "appliedMigrationsMatchExactInventory": true,
+      "bothSchemasAbsent": true,
+      "producer": {
+        "Window": "item-after-character",
+        "ProcessId": 7672,
+        "StartedUtc": "2026-11-06T07:27:26.2057234Z",
+        "Exe": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+        "ManifestSha256": "bfb15d7824bb7ed4f4b03cc26411b3adb07317744ff2939b9fd1101c476902ad",
+        "ClaimId": "62c0cee5d7584af58ba55b2113367f85",
+        "RewardRowId": 69,
+        "Choice": 0,
+        "TrackId": 5,
+        "Ordinal": 4,
+        "QuoteJson": "{\"Version\":1,\"CharacterId\":42,\"CycleId\":7,\"Revision\":1,\"Points\":5017,\"SelectionJson\":\"{\\u0022Version\\u0022:2,\\u0022Policy\\u0022:\\u0022contract-eligible-uniform-v1\\u0022,\\u0022TrackId\\u0022:5,\\u0022CycleId\\u0022:7,\\u0022OperationId\\u0022:\\u002231064ad9758541a1bc49d82341fba393\\u0022,\\u0022Satisfied\\u0022:[3,4,5,6,7,9],\\u0022Rewards\\u0022:[22,17,32,27,69]}\",\"Award\":{\"TrackId\":5,\"TrackType\":1,\"Ordinal\":4,\"RequiredPoints\":5000,\"RewardRowId\":69,\"Choice\":0,\"ChoiceType\":0,\"ChoiceId\":90844,\"ChoiceCount\":1,\"Item\":{\"ItemId\":90844,\"Count\":1,\"ForceSoulbind\":true},\"CharacterCurrency\":{\"Type\":1,\"Amount\":2500000,\"CapAmount\":0},\"AccountCurrency\":null}}",
+        "QuoteSha256": "b080033305cee1fada19f9b4f7faf92188c254587e8e125fc85eb575655b0bc0",
+        "ItemId": 90844,
+        "ItemCount": 1,
+        "Credit": 2500000,
+        "AccountAmount": 0,
+        "OwnedTemporaryDirectories": [
+          "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-ContractClaim-b14fad152a3441d7ae3966934eab085f",
+          "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-InventoryReward-fbaa9b7edaf44c879a6c7adcb815d413"
+        ]
+      },
+      "termination": {
+        "StartedUtc": "2026-11-06T07:27:26.2057234Z",
+        "ObservedUtc": "2026-11-06T07:27:32.3311014Z",
+        "ExitCode": -1,
+        "GenerationVerified": true,
+        "Window": "item-after-character",
+        "Pid": 7672
+      },
+      "recovered": {
+        "ProcessId": 32240,
+        "Mode": "recover",
+        "window": "item-after-character",
+        "Committed": true,
+        "Spent": false,
+        "ReplayedOriginalClaim": false,
+        "ReplayTemporaryDirectory": null,
+        "ReceiptIdentity": {
+          "ClaimId": "62c0cee5d7584af58ba55b2113367f85",
+          "AccountId": 27,
+          "RewardRowId": 69,
+          "Choice": 0,
+          "CreatedUtc": "2026-11-06T07:27:31.036856",
+          "QuoteSha256": "b080033305cee1fada19f9b4f7faf92188c254587e8e125fc85eb575655b0bc0",
+          "DeliverySha256": "98cf6d36967d04e3953cdf3fc7ff606f68757fe0b49ad3da03ca897482bc5fd9",
+          "CharacterCurrencyJson": "{\"Version\":1,\"CurrencyId\":1,\"BeforeExists\":true,\"BeforeAmount\":1234,\"AfterAmount\":2501234,\"Requested\":2500000,\"Granted\":2500000}"
+        },
+        "ReceiptIdentitySha256": "bd1a762bd89de8b4967dc6a57915516b7c503d59b36a8eb59b3b91f866201048",
+        "OriginalItemIds": [
+          500
+        ],
+        "ItemRows": 1,
+        "AccountOperations": [],
+        "TrackRevision": 2,
+        "ReaderSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+        "GameSha256": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+        "ProbeSha256": "83632cdacb44824b0f9b244986d452f0647927658a45a2e1acca04071c128141"
+      },
+      "spentReplay": {
+        "ProcessId": 1128,
+        "Mode": "replay-spent",
+        "window": "item-after-character",
+        "Committed": true,
+        "Spent": true,
+        "ReplayedOriginalClaim": true,
+        "ReplayTemporaryDirectory": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-InventoryReward-73668efedd9b45dabce09aa324877065",
+        "ReceiptIdentity": {
+          "ClaimId": "62c0cee5d7584af58ba55b2113367f85",
+          "AccountId": 27,
+          "RewardRowId": 69,
+          "Choice": 0,
+          "CreatedUtc": "2026-11-06T07:27:31.036856",
+          "QuoteSha256": "b080033305cee1fada19f9b4f7faf92188c254587e8e125fc85eb575655b0bc0",
+          "DeliverySha256": "98cf6d36967d04e3953cdf3fc7ff606f68757fe0b49ad3da03ca897482bc5fd9",
+          "CharacterCurrencyJson": "{\"Version\":1,\"CurrencyId\":1,\"BeforeExists\":true,\"BeforeAmount\":1234,\"AfterAmount\":2501234,\"Requested\":2500000,\"Granted\":2500000}"
+        },
+        "ReceiptIdentitySha256": "bd1a762bd89de8b4967dc6a57915516b7c503d59b36a8eb59b3b91f866201048",
+        "OriginalItemIds": [],
+        "ItemRows": 0,
+        "AccountOperations": [],
+        "TrackRevision": 2,
+        "ReaderSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+        "GameSha256": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+        "ProbeSha256": "83632cdacb44824b0f9b244986d452f0647927658a45a2e1acca04071c128141"
+      },
+      "spentVerified": {
+        "ProcessId": 26096,
+        "Mode": "verify-spent",
+        "window": "item-after-character",
+        "Committed": true,
+        "Spent": true,
+        "ReplayedOriginalClaim": false,
+        "ReplayTemporaryDirectory": null,
+        "ReceiptIdentity": {
+          "ClaimId": "62c0cee5d7584af58ba55b2113367f85",
+          "AccountId": 27,
+          "RewardRowId": 69,
+          "Choice": 0,
+          "CreatedUtc": "2026-11-06T07:27:31.036856",
+          "QuoteSha256": "b080033305cee1fada19f9b4f7faf92188c254587e8e125fc85eb575655b0bc0",
+          "DeliverySha256": "98cf6d36967d04e3953cdf3fc7ff606f68757fe0b49ad3da03ca897482bc5fd9",
+          "CharacterCurrencyJson": "{\"Version\":1,\"CurrencyId\":1,\"BeforeExists\":true,\"BeforeAmount\":1234,\"AfterAmount\":2501234,\"Requested\":2500000,\"Granted\":2500000}"
+        },
+        "ReceiptIdentitySha256": "bd1a762bd89de8b4967dc6a57915516b7c503d59b36a8eb59b3b91f866201048",
+        "OriginalItemIds": [],
+        "ItemRows": 0,
+        "AccountOperations": [],
+        "TrackRevision": 2,
+        "ReaderSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+        "GameSha256": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+        "ProbeSha256": "83632cdacb44824b0f9b244986d452f0647927658a45a2e1acca04071c128141"
+      },
+      "generations": [
+        {
+          "Pid": 34720,
+          "StartedUtc": "2026-11-06T07:27:04.8269800Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--prepare",
+          "Label": "prepare",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-14495be542d745059b9fa81bbd3b4c4a\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 7672,
+          "StartedUtc": "2026-11-06T07:27:26.2057234Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--produce",
+          "Label": "producer",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-14495be542d745059b9fa81bbd3b4c4a\\manifest.json",
+          "ExitCode": -1,
+          "Absent": true
+        },
+        {
+          "Pid": 32240,
+          "StartedUtc": "2026-11-06T07:27:32.3365833Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--recover",
+          "Label": "recover",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-14495be542d745059b9fa81bbd3b4c4a\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 33316,
+          "StartedUtc": "2026-11-06T07:27:36.5868062Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--spend",
+          "Label": "spend",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-14495be542d745059b9fa81bbd3b4c4a\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 1128,
+          "StartedUtc": "2026-11-06T07:27:41.0531235Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--replay-spent",
+          "Label": "replay-spent",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-14495be542d745059b9fa81bbd3b4c4a\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 26096,
+          "StartedUtc": "2026-11-06T07:27:46.0388714Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--verify-spent",
+          "Label": "verify-spent",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-14495be542d745059b9fa81bbd3b4c4a\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 39836,
+          "StartedUtc": "2026-11-06T07:27:50.4014093Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--cleanup",
+          "Label": "cleanup",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-14495be542d745059b9fa81bbd3b4c4a\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        }
+      ],
+      "temporaryDirectoriesAbsent": [
+        "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-ContractClaim-b14fad152a3441d7ae3966934eab085f",
+        "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-InventoryReward-fbaa9b7edaf44c879a6c7adcb815d413",
+        "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-InventoryReward-73668efedd9b45dabce09aa324877065"
+      ],
+      "startedUtc": "2026-11-06T07:27:04.8207438Z",
+      "completedUtc": "2026-11-06T07:27:54.3103394Z"
+    },
+    {
+      "window": "nonstackable-after-character",
+      "passed": true,
+      "caseId": "657bb497303b481ebabb20cd69e2020b",
+      "schemas": {
+        "AuthSchema": "nf_contr_phys_657bb497303b_a",
+        "CharacterSchema": "nf_contr_phys_657bb497303b_c",
+        "AuthCreated": true,
+        "CharacterCreated": true
+      },
+      "appliedMigrationsMatchExactInventory": true,
+      "bothSchemasAbsent": true,
+      "producer": {
+        "Window": "nonstackable-after-character",
+        "ProcessId": 7036,
+        "StartedUtc": "2026-11-06T07:28:18.0348742Z",
+        "Exe": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+        "ManifestSha256": "bfb15d7824bb7ed4f4b03cc26411b3adb07317744ff2939b9fd1101c476902ad",
+        "ClaimId": "8bfbfacfdd09443c9aed167434d86e21",
+        "RewardRowId": 17,
+        "Choice": 0,
+        "TrackId": 5,
+        "Ordinal": 1,
+        "QuoteJson": "{\"Version\":1,\"CharacterId\":42,\"CycleId\":7,\"Revision\":1,\"Points\":5017,\"SelectionJson\":\"{\\u0022Version\\u0022:2,\\u0022Policy\\u0022:\\u0022contract-eligible-uniform-v1\\u0022,\\u0022TrackId\\u0022:5,\\u0022CycleId\\u0022:7,\\u0022OperationId\\u0022:\\u002252759bfb8acb44c2b63b495c45f96ec3\\u0022,\\u0022Satisfied\\u0022:[3,4,5,6,7,9],\\u0022Rewards\\u0022:[22,17,32,27,69]}\",\"Award\":{\"TrackId\":5,\"TrackType\":1,\"Ordinal\":1,\"RequiredPoints\":2000,\"RewardRowId\":17,\"Choice\":0,\"ChoiceType\":0,\"ChoiceId\":72011,\"ChoiceCount\":1,\"Item\":{\"ItemId\":72011,\"Count\":1,\"ForceSoulbind\":true},\"CharacterCurrency\":null,\"AccountCurrency\":null}}",
+        "QuoteSha256": "a1479ae062d649eb199655f0a33f656eedb4762187c0bdfe65734a32a30d5920",
+        "ItemId": 72011,
+        "ItemCount": 1,
+        "Credit": 0,
+        "AccountAmount": 0,
+        "OwnedTemporaryDirectories": [
+          "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-ContractClaim-324bf549798648b5b5463504ecbfc4b8",
+          "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-InventoryReward-f2ae1c0977934d3a999a76a80ab04a21"
+        ]
+      },
+      "termination": {
+        "StartedUtc": "2026-11-06T07:28:18.0348742Z",
+        "ObservedUtc": "2026-11-06T07:28:24.1981294Z",
+        "ExitCode": -1,
+        "GenerationVerified": true,
+        "Window": "nonstackable-after-character",
+        "Pid": 7036
+      },
+      "recovered": {
+        "ProcessId": 26668,
+        "Mode": "recover",
+        "window": "nonstackable-after-character",
+        "Committed": true,
+        "Spent": false,
+        "ReplayedOriginalClaim": false,
+        "ReplayTemporaryDirectory": null,
+        "ReceiptIdentity": {
+          "ClaimId": "8bfbfacfdd09443c9aed167434d86e21",
+          "AccountId": 27,
+          "RewardRowId": 17,
+          "Choice": 0,
+          "CreatedUtc": "2026-11-06T07:28:22.954096",
+          "QuoteSha256": "a1479ae062d649eb199655f0a33f656eedb4762187c0bdfe65734a32a30d5920",
+          "DeliverySha256": "3b26379df4e660a5f437237d4d392b5fb7079fdd59c5d21859c776be87eff0e5",
+          "CharacterCurrencyJson": null
+        },
+        "ReceiptIdentitySha256": "ccc443fc88f2be2491c3998bf83f5d19ed812e42f0bcda6dd18f6fe062f14973",
+        "OriginalItemIds": [
+          500
+        ],
+        "ItemRows": 1,
+        "AccountOperations": [],
+        "TrackRevision": 2,
+        "ReaderSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+        "GameSha256": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+        "ProbeSha256": "83632cdacb44824b0f9b244986d452f0647927658a45a2e1acca04071c128141"
+      },
+      "spentReplay": {
+        "ProcessId": 12872,
+        "Mode": "replay-spent",
+        "window": "nonstackable-after-character",
+        "Committed": true,
+        "Spent": true,
+        "ReplayedOriginalClaim": true,
+        "ReplayTemporaryDirectory": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-InventoryReward-d8cd16bb4f7b456f897decbef8b073b4",
+        "ReceiptIdentity": {
+          "ClaimId": "8bfbfacfdd09443c9aed167434d86e21",
+          "AccountId": 27,
+          "RewardRowId": 17,
+          "Choice": 0,
+          "CreatedUtc": "2026-11-06T07:28:22.954096",
+          "QuoteSha256": "a1479ae062d649eb199655f0a33f656eedb4762187c0bdfe65734a32a30d5920",
+          "DeliverySha256": "3b26379df4e660a5f437237d4d392b5fb7079fdd59c5d21859c776be87eff0e5",
+          "CharacterCurrencyJson": null
+        },
+        "ReceiptIdentitySha256": "ccc443fc88f2be2491c3998bf83f5d19ed812e42f0bcda6dd18f6fe062f14973",
+        "OriginalItemIds": [],
+        "ItemRows": 0,
+        "AccountOperations": [],
+        "TrackRevision": 2,
+        "ReaderSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+        "GameSha256": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+        "ProbeSha256": "83632cdacb44824b0f9b244986d452f0647927658a45a2e1acca04071c128141"
+      },
+      "spentVerified": {
+        "ProcessId": 41784,
+        "Mode": "verify-spent",
+        "window": "nonstackable-after-character",
+        "Committed": true,
+        "Spent": true,
+        "ReplayedOriginalClaim": false,
+        "ReplayTemporaryDirectory": null,
+        "ReceiptIdentity": {
+          "ClaimId": "8bfbfacfdd09443c9aed167434d86e21",
+          "AccountId": 27,
+          "RewardRowId": 17,
+          "Choice": 0,
+          "CreatedUtc": "2026-11-06T07:28:22.954096",
+          "QuoteSha256": "a1479ae062d649eb199655f0a33f656eedb4762187c0bdfe65734a32a30d5920",
+          "DeliverySha256": "3b26379df4e660a5f437237d4d392b5fb7079fdd59c5d21859c776be87eff0e5",
+          "CharacterCurrencyJson": null
+        },
+        "ReceiptIdentitySha256": "ccc443fc88f2be2491c3998bf83f5d19ed812e42f0bcda6dd18f6fe062f14973",
+        "OriginalItemIds": [],
+        "ItemRows": 0,
+        "AccountOperations": [],
+        "TrackRevision": 2,
+        "ReaderSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+        "GameSha256": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+        "ProbeSha256": "83632cdacb44824b0f9b244986d452f0647927658a45a2e1acca04071c128141"
+      },
+      "generations": [
+        {
+          "Pid": 33796,
+          "StartedUtc": "2026-11-06T07:27:54.3666934Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--prepare",
+          "Label": "prepare",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-657bb497303b481ebabb20cd69e2020b\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 7036,
+          "StartedUtc": "2026-11-06T07:28:18.0348742Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--produce",
+          "Label": "producer",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-657bb497303b481ebabb20cd69e2020b\\manifest.json",
+          "ExitCode": -1,
+          "Absent": true
+        },
+        {
+          "Pid": 26668,
+          "StartedUtc": "2026-11-06T07:28:24.2039398Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--recover",
+          "Label": "recover",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-657bb497303b481ebabb20cd69e2020b\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 23488,
+          "StartedUtc": "2026-11-06T07:28:28.7224642Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--spend",
+          "Label": "spend",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-657bb497303b481ebabb20cd69e2020b\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 12872,
+          "StartedUtc": "2026-11-06T07:28:33.1224082Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--replay-spent",
+          "Label": "replay-spent",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-657bb497303b481ebabb20cd69e2020b\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 41784,
+          "StartedUtc": "2026-11-06T07:28:37.9741905Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--verify-spent",
+          "Label": "verify-spent",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-657bb497303b481ebabb20cd69e2020b\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 18500,
+          "StartedUtc": "2026-11-06T07:28:42.1847173Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--cleanup",
+          "Label": "cleanup",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-657bb497303b481ebabb20cd69e2020b\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        }
+      ],
+      "temporaryDirectoriesAbsent": [
+        "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-ContractClaim-324bf549798648b5b5463504ecbfc4b8",
+        "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-InventoryReward-f2ae1c0977934d3a999a76a80ab04a21",
+        "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-InventoryReward-d8cd16bb4f7b456f897decbef8b073b4"
+      ],
+      "startedUtc": "2026-11-06T07:27:54.3605881Z",
+      "completedUtc": "2026-11-06T07:28:46.1204414Z"
+    },
+    {
+      "window": "account-after-character",
+      "passed": true,
+      "caseId": "cbe4a719655147258bd57df64ceffd67",
+      "schemas": {
+        "AuthSchema": "nf_contr_phys_cbe4a7196551_a",
+        "CharacterSchema": "nf_contr_phys_cbe4a7196551_c",
+        "AuthCreated": true,
+        "CharacterCreated": true
+      },
+      "appliedMigrationsMatchExactInventory": true,
+      "bothSchemasAbsent": true,
+      "producer": {
+        "Window": "account-after-character",
+        "ProcessId": 46948,
+        "StartedUtc": "2026-11-06T07:29:06.0014565Z",
+        "Exe": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+        "ManifestSha256": "bfb15d7824bb7ed4f4b03cc26411b3adb07317744ff2939b9fd1101c476902ad",
+        "ClaimId": "9f93426646db4a05a2d56ccf97dc64d2",
+        "RewardRowId": 17,
+        "Choice": 2,
+        "TrackId": 5,
+        "Ordinal": 1,
+        "QuoteJson": "{\"Version\":1,\"CharacterId\":42,\"CycleId\":7,\"Revision\":1,\"Points\":5017,\"SelectionJson\":\"{\\u0022Version\\u0022:2,\\u0022Policy\\u0022:\\u0022contract-eligible-uniform-v1\\u0022,\\u0022TrackId\\u0022:5,\\u0022CycleId\\u0022:7,\\u0022OperationId\\u0022:\\u0022add8dc1e1a4d49e9bfe98b908f586419\\u0022,\\u0022Satisfied\\u0022:[3,4,5,6,7,9],\\u0022Rewards\\u0022:[22,17,32,27,69]}\",\"Award\":{\"TrackId\":5,\"TrackType\":1,\"Ordinal\":1,\"RequiredPoints\":2000,\"RewardRowId\":17,\"Choice\":2,\"ChoiceType\":1,\"ChoiceId\":2485,\"ChoiceCount\":1,\"Item\":null,\"CharacterCurrency\":null,\"AccountCurrency\":{\"AccountItemId\":2485,\"Type\":14,\"Amount\":5}}}",
+        "QuoteSha256": "8ddcfd8ea80d15699794f2c515b0e05cb50028ac74769d6d5b1f8f670c69f7eb",
+        "ItemId": null,
+        "ItemCount": null,
+        "Credit": 0,
+        "AccountAmount": 5,
+        "OwnedTemporaryDirectories": [
+          "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-ContractClaim-0ed3a44c5d26491682f41cbcec252bf1",
+          "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-InventoryReward-bf43579b8e084e7186a3055e62084332"
+        ]
+      },
+      "termination": {
+        "StartedUtc": "2026-11-06T07:29:06.0014565Z",
+        "ObservedUtc": "2026-11-06T07:29:11.9369588Z",
+        "ExitCode": -1,
+        "GenerationVerified": true,
+        "Window": "account-after-character",
+        "Pid": 46948
+      },
+      "recovered": {
+        "ProcessId": 45760,
+        "Mode": "recover",
+        "window": "account-after-character",
+        "Committed": true,
+        "Spent": false,
+        "ReplayedOriginalClaim": false,
+        "ReplayTemporaryDirectory": null,
+        "ReceiptIdentity": {
+          "ClaimId": "9f93426646db4a05a2d56ccf97dc64d2",
+          "AccountId": 27,
+          "RewardRowId": 17,
+          "Choice": 2,
+          "CreatedUtc": "2026-11-06T07:29:10.893256",
+          "QuoteSha256": "8ddcfd8ea80d15699794f2c515b0e05cb50028ac74769d6d5b1f8f670c69f7eb",
+          "DeliverySha256": "588deb23a0f2adf96b5951a0af83ada7830f107c5e12a4492303ae706c495d60",
+          "CharacterCurrencyJson": null
+        },
+        "ReceiptIdentitySha256": "f9d486ac1dcd93d3ffddf3c16c7be788af83c91c41673018e9b3ea2c9e2d0348",
+        "OriginalItemIds": [],
+        "ItemRows": 0,
+        "AccountOperations": [
+          "contract:1:9f93426646db4a05a2d56ccf97dc64d2"
+        ],
+        "TrackRevision": 3,
+        "ReaderSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+        "GameSha256": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+        "ProbeSha256": "83632cdacb44824b0f9b244986d452f0647927658a45a2e1acca04071c128141"
+      },
+      "spentReplay": {
+        "ProcessId": 46228,
+        "Mode": "replay-spent",
+        "window": "account-after-character",
+        "Committed": true,
+        "Spent": true,
+        "ReplayedOriginalClaim": true,
+        "ReplayTemporaryDirectory": null,
+        "ReceiptIdentity": {
+          "ClaimId": "9f93426646db4a05a2d56ccf97dc64d2",
+          "AccountId": 27,
+          "RewardRowId": 17,
+          "Choice": 2,
+          "CreatedUtc": "2026-11-06T07:29:10.893256",
+          "QuoteSha256": "8ddcfd8ea80d15699794f2c515b0e05cb50028ac74769d6d5b1f8f670c69f7eb",
+          "DeliverySha256": "588deb23a0f2adf96b5951a0af83ada7830f107c5e12a4492303ae706c495d60",
+          "CharacterCurrencyJson": null
+        },
+        "ReceiptIdentitySha256": "f9d486ac1dcd93d3ffddf3c16c7be788af83c91c41673018e9b3ea2c9e2d0348",
+        "OriginalItemIds": [],
+        "ItemRows": 0,
+        "AccountOperations": [
+          "contract:1:9f93426646db4a05a2d56ccf97dc64d2"
+        ],
+        "TrackRevision": 3,
+        "ReaderSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+        "GameSha256": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+        "ProbeSha256": "83632cdacb44824b0f9b244986d452f0647927658a45a2e1acca04071c128141"
+      },
+      "spentVerified": {
+        "ProcessId": 12544,
+        "Mode": "verify-spent",
+        "window": "account-after-character",
+        "Committed": true,
+        "Spent": true,
+        "ReplayedOriginalClaim": false,
+        "ReplayTemporaryDirectory": null,
+        "ReceiptIdentity": {
+          "ClaimId": "9f93426646db4a05a2d56ccf97dc64d2",
+          "AccountId": 27,
+          "RewardRowId": 17,
+          "Choice": 2,
+          "CreatedUtc": "2026-11-06T07:29:10.893256",
+          "QuoteSha256": "8ddcfd8ea80d15699794f2c515b0e05cb50028ac74769d6d5b1f8f670c69f7eb",
+          "DeliverySha256": "588deb23a0f2adf96b5951a0af83ada7830f107c5e12a4492303ae706c495d60",
+          "CharacterCurrencyJson": null
+        },
+        "ReceiptIdentitySha256": "f9d486ac1dcd93d3ffddf3c16c7be788af83c91c41673018e9b3ea2c9e2d0348",
+        "OriginalItemIds": [],
+        "ItemRows": 0,
+        "AccountOperations": [
+          "contract:1:9f93426646db4a05a2d56ccf97dc64d2"
+        ],
+        "TrackRevision": 3,
+        "ReaderSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+        "GameSha256": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+        "ProbeSha256": "83632cdacb44824b0f9b244986d452f0647927658a45a2e1acca04071c128141"
+      },
+      "generations": [
+        {
+          "Pid": 24020,
+          "StartedUtc": "2026-11-06T07:28:46.1723959Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--prepare",
+          "Label": "prepare",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-cbe4a719655147258bd57df64ceffd67\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 46948,
+          "StartedUtc": "2026-11-06T07:29:06.0014565Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--produce",
+          "Label": "producer",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-cbe4a719655147258bd57df64ceffd67\\manifest.json",
+          "ExitCode": -1,
+          "Absent": true
+        },
+        {
+          "Pid": 45760,
+          "StartedUtc": "2026-11-06T07:29:11.9427369Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--recover",
+          "Label": "recover",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-cbe4a719655147258bd57df64ceffd67\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 48340,
+          "StartedUtc": "2026-11-06T07:29:17.0919294Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--spend",
+          "Label": "spend",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-cbe4a719655147258bd57df64ceffd67\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 46228,
+          "StartedUtc": "2026-11-06T07:29:21.8485571Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--replay-spent",
+          "Label": "replay-spent",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-cbe4a719655147258bd57df64ceffd67\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 12544,
+          "StartedUtc": "2026-11-06T07:29:26.7558962Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--verify-spent",
+          "Label": "verify-spent",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-cbe4a719655147258bd57df64ceffd67\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 42036,
+          "StartedUtc": "2026-11-06T07:29:31.3522298Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--cleanup",
+          "Label": "cleanup",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-cbe4a719655147258bd57df64ceffd67\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        }
+      ],
+      "temporaryDirectoriesAbsent": [
+        "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-ContractClaim-0ed3a44c5d26491682f41cbcec252bf1",
+        "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-InventoryReward-bf43579b8e084e7186a3055e62084332"
+      ],
+      "startedUtc": "2026-11-06T07:28:46.1659032Z",
+      "completedUtc": "2026-11-06T07:29:34.9334370Z"
+    },
+    {
+      "window": "account-before-auth",
+      "passed": true,
+      "caseId": "1d29380c47874b2c862013695f5bff82",
+      "schemas": {
+        "AuthSchema": "nf_contr_phys_1d29380c4787_a",
+        "CharacterSchema": "nf_contr_phys_1d29380c4787_c",
+        "AuthCreated": true,
+        "CharacterCreated": true
+      },
+      "appliedMigrationsMatchExactInventory": true,
+      "bothSchemasAbsent": true,
+      "producer": {
+        "Window": "account-before-auth",
+        "ProcessId": 35280,
+        "StartedUtc": "2026-11-06T07:29:53.3283512Z",
+        "Exe": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+        "ManifestSha256": "bfb15d7824bb7ed4f4b03cc26411b3adb07317744ff2939b9fd1101c476902ad",
+        "ClaimId": "47a2d11fd5db45768adce1a558ebbc03",
+        "RewardRowId": 17,
+        "Choice": 2,
+        "TrackId": 5,
+        "Ordinal": 1,
+        "QuoteJson": "{\"Version\":1,\"CharacterId\":42,\"CycleId\":7,\"Revision\":1,\"Points\":5017,\"SelectionJson\":\"{\\u0022Version\\u0022:2,\\u0022Policy\\u0022:\\u0022contract-eligible-uniform-v1\\u0022,\\u0022TrackId\\u0022:5,\\u0022CycleId\\u0022:7,\\u0022OperationId\\u0022:\\u0022d0f9761d7d8f4a808cfc698dff844094\\u0022,\\u0022Satisfied\\u0022:[3,4,5,6,7,9],\\u0022Rewards\\u0022:[22,17,32,27,69]}\",\"Award\":{\"TrackId\":5,\"TrackType\":1,\"Ordinal\":1,\"RequiredPoints\":2000,\"RewardRowId\":17,\"Choice\":2,\"ChoiceType\":1,\"ChoiceId\":2485,\"ChoiceCount\":1,\"Item\":null,\"CharacterCurrency\":null,\"AccountCurrency\":{\"AccountItemId\":2485,\"Type\":14,\"Amount\":5}}}",
+        "QuoteSha256": "6dbd957478e461c085569fd0f9f21493a898f6fca4e3f40a01602305a77dc8d3",
+        "ItemId": null,
+        "ItemCount": null,
+        "Credit": 0,
+        "AccountAmount": 5,
+        "OwnedTemporaryDirectories": [
+          "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-ContractClaim-0734bcd397f54100a211dc945fcbaee6",
+          "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-InventoryReward-9cbeaa3b124e4448a042ba94bb3dac5d"
+        ]
+      },
+      "termination": {
+        "StartedUtc": "2026-11-06T07:29:53.3283512Z",
+        "ObservedUtc": "2026-11-06T07:29:59.4691387Z",
+        "ExitCode": -1,
+        "GenerationVerified": true,
+        "Window": "account-before-auth",
+        "Pid": 35280
+      },
+      "recovered": {
+        "ProcessId": 13888,
+        "Mode": "recover",
+        "window": "account-before-auth",
+        "Committed": true,
+        "Spent": false,
+        "ReplayedOriginalClaim": false,
+        "ReplayTemporaryDirectory": null,
+        "ReceiptIdentity": {
+          "ClaimId": "47a2d11fd5db45768adce1a558ebbc03",
+          "AccountId": 27,
+          "RewardRowId": 17,
+          "Choice": 2,
+          "CreatedUtc": "2026-11-06T07:29:58.163906",
+          "QuoteSha256": "6dbd957478e461c085569fd0f9f21493a898f6fca4e3f40a01602305a77dc8d3",
+          "DeliverySha256": "a5c1642221dc660a425751e750fd400908c06e2cf43fb7804c69e423b926edc5",
+          "CharacterCurrencyJson": null
+        },
+        "ReceiptIdentitySha256": "27fdf822a786db1ef32a18434a8482fa9bba6d38fca4b444d3b9a14097c3b771",
+        "OriginalItemIds": [],
+        "ItemRows": 0,
+        "AccountOperations": [
+          "contract:1:47a2d11fd5db45768adce1a558ebbc03"
+        ],
+        "TrackRevision": 3,
+        "ReaderSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+        "GameSha256": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+        "ProbeSha256": "83632cdacb44824b0f9b244986d452f0647927658a45a2e1acca04071c128141"
+      },
+      "spentReplay": {
+        "ProcessId": 28736,
+        "Mode": "replay-spent",
+        "window": "account-before-auth",
+        "Committed": true,
+        "Spent": true,
+        "ReplayedOriginalClaim": true,
+        "ReplayTemporaryDirectory": null,
+        "ReceiptIdentity": {
+          "ClaimId": "47a2d11fd5db45768adce1a558ebbc03",
+          "AccountId": 27,
+          "RewardRowId": 17,
+          "Choice": 2,
+          "CreatedUtc": "2026-11-06T07:29:58.163906",
+          "QuoteSha256": "6dbd957478e461c085569fd0f9f21493a898f6fca4e3f40a01602305a77dc8d3",
+          "DeliverySha256": "a5c1642221dc660a425751e750fd400908c06e2cf43fb7804c69e423b926edc5",
+          "CharacterCurrencyJson": null
+        },
+        "ReceiptIdentitySha256": "27fdf822a786db1ef32a18434a8482fa9bba6d38fca4b444d3b9a14097c3b771",
+        "OriginalItemIds": [],
+        "ItemRows": 0,
+        "AccountOperations": [
+          "contract:1:47a2d11fd5db45768adce1a558ebbc03"
+        ],
+        "TrackRevision": 3,
+        "ReaderSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+        "GameSha256": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+        "ProbeSha256": "83632cdacb44824b0f9b244986d452f0647927658a45a2e1acca04071c128141"
+      },
+      "spentVerified": {
+        "ProcessId": 39624,
+        "Mode": "verify-spent",
+        "window": "account-before-auth",
+        "Committed": true,
+        "Spent": true,
+        "ReplayedOriginalClaim": false,
+        "ReplayTemporaryDirectory": null,
+        "ReceiptIdentity": {
+          "ClaimId": "47a2d11fd5db45768adce1a558ebbc03",
+          "AccountId": 27,
+          "RewardRowId": 17,
+          "Choice": 2,
+          "CreatedUtc": "2026-11-06T07:29:58.163906",
+          "QuoteSha256": "6dbd957478e461c085569fd0f9f21493a898f6fca4e3f40a01602305a77dc8d3",
+          "DeliverySha256": "a5c1642221dc660a425751e750fd400908c06e2cf43fb7804c69e423b926edc5",
+          "CharacterCurrencyJson": null
+        },
+        "ReceiptIdentitySha256": "27fdf822a786db1ef32a18434a8482fa9bba6d38fca4b444d3b9a14097c3b771",
+        "OriginalItemIds": [],
+        "ItemRows": 0,
+        "AccountOperations": [
+          "contract:1:47a2d11fd5db45768adce1a558ebbc03"
+        ],
+        "TrackRevision": 3,
+        "ReaderSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+        "GameSha256": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+        "ProbeSha256": "83632cdacb44824b0f9b244986d452f0647927658a45a2e1acca04071c128141"
+      },
+      "generations": [
+        {
+          "Pid": 46048,
+          "StartedUtc": "2026-11-06T07:29:34.9868048Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--prepare",
+          "Label": "prepare",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-1d29380c47874b2c862013695f5bff82\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 35280,
+          "StartedUtc": "2026-11-06T07:29:53.3283512Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--produce",
+          "Label": "producer",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-1d29380c47874b2c862013695f5bff82\\manifest.json",
+          "ExitCode": -1,
+          "Absent": true
+        },
+        {
+          "Pid": 13888,
+          "StartedUtc": "2026-11-06T07:29:59.4749007Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--recover",
+          "Label": "recover",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-1d29380c47874b2c862013695f5bff82\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 17828,
+          "StartedUtc": "2026-11-06T07:30:04.6678620Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--spend",
+          "Label": "spend",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-1d29380c47874b2c862013695f5bff82\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 28736,
+          "StartedUtc": "2026-11-06T07:30:09.4322855Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--replay-spent",
+          "Label": "replay-spent",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-1d29380c47874b2c862013695f5bff82\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 39624,
+          "StartedUtc": "2026-11-06T07:30:14.3680378Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--verify-spent",
+          "Label": "verify-spent",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-1d29380c47874b2c862013695f5bff82\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 29528,
+          "StartedUtc": "2026-11-06T07:30:18.9858092Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--cleanup",
+          "Label": "cleanup",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-1d29380c47874b2c862013695f5bff82\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        }
+      ],
+      "temporaryDirectoriesAbsent": [
+        "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-ContractClaim-0734bcd397f54100a211dc945fcbaee6",
+        "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-InventoryReward-9cbeaa3b124e4448a042ba94bb3dac5d"
+      ],
+      "startedUtc": "2026-11-06T07:29:34.9792634Z",
+      "completedUtc": "2026-11-06T07:30:22.0384144Z"
+    },
+    {
+      "window": "account-after-auth",
+      "passed": true,
+      "caseId": "01b561d0aa2348a1895e57e82e47469f",
+      "schemas": {
+        "AuthSchema": "nf_contr_phys_01b561d0aa23_a",
+        "CharacterSchema": "nf_contr_phys_01b561d0aa23_c",
+        "AuthCreated": true,
+        "CharacterCreated": true
+      },
+      "appliedMigrationsMatchExactInventory": true,
+      "bothSchemasAbsent": true,
+      "producer": {
+        "Window": "account-after-auth",
+        "ProcessId": 21692,
+        "StartedUtc": "2026-11-06T07:30:40.1534119Z",
+        "Exe": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+        "ManifestSha256": "bfb15d7824bb7ed4f4b03cc26411b3adb07317744ff2939b9fd1101c476902ad",
+        "ClaimId": "8ff8a74b4a674a64a1c95ad5647cd8ee",
+        "RewardRowId": 17,
+        "Choice": 2,
+        "TrackId": 5,
+        "Ordinal": 1,
+        "QuoteJson": "{\"Version\":1,\"CharacterId\":42,\"CycleId\":7,\"Revision\":1,\"Points\":5017,\"SelectionJson\":\"{\\u0022Version\\u0022:2,\\u0022Policy\\u0022:\\u0022contract-eligible-uniform-v1\\u0022,\\u0022TrackId\\u0022:5,\\u0022CycleId\\u0022:7,\\u0022OperationId\\u0022:\\u002261a57a9312e44775b253e22840477573\\u0022,\\u0022Satisfied\\u0022:[3,4,5,6,7,9],\\u0022Rewards\\u0022:[22,17,32,27,69]}\",\"Award\":{\"TrackId\":5,\"TrackType\":1,\"Ordinal\":1,\"RequiredPoints\":2000,\"RewardRowId\":17,\"Choice\":2,\"ChoiceType\":1,\"ChoiceId\":2485,\"ChoiceCount\":1,\"Item\":null,\"CharacterCurrency\":null,\"AccountCurrency\":{\"AccountItemId\":2485,\"Type\":14,\"Amount\":5}}}",
+        "QuoteSha256": "d0a2b95690aef9ff5dd8dd946db6989a1aba6df27771ecd26f72f171ed2c3b58",
+        "ItemId": null,
+        "ItemCount": null,
+        "Credit": 0,
+        "AccountAmount": 5,
+        "OwnedTemporaryDirectories": [
+          "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-ContractClaim-07bae85df2d54234a012d4ba596397c1",
+          "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-InventoryReward-1b966ddd33dc43e0acdc4dfc26f1672f"
+        ]
+      },
+      "termination": {
+        "StartedUtc": "2026-11-06T07:30:40.1534119Z",
+        "ObservedUtc": "2026-11-06T07:30:46.2769734Z",
+        "ExitCode": -1,
+        "GenerationVerified": true,
+        "Window": "account-after-auth",
+        "Pid": 21692
+      },
+      "recovered": {
+        "ProcessId": 10384,
+        "Mode": "recover",
+        "window": "account-after-auth",
+        "Committed": true,
+        "Spent": false,
+        "ReplayedOriginalClaim": false,
+        "ReplayTemporaryDirectory": null,
+        "ReceiptIdentity": {
+          "ClaimId": "8ff8a74b4a674a64a1c95ad5647cd8ee",
+          "AccountId": 27,
+          "RewardRowId": 17,
+          "Choice": 2,
+          "CreatedUtc": "2026-11-06T07:30:45.004659",
+          "QuoteSha256": "d0a2b95690aef9ff5dd8dd946db6989a1aba6df27771ecd26f72f171ed2c3b58",
+          "DeliverySha256": "1a770620ea1787a31e518ab2c70dc80057196b22dc06009930f7e0e5c8f9e0a9",
+          "CharacterCurrencyJson": null
+        },
+        "ReceiptIdentitySha256": "52353749ccd335d071aa805ba13b3b98837b3e1dba5bbc11f8abd62d5e114dd8",
+        "OriginalItemIds": [],
+        "ItemRows": 0,
+        "AccountOperations": [
+          "contract:1:8ff8a74b4a674a64a1c95ad5647cd8ee"
+        ],
+        "TrackRevision": 3,
+        "ReaderSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+        "GameSha256": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+        "ProbeSha256": "83632cdacb44824b0f9b244986d452f0647927658a45a2e1acca04071c128141"
+      },
+      "spentReplay": {
+        "ProcessId": 31984,
+        "Mode": "replay-spent",
+        "window": "account-after-auth",
+        "Committed": true,
+        "Spent": true,
+        "ReplayedOriginalClaim": true,
+        "ReplayTemporaryDirectory": null,
+        "ReceiptIdentity": {
+          "ClaimId": "8ff8a74b4a674a64a1c95ad5647cd8ee",
+          "AccountId": 27,
+          "RewardRowId": 17,
+          "Choice": 2,
+          "CreatedUtc": "2026-11-06T07:30:45.004659",
+          "QuoteSha256": "d0a2b95690aef9ff5dd8dd946db6989a1aba6df27771ecd26f72f171ed2c3b58",
+          "DeliverySha256": "1a770620ea1787a31e518ab2c70dc80057196b22dc06009930f7e0e5c8f9e0a9",
+          "CharacterCurrencyJson": null
+        },
+        "ReceiptIdentitySha256": "52353749ccd335d071aa805ba13b3b98837b3e1dba5bbc11f8abd62d5e114dd8",
+        "OriginalItemIds": [],
+        "ItemRows": 0,
+        "AccountOperations": [
+          "contract:1:8ff8a74b4a674a64a1c95ad5647cd8ee"
+        ],
+        "TrackRevision": 3,
+        "ReaderSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+        "GameSha256": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+        "ProbeSha256": "83632cdacb44824b0f9b244986d452f0647927658a45a2e1acca04071c128141"
+      },
+      "spentVerified": {
+        "ProcessId": 15760,
+        "Mode": "verify-spent",
+        "window": "account-after-auth",
+        "Committed": true,
+        "Spent": true,
+        "ReplayedOriginalClaim": false,
+        "ReplayTemporaryDirectory": null,
+        "ReceiptIdentity": {
+          "ClaimId": "8ff8a74b4a674a64a1c95ad5647cd8ee",
+          "AccountId": 27,
+          "RewardRowId": 17,
+          "Choice": 2,
+          "CreatedUtc": "2026-11-06T07:30:45.004659",
+          "QuoteSha256": "d0a2b95690aef9ff5dd8dd946db6989a1aba6df27771ecd26f72f171ed2c3b58",
+          "DeliverySha256": "1a770620ea1787a31e518ab2c70dc80057196b22dc06009930f7e0e5c8f9e0a9",
+          "CharacterCurrencyJson": null
+        },
+        "ReceiptIdentitySha256": "52353749ccd335d071aa805ba13b3b98837b3e1dba5bbc11f8abd62d5e114dd8",
+        "OriginalItemIds": [],
+        "ItemRows": 0,
+        "AccountOperations": [
+          "contract:1:8ff8a74b4a674a64a1c95ad5647cd8ee"
+        ],
+        "TrackRevision": 3,
+        "ReaderSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+        "GameSha256": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+        "ProbeSha256": "83632cdacb44824b0f9b244986d452f0647927658a45a2e1acca04071c128141"
+      },
+      "generations": [
+        {
+          "Pid": 14248,
+          "StartedUtc": "2026-11-06T07:30:22.0891335Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--prepare",
+          "Label": "prepare",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-01b561d0aa2348a1895e57e82e47469f\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 21692,
+          "StartedUtc": "2026-11-06T07:30:40.1534119Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--produce",
+          "Label": "producer",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-01b561d0aa2348a1895e57e82e47469f\\manifest.json",
+          "ExitCode": -1,
+          "Absent": true
+        },
+        {
+          "Pid": 10384,
+          "StartedUtc": "2026-11-06T07:30:46.2826649Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--recover",
+          "Label": "recover",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-01b561d0aa2348a1895e57e82e47469f\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 11184,
+          "StartedUtc": "2026-11-06T07:30:51.1509420Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--spend",
+          "Label": "spend",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-01b561d0aa2348a1895e57e82e47469f\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 31984,
+          "StartedUtc": "2026-11-06T07:30:55.7732826Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--replay-spent",
+          "Label": "replay-spent",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-01b561d0aa2348a1895e57e82e47469f\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 15760,
+          "StartedUtc": "2026-11-06T07:31:00.7095123Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--verify-spent",
+          "Label": "verify-spent",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-01b561d0aa2348a1895e57e82e47469f\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 38540,
+          "StartedUtc": "2026-11-06T07:31:05.3611385Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--cleanup",
+          "Label": "cleanup",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-01b561d0aa2348a1895e57e82e47469f\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        }
+      ],
+      "temporaryDirectoriesAbsent": [
+        "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-ContractClaim-07bae85df2d54234a012d4ba596397c1",
+        "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-InventoryReward-1b966ddd33dc43e0acdc4dfc26f1672f"
+      ],
+      "startedUtc": "2026-11-06T07:30:22.0829327Z",
+      "completedUtc": "2026-11-06T07:31:08.5553970Z"
+    },
+    {
+      "window": "account-after-ack",
+      "passed": true,
+      "caseId": "d636f5ba379a4b72b62edae79938976f",
+      "schemas": {
+        "AuthSchema": "nf_contr_phys_d636f5ba379a_a",
+        "CharacterSchema": "nf_contr_phys_d636f5ba379a_c",
+        "AuthCreated": true,
+        "CharacterCreated": true
+      },
+      "appliedMigrationsMatchExactInventory": true,
+      "bothSchemasAbsent": true,
+      "producer": {
+        "Window": "account-after-ack",
+        "ProcessId": 17344,
+        "StartedUtc": "2026-11-06T07:31:26.0792189Z",
+        "Exe": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+        "ManifestSha256": "bfb15d7824bb7ed4f4b03cc26411b3adb07317744ff2939b9fd1101c476902ad",
+        "ClaimId": "b7e14b6c8f11405a8d8abad1fc1d4264",
+        "RewardRowId": 27,
+        "Choice": 2,
+        "TrackId": 5,
+        "Ordinal": 3,
+        "QuoteJson": "{\"Version\":1,\"CharacterId\":42,\"CycleId\":7,\"Revision\":1,\"Points\":5017,\"SelectionJson\":\"{\\u0022Version\\u0022:2,\\u0022Policy\\u0022:\\u0022contract-eligible-uniform-v1\\u0022,\\u0022TrackId\\u0022:5,\\u0022CycleId\\u0022:7,\\u0022OperationId\\u0022:\\u002283563aaa854f4056946f2781220013c3\\u0022,\\u0022Satisfied\\u0022:[3,4,5,6,7,9],\\u0022Rewards\\u0022:[22,17,32,27,69]}\",\"Award\":{\"TrackId\":5,\"TrackType\":1,\"Ordinal\":3,\"RequiredPoints\":4000,\"RewardRowId\":27,\"Choice\":2,\"ChoiceType\":1,\"ChoiceId\":2486,\"ChoiceCount\":1,\"Item\":null,\"CharacterCurrency\":null,\"AccountCurrency\":{\"AccountItemId\":2486,\"Type\":14,\"Amount\":7}}}",
+        "QuoteSha256": "4cac1a6a22df4811bab6dbf4717dc44595fc6358fabc5c41d16e24aac0ece952",
+        "ItemId": null,
+        "ItemCount": null,
+        "Credit": 0,
+        "AccountAmount": 7,
+        "OwnedTemporaryDirectories": [
+          "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-ContractClaim-1f30e9c5a5c645528bf040afe705fd77",
+          "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-InventoryReward-6278c6536d654f33ac64df4878c3a91e"
+        ]
+      },
+      "termination": {
+        "StartedUtc": "2026-11-06T07:31:26.0792189Z",
+        "ObservedUtc": "2026-11-06T07:31:32.4490817Z",
+        "ExitCode": -1,
+        "GenerationVerified": true,
+        "Window": "account-after-ack",
+        "Pid": 17344
+      },
+      "recovered": {
+        "ProcessId": 41200,
+        "Mode": "recover",
+        "window": "account-after-ack",
+        "Committed": true,
+        "Spent": false,
+        "ReplayedOriginalClaim": false,
+        "ReplayTemporaryDirectory": null,
+        "ReceiptIdentity": {
+          "ClaimId": "b7e14b6c8f11405a8d8abad1fc1d4264",
+          "AccountId": 27,
+          "RewardRowId": 27,
+          "Choice": 2,
+          "CreatedUtc": "2026-11-06T07:31:30.9124",
+          "QuoteSha256": "4cac1a6a22df4811bab6dbf4717dc44595fc6358fabc5c41d16e24aac0ece952",
+          "DeliverySha256": "cecc198c39e6ea45d65740662e629bef2d5132566c1a6a164411cfec84254d98",
+          "CharacterCurrencyJson": null
+        },
+        "ReceiptIdentitySha256": "a24579a6f220aa9e7ca973e893aa2f7d81ceb1be215aabdb6fabaf881a96eb3d",
+        "OriginalItemIds": [],
+        "ItemRows": 0,
+        "AccountOperations": [
+          "contract:1:b7e14b6c8f11405a8d8abad1fc1d4264"
+        ],
+        "TrackRevision": 3,
+        "ReaderSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+        "GameSha256": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+        "ProbeSha256": "83632cdacb44824b0f9b244986d452f0647927658a45a2e1acca04071c128141"
+      },
+      "spentReplay": {
+        "ProcessId": 3900,
+        "Mode": "replay-spent",
+        "window": "account-after-ack",
+        "Committed": true,
+        "Spent": true,
+        "ReplayedOriginalClaim": true,
+        "ReplayTemporaryDirectory": null,
+        "ReceiptIdentity": {
+          "ClaimId": "b7e14b6c8f11405a8d8abad1fc1d4264",
+          "AccountId": 27,
+          "RewardRowId": 27,
+          "Choice": 2,
+          "CreatedUtc": "2026-11-06T07:31:30.9124",
+          "QuoteSha256": "4cac1a6a22df4811bab6dbf4717dc44595fc6358fabc5c41d16e24aac0ece952",
+          "DeliverySha256": "cecc198c39e6ea45d65740662e629bef2d5132566c1a6a164411cfec84254d98",
+          "CharacterCurrencyJson": null
+        },
+        "ReceiptIdentitySha256": "a24579a6f220aa9e7ca973e893aa2f7d81ceb1be215aabdb6fabaf881a96eb3d",
+        "OriginalItemIds": [],
+        "ItemRows": 0,
+        "AccountOperations": [
+          "contract:1:b7e14b6c8f11405a8d8abad1fc1d4264"
+        ],
+        "TrackRevision": 3,
+        "ReaderSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+        "GameSha256": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+        "ProbeSha256": "83632cdacb44824b0f9b244986d452f0647927658a45a2e1acca04071c128141"
+      },
+      "spentVerified": {
+        "ProcessId": 30152,
+        "Mode": "verify-spent",
+        "window": "account-after-ack",
+        "Committed": true,
+        "Spent": true,
+        "ReplayedOriginalClaim": false,
+        "ReplayTemporaryDirectory": null,
+        "ReceiptIdentity": {
+          "ClaimId": "b7e14b6c8f11405a8d8abad1fc1d4264",
+          "AccountId": 27,
+          "RewardRowId": 27,
+          "Choice": 2,
+          "CreatedUtc": "2026-11-06T07:31:30.9124",
+          "QuoteSha256": "4cac1a6a22df4811bab6dbf4717dc44595fc6358fabc5c41d16e24aac0ece952",
+          "DeliverySha256": "cecc198c39e6ea45d65740662e629bef2d5132566c1a6a164411cfec84254d98",
+          "CharacterCurrencyJson": null
+        },
+        "ReceiptIdentitySha256": "a24579a6f220aa9e7ca973e893aa2f7d81ceb1be215aabdb6fabaf881a96eb3d",
+        "OriginalItemIds": [],
+        "ItemRows": 0,
+        "AccountOperations": [
+          "contract:1:b7e14b6c8f11405a8d8abad1fc1d4264"
+        ],
+        "TrackRevision": 3,
+        "ReaderSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+        "GameSha256": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+        "ProbeSha256": "83632cdacb44824b0f9b244986d452f0647927658a45a2e1acca04071c128141"
+      },
+      "generations": [
+        {
+          "Pid": 41072,
+          "StartedUtc": "2026-11-06T07:31:08.6068475Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--prepare",
+          "Label": "prepare",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-d636f5ba379a4b72b62edae79938976f\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 17344,
+          "StartedUtc": "2026-11-06T07:31:26.0792189Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--produce",
+          "Label": "producer",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-d636f5ba379a4b72b62edae79938976f\\manifest.json",
+          "ExitCode": -1,
+          "Absent": true
+        },
+        {
+          "Pid": 41200,
+          "StartedUtc": "2026-11-06T07:31:32.4545769Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--recover",
+          "Label": "recover",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-d636f5ba379a4b72b62edae79938976f\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 38796,
+          "StartedUtc": "2026-11-06T07:31:37.0718501Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--spend",
+          "Label": "spend",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-d636f5ba379a4b72b62edae79938976f\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 3900,
+          "StartedUtc": "2026-11-06T07:31:41.7301119Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--replay-spent",
+          "Label": "replay-spent",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-d636f5ba379a4b72b62edae79938976f\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 30152,
+          "StartedUtc": "2026-11-06T07:31:46.6248956Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--verify-spent",
+          "Label": "verify-spent",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-d636f5ba379a4b72b62edae79938976f\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        },
+        {
+          "Pid": 19272,
+          "StartedUtc": "2026-11-06T07:31:51.2924043Z",
+          "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+          "Mode": "--cleanup",
+          "Label": "cleanup",
+          "State": "TERMINAL",
+          "Manifest": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\cases\\case-d636f5ba379a4b72b62edae79938976f\\manifest.json",
+          "ExitCode": 0,
+          "Absent": true
+        }
+      ],
+      "temporaryDirectoriesAbsent": [
+        "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-ContractClaim-1f30e9c5a5c645528bf040afe705fd77",
+        "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\AppData\\Local\\Temp\\NexusForever-InventoryReward-6278c6536d654f33ac64df4878c3a91e"
+      ],
+      "startedUtc": "2026-11-06T07:31:08.6005334Z",
+      "completedUtc": "2026-11-06T07:31:54.4906719Z"
+    }
+  ],
+  "defaultSQLiteControl": {
+    "result": {
+      "Passed": true,
+      "Generation": {
+        "Pid": 19000,
+        "StartedUtc": "2026-11-06T07:16:11.099317Z",
+        "Executable": "C:\\Users\\Bankai.DESKTOP-92LJ8PU\\.dotnet\\dotnet.exe",
+        "ProbeDll": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\contract-actual-mysql\\bin\\Debug\\net10.0\\ContractMySqlProcessProbe.dll",
+        "ProbeSha256": "e257cb8c8c52c2bab8ba2802eb9310d473d16eebd5843f1a7f178c46bf178671"
+      }
+    },
+    "sameTestAndProductionDependencyManifest": true,
+    "probeBoundary": "Default control and metadata inventory used the retained earlier e257cb8c probe; qualified MySQL case generations use 7018403e. Both use the same current138 dependencies."
+  },
+  "cleanup": {
+    "shutdown": {
+      "ProcessAbsent": true,
+      "ListenerAbsent": true,
+      "ObservedUtc": "2026-11-06T07:31:58.6384922Z",
+      "StartedUtc": "2026-11-06T07:19:58.5967547Z",
+      "Pid": 42400
+    },
+    "independentRecordedGenerationAudit": {
+      "Passed": true,
+      "EngineListenerAbsent": true,
+      "AllAbsent": true,
+      "Generations": [
+        {
+          "Pid": 11900,
+          "StartedUtc": "2026-11-06T07:25:34.9048699Z",
+          "Absent": true,
+          "ReferenceCount": 2
+        },
+        {
+          "Pid": 10384,
+          "StartedUtc": "2026-11-06T07:30:46.2826649Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 11184,
+          "StartedUtc": "2026-11-06T07:30:51.150942Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 1128,
+          "StartedUtc": "2026-11-06T07:27:41.0531235Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 12544,
+          "StartedUtc": "2026-11-06T07:29:26.7558962Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 12872,
+          "StartedUtc": "2026-11-06T07:28:33.1224082Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 13888,
+          "StartedUtc": "2026-11-06T07:29:59.4749007Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 14248,
+          "StartedUtc": "2026-11-06T07:30:22.0891335Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 15256,
+          "StartedUtc": "2026-11-06T07:26:24.7593389Z",
+          "Absent": true,
+          "ReferenceCount": 4
+        },
+        {
+          "Pid": 15760,
+          "StartedUtc": "2026-11-06T07:31:00.7095123Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 16972,
+          "StartedUtc": "2026-11-06T07:26:28.6762882Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 17344,
+          "StartedUtc": "2026-11-06T07:31:26.0792189Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 17828,
+          "StartedUtc": "2026-11-06T07:30:04.667862Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 18500,
+          "StartedUtc": "2026-11-06T07:28:42.1847173Z",
+          "Absent": true,
+          "ReferenceCount": 4
+        },
+        {
+          "Pid": 19272,
+          "StartedUtc": "2026-11-06T07:31:51.2924043Z",
+          "Absent": true,
+          "ReferenceCount": 4
+        },
+        {
+          "Pid": 21196,
+          "StartedUtc": "2026-11-06T07:31:54.515546Z",
+          "Absent": true,
+          "ReferenceCount": 1
+        },
+        {
+          "Pid": 21676,
+          "StartedUtc": "2026-11-06T07:27:00.935004Z",
+          "Absent": true,
+          "ReferenceCount": 4
+        },
+        {
+          "Pid": 21692,
+          "StartedUtc": "2026-11-06T07:30:40.1534119Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 22148,
+          "StartedUtc": "2026-11-06T07:26:15.720551Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 23488,
+          "StartedUtc": "2026-11-06T07:28:28.7224642Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 24020,
+          "StartedUtc": "2026-11-06T07:28:46.1723959Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 26096,
+          "StartedUtc": "2026-11-06T07:27:46.0388714Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 26668,
+          "StartedUtc": "2026-11-06T07:28:24.2039398Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 28736,
+          "StartedUtc": "2026-11-06T07:30:09.4322855Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 29528,
+          "StartedUtc": "2026-11-06T07:30:18.9858092Z",
+          "Absent": true,
+          "ReferenceCount": 4
+        },
+        {
+          "Pid": 30152,
+          "StartedUtc": "2026-11-06T07:31:46.6248956Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 30564,
+          "StartedUtc": "2026-11-06T07:26:01.1405165Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 31984,
+          "StartedUtc": "2026-11-06T07:30:55.7732826Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 32240,
+          "StartedUtc": "2026-11-06T07:27:32.3365833Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 33316,
+          "StartedUtc": "2026-11-06T07:27:36.5868062Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 33796,
+          "StartedUtc": "2026-11-06T07:27:54.3666934Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 34720,
+          "StartedUtc": "2026-11-06T07:27:04.82698Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 35280,
+          "StartedUtc": "2026-11-06T07:29:53.3283512Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 36716,
+          "StartedUtc": "2026-11-06T07:26:50.3989524Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 37244,
+          "StartedUtc": "2026-11-06T07:26:56.6158319Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 38224,
+          "StartedUtc": "2026-11-06T07:22:21.8331679Z",
+          "Absent": true,
+          "ReferenceCount": 1
+        },
+        {
+          "Pid": 38540,
+          "StartedUtc": "2026-11-06T07:31:05.3611385Z",
+          "Absent": true,
+          "ReferenceCount": 4
+        },
+        {
+          "Pid": 38796,
+          "StartedUtc": "2026-11-06T07:31:37.0718501Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 3900,
+          "StartedUtc": "2026-11-06T07:31:41.7301119Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 39624,
+          "StartedUtc": "2026-11-06T07:30:14.3680378Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 39836,
+          "StartedUtc": "2026-11-06T07:27:50.4014093Z",
+          "Absent": true,
+          "ReferenceCount": 4
+        },
+        {
+          "Pid": 41072,
+          "StartedUtc": "2026-11-06T07:31:08.6068475Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 41200,
+          "StartedUtc": "2026-11-06T07:31:32.4545769Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 41784,
+          "StartedUtc": "2026-11-06T07:28:37.9741905Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 42036,
+          "StartedUtc": "2026-11-06T07:29:31.3522298Z",
+          "Absent": true,
+          "ReferenceCount": 4
+        },
+        {
+          "Pid": 43052,
+          "StartedUtc": "2026-11-06T07:26:11.4022846Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 43112,
+          "StartedUtc": "2026-11-06T07:22:22.5478457Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 43416,
+          "StartedUtc": "2026-11-06T07:26:07.0292326Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 45760,
+          "StartedUtc": "2026-11-06T07:29:11.9427369Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 46048,
+          "StartedUtc": "2026-11-06T07:29:34.9868048Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 46228,
+          "StartedUtc": "2026-11-06T07:29:21.8485571Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 46948,
+          "StartedUtc": "2026-11-06T07:29:06.0014565Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 47560,
+          "StartedUtc": "2026-11-06T07:25:39.0146484Z",
+          "Absent": true,
+          "ReferenceCount": 1
+        },
+        {
+          "Pid": 48340,
+          "StartedUtc": "2026-11-06T07:29:17.0919294Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 48372,
+          "StartedUtc": "2026-11-06T07:26:20.4734327Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 7036,
+          "StartedUtc": "2026-11-06T07:28:18.0348742Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 7672,
+          "StartedUtc": "2026-11-06T07:27:26.2057234Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 8784,
+          "StartedUtc": "2026-11-06T07:25:39.7728521Z",
+          "Absent": true,
+          "ReferenceCount": 5
+        },
+        {
+          "Pid": 47892,
+          "StartedUtc": "2026-11-06T07:16:03.5858439Z",
+          "Absent": true,
+          "ReferenceCount": 1
+        },
+        {
+          "Pid": 17636,
+          "StartedUtc": "2026-11-06T07:21:21.5806314Z",
+          "Absent": true,
+          "ReferenceCount": 1
+        },
+        {
+          "Pid": 23308,
+          "StartedUtc": "2026-11-06T07:21:14.0229856Z",
+          "Absent": true,
+          "ReferenceCount": 1
+        },
+        {
+          "Pid": 24448,
+          "StartedUtc": "2026-11-06T07:21:51.7197287Z",
+          "Absent": true,
+          "ReferenceCount": 1
+        },
+        {
+          "Pid": 2752,
+          "StartedUtc": "2026-11-06T07:20:36.2977109Z",
+          "Absent": true,
+          "ReferenceCount": 1
+        },
+        {
+          "Pid": 29840,
+          "StartedUtc": "2026-11-06T07:21:36.6716478Z",
+          "Absent": true,
+          "ReferenceCount": 1
+        },
+        {
+          "Pid": 29916,
+          "StartedUtc": "2026-11-06T07:21:44.2060985Z",
+          "Absent": true,
+          "ReferenceCount": 1
+        },
+        {
+          "Pid": 3332,
+          "StartedUtc": "2026-11-06T07:22:06.788764Z",
+          "Absent": true,
+          "ReferenceCount": 1
+        },
+        {
+          "Pid": 33488,
+          "StartedUtc": "2026-11-06T07:20:51.3718272Z",
+          "Absent": true,
+          "ReferenceCount": 1
+        },
+        {
+          "Pid": 34984,
+          "StartedUtc": "2026-11-06T07:21:59.2376175Z",
+          "Absent": true,
+          "ReferenceCount": 1
+        },
+        {
+          "Pid": 36372,
+          "StartedUtc": "2026-11-06T07:20:43.8437569Z",
+          "Absent": true,
+          "ReferenceCount": 1
+        },
+        {
+          "Pid": 36996,
+          "StartedUtc": "2026-11-06T07:20:58.903197Z",
+          "Absent": true,
+          "ReferenceCount": 1
+        },
+        {
+          "Pid": 43960,
+          "StartedUtc": "2026-11-06T07:21:06.4414981Z",
+          "Absent": true,
+          "ReferenceCount": 1
+        },
+        {
+          "Pid": 44496,
+          "StartedUtc": "2026-11-06T07:20:21.2712263Z",
+          "Absent": true,
+          "ReferenceCount": 1
+        },
+        {
+          "Pid": 45976,
+          "StartedUtc": "2026-11-06T07:20:28.7924835Z",
+          "Absent": true,
+          "ReferenceCount": 1
+        },
+        {
+          "Pid": 46332,
+          "StartedUtc": "2026-11-06T07:20:13.753446Z",
+          "Absent": true,
+          "ReferenceCount": 1
+        },
+        {
+          "Pid": 46456,
+          "StartedUtc": "2026-11-06T07:21:29.138617Z",
+          "Absent": true,
+          "ReferenceCount": 1
+        },
+        {
+          "Pid": 7404,
+          "StartedUtc": "2026-11-06T07:19:58.6489222Z",
+          "Absent": true,
+          "ReferenceCount": 1
+        },
+        {
+          "Pid": 744,
+          "StartedUtc": "2026-11-06T07:20:06.1906447Z",
+          "Absent": true,
+          "ReferenceCount": 1
+        },
+        {
+          "Pid": 7504,
+          "StartedUtc": "2026-11-06T07:22:14.3049644Z",
+          "Absent": true,
+          "ReferenceCount": 1
+        },
+        {
+          "Pid": 18104,
+          "StartedUtc": "2026-11-06T07:19:55.5399095Z",
+          "Absent": true,
+          "ReferenceCount": 1
+        },
+        {
+          "Pid": 42400,
+          "StartedUtc": "2026-11-06T07:19:58.5967547Z",
+          "Absent": true,
+          "ReferenceCount": 2
+        },
+        {
+          "Pid": 19000,
+          "StartedUtc": "2026-11-06T07:16:11.099317Z",
+          "Absent": true,
+          "ReferenceCount": 1
+        }
+      ],
+      "ObservedUtc": "2026-11-06T07:41:28.0203725Z"
+    },
+    "originalProcessHandlesOnly": true,
+    "temporaryDirectoryDeletionScope": "Recorded direct TempRoot ContractClaim/InventoryReward directories only, with containment and reparse checks."
+  },
+  "builds": {
+    "testProject": {
+      "seconds": 14.33,
+      "warnings": 0,
+      "errors": 0,
+      "buildProjectReferences": false
+    },
+    "initialExplicitProbeBuild": {
+      "seconds": 3.33,
+      "warnings": 0,
+      "errors": 0
+    },
+    "finalProbeBuild": {
+      "seconds": 2.55,
+      "warnings": 0,
+      "errors": 0
+    },
+    "fullSuiteOrFullSolutionRun": false
+  },
+  "timing": {
+    "engineStartedUtc": "2026-11-06T07:19:58.5967547Z",
+    "resumedParentStartedUtc": "2026-11-06T07:25:34.9048699Z",
+    "completedUtc": "2026-11-06T07:31:58.6416835Z",
+    "resumedParentIncludingSchemasProcessesAndShutdownSeconds": 383.74,
+    "qualifiedChildrenStartThroughCaseCleanupSeconds": 374.72,
+    "interpretation": "Observed harness wall times include fresh42/49 migrations, corpus loading and process startup; no throughput or production-performance claim."
+  },
+  "diagnostics": [
+    {
+      "kind": "Standalone build setup",
+      "result": "77 errors/3 warnings because default compile glob included the retained before-source snapshot; explicit Compile inputs fixed the harness. No provider operation ran from that failed build.",
+      "evidence": "probe-snapshot-compile-setup-failure.log"
+    },
+    {
+      "kind": "Pre-schema case-root refusal",
+      "result": "The first control prepare exited1 before schema creation because the allowed root was not normalized. Full-path normalization corrected only the local adapter; the same case and engine resumed after terminal/lease-absence checks. Original binary/input/state snapshots retained.",
+      "evidence": "initial-path-refusal-run-state-control.json"
+    },
+    {
+      "kind": "Review gate reader",
+      "result": "Initial reader could parse a partially written gate. Partial/IO read retry now observes the same producer. All eight provider cases were already terminal when this local harness correction landed; no provider cases repeated. Successful original invocations had validated complete gates before killing.",
+      "revision": {
+        "beforeSha256": "6fe7b2a7f0c8b7c62023f8e286e5f60ec3582b3155d54178be7e08a5816cfefb",
+        "afterSha256": "bad6e688f5c8af94f8539c3789342f0d4d59f8676cc9fb4d17216c2bcda07526",
+        "observedAtEdit": [
+          {
+            "window": "account-after-ack",
+            "state": "TERMINAL",
+            "phase": "cleanup"
+          },
+          {
+            "window": "account-after-auth",
+            "state": "TERMINAL",
+            "phase": "cleanup"
+          },
+          {
+            "window": "account-after-character",
+            "state": "TERMINAL",
+            "phase": "cleanup"
+          },
+          {
+            "window": "account-before-auth",
+            "state": "TERMINAL",
+            "phase": "cleanup"
+          },
+          {
+            "window": "character-before",
+            "state": "TERMINAL",
+            "phase": "cleanup"
+          },
+          {
+            "window": "control",
+            "state": "TERMINAL",
+            "phase": "cleanup"
+          },
+          {
+            "window": "item-after-character",
+            "state": "TERMINAL",
+            "phase": "cleanup"
+          },
+          {
+            "window": "nonstackable-after-character",
+            "state": "TERMINAL",
+            "phase": "cleanup"
+          }
+        ],
+        "interpretation": "Already running/successful invocations used the prior complete-gate reader. Future invocations use partial-read retry. No provider operation or assertion was changed or repeated.",
+        "hashConvention": "beforeSha256/afterSha256 are UTF-8 text after universal-newline normalization to LF. Raw-file bindings are separate below.",
+        "beforeRawSha256": "15f6de9c94474c7f04bea8de448914992957b817bd76a59a409462ec1bca2a5e",
+        "afterRawSha256": "67566f78921a6b2f0181edda9fc4e5c74815a3ff4e5f7de4705708fd2d080766",
+        "rawHashRecordedAtUtc": "2026-11-06T07:40:15.574863+00:00"
+      },
+      "deterministicControl": {
+        "CompleteReadPassed": true,
+        "SameHandleObserved": 5,
+        "PartialReadOriginallyFailed": true,
+        "NoProviderOperationRepeated": true
+      }
+    },
+    {
+      "kind": "Final read-only audit setup",
+      "result": "An initial Python audit shadowed builtin all and failed; corrected audit passed without repeating provider operations. A control-script parse typo and a metadata inspection slice error were corrected; neither launched provider work."
+    },
+    {
+      "kind": "Final Source binding audit",
+      "result": "A no-filter comparison initially reported CRLF-only differences. Repeating with the documented Git clean-filter convention restored the existing one-owned/eight-historical boundary; raw SHA256 binds owned Source separately. No Source or binaries were changed."
+    }
+  ],
+  "reviews": {
+    "spec": {
+      "findings": 0,
+      "report": "Unchanged Source/options candidate preserves all assertions/defaults. Final terminal audit confirms eight scenarios, seven kills/replays, exact migration/identity and cleanup boundaries; public/native/retail remain outside scope."
+    },
+    "standards": {
+      "findings": 0,
+      "report": "Final review confirms zero remaining standard/heuristic findings; normalized/raw hash labels and all terminal cleanup summaries were inspected.",
+      "evidence": "artifacts/continuation-20261106/contract-actual-mysql/review-standards-final.md"
+    }
+  },
+  "upstream": [
+    {
+      "base_sha": "d8e43d2c3cc5a05f03e56dfc388288a4126c7ed9",
+      "head_sha": "36b59aaaaebbcd0ec3e23a94fd3cf9de8975923b",
+      "merged": false,
+      "number": 604,
+      "state": "open",
+      "updated_at": "2026-11-01T03:41:35Z"
+    },
+    {
+      "base_sha": "d8e43d2c3cc5a05f03e56dfc388288a4126c7ed9",
+      "head_sha": "f9b6f7356798a41beea0768ff1f6b5a758ffeca3",
+      "merged": false,
+      "number": 609,
+      "state": "closed",
+      "updated_at": "2026-11-01T02:58:37Z"
+    },
+    {
+      "base_sha": "3588ca5f578387928e6593e3808bf15f6192b094",
+      "head_sha": "7db12d9a7c694bc5e66d9e0f4cdbc1b82155e69b",
+      "merged": false,
+      "number": 608,
+      "state": "open",
+      "updated_at": "2026-10-30T18:53:13Z"
+    },
+    {
+      "base_sha": "3588ca5f578387928e6593e3808bf15f6192b094",
+      "head_sha": "ba30ae14513461ab6bd83d691543b6a155846e1c",
+      "merged": false,
+      "number": 595,
+      "state": "open",
+      "updated_at": "2026-10-30T06:28:59Z"
+    },
+    {
+      "base_sha": "d0817fdf40e4832dbc578b7b2ea82a1b1fa378bf",
+      "head_sha": "f88b196f11b909b4e0db94db2affff3c585d971f",
+      "merged": true,
+      "number": 598,
+      "state": "closed",
+      "updated_at": "2026-10-30T02:09:40Z"
+    },
+    {
+      "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+      "head_sha": "7f044aad0a20419a788b8140d263ac83fcd93217",
+      "merged": false,
+      "number": 607,
+      "state": "open",
+      "updated_at": "2026-10-28T06:05:47Z"
+    },
+    {
+      "base_sha": "f9bb26efddbf304003fc8ebf484ac75bc6be84da",
+      "head_sha": "e41fb57514cc202425430684e11e5fdd8f1b71f0",
+      "merged": false,
+      "number": 588,
+      "state": "open",
+      "updated_at": "2026-10-28T05:57:43Z"
+    },
+    {
+      "base_sha": "845651e68fa1416931ea6507de1d3404d88f192e",
+      "head_sha": "38f8c19409c6fc9c3afc08744ce49cb6ed0de1db",
+      "merged": false,
+      "number": 599,
+      "state": "closed",
+      "updated_at": "2026-10-27T14:11:52Z"
+    },
+    {
+      "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+      "head_sha": "4ffa050ba994a82e0fb52f0b5b733c94b139367e",
+      "merged": false,
+      "number": 606,
+      "state": "open",
+      "updated_at": "2026-10-27T14:11:20Z"
+    },
+    {
+      "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+      "head_sha": "972ad3b4f9c7bce0a460ad0e5b5410f311b8573c",
+      "merged": false,
+      "number": 605,
+      "state": "open",
+      "updated_at": "2026-10-27T14:11:18Z"
+    },
+    {
+      "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+      "head_sha": "6faa74d029f95b5e29684690ee2628c10dc80b59",
+      "merged": false,
+      "number": 603,
+      "state": "open",
+      "updated_at": "2026-10-27T14:11:12Z"
+    },
+    {
+      "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+      "head_sha": "ffe5dc0512452fe3e383b8a8b454017c04120df4",
+      "merged": false,
+      "number": 602,
+      "state": "open",
+      "updated_at": "2026-10-27T14:11:10Z"
+    },
+    {
+      "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+      "head_sha": "79a36684101423cfd199047b466a2c2c839e9c2e",
+      "merged": false,
+      "number": 601,
+      "state": "open",
+      "updated_at": "2026-10-27T14:11:07Z"
+    },
+    {
+      "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+      "head_sha": "1bf8de1caba3baa70620998b82317d65c96b07c8",
+      "merged": false,
+      "number": 600,
+      "state": "open",
+      "updated_at": "2026-10-27T14:11:04Z"
+    },
+    {
+      "base_sha": "f9bb26efddbf304003fc8ebf484ac75bc6be84da",
+      "head_sha": "17ef256c2f38ef6d010db807b69452d1bb2be614",
+      "merged": true,
+      "number": 593,
+      "state": "closed",
+      "updated_at": "2026-10-26T18:24:11Z"
+    },
+    {
+      "base_sha": "845651e68fa1416931ea6507de1d3404d88f192e",
+      "head_sha": "eb4db38857bb263493f56912a99184a9992d4e36",
+      "merged": true,
+      "number": 591,
+      "state": "closed",
+      "updated_at": "2026-10-26T18:23:58Z"
+    },
+    {
+      "base_sha": "d0817fdf40e4832dbc578b7b2ea82a1b1fa378bf",
+      "head_sha": "8ca89ccb31c20a286a64ac632fca8885d812cba5",
+      "merged": false,
+      "number": 597,
+      "state": "open",
+      "updated_at": "2026-10-26T15:50:33Z"
+    },
+    {
+      "base_sha": "f9bb26efddbf304003fc8ebf484ac75bc6be84da",
+      "head_sha": "56b816084bb2cdd3bcd990a52f47f9d2cb621871",
+      "merged": true,
+      "number": 587,
+      "state": "closed",
+      "updated_at": "2026-10-26T04:08:09Z"
+    },
+    {
+      "base_sha": "f9bb26efddbf304003fc8ebf484ac75bc6be84da",
+      "head_sha": "121f4c3ec7472b8a6c0f6e3054fd788f939dd028",
+      "merged": true,
+      "number": 589,
+      "state": "closed",
+      "updated_at": "2026-10-26T04:00:28Z"
+    },
+    {
+      "base_sha": "3588ca5f578387928e6593e3808bf15f6192b094",
+      "head_sha": "e100f4c29a1571a7181d06967ed8133612d99074",
+      "merged": false,
+      "number": 596,
+      "state": "open",
+      "updated_at": "2026-10-25T15:27:59Z"
+    }
+  ],
+  "limits": [
+    "Internal claim executor with seeded prerequisites/cycles and prepared Player/session/inventory collaborators; consumption and balance spending are fixture SQL.",
+    "Seven committed cases replay the retained original claim through the real executor; no new award/reservation consumption occurs. The before-Character case has no durable receipt and is not silently retried.",
+    "Recovery explicitly invokes ContractAccountDelivery twice for account awards; autonomous hosted World restart, actor publication and real gameplay consumption are not qualified.",
+    "Eight representative scenarios are not726 physical-failure permutations. Public07CE/reset/unclaimed/final-first/excess policy and real eligibility remain open.",
+    "Fresh MySQL8.4.13 loopback with configured retries is qualified. Copied upgrades, database-server/connection failure, other profiles/providers, broker/socket/deployment/native/retail remain open.",
+    "Client launch and Computer Use remain stopped. Existing entitlement defaults and unrelated dirty work are preserved."
+  ],
+  "evidenceDirectory": "artifacts/continuation-20261106/contract-actual-mysql",
+  "retainedEvidenceSha256": {
+    "Program.cs": "918cedf2eb74d2dd745c80c58e203c89915aa02d93406922b9df91bdcf91a4b8",
+    "OwnedMySql.cs": "a7485d251d9c3ef0076a89973a89a03f0228455a036ff7604b811c84a5309393",
+    "Probe.csproj": "3d4eb19414eb3aad9ed942af981695bb67e76efbe442a6981d162b953ed90ffc",
+    "inputs.json": "034ff7a55e9f5eb561482e86118935e3e95fd896b12f8ba186ae5f57dfee7851",
+    "run-case.ps1": "67566f78921a6b2f0181edda9fc4e5c74815a3ff4e5f7de4705708fd2d080766",
+    "run-case.pre-gate-read-fix.ps1": "15f6de9c94474c7f04bea8de448914992957b817bd76a59a409462ec1bca2a5e",
+    "run-all.ps1": "9e899bb33a9b129c18c702b2a5bb24dd080878ca8f232cd2ed16e4913a79bb80",
+    "continue-all.ps1": "9f1ca325aa7423d3dd2a91f57d79e5f94ff4f1616c978e28de6f129808dfa42b",
+    "start-owned-mysql.ps1": "cf419d90c0fad21d59ec5682a53a7322dc7c342c90e9d198af079ec3c8628f55",
+    "gate-reader-revision.json": "941f0e7425b193e079bd97140f37f111404e5616fc55094b6729038f0aa3bc60",
+    "gate-read-control.ps1": "e2a9a8076ea34a2bd65e08a1747921286d60f3ecf80dd98b4fb4b22bc609f598",
+    "gate-read-control-result.json": "d3488dd06f1a2a0e9880ef2c4d08d842549f317e0032d8ee5675d623c36ebc32",
+    "audit_cases.py": "064684d576d2893c6000740e6513fd519c929832b889b45257201bb1311ff6e7",
+    "case-audit-summary.json": "1533baa51d0cdf3c6f4644e58dc678adad33004f4ade8177bec918413a18f14b",
+    "generation-audit.json": "573d857819cab0e00d1a7f4e5dc1484393feab23b19832720833785e61b3efbe",
+    "assertion-preservation.json": "262f89c5826b0009f2e4d2eb67b1d1a8632870ebdc1294980d059c812854da37",
+    "final-binding-verification.json": "c1fe4d7c51d9fde437e4bfba5f54b3bf888c74dc0b5ad2e7f3a2baf39df5b155",
+    "review-standards-final.md": "5dd01ee4018d6209d2b5e1b81ffdafde3a89831bde7d1fef427765c93254b20e"
+  },
+  "stopBoundary": "User requested finishing the current task and stopping. Publish only this milestone; do not begin another outcome."
+}

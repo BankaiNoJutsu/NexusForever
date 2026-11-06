@@ -1,5 +1,18 @@
 # Assessment follow-through goal
 
+[Actual-catalog Contract configured MySQL recovery](CONTRACT_ACTUAL_MYSQL_RECOVERY.md)
+completes the representative fresh-provider physical producer-loss gate:
+eight windows, seven real kills and seven spent original-claim replays pass
+with exact 42 Auth/49 Character migrations and configured retries. All 16
+leased schemas, 19 temporary directories and 81 recorded generations are absent.
+One test-only provider-options seam preserves all original assertions/defaults;
+production is unchanged. Clean scoped builds and both reviews pass. Reuse these
+checks. Public07CE/reset/unclaimed/final-first/excess, real eligibility,
+autonomous World/publication, copied upgrades, DB-server failure, other profiles,
+broker/socket/deployment/native/retail remain open. Client/CUA stay stopped.
+Work is paused after publication at the user's request; overall Goal unfinished.
+
+
 [Reward Rotation refresh authority](REWARD_ROTATION_REFRESH_AUTHORITY.md)
 corrects the unsupported trailing claim extension: native07CC is one uint32
 refresh index, not a grant request. All three fabricated lanes previously

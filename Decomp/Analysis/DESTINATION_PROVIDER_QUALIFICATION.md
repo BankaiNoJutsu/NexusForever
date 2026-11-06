@@ -1,5 +1,15 @@
 # Destination configured-provider qualification
 
+[Actual-catalog Contract physical recovery](CONTRACT_ACTUAL_MYSQL_RECOVERY.md)
+passes eight windows, seven physical producer terminations and seven spent
+original-claim replays on fresh MySQL 8.4.13 Auth/Character schemas with configured
+retries and exact 42/49 migration identities. All 16 schemas, 19 recorded temporary
+directories and 81 recorded generations are absent; the engine listener is closed.
+Clean scoped builds and both final reviews pass. Production is unchanged.
+Copied upgrades, database-server failure, autonomous World, public claim/reset,
+other profiles and broker/socket/deployment/native/retail remain open.
+
+
 [Appearance settlement](APPEARANCE_CHANGE_SETTLEMENT.md#configured-mysql-qualification)
 passes all40 original public Credits/Service Token cases on fresh MySQL8.4.13
 Auth/Character schemas with exact42/49 migration identities and configured

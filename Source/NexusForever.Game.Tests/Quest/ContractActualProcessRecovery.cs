@@ -27,7 +27,8 @@ public static class ContractActualProcessRecovery
     private static string Hash(string value) => Convert.ToHexStringLower(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(value)));
     private static void Write(string path, object value) => File.WriteAllText(path, JsonSerializer.Serialize(value, json));
 
-    public static async Task RunAsync(string mode, string recoveryRoot, string caseDirectory, string window)
+    public static async Task RunAsync(string mode, string recoveryRoot, string caseDirectory, string window,
+        DbContextOptions<CharacterContext> characterOptions = null, DbContextOptions<AuthContext> authOptions = null)
     {
         recoveryRoot = Path.GetFullPath(recoveryRoot); caseDirectory = Path.GetFullPath(caseDirectory);
         Directory.CreateDirectory(caseDirectory);
@@ -35,8 +36,8 @@ public static class ContractActualProcessRecovery
         var tables = await ContractActualCatalogQualification.LoadTablesAsync(recoveryRoot);
         var catalog = new ContractRewardAwardCatalog(tables);
         Assert.Equal(726, catalog.Awards.Count);
-        var character = new DbContextOptionsBuilder<CharacterContext>().UseSqlite($"Data Source={Path.Combine(caseDirectory, "character.sqlite")};Pooling=False").Options;
-        var auth = new DbContextOptionsBuilder<AuthContext>().UseSqlite($"Data Source={Path.Combine(caseDirectory, "auth.sqlite")};Pooling=False").Options;
+        var character = characterOptions ?? new DbContextOptionsBuilder<CharacterContext>().UseSqlite($"Data Source={Path.Combine(caseDirectory, "character.sqlite")};Pooling=False").Options;
+        var auth = authOptions ?? new DbContextOptionsBuilder<AuthContext>().UseSqlite($"Data Source={Path.Combine(caseDirectory, "auth.sqlite")};Pooling=False").Options;
         if (mode == "produce")
         {
             Assert.False(File.Exists(Path.Combine(caseDirectory, "producer.json")));

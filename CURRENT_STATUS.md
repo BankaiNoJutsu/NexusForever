@@ -1,5 +1,13 @@
 # NexusForever Feature Restoration - Current Status
 
+[Actual-catalog Contract MySQL recovery](Decomp/Analysis/CONTRACT_ACTUAL_MYSQL_RECOVERY.md)
+passes eight representative windows, seven physical producer terminations and
+seven spent-claim replays on fresh configured MySQL 8.4.13 Auth/Character schemas.
+All 16 schemas, 19 temporary directories and 81 recorded generations are absent;
+clean test/adapter builds and both final reviews pass. Production is unchanged.
+Public claim/reset, autonomous World and native/retail gates remain open.
+
+
 [Reward Rotation refresh](Decomp/Analysis/REWARD_ROTATION_REFRESH_AUTHORITY.md)
 now reads the native one-word07CC request without accepting synthetic grant
 authority. Three forged lanes no longer persist grants with no award; existing

@@ -1,5 +1,16 @@
 # Continue on another machine
 
+Latest Contract provider result:
+[actual-catalog MySQL recovery](Decomp/Analysis/CONTRACT_ACTUAL_MYSQL_RECOVERY.md)
+passes eight windows, seven producer kills and seven spent original-claim replays
+on fresh configured MySQL 8.4.13 schemas with exact 42/49 migration identities.
+All 16 schemas, 19 temporary directories and 81 recorded generations are absent;
+the engine listener is closed. Clean scoped builds and both final reviews pass.
+Production is unchanged. Reuse these checks; public07CE/reset, autonomous World,
+copied upgrades and native/retail remain open. Client/CUA stopped.
+Work pauses after this publication at the user's request; overall Goal unfinished.
+
+
 Latest Rotation Source result:
 [refresh authority](Decomp/Analysis/REWARD_ROTATION_REFRESH_AUTHORITY.md) removes
 the invented trailing claim path while preserving schedule/existing-grant
