@@ -1,5 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Achievement;
+using NexusForever.Game.Abstract;
+using NexusForever.Game.Abstract.Account;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Prerequisite;
@@ -14,6 +16,8 @@ using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Network.Message;
 using NexusForever.Network.Session;
 using NexusForever.Network.World.Message.Model.Pvp;
+using NexusForever.Shared.Game.Events;
+using NexusForever.WorldServer.Network;
 
 namespace NexusForever.Game.Tests.Pvp;
 
@@ -87,8 +91,8 @@ public class DuelManagerTests
     {
         var manager = new DuelManager();
         IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out _);
-        IPlayer challenger = CreatePlayer(101u, map, out RecordingDispatchProxy<IGameSession> challengerSessionProxy, out _);
-        IPlayer opponent = CreatePlayer(202u, map, out RecordingDispatchProxy<IGameSession> opponentSessionProxy, out _);
+        IPlayer challenger = CreatePlayer(101u, map, out RecordingDispatchProxy<IWorldSession> challengerSessionProxy, out _);
+        IPlayer opponent = CreatePlayer(202u, map, out RecordingDispatchProxy<IWorldSession> opponentSessionProxy, out _);
 
         Assert.Null(manager.Initiate(challenger, opponent));
 
@@ -124,8 +128,8 @@ public class DuelManagerTests
     {
         var manager = new DuelManager();
         IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out _);
-        IPlayer challenger = CreatePlayer(101u, map, out RecordingDispatchProxy<IGameSession> challengerSessionProxy, out _);
-        IPlayer opponent = CreatePlayer(202u, map, out RecordingDispatchProxy<IGameSession> opponentSessionProxy, out _);
+        IPlayer challenger = CreatePlayer(101u, map, out RecordingDispatchProxy<IWorldSession> challengerSessionProxy, out _);
+        IPlayer opponent = CreatePlayer(202u, map, out RecordingDispatchProxy<IWorldSession> opponentSessionProxy, out _);
 
         Assert.Null(manager.Initiate(challenger, opponent));
 
@@ -148,8 +152,8 @@ public class DuelManagerTests
     {
         var manager = new DuelManager();
         IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out _);
-        IPlayer challenger = CreatePlayer(101u, map, out RecordingDispatchProxy<IGameSession> challengerSessionProxy, out _);
-        IPlayer opponent = CreatePlayer(202u, map, out RecordingDispatchProxy<IGameSession> opponentSessionProxy, out _);
+        IPlayer challenger = CreatePlayer(101u, map, out RecordingDispatchProxy<IWorldSession> challengerSessionProxy, out _);
+        IPlayer opponent = CreatePlayer(202u, map, out RecordingDispatchProxy<IWorldSession> opponentSessionProxy, out _);
 
         Assert.Null(manager.Initiate(challenger, opponent));
 
@@ -168,8 +172,8 @@ public class DuelManagerTests
     {
         var manager = new DuelManager();
         IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out _);
-        IPlayer challenger = CreatePlayer(101u, map, out RecordingDispatchProxy<IGameSession> challengerSessionProxy, out _);
-        IPlayer opponent = CreatePlayer(202u, map, out RecordingDispatchProxy<IGameSession> opponentSessionProxy, out _);
+        IPlayer challenger = CreatePlayer(101u, map, out RecordingDispatchProxy<IWorldSession> challengerSessionProxy, out _);
+        IPlayer opponent = CreatePlayer(202u, map, out RecordingDispatchProxy<IWorldSession> opponentSessionProxy, out _);
 
         Assert.Null(manager.Initiate(challenger, opponent));
         Assert.Null(manager.Accept(opponent));
@@ -191,8 +195,8 @@ public class DuelManagerTests
     {
         var manager = new DuelManager();
         IBaseMap map = RecordingDispatchProxy<IBaseMap>.Create(out _);
-        IPlayer winner = CreatePlayer(101u, map, out RecordingDispatchProxy<IGameSession> winnerSessionProxy, out RecordingDispatchProxy<ICharacterAchievementManager> winnerAchievementProxy);
-        IPlayer loser = CreatePlayer(202u, map, out RecordingDispatchProxy<IGameSession> loserSessionProxy, out RecordingDispatchProxy<ICharacterAchievementManager> loserAchievementProxy);
+        IPlayer winner = CreatePlayer(101u, map, out RecordingDispatchProxy<IWorldSession> winnerSessionProxy, out RecordingDispatchProxy<ICharacterAchievementManager> winnerAchievementProxy);
+        IPlayer loser = CreatePlayer(202u, map, out RecordingDispatchProxy<IWorldSession> loserSessionProxy, out RecordingDispatchProxy<ICharacterAchievementManager> loserAchievementProxy);
 
         Assert.Null(manager.Initiate(winner, loser));
         Assert.Null(manager.Accept(loser));
@@ -222,11 +226,11 @@ public class DuelManagerTests
     private static IPlayer CreatePlayer(
         uint guid,
         IBaseMap map,
-        out RecordingDispatchProxy<IGameSession> sessionProxy,
+        out RecordingDispatchProxy<IWorldSession> sessionProxy,
         out RecordingDispatchProxy<ICharacterAchievementManager> achievementProxy)
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
-        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out sessionProxy);
+        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out sessionProxy);
         ICharacterAchievementManager achievementManager =
             RecordingDispatchProxy<ICharacterAchievementManager>.Create(out achievementProxy);
 
@@ -236,13 +240,21 @@ public class DuelManagerTests
         playerProxy.SetProperty(nameof(IPlayer.IsAlive), true);
         playerProxy.SetProperty(nameof(IPlayer.InCombat), false);
         playerProxy.SetProperty(nameof(IPlayer.Session), session);
+        playerProxy.SetProperty(nameof(IPlayer.Identity), new Identity { Id = guid, RealmId = 1 });
+        var account = RecordingDispatchProxy<IAccount>.Create(out var accountProxy);
+        accountProxy.SetProperty(nameof(IAccount.Id), guid);
+        accountProxy.SetProperty(nameof(IAccount.Session), session);
+        playerProxy.SetProperty(nameof(IPlayer.Account), account);
+        sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
+        sessionProxy.SetProperty(nameof(IWorldSession.Account), account);
+        sessionProxy.SetProperty(nameof(IWorldSession.Events), new EventQueue());
         playerProxy.SetProperty(nameof(IPlayer.AchievementManager), achievementManager);
         playerProxy.SetMethodReturn(nameof(IPlayer.HasFlag), false);
 
         return player;
     }
 
-    private static IReadOnlyList<T> GetMessages<T>(RecordingDispatchProxy<IGameSession> sessionProxy)
+    private static IReadOnlyList<T> GetMessages<T>(RecordingDispatchProxy<IWorldSession> sessionProxy)
         where T : class, IWritable
     {
         return sessionProxy

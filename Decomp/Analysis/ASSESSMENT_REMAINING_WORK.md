@@ -1,5 +1,16 @@
 # Assessment follow-through goal
 
+[Original duel participants](DUEL_PARTICIPANT_OWNERSHIP.md) bind parsed requests,
+combat permission, defeat/forfeit/cancellation and fanout to the original Player,
+character/realm, account/session/queue/map admission. Sixteen original baseline
+failures are fixed;25 new/138 related cases pass, including two real Player
+countdown/attackability/forfeit/same-map admission integrations, busy-map defeat
+retention and reentrant replacement. Four source-session request guards follow
+final review; host-startup failures remain distinct from executed results.
+Full damage/death/respawn, callback-failure recovery, observers/reward policy,
+provider/socket/native/retail and F-015 remain open. No DDL or native/CUA work;
+the broader Goal stays active for independent integrated gameplay.
+
 [Friendship setting ownership](FRIENDSHIP_SETTING_OWNERSHIP.md) corrects the
 00B8 character lock/039E account stranger-setting split using exact native
 registration/field/dispatcher evidence and corroborating authored UI. Seven

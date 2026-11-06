@@ -25,6 +25,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Pvp
 
         public void HandleMessage(IWorldSession session, ClientDuelInitiate duelInitiate)
         {
+            if (session?.Player == null || !ReferenceEquals(session.Player.Session, session)) return;
             IPlayer target = GetSelectedPlayer(session.Player);
             if (target == null)
             {
@@ -80,6 +81,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Pvp
 
         public void HandleMessage(IWorldSession session, ClientDuelAccept duelAccept)
         {
+            if (session?.Player == null || !ReferenceEquals(session.Player.Session, session)) return;
             DuelFailureReason? failureReason = duelManager.Accept(session.Player);
             if (failureReason.HasValue)
             {
@@ -112,6 +114,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Pvp
 
         public void HandleMessage(IWorldSession session, ClientDuelDecline duelDecline)
         {
+            if (session?.Player == null || !ReferenceEquals(session.Player.Session, session)) return;
             if (!duelManager.Decline(session.Player))
             {
                 log.LogDebug("Ignoring duel decline request without pending duel from player {PlayerGuid}.",
@@ -138,6 +141,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Pvp
 
         public void HandleMessage(IWorldSession session, ClientDuelForfeit duelForfeit)
         {
+            if (session?.Player == null || !ReferenceEquals(session.Player.Session, session)) return;
             if (!duelManager.Forfeit(session.Player))
             {
                 log.LogDebug("Ignoring duel forfeit request without active duel from player {PlayerGuid}.",

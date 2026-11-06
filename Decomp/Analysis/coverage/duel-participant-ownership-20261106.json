@@ -1,0 +1,439 @@
+{
+  "Date": "2026-11-06",
+  "BaseHEAD": "a535663ec93848813d991119bddd0b89eaecf835",
+  "Outcome": "Original duel participant/source-session ownership and transient defeat retention implemented; F-015/unified restoration unfinished",
+  "Source": [
+    {
+      "Path": "Source/NexusForever.Game/Pvp/DuelManager.cs",
+      "Bytes": 17408,
+      "SHA256": "a7d777b359f5c313a1bb0302bb73e144c72c6b1a208f83aaa894a93fc249bec6"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Pvp/DuelManager.Ownership.cs",
+      "Bytes": 3367,
+      "SHA256": "266833d3afe0d5269b7c31950c7a736e4cab8ac05e1d1c63ee6e63e6febef9e6"
+    },
+    {
+      "Path": "Source/NexusForever.WorldServer/Network/Message/Handler/Pvp/ClientPvpHandlers.cs",
+      "Bytes": 7916,
+      "SHA256": "5c2774891daa97c80f0e9523a2ff45adb9e37b3cc91726505c757364a9c9c49a"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Pvp/DuelManagerTests.cs",
+      "Bytes": 13070,
+      "SHA256": "63d4ace0563e137216964b94a75177815a88d25d012c291aa8cd52ab4d03fa99"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Pvp/DuelParticipantOwnershipTests.cs",
+      "Bytes": 14478,
+      "SHA256": "8de5441e1d0517dbc78e042a86393a7ffee748a6fdadbcec40ddeddacd211c31"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Pvp/DuelParticipantOwnershipTests.Combat.cs",
+      "Bytes": 4310,
+      "SHA256": "6b297a190cdd2b1aee566e9fd68803476a146781002e0fe43b798e78fbdc2869"
+    }
+  ],
+  "UnchangedIntegrationDependencies": [
+    {
+      "Path": "Source/NexusForever.Game/Entity/Player.cs",
+      "Bytes": 176925,
+      "SHA256": "6ecaa035edfe2c5d5d866070b7dae5f50f9e7cbbd3c83bb3e51ff032af5b9dbe"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Entity/Player.MapAdmission.cs",
+      "Bytes": 6220,
+      "SHA256": "e3f2111ebb06175fce249639a0dc97506817a96971cf80e8779615eea60f7e68"
+    },
+    {
+      "Path": "Source/NexusForever.WorldServer/Network/WorldSession.cs",
+      "Bytes": 10648,
+      "SHA256": "5216a792d0605d07a8cde43ce7ca28c61ebd1911ce6acbe2185267d1e8e69705"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Challenges/RewardNormalSaveSnapshotTests.cs",
+      "Bytes": 56062,
+      "SHA256": "d5a6e298b1334f5ecbc35bcfd8dfd93c418edd2d1aafd0458492726719ec9344"
+    }
+  ],
+  "Assemblies": [
+    {
+      "Project": "NexusForever.Game",
+      "Tested": {
+        "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.dll",
+        "Bytes": 4941312,
+        "SHA256": "5a0aac5c2db16023ee3a8681ab1bd9c22e1c6429f0b9c986d35eee66da7bfb60"
+      },
+      "Owning": {
+        "Path": "Source/NexusForever.Game/bin/Debug/net10.0/NexusForever.Game.dll",
+        "Bytes": 4941312,
+        "SHA256": "5a0aac5c2db16023ee3a8681ab1bd9c22e1c6429f0b9c986d35eee66da7bfb60"
+      }
+    },
+    {
+      "Project": "NexusForever.WorldServer",
+      "Tested": {
+        "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+        "Bytes": 882176,
+        "SHA256": "e9bef9fc0a34655e6764237e88967c36e8c81b1d02a3f2ade4c9d8d20850fd13"
+      },
+      "Owning": {
+        "Path": "Source/NexusForever.WorldServer/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+        "Bytes": 882176,
+        "SHA256": "e9bef9fc0a34655e6764237e88967c36e8c81b1d02a3f2ade4c9d8d20850fd13"
+      }
+    },
+    {
+      "Project": "NexusForever.Game.Tests",
+      "Tested": {
+        "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+        "Bytes": 10093056,
+        "SHA256": "b6a638840f727983f9cb99cbb3f5e2fd56afe0d6c262b1761bdefa124137978a"
+      },
+      "Owning": {
+        "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+        "Bytes": 10093056,
+        "SHA256": "b6a638840f727983f9cb99cbb3f5e2fd56afe0d6c262b1761bdefa124137978a"
+      }
+    }
+  ],
+  "Runs": [
+    {
+      "Name": "Published-parent failure",
+      "Artifact": {
+        "Path": "artifacts/duel-participant-ownership/baseline/baseline.trx",
+        "Bytes": 55682,
+        "SHA256": "09bc9d37abe60fbd536ef1f7201dffc3ccfe17259a299631cb6c93a3f979a6f0"
+      },
+      "Counters": {
+        "total": "16",
+        "executed": "16",
+        "passed": "0",
+        "failed": "16",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "Failures": [
+        {
+          "Test": "NexusForever.Game.Tests.Pvp.DuelParticipantOwnershipTests.DefeatRequiresBothDistinctOriginalParticipants(changed: \"self\")",
+          "Message": "Assert.False() Failure\r\nExpected: False\r\nActual:   True"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Pvp.DuelParticipantOwnershipTests.CountdownCannotCrossAnOriginalOwnerChange(changed: \"session\")",
+          "Message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [ServerDuelStart { ChallengerUnitId = 101, OpponentUnitId = 202 }]"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Pvp.DuelParticipantOwnershipTests.CountdownCannotCrossAnOriginalOwnerChange(changed: \"binding\")",
+          "Message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [ServerDuelStart { ChallengerUnitId = 101, OpponentUnitId = 202 }]"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Pvp.DuelParticipantOwnershipTests.ReusedUnitIdDoesNotGrantCombatPermissionOrTheDuelingPrerequisite",
+          "Message": "Assert.False() Failure\r\nExpected: False\r\nActual:   True"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Pvp.DuelParticipantOwnershipTests.ParsedReplacementRequestCannotTakeAnOriginalParticipantsDuel(request: \"forfeit\")",
+          "Message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [ServerDuelResult { LoserUnitId = 202, Reason = Forfeited2, WinnerUnitId = 101 }]"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Pvp.DuelParticipantOwnershipTests.ParsedReplacementRequestCannotTakeAnOriginalParticipantsDuel(request: \"decline\")",
+          "Message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [ServerDuelResult { LoserUnitId = 0, Reason = DeclinedRequest, WinnerUnitId = 0 }]"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Pvp.DuelParticipantOwnershipTests.CountdownCannotCrossAnOriginalOwnerChange(changed: \"epoch\")",
+          "Message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [ServerDuelStart { ChallengerUnitId = 101, OpponentUnitId = 202 }]"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Pvp.DuelParticipantOwnershipTests.MovingBothPlayersToAnotherMapDoesNotCarryTheDuelWithThem",
+          "Message": "Assert.False() Failure\r\nExpected: False\r\nActual:   True"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Pvp.DuelParticipantOwnershipTests.ParsedReplacementRequestCannotTakeAnOriginalParticipantsDuel(request: \"accept\")",
+          "Message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [ServerDuelCountdown { ChallengerUnitId = 101, OpponentUnitId = 202 }]"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Pvp.DuelParticipantOwnershipTests.CountdownCannotCrossAnOriginalOwnerChange(changed: \"admission\")",
+          "Message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [ServerDuelStart { ChallengerUnitId = 101, OpponentUnitId = 202 }]"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Pvp.DuelParticipantOwnershipTests.DisconnectForAReusedIdCannotCancelAnotherPlayersDuel",
+          "Message": "Assert.True() Failure\r\nExpected: True\r\nActual:   False"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Pvp.DuelParticipantOwnershipTests.DefeatRequiresBothDistinctOriginalParticipants(changed: \"loser\")",
+          "Message": "Assert.False() Failure\r\nExpected: False\r\nActual:   True"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Pvp.DuelParticipantOwnershipTests.DefeatRequiresBothDistinctOriginalParticipants(changed: \"winner\")",
+          "Message": "Assert.False() Failure\r\nExpected: False\r\nActual:   True"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Pvp.DuelParticipantOwnershipTests.CountdownCannotCrossAnOriginalOwnerChange(changed: \"queue\")",
+          "Message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [ServerDuelStart { ChallengerUnitId = 101, OpponentUnitId = 202 }]"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Pvp.DuelParticipantOwnershipTests.AReboundSecondRecipientCannotReceiveTheRestOfAChallengeFanout",
+          "Message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [ServerDuelChallenge { ChallengerUnitId = 101, OpponentUnitId = 202 }]"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Pvp.DuelParticipantOwnershipTests.CountdownCannotCrossAnOriginalOwnerChange(changed: \"account\")",
+          "Message": "Assert.Empty() Failure: Collection was not empty\r\nCollection: [ServerDuelStart { ChallengerUnitId = 101, OpponentUnitId = 202 }]"
+        }
+      ]
+    },
+    {
+      "Name": "Initial ownership",
+      "Artifact": {
+        "Path": "artifacts/duel-participant-ownership/ownership/ownership.trx",
+        "Bytes": 25250,
+        "SHA256": "af8e92d2b60167477bcac10f21c9c43b2ed2e626109ab196c18cf4e73c94b073"
+      },
+      "Counters": {
+        "total": "16",
+        "executed": "16",
+        "passed": "16",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "Failures": []
+    },
+    {
+      "Name": "Real-player fixture failure",
+      "Artifact": {
+        "Path": "artifacts/duel-participant-ownership/combat/combat.trx",
+        "Bytes": 35521,
+        "SHA256": "9626b1dc97849bdbd24da61eec63a8a12dc1d74909a9578e2c3376a4e1a20aa2"
+      },
+      "Counters": {
+        "total": "20",
+        "executed": "20",
+        "passed": "18",
+        "failed": "2",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "Failures": [
+        {
+          "Test": "NexusForever.Game.Tests.Pvp.DuelParticipantOwnershipTests.ParsedRealPlayerDuelControlsActualCombatPermissionThroughOriginalMapAdmission(changeAdmission: False)",
+          "Message": "System.NullReferenceException : Object reference not set to an instance of an object."
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Pvp.DuelParticipantOwnershipTests.ParsedRealPlayerDuelControlsActualCombatPermissionThroughOriginalMapAdmission(changeAdmission: True)",
+          "Message": "System.NullReferenceException : Object reference not set to an instance of an object."
+        }
+      ]
+    },
+    {
+      "Name": "Integrated before source guard",
+      "Artifact": {
+        "Path": "artifacts/duel-participant-ownership/integrated/integrated.trx",
+        "Bytes": 33014,
+        "SHA256": "9c15486cb704e31398430fb95e06af5ddd2e956e599974b7e661b793e7de2629"
+      },
+      "Counters": {
+        "total": "21",
+        "executed": "21",
+        "passed": "21",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "Failures": []
+    },
+    {
+      "Name": "Related before source guard",
+      "Artifact": {
+        "Path": "artifacts/duel-participant-ownership/related/related.trx",
+        "Bytes": 271604,
+        "SHA256": "29452f147aaf4bc9c8fb055d1de996ff987caad8d8dfc33d918e860748c43b15"
+      },
+      "Counters": {
+        "total": "134",
+        "executed": "134",
+        "passed": "134",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "Failures": []
+    },
+    {
+      "Name": "Final host negotiation aborted",
+      "Artifact": {
+        "Path": "artifacts/duel-participant-ownership/final/final.trx",
+        "Bytes": 7134,
+        "SHA256": "155fbde145778c708cf9d9c038f73443dfb72875ca5d8a9142830384fca29ddd"
+      },
+      "Counters": {
+        "total": "0",
+        "executed": "0",
+        "passed": "0",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "Failures": []
+    },
+    {
+      "Name": "Final combined scope",
+      "Artifact": {
+        "Path": "artifacts/duel-participant-ownership/final-retry/final-retry.trx",
+        "Bytes": 277580,
+        "SHA256": "d3d2d39ff4effd102458df61e1562d4324f875719079e0ad80349594ddb1ab91"
+      },
+      "Counters": {
+        "total": "138",
+        "executed": "138",
+        "passed": "138",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "Failures": []
+    }
+  ],
+  "NewCases": 25,
+  "RealPlayerCombatPermissionCases": 2,
+  "FinalRelatedCases": 138,
+  "OwningBuilds": [
+    {
+      "Project": "NexusForever.Game",
+      "Result": "Passed; zero warnings/errors",
+      "Log": {
+        "Path": "artifacts/duel-participant-ownership/build-NexusForever.Game.log",
+        "Bytes": 2432,
+        "SHA256": "e596666f38752f75807459aed1b3ecd9e8b0f31db2ffb3c21015416711015df7"
+      }
+    },
+    {
+      "Project": "NexusForever.WorldServer",
+      "Result": "Passed; zero warnings/errors",
+      "Log": {
+        "Path": "artifacts/duel-participant-ownership/build-NexusForever.WorldServer.log",
+        "Bytes": 3407,
+        "SHA256": "0c12e852699ed01e2a8717676358a5631af07c98dd04ad61a7d13300840f4929"
+      }
+    }
+  ],
+  "OtherArtifacts": [
+    {
+      "Path": "artifacts/duel-participant-ownership/source-session-baseline.log",
+      "Bytes": 57,
+      "SHA256": "5ae01532d593d82190e3cab839d5e5331506b2566be288a60c32ac69f604e3f7"
+    },
+    {
+      "Path": "artifacts/duel-participant-ownership/final.log",
+      "Bytes": 7489,
+      "SHA256": "0341989bf9474d0c3c5243339c19b89363dd550a1d2eae7b434752746bce2520"
+    },
+    {
+      "Path": "artifacts/duel-participant-ownership/final-retry.log",
+      "Bytes": 457,
+      "SHA256": "bcf5966c1b21d01e9b2b41605aaa4d14782d38b5b8d09780a4775ba212a830d8"
+    }
+  ],
+  "FinalFilter": "FullyQualifiedName~DuelParticipantOwnershipTests|FullyQualifiedName~DuelManagerTests|FullyQualifiedName~PvpFlagCooldownTests|FullyQualifiedName~UnitEntityDamageResultTests|FullyQualifiedName~SpellDamagePermissionTests",
+  "Review": [
+    {
+      "Axis": "Behavior/specification",
+      "Reviewer": "Primary agent; no delegation",
+      "FinalFindings": 0,
+      "Scope": "Concrete pair identity; captured original session/account/queue/map/admission; parsed public requests; real Player.CanAttack; original terminal retention and reentrant registration; existing countdown/result/achievement policy preserved.",
+      "Corrections": "Four source-session handler guards added after inspection; four final controls pass. Their attempted baseline host failed before execution and is not behavior evidence."
+    },
+    {
+      "Axis": "Repository/standards",
+      "Reviewer": "Primary agent; no delegation",
+      "FinalFindings": 0,
+      "Scope": "Existing Game/World owners and optional map-admission interface; nonblocking added ownership reads; no new schema/config/authoring dependency, protocol or general-purpose framework; scoped builds/tests only."
+    }
+  ],
+  "QualificationFailures": [
+    "Original16 behavioral failures on published parent",
+    "Two real-Player cases initially failed because fixture visibility dictionary was uninitialized; fixed fixture only",
+    "Foreign-source baseline host fatal double-mapped-memory release; no TRX or executed failure claimed",
+    "Intermediate final run aborted after90-second protocol negotiation; final no-build rerun passes138 on compiled current graph"
+  ],
+  "Limits": [
+    "Transient duels and retained defeat only; no new durable receipt or SQL change",
+    "Real Player.CanAttack and parsed forfeit/admission exercised; damage/death/respawn producer lifecycle not newly exercised",
+    "Fixture achievement managers/map/bootstrap/socket adapters; no SQL achievement settlement claim",
+    "No duel-attempt nonce or new replay/ack policy",
+    "Cross-map snapshot/actor concurrency and existing preflight/callback locking not generally redesigned",
+    "Arbitrary achievement/packet callback failure recovery remains open",
+    "Observer/PvP eligibility/reward/stat policy remains open",
+    "Provider/process restart/socket/deployment/native/retail remain open",
+    "No full solution build/full test suite",
+    "Native client and Computer Use remain stopped"
+  ]
+}

@@ -8,7 +8,7 @@ using NexusForever.Network.World.Message.Model.Pvp;
 
 namespace NexusForever.Game.Pvp
 {
-    public sealed class DuelManager : IDuelManager
+    public sealed partial class DuelManager : IDuelManager
     {
         private const double ChallengeTimeoutSeconds = 30d;
         private const double CountdownSeconds = 3d;
@@ -34,6 +34,10 @@ namespace NexusForever.Game.Pvp
             public double Timer { get; set; }
             public bool LeftAreaWarningSent { get; set; }
             public double LeashTimer { get; set; }
+            public DuelParticipant ChallengerOwner { get; init; }
+            public DuelParticipant OpponentOwner { get; init; }
+            public IPlayer PendingWinner { get; set; }
+            public IPlayer PendingLoser { get; set; }
         }
 
         private readonly object syncRoot = new();
@@ -46,8 +50,15 @@ namespace NexusForever.Game.Pvp
             if (failure.HasValue)
                 return failure;
 
+            var challengerOwner = DuelParticipant.Capture(challenger);
+            var opponentOwner = DuelParticipant.Capture(opponent);
+            if (challengerOwner == null || opponentOwner == null)
+                return DuelFailureReason.CannotDuelRightNow;
+
             lock (syncRoot)
             {
+                if (challengerOwner.Ownership() != DuelOwnership.Current || opponentOwner.Ownership() != DuelOwnership.Current)
+                    return DuelFailureReason.CannotDuelRightNow;
                 failure = GetSessionFailure(challenger, opponent);
                 if (failure.HasValue)
                     return failure;
@@ -56,6 +67,8 @@ namespace NexusForever.Game.Pvp
                 {
                     Challenger = challenger,
                     Opponent   = opponent,
+                    ChallengerOwner = challengerOwner,
+                    OpponentOwner = opponentOwner,
                     State      = DuelState.Pending,
                     Timer      = ChallengeTimeoutSeconds
                 };
@@ -81,6 +94,8 @@ namespace NexusForever.Game.Pvp
                 if (!TryGetSession(player, out DuelSession session))
                     return DuelFailureReason.CannotDuelRightNow;
 
+                if (GetOwnership(session) != DuelOwnership.Current)
+                    return DuelFailureReason.CannotDuelRightNow;
                 if (session.State != DuelState.Pending || session.Opponent.Guid != player.Guid)
                     return DuelFailureReason.CannotDuelRightNow;
 
@@ -111,6 +126,8 @@ namespace NexusForever.Game.Pvp
                 if (!TryGetSession(player, out DuelSession session))
                     return false;
 
+                if (GetOwnership(session) != DuelOwnership.Current)
+                    return false;
                 if (session.State != DuelState.Pending || session.Opponent.Guid != player.Guid)
                     return false;
 
@@ -126,6 +143,9 @@ namespace NexusForever.Game.Pvp
                 if (!TryGetSession(player, out DuelSession session))
                     return false;
 
+                if (session.PendingWinner != null) return false;
+                if (GetOwnership(session) != DuelOwnership.Current)
+                    return false;
                 if (session.State != DuelState.Active)
                     return false;
 
@@ -141,7 +161,8 @@ namespace NexusForever.Game.Pvp
         public bool IsDueling(IPlayer player)
         {
             lock (syncRoot)
-                return TryGetSession(player, out DuelSession session) && session.State == DuelState.Active;
+                return TryGetSession(player, out DuelSession session) && session.State == DuelState.Active
+                    && GetOwnership(session) == DuelOwnership.Current;
         }
 
         public bool AreDueling(IPlayer player, IPlayer target)
@@ -151,9 +172,9 @@ namespace NexusForever.Game.Pvp
 
             lock (syncRoot)
             {
-                return sessionsByPlayer.TryGetValue(player.Guid, out DuelSession session)
+                return !ReferenceEquals(player, target) && TryGetSession(player, out DuelSession session)
                     && session.State == DuelState.Active
-                    && IsParticipant(session, target);
+                    && IsParticipant(session, target) && GetOwnership(session) == DuelOwnership.Current;
             }
         }
 
@@ -164,12 +185,23 @@ namespace NexusForever.Game.Pvp
 
             lock (syncRoot)
             {
-                if (!sessionsByPlayer.TryGetValue(loser.Guid, out DuelSession session))
+                if (ReferenceEquals(loser, winner) || !TryGetSession(loser, out DuelSession session))
                     return false;
 
                 if (session.State != DuelState.Active || !IsParticipant(session, winner))
                     return false;
 
+                if (session.PendingWinner != null)
+                    return ReferenceEquals(session.PendingWinner, winner) && ReferenceEquals(session.PendingLoser, loser);
+                var ownership = GetOwnership(session);
+                if (ownership == DuelOwnership.Stale) return false;
+                if (ownership == DuelOwnership.Busy)
+                {
+                    // A lethal hit is not replayed by Player. Retain its original
+                    // participants until map ownership can be checked without waiting.
+                    session.PendingWinner = winner; session.PendingLoser = loser;
+                    return true;
+                }
                 Finish(session, winner, loser, DuelFinishReason.Defeated);
                 return true;
             }
@@ -182,7 +214,7 @@ namespace NexusForever.Game.Pvp
 
             lock (syncRoot)
             {
-                if (!sessionsByPlayer.TryGetValue(player.Guid, out DuelSession session))
+                if (!TryGetSession(player, out DuelSession session))
                     return;
 
                 Finish(session, session.Challenger, session.Opponent, DuelFinishReason.DuelCancelled);
@@ -195,6 +227,19 @@ namespace NexusForever.Game.Pvp
             {
                 foreach (DuelSession session in sessions.ToArray())
                 {
+                    if (!IsRegistered(session)) continue;
+                    var ownership = GetOwnership(session);
+                    if (ownership == DuelOwnership.Busy) continue;
+                    if (ownership == DuelOwnership.Stale)
+                    {
+                        Finish(session, session.Challenger, session.Opponent, DuelFinishReason.DuelCancelled);
+                        continue;
+                    }
+                    if (session.PendingWinner != null)
+                    {
+                        Finish(session, session.PendingWinner, session.PendingLoser, DuelFinishReason.Defeated);
+                        continue;
+                    }
                     if (!IsSessionStillValid(session))
                     {
                         Finish(session, session.Challenger, session.Opponent, DuelFinishReason.DuelCancelled);
@@ -309,20 +354,20 @@ namespace NexusForever.Game.Pvp
         private bool TryGetSession(IPlayer player, out DuelSession session)
         {
             session = null;
-            return player != null && sessionsByPlayer.TryGetValue(player.Guid, out session);
+            return player != null && sessionsByPlayer.TryGetValue(player.Guid, out session) && IsParticipant(session, player);
         }
 
         private static bool IsParticipant(DuelSession session, IPlayer player)
         {
-            return session.Challenger.Guid == player.Guid || session.Opponent.Guid == player.Guid;
+            return ReferenceEquals(session.Challenger, player) || ReferenceEquals(session.Opponent, player);
         }
 
         private static IPlayer GetOpponent(DuelSession session, IPlayer player)
         {
-            if (session.Challenger.Guid == player.Guid)
+            if (ReferenceEquals(session.Challenger, player))
                 return session.Opponent;
 
-            if (session.Opponent.Guid == player.Guid)
+            if (ReferenceEquals(session.Opponent, player))
                 return session.Challenger;
 
             return null;
@@ -330,7 +375,7 @@ namespace NexusForever.Game.Pvp
 
         private void Finish(DuelSession session, IPlayer winner, IPlayer loser, DuelFinishReason reason)
         {
-            RemoveSession(session);
+            if (!RemoveSession(session)) return;
 
             UpdateDuelAchievements(winner, loser, reason);
 
@@ -358,17 +403,27 @@ namespace NexusForever.Game.Pvp
             winner.AchievementManager.CheckAchievements(winner, AchievementType.DuelWin, 0u);
         }
 
-        private void RemoveSession(DuelSession session)
+        private bool RemoveSession(DuelSession session)
         {
-            sessions.Remove(session);
-            sessionsByPlayer.Remove(session.Challenger.Guid);
-            sessionsByPlayer.Remove(session.Opponent.Guid);
+            if (!sessions.Remove(session)) return false;
+            RemoveOwner(session.ChallengerOwner); RemoveOwner(session.OpponentOwner);
+            return true;
+            void RemoveOwner(DuelParticipant owner)
+            {
+                if (sessionsByPlayer.TryGetValue(owner.UnitId, out var current) && ReferenceEquals(current, session))
+                    sessionsByPlayer.Remove(owner.UnitId);
+            }
         }
 
-        private static void SendToParticipants(DuelSession session, IWritable message)
+        private void SendToParticipants(DuelSession session, IWritable message)
         {
-            session.Challenger.Session?.EnqueueMessageEncrypted(message);
-            session.Opponent.Session?.EnqueueMessageEncrypted(message);
+            Send(session.ChallengerOwner); Send(session.OpponentOwner);
+            void Send(DuelParticipant owner)
+            {
+                if (owner.Ownership() != DuelOwnership.Current) return;
+                if (sessionsByPlayer.TryGetValue(owner.UnitId, out var current) && !ReferenceEquals(current, session)) return;
+                owner.Session.EnqueueMessageEncrypted(message);
+            }
         }
     }
 }

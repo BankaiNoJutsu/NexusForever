@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[Original duel participants](Decomp/Analysis/DUEL_PARTICIPANT_OWNERSHIP.md) now
+own parsed requests, combat permission, cancellation and results across session,
+account, map and admission changes. Sixteen baseline failures are fixed;25 new/
+138 related cases pass, including two real Player combat-permission controls.
+Busy-map defeat retention and reentrant replacement pass. Full physical/native
+defeat, observer/reward policy and broader F-015 remain open; the Goal continues.
+
 [Friendship setting ownership](Decomp/Analysis/FRIENDSHIP_SETTING_OWNERSHIP.md)
 now separates the character friend lock from the account stranger-invite setting,
 using exact native field/binding evidence. Character flags retain failed-save
