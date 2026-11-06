@@ -39,3 +39,23 @@ recoverable from the client.
 referencing function (0x1405e8230). No server semantics are present.
 
 Evidence tier: client UI Lua text and Ghidra string cross-references; no Source change, no test.
+
+## Native decompilation of the reward-table builder (2026-11-07)
+
+Ghidra 12.1.4 decompilation of `FUN_1406ba350` (the function that builds the Lua `tReward` table; it references the strings
+`nRewardIdx`, `tRewardChoices`, `nChoiceIdx`, `bIsClaimed`, `bCanClaim`, `nCost`, `nNumRewardChoices` and `idReward`):
+- It walks the reward's choice list in 12-byte records (three 32-bit values: type, id, count), the same triple the table stores
+  as `RewardTrackRewardTypeEnum0n`, `RewardChoiceId0n`, `RewardChoiceCount0n`. Record type 0 becomes an `itemReward`
+  (an item object), type 1 an `accountItemReward` (account item object), and any other type is reported as an error
+  (call with code 0x74). This independently confirms the enum classification derived from the raw table in
+  [CONTRACT_FULL_TABLE_CLASSIFICATION_20261106.md](CONTRACT_FULL_TABLE_CLASSIFICATION_20261106.md): enum 0 = Item2,
+  enum 1 = AccountItem.
+- `nRewardIdx` is the zero-based index of the reward in the track's reward list (the same value the Lua compares with
+  `GetNumRewards() - 1` for the final milestone).
+- The choice loop counter is zero-based and is held next to the per-choice table being built; `nChoiceIdx` is therefore most
+  likely the zero-based position of the choice in the reward's choice list. The `nChoiceIdx` assignment itself sits in a helper
+  that was not read, so this is an inference, not a confirmed field mapping. For Contract tracks 4 and 5 every row has three
+  non-empty choices, so list position and table column (00, 01, 02) coincide, whether or not the native list skips empty slots.
+
+Tier: native decompilation of presentation code. It supports the table classification and the zero-based choice index; it does not
+show reset edge rules or any server-side behavior.
