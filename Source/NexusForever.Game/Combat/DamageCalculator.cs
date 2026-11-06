@@ -131,7 +131,8 @@ namespace NexusForever.Game.Combat
             uint rawHeal = CalculateBaseDamage(caster, target, effect);
             rawHeal = (uint)(rawHeal
                 * caster.GetPropertyValue(Property.HealingMultiplierOutgoing)
-                * target.GetPropertyValue(Property.HealingMultiplierIncoming));
+                * target.GetPropertyValue(Property.HealingMultiplierIncoming)
+                * target.GetPersonalHealingMultiplier(caster));
 
             long missingHealth = Math.Max(0L, (long)target.MaxHealth - target.Health);
             uint availableHealing = (uint)Math.Min(rawHeal, missingHealth);

@@ -2268,6 +2268,19 @@ namespace NexusForever.Game.Spell
                     if (effect.PersonalDmgHealMod == null)
                         return null;
 
+                    if (effect.PersonalDmgHealMod.ModifierType == 12u)
+                    {
+                        ISpellPropertyInstance instance = info.PersonalHealingInstance;
+                        if (instance == null)
+                            return null;
+
+                        return () =>
+                        {
+                            if (target.RemoveSpellPropertyInstance(instance))
+                                SendRemoveBuff(target.Guid);
+                        };
+                    }
+
                     if (!SpellHandler.TryResolvePersonalDmgHealModProperty(effect.PersonalDmgHealMod, out Property personalProperty, out _))
                         return null;
 

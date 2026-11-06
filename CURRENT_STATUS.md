@@ -1,5 +1,13 @@
 # NexusForever Feature Restoration - Current Status
 
+[Personal healing scope](Decomp/Analysis/HEALING_PERSONAL_MODIFIER_EVIDENCE.md)
+now limits supported kind12 bonuses to the applying caster and affected target,
+with exact-instance expiry/removal. Recovered rows and direct tooltips close the
+missing scope input. Three baseline failures are fixed;26 new/214 related cases
+and15 actual-catalog rows pass; the owning Game build is clean. Native execution,
+stacking, other kinds/modes, shield applicability and Focus remain open. Broader
+restoration continues; native client and Computer Use remain stopped.
+
 [PvP cooldown save retry](Decomp/Analysis/PVP_COOLDOWN_SAVE_RETRY.md) now retains
 pending expiry/cancellation across unconfirmed Character saves and preserves later
 requests. Eleven baseline failures are fixed;183 scoped SQLite,24 final PvP and16

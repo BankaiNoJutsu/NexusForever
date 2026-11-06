@@ -1,5 +1,123 @@
 # Healing personal-modifier evidence boundary
 
+## Caster-scoped health healing — 6 November 2026
+
+Implemented the supported effect151 kind12/mode1 caster–target boundary.
+Three baseline producer/ownership controls failed: a foreign healer received
+120 instead of100, a second caster replaced the first caster's registration,
+and health-only personal state leaked into shield healing. All26 new cases and
+214 selected related cases now pass. Fifteen recovered catalog rows pass the
+same two-caster, global-property, shield and isolated-removal controls using
+their actual rows. This is Source/actual-catalog qualification, not native or
+retail completion. The overall restoration Goal remains active.
+
+### Recovered primary inputs
+
+The existing owning GameTable/TextTable readers loaded Spell4Effects, Spell4,
+Spell4Base, SpellEffectType and en-US.bin from the recovered asset cache. Each
+input was checked against its retained asset manifest; hashes and extents are
+in [the portable record](coverage/healing-personal-scope-20261106.json).
+The Spell4Effects hash matches the earlier retained AD49CB47... input.
+
+All145 effect151 rows are present. Nine distinct kinds occur; all15 kind12
+rows use mode1, float DataBits02, zero DataBits03..09 and zero effect-group list.
+SpellEffectType151 declares float DataType02 (0), independently corroborating
+the bit cast. The relevant joins are:
+
+| Family | Effect IDs | Spell IDs | Multiplier | Lifetime |
+| --- | --- | --- | --- | --- |
+| Fusion Probe |231375,231412–231415|88057–88061|1.2|duration0, CancelOnly flag2|
+| Sigil of Recovery |231262–231266|88130–88134|1.1|3000ms, flags0|
+| Sigil of Recovery |231315,231317,231319,231321,231323|88350–88354|1.1|3000ms, flags0|
+
+English text767922 directly references effect231262 and describes increased
+healing by the owner onto allies affected by Sigil of Recovery. Text768078
+(and duplicate769875) directly references231375 and the owner's Fusion Probe.
+Target icon texts768160–768164 each bind their corresponding Fusion Probe
+effect and explicitly identify healing received from that caster. These direct
+row/text joins close the previously missing independent caster-scope input;
+they are shipped client text, not merely upstream's interpretation.
+They do not establish server stacking arbitration or native execution.
+
+Fresh target-free REA PE inspection binds
+D:/WildStar/Client64/WildStar64.exe (13,927,576bytes) to SHA256
+231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5,
+Evidence ev_3a002aa3d25d9d846a80c84d9d2d23eb73db439235129acc4a5501029628a320.
+PE inspection establishes identity only. The existing exact-hash Ghidra
+validator fragment at0x140567af0 was reused and agrees with the bounded
+instruction mapping below; no new native execution or provider-readiness
+attempt occurred. No installation, launch or attach was needed.
+
+[#595](https://github.com/NexusForever/NexusForever/pull/595) was refreshed:
+still open/draft at ba30ae14513461ab6bd83d691543b6a155846e1c, base
+3588ca5f578387928e6593e3808bf15f6192b094. Its kind12/mode1 proposal agrees
+with the recovered rows/text. The implementation uses this fork's existing
+Heal producer and tracked state rather than importing its architecture.
+Bounded online searches found no usable final-build primary witness for
+stacking/Focus; they supplied no policy used here.
+
+### Owning behavior
+
+UnitEntity stores personal registrations in its existing tracked property-state
+collection, with the original caster object as scope. They are excluded from
+whole-unit property calculation and read only by CalculateHealing for that
+caster. A recycled GUID or different target cannot inherit the bonus.
+A second caster's instance coexists; reapplication replaces only the same
+caster/spell/effect tuple. Existing multiplicative aggregation is retained for
+applicable registrations, without claiming retail arbitration.
+
+The effect info retains the concrete ISpellPropertyInstance. Lifetime removal
+uses reference identity; an old or rejected effect cannot remove a replacement
+with a reused numeric ID. Existing tracked dispel/spell removal sees the same
+registration. Kind12 cannot fall back to the global property mapper.
+Unknown modes, nonzero extra operands/group-list, missing caster, and invalid
+multipliers are rejected. Other effect151 kinds retain their separate legacy
+behavior and unresolved evidence boundaries.
+
+Global incoming/outgoing UnitPropertyModifier behavior, health cap, healing
+absorption, overheal and combat logs remain in the established producer.
+Personal health-healing state is not promoted into shield healing without a
+shield-specific witness. Existing global shield modifiers still apply.
+No Focus seed, AMP auto-application, migration or runtime authoring query changed.
+
+### Verification and review
+
+- Baseline:3 failures on publication parent2c8e0603, retained under
+  artifacts/healing-personal-scope/baseline.
+- Final selected Game.Tests graph:214 passed,0 failed/0 skipped (2s execution),
+  including26 new cases. Covers real UnitEntity/Heal calculator, live-health
+  Heal handler, two casters, replacement/removal, rejection, global modifiers,
+  absorption and related AMP, conversion, proc-lifetime and channel controls.
+  Channel tests qualify existing dispatcher cadence, not native healing ticks.
+- Actual-catalog runner:15/15 kind12 rows pass; actual modifier rows with a
+  controlled100-point heal, not a complete real-spell coefficient/targeting cast.
+- Incremental owning Game build:0 warnings/errors,3.89s. The selected test graph
+  emits the existing ASPIRE010 warning; no full solution or full suite was run.
+- Primary-agent consolidated spec review: supported row/text meaning matches
+  caster scope; stale removal and ordinary property semantics are preserved.
+  Standards review: bounded owning changes, no authoring database access, no
+  unrelated files or credentials. No remaining actionable findings.
+
+Source and owning/test/runner DLL hashes are in the portable record. Raw REA,
+upstream patches, row/text audit, failed controls, TRX and runner stay under
+artifacts/healing-personal-scope and are not transferred by Git.
+
+### Remaining witness
+
+Native/UI execution, real spell targeting/tier stacking, full cast/tick lifetime,
+death/map-transition lifecycle, shield-specific personal applicability, other
+kind/mode semantics and Focus rates remain open. One kind13 row is a named test
+spell, with extra DataBits04=1; its tooltip does not justify changing all kind13
+behavior. Do not infer Focus1000 or recovery0.005/0.02 from this result.
+
+Next integrated work should select another available gameplay producer from the
+canonical remaining-work ledger, or close one of these questions with a new
+specific primary witness. Do not repeat the recovered-input search, migrate
+Focus seeds, or treat this milestone as completed spell/full restoration.
+Computer Use/native client remain stopped.
+
+## Historical evidence checkpoints
+
 ## Build 16042 effect 151 row validator
 
 4 November 2026. The retained WildStar64 executable has SHA-256

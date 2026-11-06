@@ -149,6 +149,11 @@ namespace NexusForever.Game.Abstract.Entity
         /// </summary>
         void AddSpellModifierProperty(ISpellPropertyModifier modifier, uint effectId, uint spell4Id, uint spell4EffectId, uint castingId);
 
+        /// <summary>Track a health-healing bonus owned by the applying caster and concrete effect.</summary>
+        ISpellPropertyInstance AddPersonalHealingModifier(IUnitEntity caster, float multiplier, uint effectId, uint spell4Id, uint spell4EffectId, uint castingId) => null;
+        /// <summary>Return the personal health-healing factor for this original caster object.</summary>
+        float GetPersonalHealingMultiplier(IUnitEntity caster) => 1f;
+
         /// <summary>
         /// Add an acyclic live property conversion owned by a concrete spell effect instance.
         /// </summary>

@@ -1,0 +1,413 @@
+{
+  "Date": "2026-11-06",
+  "BaseHEAD": "2c8e0603cd06118806c370e49042a6aaa60ac6a2",
+  "Outcome": "Supported kind12 caster-target health healing implemented; full restoration unfinished",
+  "Client": {
+    "Build": 16042,
+    "Bytes": 13927576,
+    "SHA256": "231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5",
+    "REAIdentityEvidence": "ev_3a002aa3d25d9d846a80c84d9d2d23eb73db439235129acc4a5501029628a320",
+    "NativeEvidence": "Reused exact-hash 0x140567af0 validator fragment; identity/row validation only, no runtime execution"
+  },
+  "CatalogInputs": [
+    {
+      "File": "Spell4Effects.tbl",
+      "SHA256": "AD49CB47AF98A4B9B85E5F715AF85545A8B286FB3CA1F26AD8CF8EA09097B3ED",
+      "Bytes": 22941104
+    },
+    {
+      "File": "Spell4.tbl",
+      "SHA256": "303C03CF9EE268B1556CC65C2B56C62D21D083504A7A16EAC2CAC80D34F1914D",
+      "Bytes": 35688224
+    },
+    {
+      "File": "Spell4Base.tbl",
+      "SHA256": "34E3FAEEEE7C4B9889B808A36EC69B40218EBE013CBF95E9E26FC6440005C93A",
+      "Bytes": 8346368
+    },
+    {
+      "File": "SpellEffectType.tbl",
+      "SHA256": "AD4F2B7322CA64EABD692402E0B762AEAD48B84CDED36E3A56F9385C549A4570",
+      "Bytes": 8576
+    },
+    {
+      "File": "en-US.bin",
+      "SHA256": "588E385A0E8DEE8B92DC79018070A17E78D3EFD535B948224702EFFECAFA5CF7",
+      "Bytes": 41690224
+    }
+  ],
+  "Effect151Rows": 145,
+  "Kind12Rows": [
+    {
+      "EffectId": 231375,
+      "SpellId": 88057,
+      "Mode": 1,
+      "Multiplier": 1.2,
+      "DurationMs": 0,
+      "Flags": 2
+    },
+    {
+      "EffectId": 231412,
+      "SpellId": 88058,
+      "Mode": 1,
+      "Multiplier": 1.2,
+      "DurationMs": 0,
+      "Flags": 2
+    },
+    {
+      "EffectId": 231413,
+      "SpellId": 88059,
+      "Mode": 1,
+      "Multiplier": 1.2,
+      "DurationMs": 0,
+      "Flags": 2
+    },
+    {
+      "EffectId": 231414,
+      "SpellId": 88060,
+      "Mode": 1,
+      "Multiplier": 1.2,
+      "DurationMs": 0,
+      "Flags": 2
+    },
+    {
+      "EffectId": 231415,
+      "SpellId": 88061,
+      "Mode": 1,
+      "Multiplier": 1.2,
+      "DurationMs": 0,
+      "Flags": 2
+    },
+    {
+      "EffectId": 231262,
+      "SpellId": 88130,
+      "Mode": 1,
+      "Multiplier": 1.1,
+      "DurationMs": 3000,
+      "Flags": 0
+    },
+    {
+      "EffectId": 231263,
+      "SpellId": 88131,
+      "Mode": 1,
+      "Multiplier": 1.1,
+      "DurationMs": 3000,
+      "Flags": 0
+    },
+    {
+      "EffectId": 231264,
+      "SpellId": 88132,
+      "Mode": 1,
+      "Multiplier": 1.1,
+      "DurationMs": 3000,
+      "Flags": 0
+    },
+    {
+      "EffectId": 231265,
+      "SpellId": 88133,
+      "Mode": 1,
+      "Multiplier": 1.1,
+      "DurationMs": 3000,
+      "Flags": 0
+    },
+    {
+      "EffectId": 231266,
+      "SpellId": 88134,
+      "Mode": 1,
+      "Multiplier": 1.1,
+      "DurationMs": 3000,
+      "Flags": 0
+    },
+    {
+      "EffectId": 231315,
+      "SpellId": 88350,
+      "Mode": 1,
+      "Multiplier": 1.1,
+      "DurationMs": 3000,
+      "Flags": 0
+    },
+    {
+      "EffectId": 231317,
+      "SpellId": 88351,
+      "Mode": 1,
+      "Multiplier": 1.1,
+      "DurationMs": 3000,
+      "Flags": 0
+    },
+    {
+      "EffectId": 231319,
+      "SpellId": 88352,
+      "Mode": 1,
+      "Multiplier": 1.1,
+      "DurationMs": 3000,
+      "Flags": 0
+    },
+    {
+      "EffectId": 231321,
+      "SpellId": 88353,
+      "Mode": 1,
+      "Multiplier": 1.1,
+      "DurationMs": 3000,
+      "Flags": 0
+    },
+    {
+      "EffectId": 231323,
+      "SpellId": 88354,
+      "Mode": 1,
+      "Multiplier": 1.1,
+      "DurationMs": 3000,
+      "Flags": 0
+    }
+  ],
+  "DirectTextIds": [
+    767922,
+    768078,
+    768160,
+    768161,
+    768162,
+    768163,
+    768164,
+    769875
+  ],
+  "Upstream": {
+    "PR": "https://github.com/NexusForever/NexusForever/pull/595",
+    "State": "open draft",
+    "Head": "ba30ae14513461ab6bd83d691543b6a155846e1c",
+    "Base": "3588ca5f578387928e6593e3808bf15f6192b094"
+  },
+  "Source": [
+    {
+      "Path": "Source/NexusForever.Game.Abstract/Entity/IUnitEntity.cs",
+      "SHA256": "FF422AFB7F277BE8BE2E496891093B69697C0F6F951B339647479B1AB4B33669"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Abstract/Spell/ISpellTargetEffectInfo.cs",
+      "SHA256": "F146281075FD1D6FD0C5162387C3DE75BE30B0AD64F05A8D426D76E543BD0F08"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Combat/DamageCalculator.cs",
+      "SHA256": "C7A85AFEB3CBFB3F2308E3DA57B6F1F726DFF5B0AF98DCAE4BAC262AB6329268"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Entity/UnitEntity.cs",
+      "SHA256": "50FF75BA37EEB4C4F3DDB9A4EA43D3FF56C63123397076B8371AD0511C060894"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Spell/Spell.cs",
+      "SHA256": "F53E8C78CD6229F40461BD0BFEEF66B88371178EF87598DE01B66C202A13F68B"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Spell/SpellEffectHandler.cs",
+      "SHA256": "B279917F1ACAA83E13E6AFE81497B6E18DA853ED420F506281B37ACCEE4FF0AC"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Spell/SpellTargetInfo.cs",
+      "SHA256": "9CC2634E829D2A35C2F6D8F21CCBB2661881AB66594129D6C6BA5199E4746A8D"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Spell/PersonalHealingScopeTests.cs",
+      "SHA256": "68EB7142D9550A52808143050543BB0D2E8EAC5A789E58E20B302F335AE23223"
+    }
+  ],
+  "Binaries": [
+    {
+      "Path": "Source/NexusForever.Game/bin/Debug/net10.0/NexusForever.Game.dll",
+      "SHA256": "4B04D5B5587375C38AD7DC7BD508DE6C6228E655D0F6047527DC0CC9DCDB5A11"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.dll",
+      "SHA256": "4B04D5B5587375C38AD7DC7BD508DE6C6228E655D0F6047527DC0CC9DCDB5A11"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Abstract/bin/Debug/net10.0/NexusForever.Game.Abstract.dll",
+      "SHA256": "51C3E3ABD04E36741EF7C92801D6CD7D7CFAB4A755353D336EC45D677C57F084"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Abstract.dll",
+      "SHA256": "51C3E3ABD04E36741EF7C92801D6CD7D7CFAB4A755353D336EC45D677C57F084"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+      "SHA256": "46659A2A80420797D2767B2364FAE0D5A42733D5D043D5B39CD66FF6880FE92C"
+    },
+    {
+      "Path": "artifacts/healing-personal-scope/catalog-runner/bin/Debug/net10.0/NexusForever.Game.dll",
+      "SHA256": "4B04D5B5587375C38AD7DC7BD508DE6C6228E655D0F6047527DC0CC9DCDB5A11"
+    },
+    {
+      "Path": "artifacts/healing-personal-scope/catalog-runner/bin/Debug/net10.0/NexusForever.Game.Abstract.dll",
+      "SHA256": "51C3E3ABD04E36741EF7C92801D6CD7D7CFAB4A755353D336EC45D677C57F084"
+    },
+    {
+      "Path": "artifacts/healing-personal-scope/catalog-runner/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+      "SHA256": "46659A2A80420797D2767B2364FAE0D5A42733D5D043D5B39CD66FF6880FE92C"
+    }
+  ],
+  "Baseline": {
+    "Failed": 3,
+    "Passed": 0,
+    "Raw": "artifacts/healing-personal-scope/baseline/baseline.trx"
+  },
+  "SelectedTests": {
+    "total": "214",
+    "executed": "214",
+    "passed": "214",
+    "failed": "0",
+    "error": "0",
+    "timeout": "0",
+    "aborted": "0",
+    "inconclusive": "0",
+    "passedButRunAborted": "0",
+    "notRunnable": "0",
+    "notExecuted": "0",
+    "disconnected": "0",
+    "warning": "0",
+    "completed": "0",
+    "inProgress": "0",
+    "pending": "0"
+  },
+  "NewCases": 26,
+  "ActualCatalogCases": [
+    {
+      "Id": 231375,
+      "SpellId": 88057,
+      "DurationTime": 0,
+      "Flags": 2,
+      "Expected": 120,
+      "Status": "pass"
+    },
+    {
+      "Id": 231412,
+      "SpellId": 88058,
+      "DurationTime": 0,
+      "Flags": 2,
+      "Expected": 120,
+      "Status": "pass"
+    },
+    {
+      "Id": 231413,
+      "SpellId": 88059,
+      "DurationTime": 0,
+      "Flags": 2,
+      "Expected": 120,
+      "Status": "pass"
+    },
+    {
+      "Id": 231414,
+      "SpellId": 88060,
+      "DurationTime": 0,
+      "Flags": 2,
+      "Expected": 120,
+      "Status": "pass"
+    },
+    {
+      "Id": 231415,
+      "SpellId": 88061,
+      "DurationTime": 0,
+      "Flags": 2,
+      "Expected": 120,
+      "Status": "pass"
+    },
+    {
+      "Id": 231262,
+      "SpellId": 88130,
+      "DurationTime": 3000,
+      "Flags": 0,
+      "Expected": 110,
+      "Status": "pass"
+    },
+    {
+      "Id": 231263,
+      "SpellId": 88131,
+      "DurationTime": 3000,
+      "Flags": 0,
+      "Expected": 110,
+      "Status": "pass"
+    },
+    {
+      "Id": 231264,
+      "SpellId": 88132,
+      "DurationTime": 3000,
+      "Flags": 0,
+      "Expected": 110,
+      "Status": "pass"
+    },
+    {
+      "Id": 231265,
+      "SpellId": 88133,
+      "DurationTime": 3000,
+      "Flags": 0,
+      "Expected": 110,
+      "Status": "pass"
+    },
+    {
+      "Id": 231266,
+      "SpellId": 88134,
+      "DurationTime": 3000,
+      "Flags": 0,
+      "Expected": 110,
+      "Status": "pass"
+    },
+    {
+      "Id": 231315,
+      "SpellId": 88350,
+      "DurationTime": 3000,
+      "Flags": 0,
+      "Expected": 110,
+      "Status": "pass"
+    },
+    {
+      "Id": 231317,
+      "SpellId": 88351,
+      "DurationTime": 3000,
+      "Flags": 0,
+      "Expected": 110,
+      "Status": "pass"
+    },
+    {
+      "Id": 231319,
+      "SpellId": 88352,
+      "DurationTime": 3000,
+      "Flags": 0,
+      "Expected": 110,
+      "Status": "pass"
+    },
+    {
+      "Id": 231321,
+      "SpellId": 88353,
+      "DurationTime": 3000,
+      "Flags": 0,
+      "Expected": 110,
+      "Status": "pass"
+    },
+    {
+      "Id": 231323,
+      "SpellId": 88354,
+      "DurationTime": 3000,
+      "Flags": 0,
+      "Expected": 110,
+      "Status": "pass"
+    }
+  ],
+  "Build": {
+    "Project": "NexusForever.Game",
+    "Warnings": 0,
+    "Errors": 0,
+    "ElapsedSeconds": 3.89
+  },
+  "Warnings": [
+    "Existing ASPIRE010 in selected Game.Tests dependency graph"
+  ],
+  "Reviews": {
+    "Spec": "Primary-agent self-review; no remaining actionable finding",
+    "Standards": "Primary-agent self-review; no remaining actionable finding"
+  },
+  "Limits": [
+    "Source and actual modifier catalog controls; not complete real-spell coefficient/targeting casts",
+    "Existing multiplicative aggregation preserved; retail tier/stack arbitration unresolved",
+    "No native/UI, full cast/tick/death/map lifecycle, provider, restart or hosted/socket qualification",
+    "Shield-specific personal applicability, other kinds/modes and Focus remain open",
+    "Earlier hosted records retain their frozen Game DLL boundary"
+  ],
+  "RawRoot": "artifacts/healing-personal-scope/"
+}

@@ -29,6 +29,7 @@ namespace NexusForever.Game.Spell
             public bool DropEffect { get; set; } = false;
             public bool LifetimeEnded { get; set; }
             public ISpellProcInstance ProcInstance { get; set; }
+            public ISpellPropertyInstance PersonalHealingInstance { get; set; }
             public Spell4EffectsEntry Entry { get; }
             public SpellEffectInterpretation Interpretation { get; }
             public IDamageDescription Damage { get; private set; }

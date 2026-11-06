@@ -12,6 +12,7 @@ namespace NexusForever.Game.Abstract.Spell
         bool DropEffect { get; set; }
         bool LifetimeEnded { get; set; }
         ISpellProcInstance ProcInstance { get; set; }
+        ISpellPropertyInstance PersonalHealingInstance { get; set; }
         List<ICombatLog> CombatLogs { get; }
         IReadOnlyCollection<IGridEntity> CreatedEntities { get; }
 

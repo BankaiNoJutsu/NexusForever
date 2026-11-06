@@ -1,5 +1,14 @@
 # Assessment follow-through goal
 
+[Personal healing scope](HEALING_PERSONAL_MODIFIER_EVIDENCE.md) now binds kind12
+health-healing bonuses to the original caster/target and concrete effect instance.
+Recovered145 effect151 rows and direct localized text establish15 supported
+kind12/mode1 rows. Three baseline failures are fixed;26 new/214 related cases,
+15 actual-row controls and clean owning Game build pass. Native/full cast-tick
+lifecycle, stacking arbitration, shield-specific applicability, other kind/mode
+semantics and Focus rates remain open. Continue independent integrated gameplay;
+Spell/full restoration unfinished, native client/CUA stopped.
+
 [PvP cooldown save retry](PVP_COOLDOWN_SAVE_RETRY.md) retains requests and
 cancellations until flushed Character settlement, preserving later intent and
 using atomic shared dirty-mask updates. Eleven baseline failures are fixed;
@@ -1118,8 +1127,9 @@ superseding-bid guard requirement. The committed seller producer is linked above
 [Effect 151 native validation](HEALING_PERSONAL_MODIFIER_EVIDENCE.md#build-16042-effect-151-row-validator)
 now binds the build 16042 validator, row field offsets and distinct dispatch
 branches for ordinary property modifiers and personal modifiers. The actual
-effect rows, tooltip bindings, caster-target application and Focus rates remain
-separate evidence requirements for #595.
+effect rows and direct tooltip bindings have since been recovered and the
+supported caster-target Source boundary implemented (6 November checkpoint in
+the same record). Native application/stacking and Focus remain separate gates.
 
 [Terminal auction notice retry](AUCTION_EXPIRY_TRANSACTION.md#retry-for-terminal-auction-notices)
 recovers failed won/expired packet sends on the original live actor after
@@ -1848,13 +1858,13 @@ has been shut down; its files remain local evidence. No runtime deployment was s
 economic/recovery, Contract and broader feature requirements under the execution
 policy, without repeating completed integrations.
 
-[The healing evidence record](HEALING_PERSONAL_MODIFIER_EVIDENCE.md) confirms595's
-unchanged head, existing Heal/HealShields producer integration, and the remaining
-personal-modifier/Focus question. Raw effect151 rows/tooltip bindings and native
-scope/mode/lifetime corroboration remain missing; do not guess Focus seeds or
-reimplement the existing heal path. Contract public07CE/reset/unclaimed/excess/
-full726-choice evidence remains separate. Computer Use/native client launch stay
-stopped. No push or commit. The Goal remains active.
+[The healing evidence record](HEALING_PERSONAL_MODIFIER_EVIDENCE.md) retains595's
+unchanged upstream identity and the historical missing-input checkpoint. The
+6 November follow-through recovers the actual rows/direct tooltips and implements
+the supported caster-scope boundary using the existing Heal producer. Native
+execution, stacking/other shapes and Focus remain open; do not guess Focus seeds.
+Contract public07CE/reset/unclaimed/excess/full726-choice remains separate.
+Computer Use/native client launch stay stopped. The broader Goal remains active.
 
 [Auction expiry settlement](AUCTION_EXPIRY_TRANSACTION.md) retains the prior
 11,173-case qualified winning/unsold online/offline boundary. Its139 focused/

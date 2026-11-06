@@ -4539,6 +4539,26 @@ namespace NexusForever.Game.Spell
             if (personalMod == null)
                 return;
 
+            if (personalMod.ModifierType == 12u)
+            {
+                // Build 16042 Fusion Probe / Sigil of Recovery: mode 1, no extra operands.
+                // Other modes and tails do not have an established caster-pair contract.
+                Spell4EffectsEntry entry = info.Entry;
+                if (personalMod.Priority != 1u || entry.DataBits03 != 0u || entry.DataBits04 != 0u
+                    || entry.DataBits05 != 0u || entry.DataBits06 != 0u || entry.DataBits07 != 0u
+                    || entry.DataBits08 != 0u || entry.DataBits09 != 0u || entry.Spell4EffectGroupListId != 0u)
+                {
+                    SpellEffectDiagnostics.TracePersonalDmgHealMod(spell, target, personalMod, null, false, "unmapped-personal-healing-shape");
+                    return;
+                }
+
+                info.PersonalHealingInstance = target.AddPersonalHealingModifier(spell.Caster, personalMod.Multiplier,
+                    info.EffectId, spell.Parameters.SpellInfo.Entry.Id, entry.Id, spell.CastingId);
+                SpellEffectDiagnostics.TracePersonalDmgHealMod(spell, target, personalMod, null,
+                    info.PersonalHealingInstance != null, info.PersonalHealingInstance == null ? "invalid-personal-healing-modifier" : null);
+                return;
+            }
+
             if (!TryResolvePersonalDmgHealModProperty(personalMod, out Property property, out string skippedReason))
             {
                 SpellEffectDiagnostics.TracePersonalDmgHealMod(spell, target, personalMod, null, false, skippedReason);
@@ -4986,8 +5006,9 @@ namespace NexusForever.Game.Spell
                     property = Property.DamageMitigationPctOffset;
                     return true;
                 case 12:
-                    property = Property.HealingMultiplierIncoming;
-                    return true;
+                    property = default;
+                    skippedReason = "caster-scoped-healing";
+                    return false;
                 case 13:
                     property = Property.HealingMultiplierOutgoing;
                     return true;

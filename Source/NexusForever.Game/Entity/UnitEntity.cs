@@ -192,6 +192,7 @@ namespace NexusForever.Game.Entity
             public uint EffectId { get; init; }
             public uint EffectEntryId { get; init; }
             public ISpellPropertyModifier Modifier { get; init; }
+            public IUnitEntity PersonalCaster { get; init; }
         }
 
         private sealed class SpellEffectImmunityState : TrackedSpellState
@@ -1757,7 +1758,29 @@ namespace NexusForever.Game.Entity
             return true;
         }
 
-        private void AddSpellModifierPropertyState(ISpellPropertyModifier spellModifier, uint effectId, uint spell4Id, uint spell4EffectId, uint castingId)
+        public ISpellPropertyInstance AddPersonalHealingModifier(IUnitEntity caster, float multiplier, uint effectId, uint spell4Id, uint spell4EffectId, uint castingId)
+        {
+            if (caster == null || !float.IsFinite(multiplier) || multiplier <= 0f)
+                return null;
+
+            return AddSpellModifierPropertyState(
+                new SpellPropertyModifier(Property.HealingMultiplierIncoming, 1u, multiplier, 0f, 0f),
+                effectId, spell4Id, spell4EffectId, castingId, caster);
+        }
+
+        public float GetPersonalHealingMultiplier(IUnitEntity caster)
+        {
+            if (caster == null || !spellProperties.TryGetValue(Property.HealingMultiplierIncoming, out var states))
+                return 1f;
+
+            // Preserve the existing multiplicative modifier policy, restricted to the original caster object.
+            // A recycled entity GUID must not inherit another entity's healing bonus.
+            return states.Values.Where(state => ReferenceEquals(state.PersonalCaster, caster))
+                .SelectMany(state => state.Modifier.Alterations)
+                .Aggregate(1f, (value, alteration) => value * alteration.GetValue());
+        }
+
+        private SpellPropertyState AddSpellModifierPropertyState(ISpellPropertyModifier spellModifier, uint effectId, uint spell4Id, uint spell4EffectId, uint castingId, IUnitEntity personalCaster = null)
         {
             Property property = spellModifier.Property;
             if (!spellProperties.TryGetValue(property, out Dictionary<uint, SpellPropertyState> spellDict))
@@ -1768,19 +1791,23 @@ namespace NexusForever.Game.Entity
 
             foreach (KeyValuePair<uint, SpellPropertyState> state in spellDict.ToArray())
             {
-                if (state.Value.Spell4Id == spell4Id && state.Value.EffectEntryId == spell4EffectId)
+                if (state.Value.Spell4Id == spell4Id && state.Value.EffectEntryId == spell4EffectId
+                    && ReferenceEquals(state.Value.PersonalCaster, personalCaster))
                     spellDict.Remove(state.Key);
             }
 
-            spellDict[effectId] = new SpellPropertyState
+            var instance = new SpellPropertyState
             {
                 Property      = property,
                 EffectId      = effectId,
                 Spell4Id      = spell4Id,
                 CastingId     = castingId,
                 EffectEntryId = spell4EffectId,
-                Modifier      = spellModifier
+                Modifier      = spellModifier,
+                PersonalCaster = personalCaster
             };
+            spellDict[effectId] = instance;
+            return instance;
         }
 
         private bool HasSpellPropertyConversionPath(Property sourceProperty, Property targetProperty, HashSet<Property> visited)
@@ -1914,7 +1941,7 @@ namespace NexusForever.Game.Entity
         private IEnumerable<ISpellPropertyModifier> GetSpellPropertyModifiers(Property property)
         {
             return spellProperties.TryGetValue(property, out Dictionary<uint, SpellPropertyState> spellDict)
-                ? spellDict.Values.Select(state => state.Modifier)
+                ? spellDict.Values.Where(state => state.PersonalCaster == null).Select(state => state.Modifier)
                 : Enumerable.Empty<ISpellPropertyModifier>();
         }
 
