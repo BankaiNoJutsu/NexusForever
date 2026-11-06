@@ -90,3 +90,11 @@ Ghidra 12.1.4 (I:\ghidra_12.1.4_PUBLIC) plus a portable Node v24.22.2 (I:\tools,
 REA's doctor for the Ghidra provider (JDK 21 accepted for 12.1.4). The WildStar client binary is at
 I:\WildStar\Client64\WildStar64.exe and ClientData.archive/.index exist under I:\WildStar\Patch. The
 table-extraction path from those archives is not yet exercised; no native analysis has been run.
+
+## Leaderboard score ingestion pins (2026-11-06)
+
+`LeaderboardScoreIngestionTests` (4 cases, Source/SQLite) cover the previously untested
+`LeaderboardScoreIngestion`: zero-time/zero-rating/null-player skips, persisted PvE/PvP rows with
+sequential ids and realm id, team-member JSON, background completion callback, and id continuation
+after a restart. These are regression pins: they passed on first run, so no defect was found or fixed.
+22 Leaderboard cases pass in that filter. Score producers (what a retail match records) remain B-NAT.
