@@ -1,5 +1,9 @@
 # Assessment follow-through goal
 
+[Spell effect handler census](SPELL_EFFECT_HANDLER_CENSUS_20261106.md) (2026-11-06): 98.1% of 131,010 retail effect rows have a
+registered handler; the 2,478 unhandled rows are led by FacilityModification (771), UnlockInlaidAugment (281),
+ChangeDisplayName (268). Census only; every type needs a retail witness or native predicted-effect routine.
+
 [Communicator 609 retail corpus](COMMUNICATOR_RETAIL_REPUTATION_CORPUS_20261106.md) (2026-11-06): 23 retail rows carry
 reputation conditions, 13 depend on zero-bound handling, and the current predicate agrees with all 23 at their
 boundaries (3 new pins, 124 Communicator cases; Source/SQLite + raw table). The ledger's 481759-byte table was not
