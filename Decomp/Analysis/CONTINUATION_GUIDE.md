@@ -1,5 +1,8 @@
 # Client Binary Decompile Continuation Guide
 
+[Physical loot feedback](PHYSICAL_LOOT_DELIVERY_FEEDBACK.md) is Source/SQLite verified: complete bound quantity and collect transition before fallible UI, retained original-owner notices and stale map-admission rejection. All19 focused/all239 related cases, isolated owning builds, eight compiler-source bindings and both review axes pass. The build uses published-parent Game/Game.Tests plus selected Source and frozen assembly dependencies; combined-root/provider/process/socket/native qualification is separate. The user requested publication and handoff; follow the [resume prompt](RETAIL_RESTORATION_RESUME_PROMPT.md) on the asset-owning machine. Completed timestamp checks precede the still-open hosted restart gate.
+
+
 [Q5597 explosive collection](Q5597_EXPLOSIVES_COLLECTION.md) now observes actual objective progress before consumption and retains original-object removal retry. Seven baseline faults are fixed;11 new/all82 scoped and11 recovered-catalog cases,clean builds and both reviews pass. Full Player SQLite failure/retry/fresh reload passes; Source/binary boundary excludes concurrent work. Public/physical activation,world respawn,general callback repair,provider/native/retail remain open. The Goal continues.
 
 

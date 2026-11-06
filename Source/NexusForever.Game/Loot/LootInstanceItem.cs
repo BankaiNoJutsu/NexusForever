@@ -432,7 +432,15 @@ namespace NexusForever.Game.Loot
             Delivered = true;
         }
 
+        private int deliveryInProgress;
         public bool DeliverItem(IPlayer player, bool sendAsGrant = true)
+        {
+            if (Interlocked.CompareExchange(ref deliveryInProgress, 1, 0) != 0) return false;
+            try { return DeliverOwnedItem(player, sendAsGrant); }
+            finally { Volatile.Write(ref deliveryInProgress, 0); }
+        }
+
+        private bool DeliverOwnedItem(IPlayer player, bool sendAsGrant)
         {
             if (player == null)
                 throw new ArgumentNullException(nameof(player));
@@ -471,6 +479,16 @@ namespace NexusForever.Game.Loot
                     player.CurrencyManager.CurrencyAddAmount((CurrencyType)StaticId, Amount, isLoot: true);
                     break;
                 case LootItemType.StaticItem:
+                    if (player.Inventory is Entity.Inventory physical
+                        && itemManager?.GetItemInfo(StaticId) is { Entry: not null } definition
+                        && (definition.Entry.BindFlags & ItemBindFlags.BindOnPickup) != 0)
+                    {
+                        bool accepted = physical.TryDeliverSoulboundLoot(player, definition, Amount, () => Delivered = true,
+                            sendAsGrant ? CaptureGrant() : null, out GenericError? error);
+                        if (!accepted && error.HasValue)
+                            player.Session.EnqueueMessageEncrypted(new ServerItemError { ErrorCode = error.Value });
+                        return accepted;
+                    }
                     if (!TryDeliverStaticItem(player))
                         return false;
                     break;
@@ -572,6 +590,25 @@ namespace NexusForever.Game.Loot
                 LooterUnitId = WinnerGuid,
                 LootItem     = Build()
             });
+        }
+
+        private Func<NexusForever.Network.Message.IWritable> CaptureGrant()
+        {
+            uint owner = OwnerUnitId, winner = WinnerGuid;
+            NetworkLootItem value = Build();
+            return () => new ServerLootGrant
+            {
+                OwnerUnitId = owner, LooterUnitId = winner,
+                LootItem = new NetworkLootItem
+                {
+                    LootUnitId = value.LootUnitId, Type = value.Type, ItemId = value.ItemId, Amount = value.Amount,
+                    CanLoot = value.CanLoot, RequiresRoll = value.RequiresRoll, OnlyMasterLootable = value.OnlyMasterLootable,
+                    Explosion = value.Explosion, Granted = value.Granted, RollTime = value.RollTime,
+                    RandomCircuitData = value.RandomCircuitData, RandomGlyphData = value.RandomGlyphData,
+                    ItemQuality2Id = value.ItemQuality2Id,
+                    MasterList = value.MasterList.Select(row => new NetworkIdentity { RealmId = row.RealmId, Id = row.Id }).ToList()
+                }
+            };
         }
 
         public NetworkLootItem Build()

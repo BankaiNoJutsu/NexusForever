@@ -1,4 +1,20 @@
-# Provider packet timestamps and hosted restart — paused for machine transfer
+# Provider packet timestamps and hosted restart — machine-transfer checkpoint
+
+## Current transfer instructions — 6 November 2026
+
+The user requested saving the resume prompt, committing/pushing the scoped
+restoration changes and handing off to the asset-owning machine. Start with a
+source/provider applicability check of the **completed** timestamp milestone
+below, then hosted World/Auth restart qualification. Do not restore the obsolete
+draft or repeat its missing-registry investigation. This current checkpoint and
+the [resume prompt](RETAIL_RESTORATION_RESUME_PROMPT.md) supersede historical
+pause/draft instructions later in this file.
+
+The latest bounded [physical loot feedback slice](PHYSICAL_LOOT_DELIVERY_FEEDBACK.md)
+passes 19 focused/239 related Source/SQLite cases and eight compiler-source
+bindings. Its portable record travels with the source; raw artifacts and runtime
+assets do not. Overall restoration remains unfinished. No new hosted World/Auth
+qualification is claimed; Computer Use and native-client launch remain stopped.
 
 ## Completed timestamp qualification — 6 November2026
 

@@ -1,5 +1,8 @@
 # Continue on another machine
 
+Use the [saved resume prompt](Decomp/Analysis/RETAIL_RESTORATION_RESUME_PROMPT.md) for this user-requested machine transfer. First confirm applicability of the completed12 MySQL/166 SQLite provider packet timestamp result; then qualify hosted World/Auth restart with verified build16042 runtime assets. The latest [physical loot feedback](Decomp/Analysis/PHYSICAL_LOOT_DELIVERY_FEEDBACK.md) slice passes19 focused/239 related Source/SQLite cases, isolated owning builds, eight compiler-source bindings and both reviews. Raw artifacts, binaries, private settings and runtime assets are ignored and do not travel with Git. Overall restoration is unfinished; Computer Use/native-client launch stay stopped. This checkpoint supersedes historical active/pause/draft directions below.
+
+
 Latest [Q5597 explosive collection](Decomp/Analysis/Q5597_EXPLOSIVES_COLLECTION.md) retains refused/satisfied pickups and retries original removal after accepted credit. Seven baseline faults are fixed;11 new/all82 scoped and11 actual-catalog cases pass with clean builds and both reviews. Full Player SQLite save failure/retry/fresh Quest reload passes. Public/physical activation,accept/turnin,respawn,provider/native/retail remain open. Reuse these checks and continue the active Goal; preserve concurrent work.
 
 

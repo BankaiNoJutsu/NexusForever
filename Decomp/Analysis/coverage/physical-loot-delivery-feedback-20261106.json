@@ -1,0 +1,1357 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-06T14:30:09.525795+00:00",
+  "milestone": "Physical BOP loot acceptance and retained feedback",
+  "classification": "Bounded real public GiveLoot/Player/Inventory/Quest Source and full Player SQLite save/reload qualification; prepared metadata/session, not native/provider or durable loot-receipt qualification.",
+  "baseCommit": "06df7b67edacfd8e40523c6f0d69860f59176e38",
+  "reviewedSourceTree": "0f6020d4d2a92b3be6ce68c91995899d7369c295",
+  "publicationParentObserved": "1429c24a50c6c19ccd07cb24388293fc4cbad3dd",
+  "selectedSource": [
+    {
+      "Path": "Source/NexusForever.Game/Loot/LootInstanceItem.cs",
+      "SHA256": "dd1dadaec2e72c78956da47cd79e7f44ad0723fa6b68f55e385d74de60764170",
+      "Blob": "7f242ed88856abeadc86b70668349c5a40cdc53e"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Entity/Inventory.cs",
+      "SHA256": "089a78bcf2599c4c7fc02277afa92ec661e444b9be4b5009910ea2cfd944077e",
+      "Blob": "7a7ee907ca5b9d5dbbc2f38728ef98a54c8f2a2b"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Entity/Inventory.BankPublication.cs",
+      "SHA256": "3bcd76d45b85575394f85f42aa42e887cf54191cc1b54db5746eea6cc51ff58b",
+      "Blob": "a19db5d385a63b308988ddae91dd248aa95963b0"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Entity/Inventory.RewardOwnership.cs",
+      "SHA256": "1c2356e3a9b15b441bb224fd76ad283180cc4fd688e7712de88a3cf9653f53c2",
+      "Blob": "63c8a22f88a801cee63e1798b9d98d936df859ba"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Entity/Inventory.LootDelivery.cs",
+      "SHA256": "92ce645606db2fe35d77c5ce82ad497227ca610a2aa70f73aa76787c812673de",
+      "Blob": "967655a253a7cf19b9aea2ea6eac609b2d100f63"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Loot/LootBoundPickupTests.cs",
+      "SHA256": "5d5d9a604ad35c2e7fab79a801783c528837f7dc7641042c959bee73844ad314",
+      "Blob": "a1619dc71ff07c8faa4d32e11e73b0c8793cdf10"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Loot/LootBoundPickupFeedbackTests.cs",
+      "SHA256": "861d7f3cba9ef4a853739aea2e6341c81a7f1b43cc08f380bde6b82de2d5f22e",
+      "Blob": "a123e0ab3382b71fc1448dadc7b579936cff0b30"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Quest/Quest.cs",
+      "SHA256": "e4b9d8625a071b7c66496be36aad48679dcced4eb3794d8b8e13130180145a8a",
+      "Blob": "a8177c871a7b3b5396a9acf54d76ba2e5d83c741"
+    }
+  ],
+  "compilerBinding": {
+    "Passed": true,
+    "Expected": 8,
+    "Observed": 8,
+    "Sources": {
+      "Source/NexusForever.Game/Entity/Inventory.BankPublication.cs": {
+        "CompilerChecksum": "3bcd76d45b85575394f85f42aa42e887cf54191cc1b54db5746eea6cc51ff58b",
+        "Matched": true,
+        "Assembly": "NexusForever.Game",
+        "AssemblySHA256": "2e94f0cfc1f4e4ede3591d1337531da26991253d19129f0e722a7a489892c855"
+      },
+      "Source/NexusForever.Game/Entity/Inventory.cs": {
+        "CompilerChecksum": "089a78bcf2599c4c7fc02277afa92ec661e444b9be4b5009910ea2cfd944077e",
+        "Matched": true,
+        "Assembly": "NexusForever.Game",
+        "AssemblySHA256": "2e94f0cfc1f4e4ede3591d1337531da26991253d19129f0e722a7a489892c855"
+      },
+      "Source/NexusForever.Game/Entity/Inventory.LootDelivery.cs": {
+        "CompilerChecksum": "92ce645606db2fe35d77c5ce82ad497227ca610a2aa70f73aa76787c812673de",
+        "Matched": true,
+        "Assembly": "NexusForever.Game",
+        "AssemblySHA256": "2e94f0cfc1f4e4ede3591d1337531da26991253d19129f0e722a7a489892c855"
+      },
+      "Source/NexusForever.Game/Entity/Inventory.RewardOwnership.cs": {
+        "CompilerChecksum": "1c2356e3a9b15b441bb224fd76ad283180cc4fd688e7712de88a3cf9653f53c2",
+        "Matched": true,
+        "Assembly": "NexusForever.Game",
+        "AssemblySHA256": "2e94f0cfc1f4e4ede3591d1337531da26991253d19129f0e722a7a489892c855"
+      },
+      "Source/NexusForever.Game/Loot/LootInstanceItem.cs": {
+        "CompilerChecksum": "dd1dadaec2e72c78956da47cd79e7f44ad0723fa6b68f55e385d74de60764170",
+        "Matched": true,
+        "Assembly": "NexusForever.Game",
+        "AssemblySHA256": "2e94f0cfc1f4e4ede3591d1337531da26991253d19129f0e722a7a489892c855"
+      },
+      "Source/NexusForever.Game/Quest/Quest.cs": {
+        "CompilerChecksum": "e4b9d8625a071b7c66496be36aad48679dcced4eb3794d8b8e13130180145a8a",
+        "Matched": true,
+        "Assembly": "NexusForever.Game",
+        "AssemblySHA256": "2e94f0cfc1f4e4ede3591d1337531da26991253d19129f0e722a7a489892c855"
+      },
+      "Source/NexusForever.Game.Tests/Loot/LootBoundPickupFeedbackTests.cs": {
+        "CompilerChecksum": "861d7f3cba9ef4a853739aea2e6341c81a7f1b43cc08f380bde6b82de2d5f22e",
+        "Matched": true,
+        "Assembly": "NexusForever.Game.Tests",
+        "AssemblySHA256": "923e373e4e485bb02d5d60ce8207294e05fc74e6bccac7776c437c6b216d7f4c"
+      },
+      "Source/NexusForever.Game.Tests/Loot/LootBoundPickupTests.cs": {
+        "CompilerChecksum": "5d5d9a604ad35c2e7fab79a801783c528837f7dc7641042c959bee73844ad314",
+        "Matched": true,
+        "Assembly": "NexusForever.Game.Tests",
+        "AssemblySHA256": "923e373e4e485bb02d5d60ce8207294e05fc74e6bccac7776c437c6b216d7f4c"
+      }
+    }
+  },
+  "buildIsolation": {
+    "Base": "06df7b67edacfd8e40523c6f0d69860f59176e38",
+    "OwnBuild": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\loot-feedback-delivery\\isolated",
+    "FrozenPublishedDLLsVerified": 138,
+    "OwnedSource": [
+      "Source/NexusForever.Game/Loot/LootInstanceItem.cs",
+      "Source/NexusForever.Game/Entity/Inventory.cs",
+      "Source/NexusForever.Game/Entity/Inventory.BankPublication.cs",
+      "Source/NexusForever.Game/Entity/Inventory.RewardOwnership.cs",
+      "Source/NexusForever.Game/Entity/Inventory.LootDelivery.cs",
+      "Source/NexusForever.Game.Tests/Loot/LootBoundPickupTests.cs",
+      "Source/NexusForever.Game.Tests/Loot/LootBoundPickupFeedbackTests.cs",
+      "Source/NexusForever.Game/Quest/Quest.cs"
+    ],
+    "BuildAdaptation": "Project references replaced by verified frozen assembly references; new owning Game used by Tests; AspNetCore shared framework explicit",
+    "SharedScratchResult": "Discarded focused-01 mixed/stale assembly run; foreign publication test absent from selected sources"
+  },
+  "builds": [
+    {
+      "project": "NexusForever.Game",
+      "errors": 0,
+      "warnings": 0,
+      "seconds": 7.42,
+      "path": "artifacts/continuation-20261106/loot-feedback-delivery/isolated-owning-build-04.log",
+      "sha256": "94c5dcdfcc2da77096bbb1ca66d958084bd49ba04f1e3874428e16191a9bb529",
+      "bytes": 82
+    },
+    {
+      "project": "NexusForever.Game.Tests",
+      "errors": 0,
+      "warnings": 2,
+      "seconds": 11.86,
+      "warningDetails": [
+        "Existing NU1902 MySqlConnector 2.6.0",
+        "Existing NU1903 SQLitePCLRaw.lib.e_sqlite3 2.1.11"
+      ],
+      "path": "artifacts/continuation-20261106/loot-feedback-delivery/isolated-test-build-04.log",
+      "sha256": "50c73afe840194112e107c99c4894247966de46681384931a0bc10598128a63f",
+      "bytes": 1318
+    }
+  ],
+  "tests": {
+    "focused": {
+      "path": "artifacts/continuation-20261106/loot-feedback-delivery/isolated-focused-04/focused.trx",
+      "sha256": "f150ee2326da62eec2b28434c4ff3d2787024181a304fdb3de23c854422d04c0",
+      "bytes": 31565,
+      "counters": {
+        "total": 19,
+        "executed": 19,
+        "passed": 19,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      },
+      "cases": [
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.RetriedStackNoticeRebuildsItsUnmodifiedAcceptedQuantity",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.ConfirmedPickupWaitsForTheOriginalInventorySaveLease",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.RefusedInitialItemNoticeCannotSuppressCollectCreditAcrossTransfer",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.ARefusedPacketDoesNotPreventTheCompletePhysicalAwardFromSavingAndReloading",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.PublicationCannotReenterTheSameLootThroughAReplacementInventory",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.MovingMapsDuringAnItemNoticeStopsTheOriginalLootGrant",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.InventoryEnqueueFailureCannotRepeatAnyPartOfAConfirmedPickup(rejectAt: 1)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.BoundPickupSurvivesFailedFullPlayerSaveRetryAndFreshReload",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.RetriedLootFeedbackCannotCrossANewMapAdmissionOrUnitGuid(newAdmission: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.ConfirmedPickupIsBoundBeforeItsFirstInventoryPacket",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.RefusingACollectQuestPacketCannotLeaveItsCompletionHalfApplied",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.RetriedLootFeedbackCannotCrossANewMapAdmissionOrUnitGuid(newAdmission: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.InventoryEnqueueFailureCannotRepeatAnyPartOfAConfirmedPickup(rejectAt: 2)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.ConfirmedPickupDoesNotMergeIntoAnExistingUnboundStack",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.NestedInventoryAdmissionDoesNotWaitForAnotherThreadsMapGate",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.RefusedGrantDoesNotRepeatItemsOrReuseTheRejectedPacket",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.FullPhysicalBagCannotUseUnboundStackCapacityAndCanRetryAfterSpaceIsFreed",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.RemovingAnItemWhileItsAddIsRefusedDoesNotPublishAGhostOnRetry",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.ConfirmedPickupCanMergeIntoAnExistingBoundStack",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "related": {
+      "path": "artifacts/continuation-20261106/loot-feedback-delivery/scoped-final-v3/scoped.trx",
+      "sha256": "6a8c11d29432d8ffc4e6618f4a36348d465532ed19e6bab8ede282018a404462",
+      "bytes": 387324,
+      "counters": {
+        "total": 239,
+        "executed": 239,
+        "passed": 239,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      },
+      "cases": [
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.RestagingTracksTheLastActualFlushRatherThanTheLastCapture(flushAgain: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.UpstreamLootReconciliationTests.ContributorsGenerateOneSharedDropPerGroupAndIndependentSoloLoot",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.LaterSameValueTouchesRemainDirtyUntilAnOrdinarySaveAcknowledgesThem",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.PreparationRejectsAnUnownedSqlGraphWithoutCreditingTheReward(mutation: \"root\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.AggregateMovePreflightRejectsBeforeItsGlobalRollbackSnapshotCanOverlapAReservation",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.GlobalLootManagerTests.CanDeliverGeneratedLoot_WithMissingRewardTable_ReturnsInvalidLootItem(type: AccountCurrency, staticId: 9)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.UpstreamLootReconciliationTests.IdenticalRewardsWithDifferentEligibilityDoNotMergeQuantities",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.RemovingAnItemWhileItsAddIsRefusedDoesNotPublishAGhostOnRetry",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.ConfirmedPickupIsBoundBeforeItsFirstInventoryPacket",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.InsufficientSplitCapacityDoesNotPartiallyFillAnExistingStack",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.PublicationCannotReenterTheSameLootThroughAReplacementInventory",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.TheCensusIncludesNewQuestsCreatedByObjectiveScriptsAndTheirOtherScalarChanges",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.ACommittedCascadeRetiresTheDeletedOwnerButALaterRestorationRecreatesEveryLeaf(restore: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.NestedInventoryAdmissionDoesNotWaitForAnotherThreadsMapGate",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.CompletionCapturesRealObjectiveEventAndAdoptsOnlyItsCommittedRevision(track: 23)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootRequestHandlerTests.ClientLootVacuumHandler_ForwardsToGiveAllLootInRange",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.ExplicitUnitsSupportSaveChangesWithoutAcceptingTrackedOriginals(secondFlush: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootPacketShapeTests.LootItem_WritePreservesCurrentBooleanOrderAndTrailingFields",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootEligibilityTests.CanTryRoll_RequiresRollAndEligibleMember",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.CanceledDeletionRestoresTheWholeQuestBeforeOrAfterTheCascadeWasFlushed(flushDelete: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.CompletionCapturesRealObjectiveEventAndAdoptsOnlyItsCommittedRevision(track: 18)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.LaterQuestAndObjectiveMutationsSurviveAcknowledgementOfAnEarlierFlush",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.PreflightDoesNotAllocateMutateOrSendAndCountsTheWholeQuantity",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.UnsupportedCustomInventoryFailsWithoutFallingBackToOrdinaryCreation",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootInstanceResolutionTests.AssignMasterLoot_OfflineAssigneeRejectsWithoutResolvingWinner",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.UpstreamLootReconciliationTests.ProbabilityBoundariesPreserveZeroAndGuaranteedDrops(groupChance: 100, itemChance: 0, expected: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.APreviousUncertainOrdinarySaveIsReconciledByItsActualStoredCandidate(after: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBagUsageTests.TrySalvageItem_ExactRuntimeRowDeletesSourceItemAndGrantsLoot",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBagUsageTests.TryUseLootBag_ServiceTokenReward_ConsumesItemAndGrantsLoot",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.GlobalLootManagerTests.GiveAllLootInRange_PendingRollOnlyRefreshesLootNotify",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.LostAcknowledgementsReconcileEitherOriginalOrCommittedRowsWithoutDuplicateCreates(afterCommit: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootPacketShapeTests.ClientLootRollAction_ReadsOwnerLootAndTwoBitAction",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.PreparationRejectsAnUnownedSqlGraphWithoutCreditingTheReward(mutation: \"extra-leaf\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.SplitCreationPreservesChargeAndExpirationRulesAndFirstPacketBinding(requestedCharges: 2, expectedCharges: 2)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBagUsageTests.TryUseLootBag_WithOnlySalvageGroups_DoesNotConsumeItem",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.GlobalLootManagerTests.DropLoot_WithUnavailableCreatureTableReturnsFalseWithoutLoot(includeEmptyCreatureTable: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.AnAlreadyRunningFullPlayerSaveRefusesTheQuestEventBeforeAnyActorMutation(direct: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootInstanceDeliveryTests.DeliverAllLoot_MixedSuccessAndFailure_ReturnsFalseAndKeepsFailedItemRetryable",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootRequestHandlerTests.ClientLootRollActionHandler_ForwardsDecodedRollToLootManager",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.UncommittedOrUnflushedCreatesRetainCompleteIntentForAFreshUnit(outcome: \"suppressed\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.LateTrackedChangesPermanentlyRejectTheSharedContextBeforeSql(mutation: \"unmodified\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.ForcedCreationCannotUseQuantityOnlySatchelCapacityButOrdinaryCreationStillCan",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.RetryEnabledPreparationOwnsTheWholeReadTransactionWithoutReplayingActorEffects(faultPhase: 2)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.UpstreamLootReconciliationTests.QuestAndUnknownConditionsDoNotLeakRewards(condition: 999, completed: False, expected: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.UpstreamLootReconciliationTests.DirectDropRejectsDifferentMapAndPlayerDeaths(playerDeath: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.UncommittedOrUnflushedCreatesRetainCompleteIntentForAFreshUnit(outcome: \"rollback\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.GlobalLootManagerTests.IsMappedFlatLootGroup_LaughingWsQuestLootComment_ReturnsFalse",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.RetryEnabledPreparationOwnsTheWholeReadTransactionWithoutReplayingActorEffects(faultPhase: 0)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootInstanceResolutionTests.RollAllPasses_MarksDeliveredWithoutGrantingItem",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.ResetAndTimerPersistenceReconcileAtTheConfiguredProviderPrecision",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.PendingOrQuarantinedQuestWorkBlocksPlayerBeforeItsAuthPhase(quarantine: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.GlobalLootManagerTests.DropLoot_WithUnavailableCreatureTableReturnsFalseWithoutLoot(includeEmptyCreatureTable: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.RestoringAFlushedCascadeAndRollingBackRetainsTheOriginalObjectiveCandidate",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.CompletionCapturesRealObjectiveEventAndAdoptsOnlyItsCommittedRevision(track: 22)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.GlobalLootManagerTests.SendLootNotify_WhenNoMatchingActiveLoot_SendsRemoveForRequestedOwner",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.ClientItemUseLootBagHandlerTests.HandleMessage_WithMappedNonCategoryLootContainerUsesLootBag",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootPacketShapeTests.UnusedLootFeedbackPackets_WritePreserveCurrentPayloadLayouts",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.PendingOrQuarantinedQuestWorkBlocksPlayerBeforeItsAuthPhase(quarantine: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.APreviousUncertainOrdinarySaveIsReconciledByItsActualStoredCandidate(after: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.ARewardCaptureExcludesEveryLoadedManagerAndDirectQuestOrLeafSaveForItsCharacter",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootPacketShapeTests.SendLootNotify_IncludeGrantedStaticItemPreservesItemQualityForDropPresentation",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.ConfirmedPickupWaitsForTheOriginalInventorySaveLease",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.ADirectObjectiveSaveAlsoBlocksAnotherLoadedParentsDeletion",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.ManagerRetainsDeletionThroughRollbackAndRetiresItOnlyAfterAcknowledgedCommit",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.UpstreamLootReconciliationTests.QuestAndUnknownConditionsDoNotLeakRewards(condition: QuestNotComplete, completed: False, expected: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootRequestHandlerTests.ClientLootItemHandler_CollectRequest_ForwardsToGiveLoot",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootPacketShapeTests.SendLootNotify_IncludeGrantedTableBackedNonItemRewardsPreservesPresentationQuality",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.GlobalLootManagerTests.SendLootNotifyForVisibleOwner_ForcesNotifyAfterInitialNotify",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.ACommittedCascadeRetiresTheDeletedOwnerButALaterRestorationRecreatesEveryLeaf(restore: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBindOnPickupPolicyTests.GiveLoot_BindOnPickupItem_SecondCollectDeliversAndSoulbinds",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootRuntimeEvidenceTests.HandleLootCaptureNext_ArmsWorldSessionAndReportsOutputHint",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.AQueuedReplacementCanFollowThePreviousOwnersCommitWithoutLosingItsNewGraph",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.PreparationRejectsAnUnownedSqlGraphWithoutCreditingTheReward(mutation: \"missing-root\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.ReservedMergeTargetIsExcludedBeforeAnyImmediateCreationEffects",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.ZeroQuantityDoesNothingEvenWithNoFreeSlots",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootInstanceDeliveryTests.GiveLoot_VirtualItemUpdatesVirtualCollectObjective",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBagUsageTests.TryUseLootBag_SingleStackNoChargeReward_DeletesItemAndGrantsLoot",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.UpstreamLootReconciliationTests.QuestAndUnknownConditionsDoNotLeakRewards(condition: QuestIsComplete, completed: False, expected: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.ItemContainerLootTests.FactionLootGroup_DropsOnlyForMatchingFaction",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.CompletionCapturesRealObjectiveEventAndAdoptsOnlyItsCommittedRevision(track: 15)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.UncommittedOrUnflushedCreatesRetainCompleteIntentForAFreshUnit(outcome: \"failure\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.InventoryEnqueueFailureCannotRepeatAnyPartOfAConfirmedPickup(rejectAt: 1)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.AThrowingEventRetiresBothExistingAndNewOwnersBeforeReleasingTheSqlScope",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.ForeignRootOrObjectiveChangesAreRejectedWithoutOverwritingTheirState(root: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.GlobalLootManagerTests.CanDeliverGeneratedLoot_WithMissingRewardTable_ReturnsInvalidLootItem(type: VirtualItem, staticId: 88)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.GlobalLootManagerTests.TryDeliverHarvestLoot_SkipsInventoryFullRecipientBeforeRoundRobinAdvance",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.TouchingTheSameValueAfterFlushStillRetainsTheNewMutationRevision",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.RestagingTracksTheLastActualFlushRatherThanTheLastCapture(flushAgain: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.UncommittedOrUnflushedCreatesRetainCompleteIntentForAFreshUnit(outcome: \"dispose\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootPacketShapeTests.SendLootNotify_IncludeGrantedItemsPreservesCurrentDeliveryState",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.ResetNormalizationUsesTheProviderValueWithoutChangingTheLiveCapturedValue",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.WholeQuantityBoundCreationSkipsReservedEmptySlotsWithoutCorruptingPhysicalCapacity",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.SharedAndDirectEquipDestinationsCannotBypassTheirExistingGuards(location: Equipped)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.CompletionCapturesRealObjectiveEventAndAdoptsOnlyItsCommittedRevision(track: 28)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.UpstreamLootReconciliationTests.EmptyGenerationEligibilityDoesNotBecomeUnrestricted",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.NewQuestAndObjectivesRemainOwnedUntilTheOuterTransactionCommits",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootEligibilityTests.TryRecordRoll_RejectsIneligiblePlayer",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.FinalInvalidationDuringCommitWaitsForSqlAndNeverAdoptsLateActorState",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.ItemContainerLootTests.PromotedItemContainerGroupDropsExactlyOneWeightedItem",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.ExplicitUnitsSupportSaveChangesWithoutAcceptingTrackedOriginals(secondFlush: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.RetryEnabledPreparationOwnsTheWholeReadTransactionWithoutReplayingActorEffects(faultPhase: 1)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.AProbeMustUseAFreshUntrackedContextAndDisposalRequiresReload(tracked: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.AForeignSqlMutationAfterFlushCannotCommitThroughTheOwnedUnit",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quests.InventoryQuestObjectiveUpdaterTests.OnPublicEventObjectiveSucceeded_CreditsEventLinkedObjectiveTypes",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootInstanceDeliveryTests.GiveLoot_StaticItemInventoryFull_DoesNotMarkDeliveredAndCanBeRetried",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.CompletionCapturesRealObjectiveEventAndAdoptsOnlyItsCommittedRevision(track: 24)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.LateTrackedChangesPermanentlyRejectTheSharedContextBeforeSql(mutation: \"scalar\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.CanceledDeletionRestoresTheWholeQuestBeforeOrAfterTheCascadeWasFlushed(flushDelete: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.AReplacementOwnerIsRebasedWithoutAcknowledgingItsNewIntentOrRevivingTheOldOwner",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.PreparationRejectsAnUnownedSqlGraphWithoutCreditingTheReward(mutation: \"progress\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.UpstreamLootReconciliationTests.MapScopedRemovalDoesNotDeleteAnotherMapsSameOwnerGuid",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.FullBagWithOnlyUnboundSpaceDoesNotTurnThatStackIntoBoundItems",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.MovingMapsDuringAnItemNoticeStopsTheOriginalLootGrant",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.CreationFillsOnlyCompatibleBoundStacksAndBindsEveryNewStack",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.UpstreamLootReconciliationTests.ClassConditionKeepsEligibleGroupMemberEvenWhenTaggerIsIneligible",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.ConfirmedPickupDoesNotMergeIntoAnExistingUnboundStack",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBagUsageTests.TryUseLootBag_SingleStackDeleteFailureDoesNotGrantLoot",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.RetriedStackNoticeRebuildsItsUnmodifiedAcceptedQuantity",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.CompletionCapturesRealObjectiveEventAndAdoptsOnlyItsCommittedRevision(track: 26)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.AggregateSnapshotRestoreRejectsBeforeRestoringEarlierItemCounts",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.AProbeMustUseAFreshUntrackedContextAndDisposalRequiresReload(tracked: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.BoundStacksWithDifferentChargesOrRemainingExpirationAreNotMerged(differentCharges: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.PendingDeletionDoesNotContinueTickingItsQuestTimerOrEmitAFalseFailure",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quests.InventoryQuestObjectiveUpdaterTests.OnMatchEntered_CreditsParticipateInGroupContent",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.DeletingANewQuestAfterStagingCannotLoseTheDeletionWhenItsCreateCommits(restageDelete: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.GlobalLootManagerTests.TryDeliverHarvestLoot_RoundRobinIgnoresOutOfRangeSameMapMember",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.RefusedGrantDoesNotRepeatItemsOrReuseTheRejectedPacket",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.UpstreamLootReconciliationTests.DirectDropRejectsDifferentMapAndPlayerDeaths(playerDeath: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.UpstreamLootReconciliationTests.TrackedLooterOnAnotherMapCannotCollectRollOrAssign",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootRuntimeEvidenceTests.SendLootNotify_ArmedEvidenceCaptureExportsSuppressedArtifact",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBagUsageTests.TrySalvageItem_WithClientTypeLevelRuntimeRowDeletesSourceItemAndGrantsMaterial",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.CompletionCapturesRealObjectiveEventAndAdoptsOnlyItsCommittedRevision(track: 25)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quests.InventoryQuestObjectiveUpdaterTests.OnCurrencyAdded_CreditsEarnCurrencyObjective",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.CompletionCapturesRealObjectiveEventAndAdoptsOnlyItsCommittedRevision(track: 20)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.BoundPickupSurvivesFailedFullPlayerSaveRetryAndFreshReload",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.ClientItemUseLootBagHandlerTests.HandleMessage_WithInvalidItemLocationSendsItemBadId",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.ClientItemUseLootBagHandlerTests.HandleMessage_WhenSalvageFindsInventoryFullSendsInventoryFullError",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.ClientItemUseLootBagHandlerTests.HandleMessage_WhenLootBagDeliveryFindsInventoryFull_SendsInventoryFullError",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.CompletionCapturesRealObjectiveEventAndAdoptsOnlyItsCommittedRevision(track: 21)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.OrdinaryNonMaterialCreationKeepsItsUnboundDefault",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.UpstreamLootReconciliationTests.NonEquipmentRewardsDoNotRequireEquipmentRollsOrMasterAssignment",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootPacketShapeTests.ServerLootNotify_WritePreservesOwnerParentExplosionHeaderBeforeEntries",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.ClientItemUseLootBagHandlerTests.HandleMessage_WithSalvageableNonLootBagUsesSalvageManager",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.RefusingACollectQuestPacketCannotLeaveItsCompletionHalfApplied",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootInstanceResolutionTests.GiveLoot_DirectDeliveryWithRegisteredLooterDoesNotSendLootItemUpdate",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.AnAlreadyRunningFullPlayerSaveRefusesTheQuestEventBeforeAnyActorMutation(direct: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.GlobalLootManagerTests.RemoveLootForOwner_RemovesOwnerInstancesAndSendsRemoveToTrackedLooters",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.LateTrackedChangesPermanentlyRejectTheSharedContextBeforeSql(mutation: \"original\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootRequestHandlerTests.ClientLootItemHandler_NotifyRequest_ForwardsToSendLootNotify",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootInstanceResolutionTests.AddLootItem_DuplicateAmountOverflow_DoesNotWrapExistingAmount",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.GlobalLootManagerTests.SendLootNotify_DuplicateRequestAfterInitialNotify_DoesNotReplayFullNotify",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.GlobalLootManagerTests.GiveLoot_WhenLastItemDelivered_RemovesInstanceImmediately",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.CompletionCapturesRealObjectiveEventAndAdoptsOnlyItsCommittedRevision(track: 33)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.GlobalLootManagerTests.CanDeliverGeneratedLoot_AccountCurrencyUsesAccountCurrencyTypeTableForValidIds",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBagUsageTests.TrySalvageItem_WithoutSalvageGroupDoesNotDeleteItem",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.MatchingChargeAndExpirationStackCanMergeWithoutAllocatingAnItem",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.AnUnfinishedNormalRootOrDirectLeafSaveRefusesCaptureBeforeCallingTheEvent(leaf: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBagUsageTests.TryUseLootBag_AccountCurrencyMissingGameTable_DoesNotConsumeItem",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootEligibilityTests.AssignMasterLoot_RejectsNonMasterAssigner",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.RetriedLootFeedbackCannotCrossANewMapAdmissionOrUnitGuid(newAdmission: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.AnotherLoadedOwnerCannotJoinOrOverlapTheUnfinishedAggregate(sameContext: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.NonstackableQuantityRequiresOnePhysicalSlotPerItem",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.CompletionCapturesRealObjectiveEventAndAdoptsOnlyItsCommittedRevision(track: 27)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.ItemContainerLootTests.ClassLootGroup_DropsOnlyForMatchingClass",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.ForcedMaterialKeepsItsBoundPhysicalInstanceAndOrdinaryMaterialKeepsSatchelRouting",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBagUsageTests.TryUseLootBag_AccountCurrencyMissingGameTableEntry_DoesNotConsumeItem",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootInstanceDeliveryTests.GiveLoot_Cash_SendsLootGrant",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quests.InventoryQuestObjectiveUpdaterTests.RefreshCollectItemForItem_NoActiveQuests_DoesNothing",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.CollectQuestRefreshUsesTheCompleteBoundAndUnboundInventoryCount",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.UpstreamLootReconciliationTests.ProbabilityBoundariesPreserveZeroAndGuaranteedDrops(groupChance: 100, itemChance: 100, expected: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.OrdinaryCreationSkipsReservedMergeAndEmptyDestination",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.GlobalLootManagerTests.GiveGeneratedLoot_MultipleItemsWithGrantedNotify_SendsExplosionNotifyThenRemoveWithActualRows",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.UpstreamLootReconciliationTests.ConditionalRollDoesNotAdmitOtherGroupMembers",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Crafting.CraftingLootIdCraftHandlerTests.SimpleCraft_WithLootIdOutput_GeneratesAndDeliversLoot",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.ItemContainerLootTests.PromotedItemContainerGroupHonorsOneDropPolicyWhenSeveralItemsRoll",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.RewardCommitFaultsKeepExactQuestOwnershipUntilTheTerminalResultIsHandled(after: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.CompletionCapturesRealObjectiveEventAndAdoptsOnlyItsCommittedRevision(track: 36)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootInstanceResolutionTests.RollWinnerOffline_RemainsLootableForWinnerWhenTheyReturn",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootInstanceDeliveryTests.GiveGeneratedLoot_WithGrantedNotify_WhenPartiallyDelivered_DoesNotSendGrantedNotify",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.TwoCompletionsAreFifoAndTheSecondUsesTheFirstCommittedBaseline",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.PreparationsAndExecutionResultsRequireTheExactCaptureProof",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.GlobalLootManagerTests.CreateLootRecipientContext_GroupCorpseLootKeepsOnlyInRangeMembersEligible",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootPacketShapeTests.LootRollResultPackets_WriteMappedRollLayouts",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootInstanceResolutionTests.AssignMasterLoot_DeferredDeliveryLeavesResolvedLootForAssignee",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.SavepointRollbackAndOuterCommitRetainLaterIntentForAFreshReconciliation",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.ManagerDoesNotRetireACanceledDeletionAcknowledgedByAnOlderSave",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootRequestHandlerTests.ClientLootAssignMasterHandler_ForwardsDecodedAssigneeToLootManager",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.BoundCreationUsesOtherSlotsInsteadOfChangingAReservedMerge",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.LateTrackedChangesPermanentlyRejectTheSharedContextBeforeSql(mutation: \"detached\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.AggregateResizeRejectsBeforeRelocatingItemsFromTheTail",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quests.InventoryQuestObjectiveUpdaterTests.OnSchematicCrafted_CreditsCraftSchematicObjective",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.GlobalLootManagerTests.GiveRandomOmnibitKillReward_GrantsCurrencyWithoutExplosionNotify",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.GlobalLootManagerTests.IsMappedFlatLootGroup_DataMappingComment_ReturnsTrue",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBagUsageTests.TryUseLootBag_ItemUseFails_DoesNotDeliverLoot",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootPacketShapeTests.ClientLootAssignMaster_ReadsOwnerLootAndAssigneeIdentity",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.LostAcknowledgementsReconcileEitherOriginalOrCommittedRowsWithoutDuplicateCreates(afterCommit: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.ClientItemUseLootBagHandlerTests.HandleMessage_WithNonLootBagSendsCannotBeSalvaged",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.LateTrackedChangesPermanentlyRejectTheSharedContextBeforeSql(mutation: \"field-unmodified\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.GlobalLootManagerTests.LootRequestBoundaries_NonLooterReturnsWithoutThrowing",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.ForeignRootOrObjectiveChangesAreRejectedWithoutOverwritingTheirState(root: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.OrdinaryCreationWithoutAvailableCapacityDoesNotAllocateAnItemId",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.RewardCommitFaultsKeepExactQuestOwnershipUntilTheTerminalResultIsHandled(after: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.AnotherLoadedOwnerCannotJoinOrOverlapTheUnfinishedAggregate(sameContext: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.BoundStacksWithDifferentChargesOrRemainingExpirationAreNotMerged(differentCharges: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.SharedAndDirectEquipDestinationsCannotBypassTheirExistingGuards(location: RealmBank)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.PreparationRejectsAnUnownedSqlGraphWithoutCreditingTheReward(mutation: \"missing-leaf\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootRuntimeEvidenceTests.SendLootNotify_ArmedEvidenceCaptureExportsNotifyArtifact",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.GlobalLootManagerTests.GiveGeneratedLoot_AccountCurrencyWithGrantedNotify_SendsGrantedExplosionNotifyThenRemoveFromParentSource",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.ItemContainerLootTests.QuestVirtualLootGroup_DropsOnlyWhenQuestObjectiveIsActive",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBagUsageTests.TryUseLootBag_EmptyLootGroup_DoesNotConsumeItem",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.CompatibleBoundStackCanAcceptTheWholeQuantityWithoutAFreeSlot",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBindOnPickupPolicyTests.GiveLoot_NonBindOnPickupItem_DeliversOnFirstCollect",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.CompletionCapturesRealObjectiveEventAndAdoptsOnlyItsCommittedRevision(track: 19)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.ClientItemUseLootBagHandlerTests.HandleMessage_WithValidLootBagButMissingLoot_DoesNotDisconnect",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.ADeletionCommittedAfterCancellationCanBeRestoredInAFreshUnit",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.CompletionCapturesRealObjectiveEventAndAdoptsOnlyItsCommittedRevision(track: 16)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.UnchangedCapturedRowsAreCleanAfterCommitAndNoQuestChangesStillCompleteTheMedal",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootEligibilityTests.CanTryMasterAssign_RequiresMasterAuthorityAndEligibleAssignee",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.CompletionCapturesRealObjectiveEventAndAdoptsOnlyItsCommittedRevision(track: 17)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBagUsageTests.TryUseLootBag_AccountCurrencyReward_ConsumesItemAndGrantsLoot",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.ConfirmedPickupCanMergeIntoAnExistingBoundStack",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.RefusedInitialItemNoticeCannotSuppressCollectCreditAcrossTransfer",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.RetriedLootFeedbackCannotCrossANewMapAdmissionOrUnitGuid(newAdmission: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.UpstreamLootReconciliationTests.ProbabilityBoundariesPreserveZeroAndGuaranteedDrops(groupChance: 0, itemChance: 100, expected: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.AnOldDeletionAcknowledgementCannotRetireAReplacementQuestObject",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.UpstreamLootReconciliationTests.ItemQuantitySupportsInclusiveUnsignedRange",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.UpstreamLootReconciliationTests.QuestAndUnknownConditionsDoNotLeakRewards(condition: QuestIsComplete, completed: True, expected: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.GlobalLootManagerTests.NextLootId_ConcurrentAllocation_ReturnsUniqueNonZeroIds",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootPacketShapeTests.ServerLootItemUpdate_WritesMappedLootItemPayload",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBindOnPickupPolicyTests.GiveLoot_BindOnPickupItem_FirstCollectSendsBindcheckWithoutDelivering",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestRewardCaptureTests.AnUnfinishedNormalRootOrDirectLeafSaveRefusesCaptureBeforeCallingTheEvent(leaf: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Entity.InventorySoulboundCreationTests.SplitCreationPreservesChargeAndExpirationRulesAndFirstPacketBinding(requestedCharges: 0, expectedCharges: 5)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.InventoryEnqueueFailureCannotRepeatAnyPartOfAConfirmedPickup(rejectAt: 2)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.GlobalLootManagerTests.CanDeliverGeneratedLoot_WithMissingRewardTable_ReturnsInvalidLootItem(type: AccountItem, staticId: 77)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.DeletingANewQuestAfterStagingCannotLoseTheDeletionWhenItsCreateCommits(restageDelete: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.UpstreamLootReconciliationTests.QuestAndUnknownConditionsDoNotLeakRewards(condition: QuestNotComplete, completed: True, expected: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.FullPhysicalBagCannotUseUnboundStackCapacityAndCanRetryAfterSpaceIsFreed",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.ARefusedPacketDoesNotPreventTheCompletePhysicalAwardFromSavingAndReloading",
+          "outcome": "Passed"
+        },
+        {
+          "name": "NexusForever.Game.Tests.Loot.GlobalLootManagerTests.RemoveClientLootUnitIdOverlay_NormalisesObservedCollectId",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    "relatedFilter": "FullyQualifiedName~NexusForever.Game.Tests.Loot|FullyQualifiedName~InventorySoulboundCreationTests|FullyQualifiedName~CraftingLootId|FullyQualifiedName~InventoryQuestObjectiveUpdaterTests|FullyQualifiedName~QuestRewardCaptureTests|FullyQualifiedName~QuestPersistenceDurabilityTests|FullyQualifiedName~PublicEventQuest"
+  },
+  "binaries": [
+    {
+      "path": "artifacts/continuation-20261106/loot-feedback-delivery/isolated/Source/NexusForever.Game/bin/Debug/net10.0/NexusForever.Game.dll",
+      "sha256": "2e94f0cfc1f4e4ede3591d1337531da26991253d19129f0e722a7a489892c855",
+      "bytes": 4920832
+    },
+    {
+      "path": "artifacts/continuation-20261106/loot-feedback-delivery/isolated/Source/NexusForever.Game/bin/Debug/net10.0/NexusForever.Game.pdb",
+      "sha256": "9b95aa7643f8659a0923526282ea1736b17eacd6a0684675ae16c1c88b3de82d",
+      "bytes": 3056296
+    },
+    {
+      "path": "artifacts/continuation-20261106/loot-feedback-delivery/isolated/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+      "sha256": "923e373e4e485bb02d5d60ce8207294e05fc74e6bccac7776c437c6b216d7f4c",
+      "bytes": 9920000
+    },
+    {
+      "path": "artifacts/continuation-20261106/loot-feedback-delivery/isolated/Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.pdb",
+      "sha256": "44fb007bc7de12a4eecd5408c438c2988765cfb08faf99f8d52c2dd5477d3125",
+      "bytes": 4477788
+    }
+  ],
+  "originalNegatives": {
+    "path": "artifacts/continuation-20261106/loot-feedback-delivery/baseline-replay-results/baseline.trx",
+    "sha256": "0d45eab32e86c22384b22bd50ff389996fde7fa25e2f06de4ceaaa670c07c0bc",
+    "bytes": 11989,
+    "counters": {
+      "total": 3,
+      "executed": 3,
+      "passed": 0,
+      "failed": 3,
+      "error": 0,
+      "timeout": 0,
+      "aborted": 0,
+      "inconclusive": 0,
+      "passedButRunAborted": 0,
+      "notRunnable": 0,
+      "notExecuted": 0,
+      "disconnected": 0,
+      "warning": 0,
+      "completed": 0,
+      "inProgress": 0,
+      "pending": 0
+    },
+    "cases": [
+      {
+        "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.InventoryEnqueueFailureCannotRepeatAnyPartOfAConfirmedPickup(rejectAt: 1)",
+        "outcome": "Failed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.PublicationCannotReenterTheSameLootThroughAReplacementInventory",
+        "outcome": "Failed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.InventoryEnqueueFailureCannotRepeatAnyPartOfAConfirmedPickup(rejectAt: 2)",
+        "outcome": "Failed"
+      }
+    ]
+  },
+  "secondReviewNegatives": {
+    "path": "artifacts/continuation-20261106/loot-feedback-delivery/review2-controls/review.trx",
+    "sha256": "d30882e9ec3214ded8aca1afdc6971a16508d8432e2ef4c88177756c46ba3a20",
+    "bytes": 8113,
+    "counters": {
+      "total": 2,
+      "executed": 2,
+      "passed": 0,
+      "failed": 2,
+      "error": 0,
+      "timeout": 0,
+      "aborted": 0,
+      "inconclusive": 0,
+      "passedButRunAborted": 0,
+      "notRunnable": 0,
+      "notExecuted": 0,
+      "disconnected": 0,
+      "warning": 0,
+      "completed": 0,
+      "inProgress": 0,
+      "pending": 0
+    },
+    "cases": [
+      {
+        "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.NestedInventoryAdmissionDoesNotWaitForAnotherThreadsMapGate",
+        "outcome": "Failed"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Loot.LootBoundPickupTests.RefusedInitialItemNoticeCannotSuppressCollectCreditAcrossTransfer",
+        "outcome": "Failed"
+      }
+    ]
+  },
+  "additionalRetainedControls": [
+    {
+      "path": "review-controls-02",
+      "classification": "Two stale map/GUID failures; separate null PushedItemIds fixture failure corrected before collect-state negative."
+    },
+    {
+      "path": "review-controls-03",
+      "classification": "Real collect quest remains Accepted after refused objective packet in pre-fix candidate."
+    }
+  ],
+  "reviews": {
+    "spec": {
+      "remainingFindings": 0,
+      "reviewer": "/root/group_size_spec_review"
+    },
+    "standards": {
+      "remainingFindings": 0,
+      "reviewer": "/root/group_size_standards_review"
+    },
+    "readOnly": true,
+    "tree": "0f6020d4d2a92b3be6ce68c91995899d7369c295"
+  },
+  "discardedEvidence": "Shared scratch focused-01 exposed a test absent from selected source; focused-01/02 are not final qualification. Preserved, not normalized.",
+  "limits": [
+    "Exported parent Game/Game.Tests plus eight selected C# files; isolated project references replaced with 138 verified frozen dependency DLLs, Game uses120; explicit shared framework. Production project files unchanged.",
+    "No combined-root project-graph/full-solution/full-suite qualification. Concurrent Q4526/Q5597 commits are preserved, not added to the tested Game snapshot.",
+    "Existing confirmation/binding/capacity policy, legacy custom inventory and nonphysical loot paths remain; this guarantee covers supported real physical BOP Inventory delivery.",
+    "Preparation rollback only before acceptance. Arbitrary script-exception recovery and durable loot receipt/process crash recovery remain open.",
+    "No schema, entitlement, packet layout or new provider/native-client/CUA workload. Socket receipt/native/retail and hosted World/Auth restart remain open.",
+    "Earlier provider evidence retains its exact separate source/DLL identity; it is not a fresh provider qualification of this combined publication.",
+    "Raw logs, TRX, local snapshots, binaries and runtime assets are ignored; the portable report travels in Git."
+  ],
+  "rawArtifacts": "artifacts/continuation-20261106/loot-feedback-delivery/"
+}

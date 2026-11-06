@@ -25,6 +25,8 @@ namespace NexusForever.Game.Entity
             private readonly Inventory owner;
             public InventoryMutationOperation(Inventory owner, bool readOnly = false)
             {
+                if (owner.lootPreparation != null && owner.inventoryMutationDepth != 0 && !readOnly)
+                    throw new InvalidOperationException("Physical loot preparation cannot reenter inventory mutation.");
                 if ((owner.realmBankPublishing || owner.IsMarketplacePublishing) && !readOnly) throw new InvalidOperationException("Bank publication cannot reenter inventory mutation.");
                 this.owner = owner; ++owner.inventoryMutationDepth;
             }

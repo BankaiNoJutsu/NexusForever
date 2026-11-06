@@ -96,6 +96,7 @@ namespace NexusForever.Game.Entity
 
         public void Update(double lastTick)
         {
+            PublishLootNotifications();
             lock (MutationGate)
             {
                 using var mutation = new InventoryMutationOperation(this);

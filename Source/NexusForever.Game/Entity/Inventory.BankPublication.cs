@@ -32,7 +32,8 @@ namespace NexusForever.Game.Entity
 
         private void EnqueueItemMessage(IWritable message)
         {
-            if (realmBankNotifications != null) realmBankNotifications.Add(message);
+            if (lootPreparation != null) lootPreparation.Add(message);
+            else if (realmBankNotifications != null) realmBankNotifications.Add(message);
             else if (!BufferCommodityMessage(message) && !BufferPathItemMessage(message))
             {
                 IGameSession session = player.Session;
@@ -46,13 +47,15 @@ namespace NexusForever.Game.Entity
 
         private void ApplyInventoryEffect(Action effect)
         {
-            if (realmBankNotifications != null) realmBankNotifications.Add(effect);
+            if (lootPreparation != null) lootPreparation.Add(effect);
+            else if (realmBankNotifications != null) realmBankNotifications.Add(effect);
             else effect();
         }
 
         private void AfterBankCommit(Action effect)
         {
-            if (realmBankNotifications != null) realmBankNotifications.After(effect);
+            if (lootPreparation != null) lootPreparation.Add(effect);
+            else if (realmBankNotifications != null) realmBankNotifications.After(effect);
             else effect();
         }
 

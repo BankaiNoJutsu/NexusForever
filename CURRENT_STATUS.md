@@ -1,5 +1,8 @@
 # NexusForever Feature Restoration - Current Status
 
+[Physical loot feedback](Decomp/Analysis/PHYSICAL_LOOT_DELIVERY_FEEDBACK.md) now accepts the complete bound award and collect transition before fallible UI. Refused notices retry without repeating quantity; map/GUID changes abandon old publication. All19 focused/all239 related Source/SQLite cases, incremental isolated builds and both review axes pass; eight compiler-source bindings match. Durable loot-receipt/process/provider/socket/native/retail remain open. The user requested publication and machine transfer; resume from the [saved prompt](Decomp/Analysis/RETAIL_RESTORATION_RESUME_PROMPT.md), checking completed provider timestamps before hosted World/Auth restart. Broader restoration remains unfinished.
+
+
 [Q5597 explosive collection](Decomp/Analysis/Q5597_EXPLOSIVES_COLLECTION.md) now consumes only accepted objective progress and retries failed original-object removal without duplicate credit. Seven baseline failures are fixed;11 new/all82 scoped and the same11 recovered-catalog cases,clean builds and both reviews pass. Full Player SQLite failure/retry/fresh Quest reload preserves six credits/Achieved. Physical/public activation,accept/turnin,world respawn,provider/native/retail and broader Goal remain open. Concurrent work is preserved; Goal active.
 
 

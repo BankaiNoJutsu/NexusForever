@@ -22,7 +22,7 @@ using GameItem = NexusForever.Game.Entity.Item;
 
 namespace NexusForever.Game.Tests.Loot;
 
-public sealed class LootBoundPickupTests
+public sealed partial class LootBoundPickupTests
 {
     [Fact]
     public void ConfirmedPickupIsBoundBeforeItsFirstInventoryPacket()
@@ -161,7 +161,8 @@ public sealed class LootBoundPickupTests
         internal Actor Reload()
         {
             using var context = Storage.Context();
-            return Load(context.Character.AsNoTracking().Include(row => row.Item).Single());
+            return Load(context.Character.AsNoTracking().Include(row => row.Item)
+                .Include(row => row.Quest).ThenInclude(row => row.QuestObjective).Single());
         }
         internal GameItem Add(uint count, bool bound)
         {

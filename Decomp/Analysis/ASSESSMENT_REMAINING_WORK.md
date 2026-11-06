@@ -1,5 +1,8 @@
 # Assessment follow-through goal
 
+[Physical loot feedback](PHYSICAL_LOOT_DELIVERY_FEEDBACK.md) completes the bounded refused-notice/partial physical BOP award slice. Whole quantity and collect state precede UI; retry, stale admission, packet rebuilding and full Player SQLite save/reload controls pass. All19 focused/all239 related cases, isolated incremental builds, eight compiler-source bindings and both review axes pass. Full durable loot receipt/crash recovery, arbitrary script-exception recovery, provider/socket/native/retail stay open. User-requested machine transfer follows publication; [resume prompt](RETAIL_RESTORATION_RESUME_PROMPT.md) starts with completed timestamp evidence applicability, then hosted World/Auth restart using verified destination assets.
+
+
 [Q5597 accepted explosive collection](Q5597_EXPLOSIVES_COLLECTION.md) completes the supported producer consumption/removal boundary. Refused or satisfied progress does not spend a pickup; failed removal retries the original object without replaying credit. Seven baseline failures are fixed;11 new/all82 scoped plus the same11 recovered-catalog cases,clean builds and both reviews pass. Full Player SQLite failure/retry/fresh reload preserves all six credits/Achieved. Existing turn-in qualification is separate. Public/physical activation,accept/turnin,world respawn,general callback repair,provider/socket/native/retail remain open. Continue independent actionable gameplay; broader Goal active.
 
 
