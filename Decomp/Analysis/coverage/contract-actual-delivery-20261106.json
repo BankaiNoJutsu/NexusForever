@@ -1,0 +1,295 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-06T01:28:17.989726+00:00",
+  "baseCommit": "172a33335ecc6f799fb322498cf5b42063b313fc",
+  "milestone": "Canonical Contract internal claim delivery with recovered actual ItemInfo metadata",
+  "classification": "Actual-catalog Source/SQLite settlement/publication or Auth compensation, replay/reload qualification; public claims/reset and overall Goal remain open",
+  "sources": [
+    {
+      "path": "Source/NexusForever.Game.Tests/Entity/InventoryRewardDeliveryTests.cs",
+      "sha256": "1614783ad2d1cc7571a3003a0d774276b822e73578496d55e2cb893f60100b86",
+      "gitBlob": "6cf10ff59cbdc7613b651a1713b7b457fb72e301"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Quest/ContractClaimTransactionTests.cs",
+      "sha256": "e6f805bf3075a07c7ae48b1e397490097e622046ef7053e43535743b42c57860",
+      "gitBlob": "64f2a96004be61a33fdef43ed915536a267fdada"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Quest/ContractActualCatalogQualification.cs",
+      "sha256": "2ab530dfa8542257f08f648b4969b8d1a829f71d388a73b005ae3721242d7b29",
+      "gitBlob": "63f2fb403c477bc624f0e36c0b08cc3761d6232e"
+    }
+  ],
+  "sourceBoundary": {
+    "base": "172a33335ecc6f799fb322498cf5b42063b313fc",
+    "trackedSourceFiles": 6281,
+    "missing": [],
+    "differences": [
+      {
+        "path": "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+        "head": "9b4e604e08391bf229552fa04081ecf9c74fec4d",
+        "candidate": "7de92fafe0c2474ba8428ca9ceee883d39138b46"
+      },
+      {
+        "path": "Source/NexusForever.ClientConnector/packages.config",
+        "head": "fa4b77dc45783358023c1cd38e6ff9bad122aea4",
+        "candidate": "8ab13a9023dec3cf548ee61ba183013bd098a297"
+      },
+      {
+        "path": "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+        "head": "64769a2266f7feab861fcc61cd2b00a0a05da8c4",
+        "candidate": "74272fd6bf29afac14c5d62cb172e81b4edee19a"
+      },
+      {
+        "path": "Source/NexusForever.Database/NexusForever.Database.csproj",
+        "head": "61f9d5326c59ec7018164eba605a01f4081dfded",
+        "candidate": "163c4f01e198e71066afcd9089a367c78b4c3de6"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Entity/InventoryRewardDeliveryTests.cs",
+        "head": "c1425807b1678913f0b0b60b87ee86eda38d6501",
+        "candidate": "6cf10ff59cbdc7613b651a1713b7b457fb72e301"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Quest/ContractClaimTransactionTests.cs",
+        "head": "17fd8873401c1e704eb31f1a5ac1f3b4c969a5a6",
+        "candidate": "64f2a96004be61a33fdef43ed915536a267fdada"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+        "head": "1ffaefc3cf8c1eb7c5b0534d4d91f28eb7001347",
+        "candidate": "6c145b847fa7316e7982ab44cfa404f4e1e7fc70"
+      },
+      {
+        "path": "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj",
+        "head": "74f0ec9ebbf4894dd7ef64f379a773a9e4ce1295",
+        "candidate": "ecd970da6d0d220f3caaf6780656c1809e18a9af"
+      }
+    ],
+    "newOwned": [
+      "Source/NexusForever.Game.Tests/Quest/ContractActualCatalogQualification.cs"
+    ]
+  },
+  "runtimeInputs": {
+    "manifest": {
+      "path": "artifacts/continuation-20261106/contract-actual-delivery/candidate-inputs.json",
+      "sha256": "05ca79f64d67e2122e13a2972d380cd4ff57576acdedf329c008e18b8d01b63b"
+    },
+    "dllCount": 140,
+    "readerSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+    "gameSha256": "8375e6b84d1553d9373e5a9c2ee2f67e7284a133c237ea36f0d5af60601a15fc",
+    "testSha256": "177141f53182555150d5a665a1af15cb0ec96180849f8b0f25ce8373598533d3",
+    "productionGameAbstractWorldDllsUnchangedFrom172a3333": true,
+    "all3SourceAnd140DllsUnchangedBeforeAfter": true
+  },
+  "actualInputs": {
+    "recoveryManifestSha256": "bfb15d7824bb7ed4f4b03cc26411b3adb07317744ff2939b9fd1101c476902ad",
+    "all385HashesAndExtentsChecked": true,
+    "inputManifest": {
+      "path": "artifacts/continuation-20261106/contract-actual-delivery/run-01/inputs.json",
+      "sha256": "ebb6f229e91617c11a98e570f070eb5f12456d0f109f4a586a2444a37f262543"
+    },
+    "sixteenOwningReaderTables": [
+      {
+        "File": "recovered-tables\\AccountCurrencyType.tbl",
+        "Sha256": "51b1aa86d32edd02ccff95ce81decb93396239516ccee738e0faa5de26624417",
+        "Bytes": 2368
+      },
+      {
+        "File": "recovered-tables\\AccountItem.tbl",
+        "Sha256": "13a07fbbe1737851ebc67a88697d3cd80fd2281795ae85bfb49c3f79855510aa",
+        "Bytes": 219248
+      },
+      {
+        "File": "recovered-tables\\CurrencyType.tbl",
+        "Sha256": "2d2a28abc4d9054c9f12008d8ae59618feed5306ee3f335a225ea527bac7b692",
+        "Bytes": 2512
+      },
+      {
+        "File": "recovered-tables\\GameFormula.tbl",
+        "Sha256": "541e1781b8ed5e890cd194e0ad8bf1ceae63cbbb5308026679bc8459e2c1c007",
+        "Bytes": 63872
+      },
+      {
+        "File": "recovered-tables\\Item2.tbl",
+        "Sha256": "f51673fdbf5e97678cf67f62d0a1975fbb60be98bfe79a9c354f7fc5498b0ce2",
+        "Bytes": 15659408
+      },
+      {
+        "File": "recovered-tables\\Item2Category.tbl",
+        "Sha256": "9e7a454f51b5158a3f3d92b5b190ed31b298485058112268dfa46ae20e698ee7",
+        "Bytes": 9760
+      },
+      {
+        "File": "recovered-tables\\Item2Family.tbl",
+        "Sha256": "791eb8c61ed6e2f1ea0a9919afeaeb5fbf3f444269c1fc164cb7336e16a25e1b",
+        "Bytes": 1520
+      },
+      {
+        "File": "recovered-tables\\Item2Type.tbl",
+        "Sha256": "4349684d6bc7a0f3819e8d8eef698e23603af48a06c18a3800aa61bf8aa9c3fb",
+        "Bytes": 29168
+      },
+      {
+        "File": "recovered-tables\\ItemBudget.tbl",
+        "Sha256": "a9f2e6e09e9d982b48764bd555288d802561de74fc9ced7d9285e706ee6f971e",
+        "Bytes": 2384
+      },
+      {
+        "File": "recovered-tables\\ItemQuality.tbl",
+        "Sha256": "0f90558d988e1d88a9e9b61b440cc32af9d8005d02e7d09abdde34ceb7383134",
+        "Bytes": 2160
+      },
+      {
+        "File": "recovered-tables\\ItemRandomStat.tbl",
+        "Sha256": "806137ef8a907e126fc864b9958101e95a3e34ac3c29f42da1fdbc230893c396",
+        "Bytes": 1680
+      },
+      {
+        "File": "recovered-tables\\ItemSlot.tbl",
+        "Sha256": "17fe0ecc810be365b8218b79f8ed7d5ff27dcc37989754fc2d354ffdbcbe93bd",
+        "Bytes": 3968
+      },
+      {
+        "File": "recovered-tables\\ItemStat.tbl",
+        "Sha256": "f5ad85408bffa6a9e600c1c377db2b140cf18f173d00111db527d0f50da5a5c2",
+        "Bytes": 22640
+      },
+      {
+        "File": "recovered-tables\\RewardTrack.tbl",
+        "Sha256": "aa2d04411e1db7b22eaa0d73ffd0b8d298bb3d62d9a24ac5fa0c4caa6b000d4f",
+        "Bytes": 5376
+      },
+      {
+        "File": "recovered-tables\\RewardTrackRewards.tbl",
+        "Sha256": "81f726003fb85ec5506fc9cdfc2550cc62c82d90a7379666715f19f8f1c1c1d6",
+        "Bytes": 32000
+      },
+      {
+        "File": "recovered-tables\\UnitProperty2.tbl",
+        "Sha256": "6edfb62a0235018b8fdde42c417fdc8a0ae2284eb938cccaeb7a849e5e481d2d",
+        "Bytes": 25840
+      }
+    ],
+    "historicalSourcePinAudit": {
+      "path": "artifacts/continuation-20261106/contract-actual-delivery/input-pin-audit.json",
+      "sha256": "fd3133bca251814f64cc5775f9e2c48cecb5b1e9782c0720a1b51121ca0e7083"
+    }
+  },
+  "executed": {
+    "passed": 726,
+    "uniqueRewardRows": 242,
+    "itemChoices": 486,
+    "accountChoices": 240,
+    "distinctItemIds": 485,
+    "stackableItemChoices": 6,
+    "maxStackCounts": {
+      "1": 480,
+      "30": 6
+    },
+    "itemQuantities": {
+      "1": 486
+    },
+    "elapsedSeconds": 572.308411,
+    "finalCreditChoices": 6,
+    "allQuoteReceiptIdentitiesRetained": true,
+    "allInternalClaimsReplayWithoutApplyingAgain": true,
+    "allChoicesReloadClaimed": true,
+    "realItemInfoForEveryItemChoice": true,
+    "result": {
+      "path": "artifacts/continuation-20261106/contract-actual-delivery/run-01/result.json",
+      "sha256": "7cc107bfa7e0cd79b860a7fc9cf64f02296a15aa2090b3c44fd3cb2df7729093"
+    },
+    "log": {
+      "path": "artifacts/continuation-20261106/contract-actual-delivery/run-01.log",
+      "sha256": "75dd7fa6d8c1a9b978f3625ebc5afaebcc9884b78260fd5b6c164f3b7a45ec9c"
+    },
+    "existingFixtureControls": {
+      "passed": 967,
+      "failed": 0,
+      "skipped": 0,
+      "testBodyApproxSeconds": 119,
+      "filter": "InventoryRewardDeliveryTests|ContractClaimTransactionTests|ContractRewardAwardTests",
+      "trx": {
+        "path": "artifacts/continuation-20261106/contract-actual-delivery/fixture-controls.trx",
+        "sha256": "72015eb6277253b554686216b80bfbe7450999c0ac321382ecb3c222c20930f6"
+      }
+    },
+    "builds": {
+      "testSeconds": 13.96,
+      "runnerSeconds": 4.61,
+      "warnings": 0,
+      "errors": 0
+    }
+  },
+  "reviews": {
+    "comparison": "172a33335ecc6f799fb322498cf5b42063b313fc to three owned uncommitted Source paths",
+    "standards": {
+      "agent": "/root/iccomm_standards",
+      "findings": 0,
+      "conclusion": "Optional seams preserve fixture defaults. Actual path uses concrete ItemInfo and binds recovered inputs/relevant binaries; settlement/delivery/replay/reload limits are explicit."
+    },
+    "spec": {
+      "agent": "/root/iccomm_spec",
+      "findings": 0,
+      "conclusion": "All726 awards enumerate actual catalogs; concrete ItemInfo and existing claim settlement/publication or Auth compensation, replay and reload satisfy the internal delivery boundary. Public/reset/eligibility/provider/native limits retained."
+    },
+    "reviewBoundary": "Harness Source reviewed while726-case execution continued; final completion/result and retained identities must be audited separately. No source changed after review."
+  },
+  "upstream": {
+    "artifact": {
+      "path": "artifacts/continuation-20261106/contract-actual-delivery/upstream-refresh.json",
+      "sha256": "8308daf0f587c433966280dc60215e754d22a230da0888250d1679903a26476a"
+    },
+    "latest20HeadBaseStateChanges": 0,
+    "pr608": "open",
+    "pr609": "closed/unmerged"
+  },
+  "otherNewInput": {
+    "primalNodes": 136,
+    "primalRewards": 74,
+    "classColumns": 816,
+    "nonzeroClassRewardReferences": 720,
+    "zeroClassColumns": 96,
+    "missingNonzeroRewardRefs": 0,
+    "type2Nodes": 24,
+    "allocationNotEnabled": "Essence debit/synchronization authority and type2 behavior remain unqualified",
+    "artifact": {
+      "path": "artifacts/continuation-20261106/contract-actual-delivery/primal-catalog-availability.json",
+      "sha256": "075d31ec9abc9bf574dfddc9d5d7ce847ca5445f0836df66824ee09951472b98"
+    }
+  },
+  "limits": [
+    "Production Source, schema and public07CE handler unchanged",
+    "Proxy Player/session/ItemManager and synthetic satisfied prerequisites/selected cycles",
+    "Empty3-slot bag; all486canonical item quantities are1; real nonempty stack-merge/capacity and asset-backed display presentation not newly qualified",
+    "Successful actual-catalog claim/replay/reload; no new actual-catalog interruption/process restart/copied-upgrade proof",
+    "EnsureCreated disposable SQLite schemas; no new migration/MySQL/broker/socket/deployment/native/retail qualification",
+    "Existing967synthetic/default controls remain separate evidence",
+    "No full solution build/full suite; foreign Source/docs/recovery/provider workloads preserved"
+  ],
+  "diagnostics": [
+    {
+      "path": {
+        "path": "artifacts/continuation-20261106/contract-actual-delivery/fixture-compile-failure.log",
+        "sha256": "852f36129b0dc761ed3314f78841a0758df18cfee021f5f083a44d0231b76b12"
+      },
+      "classification": "Item namespace/type ambiguity, fixed before execution; not production failure"
+    },
+    {
+      "classification": "Initial hand-transcribed Item2 expected hash typo corrected by reading retained fixture source comments; actual corpus unchanged"
+    }
+  ],
+  "evidenceDirectory": "artifacts/continuation-20261106/contract-actual-delivery"
+}

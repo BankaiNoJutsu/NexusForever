@@ -1,5 +1,15 @@
 # Assessment follow-through goal
 
+[Actual-catalog Contract delivery](CONTRACT_ACTUAL_CATALOG_DELIVERY.md) replaces
+the missing ItemInfo/stack/binding input for initial internal claim delivery
+with16 recovered actual tables. All726 choices (486 item/240 Auth, six additional
+credit awards) pass settlement, publication/compensation, replay and reload.
+All967 existing selected controls, clean builds and both Source reviews pass.
+Public07CE/reset/unclaimed/final-first/excess policy, actual-catalog interrupted
+settlement/restart/copied-upgrade and provider/socket/native/retail remain open;
+do not repeat the completed initial actual-data delivery gate. Primal node/reward
+bytes are also available; essence debit authority/type2 behavior still gate use.
+
 [Matching queue lifecycle](MATCHING_QUEUE_LIFECYCLE.md) extends the published
 admission result through real Queue/Group/Team/Matcher/Selector. State precedes
 join feedback; all original leave/all targets detach before role/leave notices.

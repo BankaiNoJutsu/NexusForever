@@ -651,7 +651,7 @@ public sealed partial class InventoryRewardDeliveryTests
         public RecordingDispatchProxy<IQuestManager> QuestProxy { get; }
         public IEnumerable<object> Messages => SessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Select(call => call.Arguments[0]);
 
-        public Fixture(uint capacity, uint[] stacks, bool expiring = false, DbContextOptions<CharacterContext> providerOptions = null, bool contract = false, uint itemId = 9011)
+        public Fixture(uint capacity, uint[] stacks, bool expiring = false, DbContextOptions<CharacterContext> providerOptions = null, bool contract = false, uint itemId = 9011, IItemInfo actualInfo = null)
         {
             Directory.CreateDirectory(directory);
             options = providerOptions ?? new DbContextOptionsBuilder<CharacterContext>().UseSqlite($"Data Source={Path.Combine(directory, "delivery.sqlite")};Pooling=False").Options;
@@ -664,10 +664,18 @@ public sealed partial class InventoryRewardDeliveryTests
             pp.SetProperty(nameof(IPlayer.IsLoading), false);
             IQuestManager quests = RecordingDispatchProxy<IQuestManager>.Create(out var qp); QuestProxy = qp;
             qp.SetMethodReturn(nameof(IQuestManager.GetActiveQuests), Array.Empty<IQuest>()); pp.SetProperty(nameof(IPlayer.QuestManager), quests);
-            Info = RecordingDispatchProxy<IItemInfo>.Create(out var ip); InfoProxy = ip;
-            ip.SetMethodReturnFactory("get_Id", () => itemId);
-            ip.SetProperty(nameof(IItemInfo.Entry), new Item2Entry { Id = itemId, MaxStackCount = 10, MaxCharges = 5, ExpirationTimeMinutes = expiring ? 2u : 0u });
-            ip.SetMethodReturn(nameof(IItemInfo.IsStackable), true);
+            if (actualInfo == null)
+            {
+                Info = RecordingDispatchProxy<IItemInfo>.Create(out var ip); InfoProxy = ip;
+                ip.SetMethodReturnFactory("get_Id", () => itemId);
+                ip.SetProperty(nameof(IItemInfo.Entry), new Item2Entry { Id = itemId, MaxStackCount = 10, MaxCharges = 5, ExpirationTimeMinutes = expiring ? 2u : 0u });
+                ip.SetMethodReturn(nameof(IItemInfo.IsStackable), true);
+            }
+            else
+            {
+                Assert.Equal(itemId, actualInfo.Id);
+                Info = actualInfo;
+            }
             Manager = RecordingDispatchProxy<IItemManager>.Create(out var mp); ManagerProxy = mp;
             mp.SetMethodReturn(nameof(IItemManager.GetItemInfo), Info);
             ulong next = 500; mp.SetMethodReturnFactory("get_NextItemId", () => next++);

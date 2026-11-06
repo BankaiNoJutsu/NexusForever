@@ -1,5 +1,11 @@
 # Client Binary Decompile Continuation Guide
 
+[Actual-catalog Contract delivery](CONTRACT_ACTUAL_CATALOG_DELIVERY.md) passes
+all726 internal choices with real ItemInfo, settlement/publication or Auth
+compensation, replay and reload.967 controls, clean builds and both reviews pass.
+Public/reset policy and actual interruption/provider/native gates remain;
+continue the broader roadmap with client/CUA stopped.
+
 [Matching queue lifecycle](MATCHING_QUEUE_LIFECYCLE.md) completes real backend
 state installation and leave/all detachment before feedback, preserving later
 admissions and suppressing old tails.19 new/all139 scoped cases and clean builds

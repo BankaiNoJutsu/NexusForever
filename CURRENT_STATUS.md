@@ -1,5 +1,11 @@
 # NexusForever Feature Restoration - Current Status
 
+[Actual-catalog Contract delivery](Decomp/Analysis/CONTRACT_ACTUAL_CATALOG_DELIVERY.md)
+passes all726 canonical internal claims using real ItemInfo metadata, including
+publication or Auth compensation, replay and reload. All967 selected controls,
+clean builds and both reviews pass. Production Source/public claims are
+unchanged; reset/policy, actual interruption/provider/native/retail gates remain.
+
 [Matching real queue lifecycle](Decomp/Analysis/MATCHING_QUEUE_LIFECYCLE.md)
 now installs complete queue state before join feedback and detaches all original
 leave/all targets before notices. Reentrant replacement admissions remain owned;

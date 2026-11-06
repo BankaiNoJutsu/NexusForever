@@ -260,20 +260,27 @@ public sealed partial class ContractClaimTransactionTests
         internal CommitFault CharacterFault, AuthFault;
         internal CharacterChallengeRewardExecutor Executor { get; }
         internal static uint CompensationRow(uint account) => LoyaltyCatalogBuild16042Fixture.Rewards().First(row => row.RewardTrackId == 5 && row.RewardChoiceId02 == account).Id;
-        internal Fixture(DbContextOptions<CharacterContext> character, DbContextOptions<AuthContext> auth, uint reward, uint choice)
+        internal Fixture(DbContextOptions<CharacterContext> character, DbContextOptions<AuthContext> auth, uint reward, uint choice, IGameTableManager actualTables = null)
         {
             Directory.CreateDirectory(directory); authOptions = auth ?? new DbContextOptionsBuilder<AuthContext>().UseSqlite($"Data Source={Path.Combine(directory, "auth.sqlite")};Pooling=False").Options;
-            Tables = RecordingDispatchProxy<IGameTableManager>.Create(out var tables);
-            var rows = LoyaltyCatalogBuild16042Fixture.Rewards();
-            tables.SetProperty(nameof(IGameTableManager.RewardTrack), PlayerBindPointTests.Table(LoyaltyCatalogBuild16042Fixture.Tracks()));
-            tables.SetProperty(nameof(IGameTableManager.RewardTrackRewards), PlayerBindPointTests.Table(rows));
-            var ids = rows.SelectMany(row => new[] { (row.RewardTrackRewardTypeEnum00, row.RewardChoiceId00), (row.RewardTrackRewardTypeEnum01, row.RewardChoiceId01), (row.RewardTrackRewardTypeEnum02, row.RewardChoiceId02) })
-                .Where(pair => pair.Item1 == 0 && pair.Item2 != 0).Select(pair => pair.Item2).Distinct();
-            tables.SetProperty(nameof(IGameTableManager.Item), PlayerBindPointTests.Table(ids.Select(id => new Item2Entry { Id = id }).ToArray()));
-            tables.SetProperty(nameof(IGameTableManager.AccountItem), PlayerBindPointTests.Table(new AccountItemEntry { Id = 2485, AccountCurrencyEnum = 14, AccountCurrencyAmount = 5, EntitlementCount = 1 }, new AccountItemEntry { Id = 2486, AccountCurrencyEnum = 14, AccountCurrencyAmount = 7, EntitlementCount = 1 }));
-            tables.SetProperty(nameof(IGameTableManager.AccountCurrencyType), PlayerBindPointTests.Table(new AccountCurrencyTypeEntry { Id = 14 }));
-            tables.SetProperty(nameof(IGameTableManager.CurrencyType), PlayerBindPointTests.Table(new CurrencyTypeEntry { Id = 1 }));
-            Awards = new(Tables); var award = Awards.GetAward(reward, choice); inventory = new(3, [8, 5], providerOptions: character, contract: true, itemId: award.Item?.ItemId ?? 9011);
+            if (actualTables == null)
+            {
+                Tables = RecordingDispatchProxy<IGameTableManager>.Create(out var tables);
+                var rows = LoyaltyCatalogBuild16042Fixture.Rewards();
+                tables.SetProperty(nameof(IGameTableManager.RewardTrack), PlayerBindPointTests.Table(LoyaltyCatalogBuild16042Fixture.Tracks()));
+                tables.SetProperty(nameof(IGameTableManager.RewardTrackRewards), PlayerBindPointTests.Table(rows));
+                var ids = rows.SelectMany(row => new[] { (row.RewardTrackRewardTypeEnum00, row.RewardChoiceId00), (row.RewardTrackRewardTypeEnum01, row.RewardChoiceId01), (row.RewardTrackRewardTypeEnum02, row.RewardChoiceId02) })
+                    .Where(pair => pair.Item1 == 0 && pair.Item2 != 0).Select(pair => pair.Item2).Distinct();
+                tables.SetProperty(nameof(IGameTableManager.Item), PlayerBindPointTests.Table(ids.Select(id => new Item2Entry { Id = id }).ToArray()));
+                tables.SetProperty(nameof(IGameTableManager.AccountItem), PlayerBindPointTests.Table(new AccountItemEntry { Id = 2485, AccountCurrencyEnum = 14, AccountCurrencyAmount = 5, EntitlementCount = 1 }, new AccountItemEntry { Id = 2486, AccountCurrencyEnum = 14, AccountCurrencyAmount = 7, EntitlementCount = 1 }));
+                tables.SetProperty(nameof(IGameTableManager.AccountCurrencyType), PlayerBindPointTests.Table(new AccountCurrencyTypeEntry { Id = 14 }));
+                tables.SetProperty(nameof(IGameTableManager.CurrencyType), PlayerBindPointTests.Table(new CurrencyTypeEntry { Id = 1 }));
+            }
+            else Tables = actualTables;
+            Awards = new(Tables); var award = Awards.GetAward(reward, choice);
+            IItemInfo actualInfo = actualTables == null || award.Item == null ? null : new ItemInfo(Tables.Item.GetEntry(award.Item.ItemId), Tables);
+            inventory = new(3, actualTables == null ? [8, 5] : [], providerOptions: character, contract: true,
+                itemId: award.Item?.ItemId ?? 9011, actualInfo: actualInfo);
             var definition = Awards.Catalog.GetTrack(award.TrackId); var satisfied = definition.Slots.SelectMany(slot => slot.Candidates).Select(row => row.PrerequisiteId).Where(id => id != 0).ToHashSet(); int ordinal = 0;
             var selection = ContractRewardSelection.CaptureForChoose(Awards.Catalog, definition.Id, 7, Guid.NewGuid().ToString("N"), satisfied, count =>
             { byte current = (byte)ordinal++; return current == award.Ordinal ? Awards.Catalog.EligibleCandidates(definition.Id, current, satisfied).Select(row => row.Id).ToList().IndexOf(reward) : 0; });

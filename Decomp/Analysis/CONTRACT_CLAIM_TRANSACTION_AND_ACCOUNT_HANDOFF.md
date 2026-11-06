@@ -1,5 +1,11 @@
 # Contract claim transactions and durable account handoff
 
+The later [actual-catalog delivery milestone](CONTRACT_ACTUAL_CATALOG_DELIVERY.md)
+passes all726 initial internal claims with real ItemInfo, settlement/publication
+or Auth compensation, replay and reload. It supersedes the synthetic ItemInfo
+limit for that named boundary. Public/reset policy, actual-catalog interruption/
+restart, provider/deployment/native/retail remain separate gates.
+
 Latest continuation: [Realm bank persistence and loading](REALM_BANK_CODECS_AND_LOADING.md)
 qualifies checkpoint10277: **10,277 full tests**,18 new/207 focused,1,796 MySQL
 cases (530 configured-strategy cases), four Auth race probes, four model gates and

@@ -1,5 +1,12 @@
 # Continue on another machine
 
+Latest Contract evidence: [actual-catalog delivery](Decomp/Analysis/CONTRACT_ACTUAL_CATALOG_DELIVERY.md)
+passes all726 canonical internal choices with recovered ItemInfo and real
+settlement, publication/Auth compensation, replay and reload.967 existing scoped
+controls, clean builds and both Source reviews pass. Three test Source paths
+change; production/public07CE/schema are unchanged. Payloads stay outside Git;
+public/reset policy, actual interruption/provider/native/retail stay open.
+
 Latest matching Source result: [real queue lifecycle](Decomp/Analysis/MATCHING_QUEUE_LIFECYCLE.md)
 installs complete admitted state before feedback and detaches all original
 leave/all targets before role/leave publication. Five baseline/four review
