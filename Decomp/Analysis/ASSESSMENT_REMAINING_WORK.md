@@ -1,5 +1,15 @@
 # Assessment follow-through goal
 
+[Q3741 accepted supply collection](Q3741_ACCEPTED_SUPPLY_COLLECTION.md) completes
+the first queued quest's refusal/removal producer boundary. Seven baseline
+failures are fixed;11 new/103 scoped and the same11 actual-catalog cases pass.
+Six crates/Achieved survive full Player SQLite flush refusal, retry and fresh
+Quest reload. Three legacy positive oracles now check real progress. Generated
+queue/native smoke gates and `retail_claim_allowed=false` remain unchanged;
+physical acceptance/activation/turn-in/provider/socket/native/retail stay open.
+Earlier hosted qualification retains its prior frozen script identity. Continue
+independent gameplay/progression; broader Goal active, native/CUA stopped.
+
 [Character-list hosted wire rows](CHARACTER_LIST_COSTUME_PREVIEW.md#hosted-wire-row-follow-through--6-november-2026)
 close the current changed-World presentation gate: final Global/prepared-Guild
 runs each pass seven sessions/55 ICComm frames/18 attempts, with all14 owned

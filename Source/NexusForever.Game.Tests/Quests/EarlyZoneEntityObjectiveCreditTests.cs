@@ -114,38 +114,21 @@ public class EarlyZoneEntityObjectiveCreditTests
     [Fact]
     public void Q3741SupplyCrate_OnActivateSuccess_WhenQuestAccepted_CreditsSupplyObjective()
     {
-        ICreatureEntity owner = CreateCreature(12919u, checklistIndex: 0, health: 100u, out RecordingDispatchProxy<ICreatureEntity> ownerProxy);
-        IPlayer player = CreatePlayerWithQuestState(3741, QuestState.Accepted, out RecordingDispatchProxy<IQuestManager> questManagerProxy);
-        var script = new Q3741ExileSupplyCrateEntityScript();
-
-        script.OnLoad(owner);
-        script.OnActivateSuccess(player);
-
-        RecordingDispatchProxy<IQuestManager>.Invocation update = Assert.Single(questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
-        Assert.Equal(QuestObjectiveType.VirtualCollect, update.Arguments[0]);
-        Assert.Equal(363u, update.Arguments[1]);
-        Assert.Equal(1u, update.Arguments[2]);
-
-        Assert.Single(ownerProxy.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
+        using var f = new Q3741SupplyCrateCollectionTests.PickupFixture();
+        var crate = f.Pickup(true);
+        crate.Script.OnActivateSuccess(f.Actor.Player);
+        Assert.Equal(1u, f.Objective.Progress);
+        Assert.Single(crate.Owner.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
     }
 
     [Fact]
     public void Q3741SupplyCrateCollectable_OnActivateSuccess_WhenQuestAccepted_CreditsSupplyObjective()
     {
-        ICollectableUnitEntity owner = RecordingDispatchProxy<ICollectableUnitEntity>.Create(out RecordingDispatchProxy<ICollectableUnitEntity> ownerProxy);
-        ownerProxy.SetProperty(nameof(ICollectableUnitEntity.CreatureId), 12919u);
-        IPlayer player = CreatePlayerWithQuestState(3741, QuestState.Accepted, out RecordingDispatchProxy<IQuestManager> questManagerProxy);
-        var script = new Q3741ExileSupplyCrateCollectableEntityScript();
-
-        script.OnLoad(owner);
-        script.OnActivateSuccess(player);
-
-        RecordingDispatchProxy<IQuestManager>.Invocation update = Assert.Single(questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
-        Assert.Equal(QuestObjectiveType.VirtualCollect, update.Arguments[0]);
-        Assert.Equal(363u, update.Arguments[1]);
-        Assert.Equal(1u, update.Arguments[2]);
-
-        Assert.Single(ownerProxy.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
+        using var f = new Q3741SupplyCrateCollectionTests.PickupFixture();
+        var crate = f.Pickup(false);
+        crate.Script.OnActivateSuccess(f.Actor.Player);
+        Assert.Equal(1u, f.Objective.Progress);
+        Assert.Single(crate.Owner.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
     }
 
     [Fact]
@@ -181,16 +164,12 @@ public class EarlyZoneEntityObjectiveCreditTests
     [Fact]
     public void Q3741SupplyCrate_OnActivateSuccess_AfterCollected_DoesNotCreditAgain()
     {
-        ICreatureEntity owner = CreateCreature(12919u, checklistIndex: 0, health: 100u, out RecordingDispatchProxy<ICreatureEntity> ownerProxy);
-        IPlayer player = CreatePlayerWithQuestState(3741, QuestState.Accepted, out RecordingDispatchProxy<IQuestManager> questManagerProxy);
-        var script = new Q3741ExileSupplyCrateEntityScript();
-
-        script.OnLoad(owner);
-        script.OnActivateSuccess(player);
-        script.OnActivateSuccess(player);
-
-        Assert.Single(questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
-        Assert.Single(ownerProxy.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
+        using var f = new Q3741SupplyCrateCollectionTests.PickupFixture();
+        var crate = f.Pickup(true);
+        crate.Script.OnActivateSuccess(f.Actor.Player);
+        crate.Script.OnActivateSuccess(f.Actor.Player);
+        Assert.Equal(1u, f.Objective.Progress);
+        Assert.Single(crate.Owner.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
     }
 
     [Fact]

@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[Q3741 supply collection](Decomp/Analysis/Q3741_ACCEPTED_SUPPLY_COLLECTION.md)
+now retains refused/satisfied pickups and retries original-object removal after
+accepted credit. Seven baseline failures are fixed;11 new/103 scoped and11
+actual-table cases pass, including full Player SQLite failure/retry/fresh reload.
+Queue/native smoke and retail gates remain open; no completion claim changes.
+Earlier hosted evidence retains its prior script DLL. Overall Goal continues.
+
 [Hosted character-list rows](Decomp/Analysis/CHARACTER_LIST_COSTUME_PREVIEW.md#hosted-wire-row-follow-through--6-november-2026)
 now qualify the changed World DLL before selection: seven sessions per final
 Global/Guild scope, with fourteen raw owned list bodies checked independently.

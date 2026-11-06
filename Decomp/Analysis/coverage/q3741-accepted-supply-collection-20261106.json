@@ -1,0 +1,187 @@
+{
+  "Date": "2026-11-06",
+  "BaseHEAD": "ce6881ff8e603e8178c60a6548de0b6593790644",
+  "Outcome": "Q3741 accepted collection/removal retry implemented; retail and broader Goal unfinished",
+  "QueueSlice": "quest-3741",
+  "RetailClaimAllowed": false,
+  "Source": [
+    {
+      "Path": "Source/NexusForever.Script.Main/Quests/NorthernWilds/Q3741ScatteredSupplies.cs",
+      "SHA256": "F0F5C21D427733757E592068546DBB7372737594913C39ED068B402E31653152"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Quest/Q3741SupplyCrateCollectionTests.cs",
+      "SHA256": "5A28BB08963A0B3BAE49341758321C19FFCAE0F7C01F5A981C49B95385B23293"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Quests/EarlyZoneEntityObjectiveCreditTests.cs",
+      "SHA256": "F6D9D7147790CF68F0C1B9EEC5B57D4C5BBB40657BB2E2438CF21D8ACDD65A0A"
+    }
+  ],
+  "Binaries": [
+    {
+      "Path": "Source/NexusForever.WorldServer/bin/Debug/net10.0/NexusForever.Script.Main.dll",
+      "SHA256": "D7875CCB8D499CE35292BF30D606EE81F7C195D954040C123BD28C70C07AAA7A"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Script.Main.dll",
+      "SHA256": "D7875CCB8D499CE35292BF30D606EE81F7C195D954040C123BD28C70C07AAA7A"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+      "SHA256": "CA6F00D7A2BF3D05534E848CB406FA2A40DB78255B28773010587B65D724DDEA"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.dll",
+      "SHA256": "8264B6598345646E4714C9C0C2CA7ED5C99F8ACD1E072AEB998EB90725184120"
+    }
+  ],
+  "Evidence": [
+    {
+      "Path": "artifacts/q3741-collection/baseline/q3741-baseline.trx",
+      "SHA256": "48D159F85664511BB15B9FC67F4D8D8621F8F92ED1EED18A8D1343BEB68A5943"
+    },
+    {
+      "Path": "artifacts/q3741-collection/fixed/q3741-fixed.trx",
+      "SHA256": "31DCE4A77C9BCF17D6EFE0B0F9B389150095E1301FA261DF94CDD007F5259E86"
+    },
+    {
+      "Path": "artifacts/q3741-collection/actual-catalog/inputs.json",
+      "SHA256": "0D6CBBC39D143D2D77873AA334556F01CC86CCE2A30D131D9C55A1F4DC13FCC7"
+    },
+    {
+      "Path": "artifacts/q3741-collection/actual-catalog/result.json",
+      "SHA256": "C11B563DF4B07D7E93A247B2FF420A8E83A067C7333CB6F11AE4EA93371C0454"
+    }
+  ],
+  "Results": {
+    "RevisedLegacyOracles": 3,
+    "ActualCatalog": 11,
+    "New": 11,
+    "BaselineFailed": 7,
+    "BaselinePassed": 4,
+    "LoadedTableInputs": 21,
+    "Scoped": 103
+  },
+  "ActualInputs": [
+    {
+      "File": "tbl/RewardTrack.tbl",
+      "Sha256": "AA2D04411E1DB7B22EAA0D73FFD0B8D298BB3D62D9A24AC5FA0C4CAA6B000D4F",
+      "Bytes": 5376
+    },
+    {
+      "File": "tbl/RewardTrackRewards.tbl",
+      "Sha256": "81F726003FB85EC5506FC9CDFC2550CC62C82D90A7379666715F19F8F1C1C1D6",
+      "Bytes": 32000
+    },
+    {
+      "File": "tbl/Item2.tbl",
+      "Sha256": "F51673FDBF5E97678CF67F62D0A1975FBB60BE98BFE79A9C354F7FC5498B0CE2",
+      "Bytes": 15659408
+    },
+    {
+      "File": "tbl/AccountItem.tbl",
+      "Sha256": "13A07FBBE1737851EBC67A88697D3CD80FD2281795AE85BFB49C3F79855510AA",
+      "Bytes": 219248
+    },
+    {
+      "File": "tbl/CurrencyType.tbl",
+      "Sha256": "2D2A28ABC4D9054C9F12008D8AE59618FEED5306EE3F335A225EA527BAC7B692",
+      "Bytes": 2512
+    },
+    {
+      "File": "tbl/AccountCurrencyType.tbl",
+      "Sha256": "51B1AA86D32EDD02CCFF95CE81DECB93396239516CCEE738E0FAA5DE26624417",
+      "Bytes": 2368
+    },
+    {
+      "File": "tbl/Item2Family.tbl",
+      "Sha256": "791EB8C61ED6E2F1EA0A9919AFEAEB5FBF3F444269C1FC164CB7336E16A25E1B",
+      "Bytes": 1520
+    },
+    {
+      "File": "tbl/Item2Category.tbl",
+      "Sha256": "9E7A454F51B5158A3F3D92B5B190ED31B298485058112268DFA46AE20E698EE7",
+      "Bytes": 9760
+    },
+    {
+      "File": "tbl/Item2Type.tbl",
+      "Sha256": "4349684D6BC7A0F3819E8D8EEF698E23603AF48A06C18A3800AA61BF8AA9C3FB",
+      "Bytes": 29168
+    },
+    {
+      "File": "tbl/ItemSlot.tbl",
+      "Sha256": "17FE0ECC810BE365B8218B79F8ED7D5FF27DCC37989754FC2D354FFDBCBE93BD",
+      "Bytes": 3968
+    },
+    {
+      "File": "tbl/ItemBudget.tbl",
+      "Sha256": "A9F2E6E09E9D982B48764BD555288D802561DE74FC9CED7D9285E706EE6F971E",
+      "Bytes": 2384
+    },
+    {
+      "File": "tbl/ItemStat.tbl",
+      "Sha256": "F5AD85408BFFA6A9E600C1C377DB2B140CF18F173D00111DB527D0F50DA5A5C2",
+      "Bytes": 22640
+    },
+    {
+      "File": "tbl/ItemQuality.tbl",
+      "Sha256": "0F90558D988E1D88A9E9B61B440CC32AF9D8005D02E7D09ABDDE34CEB7383134",
+      "Bytes": 2160
+    },
+    {
+      "File": "tbl/ItemRandomStat.tbl",
+      "Sha256": "806137EF8A907E126FC864B9958101E95A3E34AC3C29F42DA1FDBC230893C396",
+      "Bytes": 1680
+    },
+    {
+      "File": "tbl/GameFormula.tbl",
+      "Sha256": "541E1781B8ED5E890CD194E0AD8BF1CEAE63CBBB5308026679BC8459E2C1C007",
+      "Bytes": 63872
+    },
+    {
+      "File": "tbl/UnitProperty2.tbl",
+      "Sha256": "6EDFB62A0235018B8FDDE42C417FDC8A0AE2284EB938CCCAEB7A849E5E481D2D",
+      "Bytes": 25840
+    },
+    {
+      "File": "tbl/Quest2.tbl",
+      "Sha256": "A3C82F2EBA55FBDA4E64F5E392F9D86B58BAA7776F2FDE3BA83BFE70AC517092",
+      "Bytes": 2378032
+    },
+    {
+      "File": "tbl/QuestObjective.tbl",
+      "Sha256": "C3D31CEB47B7B08FDF4BDAA8431429CC48E31FFC0BF9122D99F616985E03D5F5",
+      "Bytes": 648944
+    },
+    {
+      "File": "tbl/Quest2Reward.tbl",
+      "Sha256": "52B60741C14E79B6516F39BC0EFD6BEF434E16E885E24E88CD14C959A4BF13E7",
+      "Bytes": 169936
+    },
+    {
+      "File": "tbl/TargetGroup.tbl",
+      "Sha256": "107D87CDB52D510FDA52D04AB5B1B2996ACD65C194EF6A75F922B6F5C5C5204D",
+      "Bytes": 444272
+    },
+    {
+      "File": "tbl/Creature2.tbl",
+      "Sha256": "0046759E8B9C3F4A2238F4198595F13693290C6F0DBD47D8DA8F9849DA709EB7",
+      "Bytes": 42963648
+    }
+  ],
+  "AssetInventorySHA256": "295132fd25cd57bd95bdbb6cc1a9364e0f061ab4f2e1e0ba083cf837e1492e4b",
+  "Reviews": {
+    "Standards": "Primary-agent self-review; no remaining finding",
+    "Spec": "Primary-agent self-review; no remaining finding"
+  },
+  "Command": "dotnet test Source/NexusForever.Game.Tests/NexusForever.Game.Tests.csproj --no-restore --filter FullyQualifiedName~Q3741|FullyQualifiedName~EarlyZoneEntityObjectiveCreditTests|FullyQualifiedName~NorthernWildsBranchInteractionTests|FullyQualifiedName~QuestTests.Q3741|FullyQualifiedName~Q5597ExplosivesCollectionTests",
+  "ActualEntry": "Q3741SupplyCrateCollectionTests.RunActualCatalogAsync(assetRoot,newOutputDirectory)",
+  "Limits": [
+    "prepared accepted quest/map/session",
+    "no physical/public activation,acceptance,turn-in or respawn",
+    "no configured provider/socket/native/retail qualification",
+    "earlier hosted candidate keeps its frozen Script DLL boundary"
+  ],
+  "RawRoot": "artifacts/q3741-collection/"
+}
