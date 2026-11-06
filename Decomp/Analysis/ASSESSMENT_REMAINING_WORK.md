@@ -1,5 +1,8 @@
 # Assessment follow-through goal
 
+[Quest objective type census](QUEST_OBJECTIVE_TYPE_CENSUS_20261106.md) (2026-11-06): 10,026 of 10,031 retail objective rows
+use a type the server references; only 5 rows (UNUSED19/Unknown27/Unknown29) do not. Census only.
+
 [Spell effect handler census](SPELL_EFFECT_HANDLER_CENSUS_20261106.md) (2026-11-06): 98.1% of 131,010 retail effect rows have a
 registered handler; the 2,478 unhandled rows are led by FacilityModification (771), UnlockInlaidAugment (281),
 ChangeDisplayName (268). Census only; every type needs a retail witness or native predicted-effect routine.
