@@ -1,5 +1,8 @@
 # Assessment follow-through goal
 
+[Ledger gate pass](LEDGER_GATE_PASS_20261106.md) (2026-11-06) records the exact missing input for each
+remaining queue item after the scalar-save and quest AccountItem slices. Source-reading only; no new tests run.
+
 [Quest AccountItem reward](QUEST_ACCOUNT_ITEM_REWARD.md) (2026-11-06) delivers type-6 quest rewards
 through the paired Character/Auth account-award settlement instead of dropping them. Source/SQLite
 only: 5 new cases (4 failed before), 32 settlement and 2,793 broader Quest/Crafting/Loot cases pass
