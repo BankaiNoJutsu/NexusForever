@@ -1,5 +1,9 @@
 # Assessment follow-through goal
 
+[Achievement/ZoneCompletion census](ACHIEVEMENT_ZONE_TABLE_CENSUS_20261106.md) (2026-11-06): ZoneCompletion has no
+non-title reward column (F-036 item excluded with evidence); 39 of 83 Achievement types (1,940 of 4,943 rows,
+type 12 = 842) are unmapped and need the native enum (REA/Ghidra). Raw-table census only.
+
 [Contract full-table classification](CONTRACT_FULL_TABLE_CLASSIFICATION_20261106.md) (2026-11-06): all 726 choices of
 tracks 4/5 resolve in the table their enum selects (Item2 or AccountItem, count 1) against hash-matched build
 16042 tables. Raw-table census only; public 07CE stays unwired pending the reset edge rules and choice policy.
