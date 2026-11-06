@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Matching;
@@ -10,6 +10,7 @@ namespace NexusForever.Game.Matching.Queue
     {
         public Identity Identity { get; private set; }
         public Role? Roles { get; private set; }
+        private MatchingManager.Participant participant;
 
         #region Dependency Injection
 
@@ -35,6 +36,7 @@ namespace NexusForever.Game.Matching.Queue
                 throw new InvalidOperationException();
 
             Identity = identity;
+            if (playerManager.GetPlayer(identity) is { } player) participant = new(player);
         }
 
         /// <summary>
@@ -55,8 +57,8 @@ namespace NexusForever.Game.Matching.Queue
         /// </summary>
         public void Send(IWritable message)
         {
-            IPlayer player = playerManager.GetPlayer(Identity);
-            player?.Session.EnqueueMessageEncrypted(message);
+            if (participant?.Current(playerManager) == true)
+                participant.Player.Session.EnqueueMessageEncrypted(message);
         }
     }
 }

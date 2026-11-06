@@ -1,5 +1,14 @@
 # Matching Implementation Status
 
+6 November2026 Source update: [admission cancellation and role confirmation](MATCHING_ADMISSION_CANCELLATION.md)
+now honors pending leave/leave-all/logout, party-role cancellation after
+responses, original actor/MatchType and per-notice context. Eight baseline and
+three review negatives are fixed;30 new/all120 scoped cases, clean builds and
+both final reviews pass. New admissions and already-admitted login readback are
+covered separately. This adds no diagnostic/raid emitter or replacement/merge
+policy. Post-admission lifecycle, catalogs, deployment/socket/native/retail and
+F-010 remain partial; historical evidence below retains those boundaries.
+
 Status date: 2026-06-18 CEST
 
 Supplemental 5 November 2026 [indexed-dispatch follow-up](NEXT_REA_UNBLOCK_TARGETS_2026_11_05.md)

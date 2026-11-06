@@ -1,5 +1,16 @@
 # Assessment follow-through goal
 
+[Matching admission cancellation](MATCHING_ADMISSION_CANCELLATION.md) completes
+public pending join/leave/all/logout and party-role cancellation/context in
+Source. Original participants, both eligibility outcomes and per-role notice
+ownership remain fenced; old cleanup cannot remove a new check or cancel its
+prompt. Eight baseline/three review negatives are fixed;30 new/all120 unique
+affected cases, clean owning/test builds and both final reviews pass. Existing
+admitted queue/logout/login readback is preserved. F-010 stays partial:
+post-admission lifecycle/concurrency, replacement/merge/raid/diagnostic producers,
+actual catalogs, deployment/socket/native/retail remain open. Continue the
+broader gameplay/progression queue and preserve concurrent work.
+
 [Appearance MySQL qualification](APPEARANCE_CHANGE_SETTLEMENT.md#configured-mysql-qualification)
 passes all40 existing public settlement cases on fresh Auth/Character schemas,
 with exact42/49 compiled migrations and configured retries, plus40 SQLite

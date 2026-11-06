@@ -1,5 +1,13 @@
 # NexusForever Feature Restoration - Current Status
 
+[Matching admission cancellation](Decomp/Analysis/MATCHING_ADMISSION_CANCELLATION.md)
+now keeps cancelled solo/random requests out of deferred admission and binds
+party role responses/notices to their original context. Eight baseline and
+three review negatives are fixed;30 new/all120 scoped cases, clean builds and
+both final reviews pass. New requests and admitted-queue login readback remain
+covered. Post-admission lifecycle, actual catalogs, sockets/native/retail and
+wider F-010 stay open.
+
 [Appearance MySQL qualification](Decomp/Analysis/APPEARANCE_CHANGE_SETTLEMENT.md#configured-mysql-qualification)
 passes the same40 public payment/graph/recovery/publication cases on fresh
 Auth42/Character49-migration schemas, plus40 default SQLite controls. Production

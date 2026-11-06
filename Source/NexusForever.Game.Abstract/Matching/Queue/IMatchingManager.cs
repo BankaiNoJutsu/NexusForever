@@ -1,4 +1,4 @@
-﻿using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Static.Matching;
 using NexusForever.Shared;
 
@@ -23,6 +23,9 @@ namespace NexusForever.Game.Abstract.Matching.Queue
         /// Return <see cref="IMatchingRoleCheck"/> for supplied character id.
         /// </summary>
         IMatchingRoleCheck GetMatchingRoleCheck(Identity identity);
+
+        /// <summary>Apply a response only to this Player's current role check and match type.</summary>
+        bool RespondToRoleCheck(IPlayer player, Static.Matching.MatchType matchType, Role roles, bool accepted);
 
         /// <summary>
         /// Return active role-check match type for supplied character id.

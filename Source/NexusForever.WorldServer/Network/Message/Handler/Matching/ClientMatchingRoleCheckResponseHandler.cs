@@ -1,4 +1,4 @@
-﻿using NexusForever.Game.Abstract.Matching.Queue;
+using NexusForever.Game.Abstract.Matching.Queue;
 using NexusForever.Network.Message;
 using NexusForever.Network.World.Message.Model;
 
@@ -20,8 +20,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Matching
 
         public void HandleMessage(IWorldSession session, ClientMatchingRoleCheckResponse matchingRoleCheckResponse)
         {
-            IMatchingRoleCheck matchingRoleCheck = matchingManager.GetMatchingRoleCheck(session.Player.Identity);
-            if (matchingRoleCheck == null)
+            if (!matchingManager.RespondToRoleCheck(session.Player, matchingRoleCheckResponse.Type,
+                matchingRoleCheckResponse.Roles, matchingRoleCheckResponse.Response))
             {
                 session.EnqueueMessageEncrypted(new ServerMatchingQueueResultAnnounce
                 {
@@ -30,7 +30,6 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Matching
                 return;
             }
 
-            matchingRoleCheck.Respond(session.Player.Identity, matchingRoleCheckResponse.Roles);
         }
     }
 }

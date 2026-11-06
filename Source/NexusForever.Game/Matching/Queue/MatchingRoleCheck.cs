@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Matching.Queue;
 using NexusForever.Game.Static.Matching;
@@ -17,6 +17,7 @@ namespace NexusForever.Game.Matching.Queue
 
         private readonly Dictionary<Identity, IMatchingRoleCheckMember> members = [];
         private UpdateTimer expiryTimer;
+        private Func<bool> canPublish;
 
         #region Dependency Injection
 
@@ -36,11 +37,12 @@ namespace NexusForever.Game.Matching.Queue
         /// <summary>
         /// Initialise <see cref="IMatchingRoleCheck"/> with the supplied <see cref="IMatchingQueueProposal"/> and character ids.
         /// </summary>
-        public void Initialise(IMatchingQueueProposal matchingQueueProposal, List<Identity> identities)
+        public void Initialise(IMatchingQueueProposal matchingQueueProposal, List<Identity> identities, Func<bool> canPublish)
         {
             if (MatchingQueueProposal != null)
                 throw new InvalidOperationException();
 
+            this.canPublish = canPublish ?? throw new ArgumentNullException(nameof(canPublish));
             MatchingQueueProposal = matchingQueueProposal;
 
             foreach (Identity identity in identities)
@@ -62,15 +64,14 @@ namespace NexusForever.Game.Matching.Queue
         /// </summary>
         public void Update(double lastTick)
         {
-            if (!expiryTimer.IsTicking)
+            if (Status != MatchingRoleCheckStatus.Pending || !expiryTimer.IsTicking)
                 return;
 
             expiryTimer.Update(lastTick);
             if (expiryTimer.HasElapsed)
             {
-                SendMatchingRoleCheckCancelled();
-
                 Status = MatchingRoleCheckStatus.Expired;
+                SendMatchingRoleCheckCancelled();
                 log.LogTrace($"MatchingRoleCheck {Guid} has expired.");
             }
         }
@@ -94,32 +95,30 @@ namespace NexusForever.Game.Matching.Queue
             if (!members.TryGetValue(identity, out IMatchingRoleCheckMember matchingRoleCheckMember))
                 throw new InvalidOperationException();
 
+            if (roles == Role.None) { Cancel(); return; }
             matchingRoleCheckMember.SetRoles(roles);
 
-            if (roles == Role.None)
+            uint respondedMembers = (uint)members.Values.Count(member => member.Roles.HasValue);
+            log.LogTrace($"MatchingRoleCheck {Guid} received role {roles} response from {identity}, waiting for {members.Count - respondedMembers} to respond.");
+            if (respondedMembers == members.Count)
             {
-                SendMatchingRoleCheckCancelled();
-
-                Status = MatchingRoleCheckStatus.Declined;
-                log.LogTrace($"MatchingRoleCheck {Guid} has been declined.");
+                Status = MatchingRoleCheckStatus.Success;
+                log.LogTrace($"MatchingRoleCheck {Guid} has been completed.");
             }
-            else
-            {
-                uint pendingMembers = (uint)members.Values.Count(m => m.Roles.HasValue);
-                log.LogTrace($"MatchingRoleCheck {Guid} received role {roles} response from {identity}, waiting for {members.Count - pendingMembers} to respond.");
+        }
 
-                if (pendingMembers == members.Count)
-                {
-                    Status = MatchingRoleCheckStatus.Success;
-                    log.LogTrace($"MatchingRoleCheck {Guid} has been completed.");
-                }
-            }
+        public void Cancel()
+        {
+            if (Status is MatchingRoleCheckStatus.Declined or MatchingRoleCheckStatus.Expired) return;
+            Status = MatchingRoleCheckStatus.Declined;
+            SendMatchingRoleCheckCancelled();
         }
 
         private void SendMatchingRoleCheckStarted()
         {
-            foreach (IMatchingRoleCheckMember member in members.Values)
+            foreach (IMatchingRoleCheckMember member in members.Values.ToArray())
             {
+                if (Status != MatchingRoleCheckStatus.Pending || !canPublish()) break;
                 member.Send(new ServerMatchingRoleCheckStarted
                 {
                     // this will change the UI to prompt the client for a role selection or just accept or decline
@@ -130,16 +129,16 @@ namespace NexusForever.Game.Matching.Queue
 
         private void SendMatchingRoleCheckCancelled()
         {
-            Broadcast(new ServerMatchingQueueResultAnnounce
-            {
-                Result = MatchingQueueResult.Role
-            });
+            Broadcast(() => new ServerMatchingQueueResultAnnounce { Result = MatchingQueueResult.Role });
         }
 
-        private void Broadcast(IWritable message)
+        private void Broadcast(Func<IWritable> message)
         {
-            foreach (IMatchingRoleCheckMember matchingRoleCheckMember in members.Values)
-                matchingRoleCheckMember.Send(message);
+            foreach (IMatchingRoleCheckMember member in members.Values.ToArray())
+            {
+                if (!canPublish()) break;
+                member.Send(message());
+            }
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using NexusForever.Game.Abstract;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Matching;
 using NexusForever.Game.Abstract.Matching.Match;
@@ -74,6 +74,7 @@ namespace NexusForever.Game.Matching.Queue
                 .Select(c => playerManager.GetPlayer(c.Identity))
                 .ToList();
 
+            if (players.Any(player => player == null)) return MatchingQueueResult.OfflineGroupMember;
             foreach (IPlayer player in players)
             {
                 if (player.Faction1 != matchingQueueProposal.Faction)

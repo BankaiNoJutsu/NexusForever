@@ -1,5 +1,14 @@
 # Continue on another machine
 
+Latest matching Source result: [admission cancellation and role context](Decomp/Analysis/MATCHING_ADMISSION_CANCELLATION.md)
+completes pending solo/random and party-role cancellation, original response/
+notice ownership and new-request preservation. Eight baseline/three review
+negatives are fixed;30 new/all120 scoped cases, clean owning/test builds and
+both final reviews pass. Exact Source/DLL identities are in the portable record;
+concurrent root work and other provider workloads are excluded. Existing
+admitted queue login readback remains. Post-admission, actual content, sockets/
+native/retail and wider F-010 remain open; continue independent roadmap work.
+
 Latest appearance provider result: [fresh configured MySQL](Decomp/Analysis/APPEARANCE_CHANGE_SETTLEMENT.md#configured-mysql-qualification)
 passes all40 original cases on paired Auth42/Character49-migration schemas,
 plus40 default SQLite controls. Production Source/core DLLs are unchanged

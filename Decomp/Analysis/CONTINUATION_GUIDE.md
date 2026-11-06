@@ -1,5 +1,13 @@
 # Client Binary Decompile Continuation Guide
 
+[Matching admission cancellation](MATCHING_ADMISSION_CANCELLATION.md) now
+honors pending leave/all/logout, original role-response type/actor and retained
+role notice ownership. Eight baseline and three review negatives are fixed;
+30 new/all120 scoped cases, clean builds and both reviews pass. Existing
+admitted queue readback stays covered. Post-admission/concurrent lifecycle,
+actual catalogs, sockets/native/retail and F-010 remain open. Continue the
+wider roadmap with client/CUA stopped.
+
 [Appearance MySQL qualification](APPEARANCE_CHANGE_SETTLEMENT.md#configured-mysql-qualification)
 passes40 original public cases on fresh Auth42/Character49-migration schemas
 with configured retries, plus40 SQLite controls. Production runtime and140
