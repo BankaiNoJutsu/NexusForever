@@ -33,3 +33,14 @@ Gate for every row: the `DataBits`/parameter semantics are decided by the retail
 client binary performs only presentation/prediction. Implementing any of them requires a retail witness (capture of
 the effect's observable result) or the native client's predicted-effect routine for that type. No handler was
 written from the row counts alone. Evidence tier: raw-table census plus static source grep; no tests run.
+
+## Native client string probe (2026-11-06)
+
+Each unhandled effect-type name (FacilityModification, UnlockInlaidAugment, ChangeDisplayName, SpellCounter,
+ChangePhase, ForcedAction) occurs exactly once as a UTF-16 string in `WildStar64.exe` (SpellCounter twice), and
+`Spell4Effects` five times. That is consistent with an enum-name table used when parsing the DB, not with
+per-effect behavior; the client does not contain these effects' server semantics. `AccountGenericUnlock` does not
+occur in the binary at all, matching the zero retail Quest2Reward rows. `RotationEssence` (1 ASCII, 6 UTF-16) and
+`RewardRotation` (17/33) do occur, so the Lua/UI side of rotation rewards is present, but the grant is still
+server-side. A headless Ghidra import/auto-analysis of the binary was started (project outside the repository);
+its xref output can locate the name tables and UI consumers but is not expected to recover server semantics.
