@@ -1,5 +1,10 @@
 # Assessment follow-through goal
 
+[Communicator 609 retail corpus](COMMUNICATOR_RETAIL_REPUTATION_CORPUS_20261106.md) (2026-11-06): 23 retail rows carry
+reputation conditions, 13 depend on zero-bound handling, and the current predicate agrees with all 23 at their
+boundaries (3 new pins, 124 Communicator cases; Source/SQLite + raw table). The ledger's 481759-byte table was not
+found; native strings show achievement types are server-side (no client enum), so the 39 unmapped types need a retail witness.
+
 [Achievement/ZoneCompletion census](ACHIEVEMENT_ZONE_TABLE_CENSUS_20261106.md) (2026-11-06): ZoneCompletion has no
 non-title reward column (F-036 item excluded with evidence); 39 of 83 Achievement types (1,940 of 4,943 rows,
 type 12 = 842) are unmapped and need the native enum (REA/Ghidra). Raw-table census only.

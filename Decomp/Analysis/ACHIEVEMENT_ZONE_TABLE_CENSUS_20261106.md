@@ -54,3 +54,13 @@ Types 12, 44, 9 and 76 (1,164 rows) are zone-scoped with essentially no object r
 source is zone-level rather than a creature/item/quest id. A table-id overlap test against all extracted
 tables was inconclusive (dense id ranges match many tables), so no semantic claim is made. Naming these types
 still needs the native enum or a retail witness.
+
+## Native client check (2026-11-06)
+
+A string scan of `I:\WildStar\Client64\WildStar64.exe` (ASCII and UTF-16) finds only the display-side Lua API
+(`AchievementsLib` Get*/CodeEnumAchievementCategory), event names and table names. It contains no
+achievement-type names or numeric type enum, and the client Lua does not name them either. Achievement
+progress types are therefore a server-side concept in retail; Ghidra on this binary is not expected to
+recover the 39 unmapped type meanings. Per-type gate for every unmapped type listed above: a retail server
+witness (capture of the progress event that advances that type) or community-documented type list; none is
+available in the repository. Until then the unmapped types stay inert, which is the safe behavior.
