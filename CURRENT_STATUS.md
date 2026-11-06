@@ -1,5 +1,15 @@
 # NexusForever Feature Restoration - Current Status
 
+[Guild/Character achievement atomicity](Decomp/Analysis/GUILD_CHARACTER_ACHIEVEMENT_ATOMICITY.md)
+now commits one durable intent per related Guild completion chain and one delivery
+marker with the full Character save. MySQL51, SQLite240 achievement/Guild and104
+experience-owner cases pass, including actual7194 controls and a corrected stored-
+date validation regression. Six forced producer-loss windows plus a normal control
+and pending/delivered intents across a normal MySQL restart pass. Fifteen compiler-
+bound sources and both zero-finding review axes are sealed;120 schemas and both
+engine generations are absent. Hosted/socket/native, provider packet UTC, fanout
+and global-first gates remain open.
+
 [Combat threat relation lifecycle](Decomp/Analysis/COMBAT_THREAT_RELATION_LIFECYCLE.md)
 now cleans both original actors after visibility loss, notification failure and
 GUID/manager replacement. NPC leash reset completes; callback-created relations
@@ -22143,6 +22153,14 @@ The owning build completed in 55 seconds with zero warnings and errors. All
 Deployment and native gameplay verification remain open.
 
 ### F-011 - Guild / Recruitment / War Party - PARTIAL (blocked)
+6 November: [Guild/Character achievement handoff](Decomp/Analysis/GUILD_CHARACTER_ACHIEVEMENT_ATOMICITY.md)
+now commits the complete related Guild chain with one recoverable Character
+delivery. MySQL51 and SQLite240+104 scoped cases, actual7194 controls, six forced
+loss windows/normal control and pending/delivered intent recovery across a normal
+engine restart pass. Fifteen compiler-bound source snapshots and both reviews
+are sealed;120 schemas and both engine generations are absent. Hosted/native/group
+earning, provider packet UTC and all-member fanout remain open.
+
 Guild handlers and recruitment output models exist. `ServerGuildBankTabInventory`
 (`0x047A`) now emits the native-mapped row count before item rows. Guild bank
 money/item transaction and tab-open handlers are test-pinned as log-only/no-emit
@@ -24991,6 +25009,15 @@ Codex UX coverage until a pickup-chain/live-client or native rule evidence
 bundle proves the missing semantics.
 
 ### F-035 - Achievements - COMPLETE
+6 November MySQL/restart hardening: [Guild completion feedback](Decomp/Analysis/GUILD_CHARACTER_ACHIEVEMENT_ATOMICITY.md)
+uses a durable ordered intent and one committed Character delivery, validated
+against the experience owner's exact stored snapshot. MySQL51, SQLite240+104,
+actual7194 controls, six forced loss windows/normal control and pending/delivered
+intent recovery across a normal MySQL restart pass. Fifteen compiler-bound source
+files and both zero-finding reviews are sealed;120 schemas and both engine
+generations are absent. Hosted/socket/native, provider packet UTC, unknown
+prerequisite, all-member and global-first gates remain open.
+
 Generic base manager with checklist/value progress tracking, prerequisite
 checks, completion marking, and clamped scalar progress. Realm-first tracking
 loads existing character/guild completions, claims each realm-first achievement

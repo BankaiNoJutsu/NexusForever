@@ -1,5 +1,17 @@
 # Assessment follow-through goal
 
+Resume [Guild/Character achievement atomicity](GUILD_CHARACTER_ACHIEVEMENT_ATOMICITY.md).
+The durable ordered Guild-chain intent/Character delivery passes51 MySQL and
+240+104 scoped SQLite cases, actual7194 controls, six forced producer-loss windows/
+normal control and pending/delivered recovery across normal MySQL restart.
+Fifteen compiler-bound source files and both final review axes are sealed; all120
+schemas and the owned engine generations are absent. The user paused this chat
+for [machine transfer](PROVIDER_PACKET_HOSTED_RESTART_HANDOFF.md). Resume provider
+packet timestamp observations, then hosted World/Auth restart on the machine
+with verified runtime assets. Six draft checks failed at packet capture before
+timestamp comparison; no packet timestamp defect was established. Hosted/socket/
+native, prerequisite290/203, all-member fanout and global-first remain open.
+
 [Original combat threat relations](COMBAT_THREAT_RELATION_LIFECYCLE.md) complete
 the Source reciprocal cleanup boundary through visibility loss, reused IDs,
 reentrant replacements and packet/script failures. Actual CombatAI leash reset

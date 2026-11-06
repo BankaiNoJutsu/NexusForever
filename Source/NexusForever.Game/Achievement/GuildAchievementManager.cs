@@ -1,4 +1,4 @@
-﻿using NexusForever.Database.Character;
+using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Guild;
 using NexusForever.Network.World.Message.Model.Achievement;
@@ -13,7 +13,7 @@ using AchievementNetworkModel = NexusForever.Network.World.Message.Model.Achieve
 
 namespace NexusForever.Game.Achievement
 {
-    public sealed class GuildAchievementManager : BaseAchievementManager<GuildAchievementModel>, IGuildAchievementManager
+    public sealed partial class GuildAchievementManager : BaseAchievementManager<GuildAchievementModel>, IGuildAchievementManager
     {
         private readonly IGuild guild;
         protected override ulong OwnerId => guild.Id;
@@ -168,10 +168,17 @@ namespace NexusForever.Game.Achievement
 
         protected override void CompleteAchievement(IPlayer target, IAchievement achievement)
         {
-            base.CompleteAchievement(target, achievement);
-
-            if (target != null)
-                target.AchievementManager.CheckAchievements(target, AchievementType.AchievementComplete, achievement.Id);
+            if (OriginalGuild() != null && target != null)
+            {
+                if (target.AchievementManager is not CharacterAchievementManager character)
+                    throw new InvalidOperationException("Guild completion feedback requires its original Character achievement owner.");
+                CompleteWithFeedback(target, character, achievement, () => base.CompleteAchievement(target, achievement));
+            }
+            else
+            {
+                base.CompleteAchievement(target, achievement);
+                if (target != null) target.AchievementManager.CheckAchievements(target, AchievementType.AchievementComplete, achievement.Id);
+            }
         }
 
         /// <summary>
@@ -182,6 +189,7 @@ namespace NexusForever.Game.Achievement
             lock (RowMutationGate ?? this)
             {
                 RequireEditable();
+                RetryUnfinishedFeedback(target?.AchievementManager as CharacterAchievementManager);
                 CheckAchievements(target, GetGlobalAchievementManager().GetGuildAchievements(type), objectId, objectIdAlt, count);
             }
         }
@@ -194,6 +202,7 @@ namespace NexusForever.Game.Achievement
             lock (RowMutationGate ?? this)
             {
                 RequireEditable();
+                RetryUnfinishedFeedback(target?.AchievementManager as CharacterAchievementManager);
                 SetAchievementProgress(target, GetGlobalAchievementManager().GetGuildAchievements(type), objectId, objectIdAlt, value);
             }
         }

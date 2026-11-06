@@ -1,0 +1,75 @@
+using System.Globalization;
+using System.Reflection;
+using Microsoft.EntityFrameworkCore;
+using NexusForever.Database.Character.Model;
+using NexusForever.Game.Abstract;
+using NexusForever.Game.Abstract.Achievement;
+using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Achievement;
+using NexusForever.Game.Static.Achievement;
+using NexusForever.Game.Tests.TestSupport;
+using NexusForever.GameTable.Model;
+using NexusForever.GameTable.Text.Filter;
+using NexusForever.Network.Internal;
+using NexusForever.Network.World.Message.Model.Achievement;
+using GameGuild = NexusForever.Game.Guild.Guild;
+
+namespace NexusForever.Game.Tests.Guild;
+
+public sealed partial class GuildCreationFinanceTests
+{
+    [Theory]
+    [InlineData(null)]
+    [InlineData("2026-01-02T03:04:05Z")]
+    [InlineData("2026-07-02T03:04:05Z")]
+    [InlineData("2026-03-29T01:30:00Z")]
+    [InlineData("2026-10-25T01:30:00Z")]
+    [InlineData("2026-01-02T03:04:05.8000000Z")]
+    public async Task ProviderAchievementPacketsRetainStoredUtcCompletion(string timestamp)
+        => await ProbeProviderAchievementPackets(timestamp, _ => { });
+
+    internal async Task ProbeProviderAchievementPackets(string timestamp, Action<object> observe)
+    {
+        using var f = await CreateFeedbackFixture();
+        var parent = new AchievementEntry { Id = 600, Flags = (uint)AchievementFlags.Guild,
+            AchievementTypeId = (uint)AchievementType.KillCreatureEntry, ObjectId = 500, RequiredProgress = timestamp == null ? 2u : 1u };
+        var child = new AchievementEntry { Id = 601, AchievementTypeId = (uint)AchievementType.AchievementComplete, ObjectId = 600, RequiredProgress = 2 };
+        ConfigureFeedback(f, parent, child, []);
+        EarnFeedback(f);
+        var guild = Assert.IsType<GameGuild>(f.Actor.Player.GuildManager.Guild);
+        var manager = Assert.IsType<GuildAchievementManager>(guild.AchievementManager);
+        var get = typeof(BaseAchievementManager<GuildAchievementModel>).GetMethod("GetAchievement", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var live = (IAchievement)get.Invoke(manager, [(ushort)600])!;
+        DateTime? original = timestamp == null ? null : DateTime.Parse(timestamp, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal);
+        Assert.Equal(original.HasValue, live.DateCompleted.HasValue);
+        if (original.HasValue) live.DateCompleted = original;
+        Assert.Empty(f.Packets<ServerAchievementUpdate>().SelectMany(packet => packet.Achievements).Where(row => row.AchievementId == 600));
+        await CommitFeedbackParent(f);
+        await f.Flush();
+        using var sql = f.Source.Context();
+        var stored = Assert.Single(sql.GuildAchievement.AsNoTracking());
+        Assert.Equal(original.HasValue, stored.DateCompleted.HasValue);
+        if (sql.Database.IsMySql() && stored.DateCompleted.HasValue) Assert.Equal(DateTimeKind.Unspecified, stored.DateCompleted.Value.Kind);
+        ulong expected = stored.DateCompleted.HasValue ? (ulong)DateTime.SpecifyKind(stored.DateCompleted.Value, DateTimeKind.Utc).ToFileTimeUtc() : 0;
+        var update = Assert.Single(f.Packets<ServerAchievementUpdate>().SelectMany(packet => packet.Achievements).Where(row => row.AchievementId == 600));
+        Assert.Equal(expected, update.DateCompleted);
+
+        // Reload through the owning database API, then initialise a new real Guild.
+        var model = Assert.Single(f.Actor.Player.GetCharacterDatabase().GetGuilds());
+        var realm = RecordingDispatchProxy<IRealmContext>.Create(out var realmProxy); realmProxy.SetProperty(nameof(IRealmContext.RealmId), (ushort)1);
+        var publisher = RecordingDispatchProxy<IInternalMessagePublisher>.Create(out _);
+        var filter = RecordingDispatchProxy<ITextFilterManager>.Create(out _);
+        var reloaded = new GameGuild(realm, publisher, filter, globalAchievementManager: f.Achievements, gameTableManager: f.Tables);
+        reloaded.Initialise(model);
+        reloaded.AchievementManager.SendInitialPackets(f.Actor.Player);
+        var initial = Assert.Single(f.Packets<ServerAchievementInit>().Last().Achievements);
+        Assert.Equal((ushort)600, initial.AchievementId); Assert.Equal(expected, initial.DateCompleted);
+        var loaded = (IAchievement)get.Invoke(reloaded.AchievementManager, [(ushort)600])!;
+        Assert.Equal(expected, loaded.Build().DateCompleted);
+        Assert.Equal(stored.ProgressState, update.ProgressState); Assert.Equal(stored.CreditedChecklistMask, update.CreditedChecklistMask);
+        Assert.Equal(stored.ProgressState, initial.ProgressState); Assert.Equal(stored.CreditedChecklistMask, initial.CreditedChecklistMask);
+        observe(new { Provider = sql.Database.ProviderName, LocalZone = TimeZoneInfo.Local.Id, Original = original,
+            Stored = stored.DateCompleted, Kind = stored.DateCompleted?.Kind.ToString(), Expected = expected,
+            Update = update.DateCompleted, Reload = initial.DateCompleted, Legacy = loaded.Build().DateCompleted });
+    }
+}

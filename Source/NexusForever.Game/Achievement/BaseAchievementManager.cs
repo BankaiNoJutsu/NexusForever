@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using NexusForever.Database;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
@@ -285,7 +285,7 @@ namespace NexusForever.Game.Achievement
             return true;
         }
 
-        private bool IsDisabled(DisableType type, uint objectId)
+        protected bool IsDisabled(DisableType type, uint objectId)
         {
             return disableManager?.IsDisabled(type, objectId) == true;
         }
@@ -293,7 +293,7 @@ namespace NexusForever.Game.Achievement
         /// <summary>
         /// Check if <see cref="AchievementEntry"/> can be updated as <see cref="IPlayer"/> with supplied object ids.
         /// </summary>
-        private bool CanUpdateAchievement(IPlayer player, AchievementEntry entry, uint objectId, uint objectIdAlt)
+        protected bool CanUpdateAchievement(IPlayer player, AchievementEntry entry, uint objectId, uint objectIdAlt)
         {
             if (entry.PrerequisiteIdServer != 0u && !GetPrerequisiteManager().Meets(player, entry.PrerequisiteIdServer))
                 return false;
@@ -337,7 +337,7 @@ namespace NexusForever.Game.Achievement
         /// <summary>
         /// Check if <see cref="AchievementChecklistEntry"/> can be updated as <see cref="IPlayer"/> with supplied object ids.
         /// </summary>
-        private bool CanUpdateChecklist(IPlayer player, AchievementChecklistEntry entry, uint objectId, uint objectIdAlt)
+        protected bool CanUpdateChecklist(IPlayer player, AchievementChecklistEntry entry, uint objectId, uint objectIdAlt)
         {
             if (entry.PrerequisiteId != 0u && !GetPrerequisiteManager().Meets(player, entry.PrerequisiteId))
                 return false;
@@ -409,7 +409,7 @@ namespace NexusForever.Game.Achievement
         /// <summary>
         /// Return <see cref="IAchievement"/> with supplied id, if it doesn't exist it will be created.
         /// </summary>
-        private IAchievement GetAchievement(ushort id)
+        protected IAchievement GetAchievement(ushort id)
         {
             if (achievements.TryGetValue(id, out IAchievement achievement))
                 return achievement;

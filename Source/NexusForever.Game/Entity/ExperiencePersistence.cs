@@ -118,16 +118,25 @@ namespace NexusForever.Game.Entity
             && SameSpells(left.Spells, right.Spells) && SameRows(left.Pets, right.Pets) && SameRows(left.Achievements, right.Achievements)
             && SameRows(left.Datacubes, right.Datacubes) && SameRows(left.Articles, right.Articles)
             && SameRows(left.MapHexgroups, right.MapHexgroups) && SameRows(left.Reputations, right.Reputations) && SameRows(left.Flairs, right.Flairs);
-        internal Action<CharacterContext> CaptureNormal(object token, string route)
+        internal Action<CharacterContext> CaptureNormal(object token, string route, Action<CharacterContext, Achievement[]> participant = null)
         {
             lock (gate)
             {
                 if (active != null) throw new InvalidOperationException("Experience has an unfinished save.");
-                var frozen = new Frozen(token, route, current()); return context => Save(context, frozen);
+                var frozen = new Frozen(token, route, current());
+                return context =>
+                {
+                    try
+                    {
+                        Snapshot stored = Save(context, frozen);
+                        participant?.Invoke(context, stored.Achievements?.ToArray());
+                    }
+                    catch (Exception error) { context.RejectSave(error); throw; }
+                };
             }
         }
-        internal void Save(CharacterContext context) => Save(context, null);
-        private void Save(CharacterContext context, Frozen frozen)
+        internal void Save(CharacterContext context) => _ = Save(context, null);
+        private Snapshot Save(CharacterContext context, Frozen frozen)
         {
             lock (gate)
             {
@@ -145,7 +154,7 @@ namespace NexusForever.Game.Entity
                     if (active == null && uncertain == null && Equal(target, baseline)
                         && intent.ReputationSequence == baselineIntent.ReputationSequence
                         && intent.ActionSetSequence == baselineIntent.ActionSetSequence
-                        && realmFirst?.HasPendingFor((target.Achievements ?? []).Where(row => row.Completed != null).Select(row => row.Id)) != true) return;
+                        && realmFirst?.HasPendingFor((target.Achievements ?? []).Where(row => row.Completed != null).Select(row => row.Id)) != true) return target;
                     Unit unit = active;
                     if (unit == null)
                     {
@@ -170,6 +179,7 @@ namespace NexusForever.Game.Entity
                     foreach (var row in unit.Rows.Values) row.Validate();
                     Stage(unit, unit.Sql, target, unit.Target ?? unit.Sql); unit.Target = target; unit.Intent = intent; unit.Possible.Add(target);
                     unit.Claims = realmFirst?.Stage(context, (target.Achievements ?? []).Where(row => row.Completed != null).Select(row => row.Id)) ?? [];
+                    return target;
                 }
                 catch (Exception error) { context.RejectSave(error); throw; }
             }

@@ -1,4 +1,4 @@
-﻿using NexusForever.Database.Character.Model;
+using NexusForever.Database.Character.Model;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Achievement;
 using NexusForever.Game.Abstract.Entity;
@@ -88,6 +88,7 @@ namespace NexusForever.Game.Achievement
             LoadedExperienceAchievements = model.Achievement.Select(ExperiencePersistence.FromModel).OrderBy(row => row.Id).ToArray();
             Initialise(model.Achievement, true);
             InitialisePublication(model);
+            InitialiseGuildFeedback(model.AccountId);
         }
 
         /// <summary>
@@ -98,6 +99,7 @@ namespace NexusForever.Game.Achievement
         /// </remarks>
         public override void SendInitialPackets(IPlayer _)
         {
+            if (owner is Player) PumpGuildFeedbackRecovery(0);
             if (owner is Player)
             {
                 if (!SendPublishedInitial()) return;
@@ -116,7 +118,9 @@ namespace NexusForever.Game.Achievement
         /// </summary>
         public override void CheckAchievements(IPlayer target, AchievementType type, uint objectId, uint objectIdAlt = 0u, uint count = 1u)
         {
-            CheckAchievements(target, GetGlobalAchievementManager().GetCharacterAchievements(type), objectId, objectIdAlt, count);
+            if (activeFeedbackRules != null && type == AchievementType.AchievementComplete)
+                ApplyAcceptedGuildFeedbackCause((ushort)objectId);
+            else CheckAchievements(target, GetGlobalAchievementManager().GetCharacterAchievements(type), objectId, objectIdAlt, count);
             if (ShouldForwardToGuildAchievements(target, type))
             {
                 var guild = target.GuildManager.Guild;

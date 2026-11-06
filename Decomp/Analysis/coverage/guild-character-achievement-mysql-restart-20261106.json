@@ -1,0 +1,193 @@
+{
+  "milestone": "Guild-to-Character achievement handoff: configured MySQL and bounded process/database restart",
+  "status": "Passed for prepared headless Player/Character owners; hosted and retail gates remain open",
+  "observedUtc": "2026-11-06T09:32:27.076046+00:00",
+  "protocol": "guild-character-achievement/4",
+  "compilerBoundSourceCount": 15,
+  "sourceFiles": [
+    {
+      "Path": "Source/NexusForever.Game.Tests/Guild/GuildAchievementAtomicityTests.cs",
+      "SHA256": "c0b157faff9dd196374d81f8f1a72ab4abb4e9b9a5dc0d25b98c4b5ba559a0e3"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Guild/GuildAchievementFeedbackRecoveryTests.cs",
+      "SHA256": "0c25c08432ef4a26a336f9fd562fa968bafe7c319a00e0f2f08ec7f058b8ecb9"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Guild/GuildAchievementProviderQualification.cs",
+      "SHA256": "e7f6aef3c42757c2f8b1ffe47e0d0125c76bd232d450c35fe2c12daaaaac82bc"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Guild/GuildCreationFinanceTests.cs",
+      "SHA256": "c5fdfa37aad36795f25578381b4648f10ad067901703cf397246fb7f44fe50aa"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Achievement/BaseAchievementManager.cs",
+      "SHA256": "9cf3d10289c4442a0052fe2db5d5243135aa80e7a7517af6e760fcaeee913c03"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Achievement/CharacterAchievementManager.cs",
+      "SHA256": "2046340c768dda58dedd31ee3154e96594b7379479baa2a39f0de38585c5e286"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Achievement/CharacterAchievementManager.GuildFeedback.cs",
+      "SHA256": "ff812f5256dcafd58d993c09d64bc5196bb5c14098f4067f9fc598ec166411e4"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Achievement/CharacterAchievementManager.GuildFeedbackEligibility.cs",
+      "SHA256": "eeb70db0a5b0df5e3659174f01fbf718829bd2fa6c7a5d308d7f8099c67d582d"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Achievement/GuildAchievementFeedbackReceipt.cs",
+      "SHA256": "b70577f9110ca568b17ff1d64f6faa0d16ad43dd4cc3f1bdd587ec2ed4a9ad5e"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Achievement/GuildAchievementManager.cs",
+      "SHA256": "2e3c3650aa0520eac1cc13f4a844a37e73d216f2ca4b5a3db4d262c6fb8a9460"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Achievement/GuildAchievementManager.Feedback.cs",
+      "SHA256": "7044fca91c2f31bbda1a421d8c7d580ca56ae2a2f7162bcd354c28021e91414e"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Entity/Player.cs",
+      "SHA256": "a11e483ea50a607e2711bb0701946ac532cd62f5041253787997e48cf41c172e"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Entity/Player.ExperiencePersistence.cs",
+      "SHA256": "425289514c05ec5f83f97da83033c3902f6373be1ed0b60c658b0a0090f40c09"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Guild/GuildMutationPersistence.cs",
+      "SHA256": "f504439605bbc83f0b952791e1be3a7a7c916265fce0c560746d5a12e6306ea4"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Entity/ExperiencePersistence.cs",
+      "SHA256": "8c2f5f4b79ba80efc6c6a902bf5e39f639938a7d1708e1d91fa0d9bca58926a5"
+    }
+  ],
+  "sqliteScoped": {
+    "total": 240,
+    "executed": 240,
+    "passed": 240,
+    "failed": 0,
+    "error": 0,
+    "timeout": 0,
+    "aborted": 0,
+    "inconclusive": 0,
+    "passedButRunAborted": 0,
+    "notRunnable": 0,
+    "notExecuted": 0,
+    "disconnected": 0,
+    "warning": 0,
+    "completed": 0,
+    "inProgress": 0,
+    "pending": 0
+  },
+  "experienceOwners": {
+    "total": 104,
+    "executed": 104,
+    "passed": 104,
+    "failed": 0,
+    "error": 0,
+    "timeout": 0,
+    "aborted": 0,
+    "inconclusive": 0,
+    "passedButRunAborted": 0,
+    "notRunnable": 0,
+    "notExecuted": 0,
+    "disconnected": 0,
+    "warning": 0,
+    "completed": 0,
+    "inProgress": 0,
+    "pending": 0
+  },
+  "mysql": {
+    "Version": "8.4.13",
+    "Cases": 51,
+    "ActualDataControls": 2,
+    "AcknowledgedDateRegression": true,
+    "CharacterMigrationsPerFixture": 49,
+    "TlsRequired": true,
+    "Shards": [
+      17,
+      17,
+      17
+    ]
+  },
+  "physical": {
+    "Cases": 7,
+    "ForcedTerminations": 6,
+    "FreshRecoveriesPerCase": 2,
+    "PendingRestartProducerTerminations": 1
+  },
+  "databaseRestart": {
+    "SameConfiguredEndpointAndDatadir": true,
+    "NewGeneration": true,
+    "ExactPreRecoveryStates": 2,
+    "FreshRecoveryProcesses": 4,
+    "ExactRecoveredStates": 4
+  },
+  "cleanup": {
+    "IndependentInventories": 13,
+    "OwnedSchemasAbsent": 120,
+    "BothEngineGenerationsStoppedNormally": true
+  },
+  "reviews": {
+    "Spec": {
+      "Findings": 0,
+      "Scope": "Four production date deltas, MySQL helpers and final process/restart controllers",
+      "Reviewer": "/root/group_size_spec_review",
+      "ReadOnly": true
+    },
+    "Standards": {
+      "Findings": 0,
+      "Scope": "Same bounded production/provider/controller scope plus owned restart launcher",
+      "Reviewer": "/root/group_size_standards_review",
+      "ReadOnly": true
+    },
+    "Resolved": [
+      "ExperiencePersistence snapshot and compiler checksum added",
+      "Exact checkpoint label verified",
+      "Attempted schema leases recorded before CREATE acknowledgement",
+      "Complete achievement/intent/delivery and paid-finance witnesses preserved",
+      "Event drain boundary narrowed; no packet acceptance claim",
+      "Final deletion runner requires explicit Created=true"
+    ],
+    "Execution": "Recorded separately; reviewers did not run checks"
+  },
+  "runtime": {
+    "GameSHA256": "509f7054993ad0001a867eaef530cfecfe68bb5f4cd6caa6e3750a50e8a39a6e",
+    "TestSHA256": "4a8ddbaa3663e685f0a78c8454c3bf16285b2a6555efb36a3c72fc0d99ab4243"
+  },
+  "retainedRunners": [
+    {
+      "Path": "date-fixed-runner",
+      "SourceSHA256": "2378848692d375cea7b4bb18873b6b88ada5365171945685ceaec8e97b9e3ed1",
+      "RunnerSHA256": "6ca9c56d6598760dd53f62ed15bc5f446adbd82f6fe14b92782c3d47ec7bf9b8"
+    },
+    {
+      "Path": "process-v2-runner",
+      "SourceSHA256": "6ad99bbc8312fa411a2732b8680205395fef1a899199662e3ed93dca1969ad79",
+      "RunnerSHA256": "f6e3a1061c464b6ebbf40d1529c5af960190f002b7c95cbbca695f6848adb8cf"
+    },
+    {
+      "Path": "control-runner",
+      "SourceSHA256": "78da7a731717a6dc19dce9735b4423f34206b8d76d05b0d473935da5c65a07d8",
+      "RunnerSHA256": "ec826bda582a81c33821481991339883bbaea01cbf65dc493104a0a94c3b57a5"
+    },
+    {
+      "Path": "restart-runner",
+      "SourceSHA256": "e18b0748867c5cc8d758fdeafac6eaed0618d81a351066800dd3c56de8679635",
+      "RunnerSHA256": "d3fb02ea9e50dc7f8996f82530ad7c476a51b0830a169f01fdabcb1e57d00c95"
+    }
+  ],
+  "evidenceRoot": "artifacts/continuation-20261106/guild-achievement-atomicity/mysql-qualification",
+  "limits": [
+    "Prepared Account/Auth and prerequisite admission; no hosted Auth SQL qualification",
+    "Prepared headless Player/Character recovery; no autonomous World/Auth, socket or native client",
+    "Actual7194 metadata controls do not qualify raid earning, all-Guild-group admission or unknown prerequisites290/203",
+    "All-member fanout, durable global realm-first arbitration, other providers and changed-route migration remain open",
+    "Guild DATETIME packet UTC interpretation requires a separate provider publication control"
+  ]
+}

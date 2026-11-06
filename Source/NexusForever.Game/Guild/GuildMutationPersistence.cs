@@ -73,7 +73,8 @@ namespace NexusForever.Game.Guild
                     if (active != null || uncertain.Count != 0) return true;
                     Snapshot value = current();
                     return !Equal(value, baselineIntent) || value.BankRankSequence != (baselineIntent?.BankRankSequence ?? 0) || owner is Guild achievementGuild
-                        && achievementGuild.RealmFirst?.HasPendingFor((value.Achievements ?? []).Where(row => row.Completed != null).Select(row => row.Id)) == true;
+                        && (achievementGuild.RealmFirst?.HasPendingFor((value.Achievements ?? []).Where(row => row.Completed != null).Select(row => row.Id)) == true
+                            || achievementGuild.AchievementManager is GuildAchievementManager { HasPendingFeedback: true });
                 }
             }
         }
@@ -192,7 +193,10 @@ namespace NexusForever.Game.Guild
                     if (creating) StageCreationHeader(unit);
                     Stage(unit, actual ?? Empty, unit.Target, !creating);
                     if (owner is Guild achievementGuild)
+                    {
                         unit.Claims = achievementGuild.RealmFirst?.Stage(context, (unit.Target.Achievements ?? []).Where(row => row.Completed != null).Select(row => row.Id)) ?? [];
+                        (achievementGuild.AchievementManager as GuildAchievementManager)?.StageFeedback(context, unit.Target.Achievements ?? []);
+                    }
                 }
                 catch (Exception error) { context.RejectSave(error); throw; }
             }

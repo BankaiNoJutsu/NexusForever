@@ -117,13 +117,15 @@ namespace NexusForever.Game.Entity
                 && session is not NetworkSession { IsDisconnecting: true };
         internal void SaveExperience(CharacterContext context)
         {
+            (AchievementManager as CharacterAchievementManager)?.RequireFrozenGuildFeedbackSave();
             GetExperiencePersistence()?.Save(context);
             if (experienceXpOwner == null) XpManager.Save(context);
             if (experiencePathOwner == null) PathManager.Save(context);
         }
         private Action<CharacterContext> CaptureExperienceSave(object token, string database)
         {
-            var frozen = GetExperiencePersistence()?.CaptureNormal(token, database);
+            var feedback = (AchievementManager as CharacterAchievementManager)?.CaptureGuildFeedbackSave();
+            var frozen = GetExperiencePersistence()?.CaptureNormal(token, database, feedback);
             if (frozen == null) return null;
             return context =>
             {
@@ -132,5 +134,6 @@ namespace NexusForever.Game.Entity
                 if (experiencePathOwner == null) PathManager.Save(context);
             };
         }
+        internal void RequestGuildAchievementFeedbackSave() => Save(null, null);
     }
 }

@@ -1,5 +1,16 @@
 # Client Binary Decompile Continuation Guide
 
+The in-flight [Guild/Character achievement boundary](GUILD_CHARACTER_ACHIEVEMENT_ATOMICITY.md)
+now passes MySQL51, SQLite240 achievement/Guild and104 experience-owner cases,
+including actual partial/full controls and a stored-date regression correction.
+Six forced producer-loss windows/normal control and pending/delivered intents
+across a normal MySQL restart pass. Fifteen compiler-bound sources and both
+zero-finding review axes are sealed;120 schemas and both engines are absent.
+Next qualify provider-loaded Guild packet timestamps and hosted World/Auth/socket
+recovery. Actual7194 prerequisite types290/203 remain prepared; native/group
+earning, fanout/global-first and other providers/routes remain open. Outgoing
+personal kind3/5 and mode2 mappings remain separate evidence gaps.
+
 [Combat threat cleanup](COMBAT_THREAT_RELATION_LIFECYCLE.md) now owns the
 original reciprocal entries across visibility loss, reused IDs and reentrant
 callbacks. NPC leash reset survives rejected threat notifications. All20 new/

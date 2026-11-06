@@ -1,0 +1,1154 @@
+{
+  "milestone": "Guild completion to Character feedback: durable ordered batch and committed publication",
+  "status": "Implemented and verified for bounded Source/SQLite flows; broader required gates remain open",
+  "observedUtc": "2026-11-06T07:20:42.744992+00:00",
+  "protocol": "guild-character-achievement/4",
+  "sourceFiles": [
+    {
+      "Path": "Source/NexusForever.Game/Achievement/BaseAchievementManager.cs",
+      "Sha256": "9cf3d10289c4442a0052fe2db5d5243135aa80e7a7517af6e760fcaeee913c03"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Achievement/CharacterAchievementManager.cs",
+      "Sha256": "2046340c768dda58dedd31ee3154e96594b7379479baa2a39f0de38585c5e286"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Achievement/GuildAchievementManager.cs",
+      "Sha256": "2e3c3650aa0520eac1cc13f4a844a37e73d216f2ca4b5a3db4d262c6fb8a9460"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Achievement/CharacterAchievementManager.GuildFeedback.cs",
+      "Sha256": "d5337e850873fcac3e3eb6bda83d05fb04fc33a101c6587275d845ee18bb656c"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Achievement/CharacterAchievementManager.GuildFeedbackEligibility.cs",
+      "Sha256": "eeb70db0a5b0df5e3659174f01fbf718829bd2fa6c7a5d308d7f8099c67d582d"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Achievement/GuildAchievementManager.Feedback.cs",
+      "Sha256": "7044fca91c2f31bbda1a421d8c7d580ca56ae2a2f7162bcd354c28021e91414e"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Achievement/GuildAchievementFeedbackReceipt.cs",
+      "Sha256": "2942774f7d6eaa1162355f8ec05724191a89cb5f1c7299bbe664135cf1e49b84"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Entity/Player.ExperiencePersistence.cs",
+      "Sha256": "01aae75d27a07b32cd85e3adc2d0215cbaa0b797ac2cdf7f22c11075853ef408"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Entity/Player.cs",
+      "Sha256": "1a7d650cfd006e0c84942464c6eb106f85f977a4e95895d64df99fe5f30767ea"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Guild/GuildMutationPersistence.cs",
+      "Sha256": "f504439605bbc83f0b952791e1be3a7a7c916265fce0c560746d5a12e6306ea4"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Guild/GuildAchievementAtomicityTests.cs",
+      "Sha256": "623237f4eacc11efc76bb7af8b63aed45e45c7eb81d4c4b7b0be902fe029bee7"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Guild/GuildAchievementFeedbackRecoveryTests.cs",
+      "Sha256": "6927b673facc8d70a654bc4ee52f1de75ee832650db1892f8cc0b073bee99899"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Guild/GuildCreationFinanceTests.cs",
+      "Sha256": "c5fdfa37aad36795f25578381b4648f10ad067901703cf397246fb7f44fe50aa"
+    }
+  ],
+  "compilerBoundSourceCount": 13,
+  "scopedTests": {
+    "total": 240,
+    "executed": 240,
+    "passed": 240,
+    "failed": 0,
+    "error": 0,
+    "timeout": 0,
+    "aborted": 0,
+    "inconclusive": 0,
+    "passedButRunAborted": 0,
+    "notRunnable": 0,
+    "notExecuted": 0,
+    "disconnected": 0,
+    "warning": 0,
+    "completed": 0,
+    "inProgress": 0,
+    "pending": 0
+  },
+  "requiredControlCounts": {
+    "CharacterFeedbackCannotCommitAheadOfItsRejectedGuildCompletion": 1,
+    "RejectedCharacterFeedbackSaveRetainsItsIntentAndRecoversOneContribution": 3,
+    "GuildMetaFeedbackSharesOneAtomicCharacterDelivery": 8,
+    "ConvergingFeedbackFreezesEligibilityForActualCompletedBranches": 4,
+    "DirectFeedbackSiblingSeesEarlierCompletionInTheSameAcceptedEvent": 2,
+    "NestedPreparationRetryKeepsTheOriginalGuildSiblingOrder": 4,
+    "OriginalCleanupKeepsItsAcceptedFeedbackAndLaterEditsWhileReplacementCannotTakeItsSave": 2,
+    "FailedGuildMetaForwardingRetriesTheRemainingChainWithoutCompletingItsParentAgain": 1
+  },
+  "baselineFailure": {
+    "total": 1,
+    "executed": 1,
+    "passed": 0,
+    "failed": 1,
+    "error": 0,
+    "timeout": 0,
+    "aborted": 0,
+    "inconclusive": 0,
+    "passedButRunAborted": 0,
+    "notRunnable": 0,
+    "notExecuted": 0,
+    "disconnected": 0,
+    "warning": 0,
+    "completed": 0,
+    "inProgress": 0,
+    "pending": 0
+  },
+  "unchangedDefaultCompatibility": {
+    "total": 57,
+    "executed": 57,
+    "passed": 57,
+    "failed": 0,
+    "error": 0,
+    "timeout": 0,
+    "aborted": 0,
+    "inconclusive": 0,
+    "passedButRunAborted": 0,
+    "notRunnable": 0,
+    "notExecuted": 0,
+    "disconnected": 0,
+    "warning": 0,
+    "completed": 0,
+    "inProgress": 0,
+    "pending": 0
+  },
+  "actualRejectedParent": {
+    "FirstGuildRows": 0,
+    "FirstCharacterRows": 0,
+    "FirstCharacterPackets": 0,
+    "FinalGuildRows": 1,
+    "FinalCharacterRows": 1,
+    "FinalProgress": 1,
+    "FinalChecklist": 0,
+    "FinalCompleted": null,
+    "FinalCharacterPackets": 1
+  },
+  "actualFullChecklist": {
+    "PartialProgress": 1,
+    "PartialCompleted": false,
+    "FinalProgress": 63,
+    "FinalCompleted": true,
+    "GuildCompletions": 6,
+    "CharacterRows": 1,
+    "IntentReceipts": 6,
+    "DeliveryReceipts": 6,
+    "CharacterPackets": 6
+  },
+  "actualInputHashes": {
+    "Achievement.tbl": "a613fbf12a54f8196169eb79a3431f549bcd36300a34bd85cb984f81b64bca30",
+    "AchievementChecklist.tbl": "3e9e6a32547219e505cbdf38f83abeee01764696ec9492e13b5d5bc6b505de28",
+    "TradeskillAchievementReward.tbl": "5fe7b79c505b5d7a3ce6b0545aadde544b7bde182500adc5512abaceabd2b1f1"
+  },
+  "assemblies": [
+    {
+      "File": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\guild-achievement-atomicity\\sealed-probe-v4\\bin\\Debug\\net10.0\\NexusForever.Game.Tests.dll",
+      "Sha256": "a6c9de74eba8d9a4c276aba15e2f5d505c6e3d2ec3b46f2c90ab657760daa02b"
+    },
+    {
+      "File": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\guild-achievement-atomicity\\sealed-probe-v4\\bin\\Debug\\net10.0\\NexusForever.Game.dll",
+      "Sha256": "ec56770e36c99cfaddbd40d890b563e50c69c3ea0b1131cb91a67a16d1164248"
+    },
+    {
+      "File": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\guild-achievement-atomicity\\sealed-probe-v4\\bin\\Debug\\net10.0\\NexusForever.Database.Character.dll",
+      "Sha256": "5d971d079f523c7e0049bb8a04436f38388b382e90a1a4156fce374c363aef60"
+    },
+    {
+      "File": "C:\\GIT\\NexusForever\\continuation\\artifacts\\continuation-20261106\\guild-achievement-atomicity\\sealed-probe-v4\\bin\\Debug\\net10.0\\NexusForever.GameTable.dll",
+      "Sha256": "297200e34ed0194dfa33b8b632f868bb86dca82434848ebf177a5029f4204c39"
+    }
+  ],
+  "reviews": {
+    "standards": 0,
+    "spec": 0
+  },
+  "remainingGates": [
+    "Configured MySQL qualification of this new handoff",
+    "Physical process loss and restart of this handoff",
+    "Hosted World/Auth and socket/native qualification",
+    "Raid/all-Guild-group earning and prerequisite types290/203",
+    "All-member fanout",
+    "Durable global realm-first arbitration",
+    "Wider retail restoration outcomes"
+  ],
+  "limits": "Prepared SQLite actor and actual Achievement/Checklist data; no native launch, provider/process, fanout or global-first closure. Protocol1-3 were isolated intermediate test candidates, never deployed.",
+  "evidence": [
+    "results/sealed-owning-v4.trx",
+    "actual-sealed-v4.json",
+    "sealed-source-symbol-proof-v4.json",
+    "sealed-source-v4-manifest.json",
+    "candidate-build-20.log",
+    "final-reviews-v4.json"
+  ],
+  "testWitnesses": [
+    {
+      "case": "NexusForever.Game.Tests.Achievement.AchievementInfoTests.Constructor_WithChecklistTableFiltersRowsByAchievementId",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.AchievementInfoTests.Constructor_WithMissingChecklistTableUsesEmptyChecklist(includeEmptyTable: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.AchievementInfoTests.Constructor_WithMissingChecklistTableUsesEmptyChecklist(includeEmptyTable: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.AchievementProgressTests.IsComplete_AllowsProgressBeyondRequiredProgress",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.AchievementProgressTests.IsComplete_DoesNotAliasChecklistBit32ToBit0",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.AchievementProgressTests.IsComplete_DoesNotCompleteZeroRequiredProgressBeforeProgress",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.AchievementProgressTests.IsComplete_TreatsZeroRequiredProgressAsSingleEventRequirement",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.AchievementProgressTests.IsComplete_UsesRequiredProgressForQuestCompleteChecklistCount",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.AchievementProgressTests.KillCreatureGroup_DoesNotTreatZeroObjectAsWildcard",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.AchievementProgressTests.KillCreatureGroup_UpdatesWhenObjectMatches",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.AchievementProgressTests.QuestCompleteChecklistCount_IgnoresChecklistBitsOutsideMask",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.AchievementProgressTests.QuestCompleteChecklistCount_OnlyCountsDistinctChecklistEntries",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.AchievementProgressTests.QuestCompleteChecklist_Q3486CreditsArrivalAchievement3469Rows",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.AchievementProgressTests.QuestCompleteChecklist_Q3486CreditsArrivalAchievement5327Rows",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.AchievementProgressTests.QuestCompleteChecklist_Q5597CreditsBloodstoneAchievement4134Rows",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.CharacterAchievementPublicationTests.CallerRollbackCannotPublishAnUncommittedAchievement",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.CharacterAchievementPublicationTests.ConfirmedUpdatesKeepTheirFrozenOrderDespiteLaterLiveProgress",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.CharacterAchievementPublicationTests.FailedPrivatePublicationRetriesAFreshPacketWithoutUsingLaterLiveValues",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.CharacterAchievementPublicationTests.InitialPacketsDoNotExposeUncommittedProgress",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.CharacterAchievementPublicationTests.LostCommitAcknowledgementsPublishOnlyAfterRecovery(completed: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.CharacterAchievementPublicationTests.LostCommitAcknowledgementsPublishOnlyAfterRecovery(completed: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.CharacterAchievementPublicationTests.NormalSavePublicationUsesThePreAuthAchievementSnapshot",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.CharacterAchievementPublicationTests.ProgressWaitsForTheOriginalPlayerSaveAndWorldUpdate",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.CharacterAchievementPublicationTests.RealmFirstAnnouncementWaitsForSqlAndTheWorldUpdate",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.CharacterAchievementPublicationTests.RealmFirstRecipientRetriesDoNotRepeatAcknowledgedRecipients",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.CharacterAchievementPublicationTests.ReentrantEventUpdatesCannotReplayTheCommittedHead",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.CharacterAchievementPublicationTests.RejectedSqlRetainsProgressWithoutPublishing(completed: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.CharacterAchievementPublicationTests.RejectedSqlRetainsProgressWithoutPublishing(completed: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.CharacterAchievementPublicationTests.ReplacedManagersCannotPublishTheirOriginalPendingUpdates",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.CharacterAchievementPublicationTests.ReplacedSessionsCannotReceiveAnOldCommittedPublication",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.CharacterAchievementPublicationTests.SavepointRollbackCannotQualifyAnAchievementPublication",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.CharacterAchievementPublicationTests.SqlCompletionDoesNotWaitForAnEarlierOutwardSend",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.CharacterAchievementPublicationTests.UnchangedConfirmedSavesDoNotRepeatTheProgressUpdate",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.CharacterAchievementPublicationTests.WithdrawnRecipientsCannotReceiveARetainedRealmFirstRetry",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.CharacterAchievementPublicationTests.WithdrawnSourceActorsCannotPublishCommittedUpdates",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.ClientSteamAchievementsTests.Handler_AcceptsParsedPayloadWithoutMutatingAchievementState",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.ClientSteamAchievementsTests.Read_ParsesSteamGameIdAndAsciiPayload",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.GlobalAchievementManagerPartialTableTests.Initialise_WithMissingAchievementTableUsesEmptyCaches(includeEmptyTable: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.GlobalAchievementManagerPartialTableTests.Initialise_WithMissingAchievementTableUsesEmptyCaches(includeEmptyTable: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.GlobalAchievementManagerPartialTableTests.Initialise_WithTableBackedRowsIndexesCharacterAndGuildAchievements",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.GuildAchievementManagerTests.CompleteAchievement_NotifiesCharacterAchievementProgress",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.RealmFirstAchievementPacketTests.ServerAchievementInit_WritesCountedAchievementRows",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.RealmFirstAchievementPacketTests.ServerAchievementUpdate_WritesDeletedFlagAndRows",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.RealmFirstAchievementPacketTests.ServerRealmFirstAchievement_WritesAchievementGuildFlagAndName",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.RealmFirstArbitrationTests.CompanionCallbackSaveCannotCommitCompletionBeforeItsClaim",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.RealmFirstArbitrationTests.DeletingTheOriginalWinnerCannotReopenItsDurableClaim",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.RealmFirstArbitrationTests.HistoricalCompletionsRemainClosedWithoutInventingANewWinner",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.RealmFirstArbitrationTests.LostAcknowledgementCannotLetAStalePeerReassignTheCommittedWinner",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.RealmFirstArbitrationTests.LostGuildAcknowledgementCannotReassignTheCommittedWinner",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.RealmFirstArbitrationTests.RejectedCharacterSaveCannotReserveTheWinnerAheadOfACommittedPeer",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.RealmFirstArbitrationTests.RejectedGuildGraphCannotKeepTheWinnerAheadOfACommittedPeer",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.RealmFirstArbitrationTests.SavepointRollbackCannotLeaveAWinningClaim",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.RealmFirstArbitrationTests.StaleGuildPeerCannotAnnounceASecondCommittedRealmFirst",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.RealmFirstArbitrationTests.StalePeerCannotAnnounceASecondCommittedCharacterRealmFirst",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.RealmFirstArbitrationTests.TwoOriginalPlayersCanShareTheSameClaimAndSaveContext",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.RealmFirstArbitrationTests.UnownedTrackedClosureCannotConsumeACharacterRealmFirst",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.RealmFirstArbitrationTests.UnownedTrackedWinnerCannotConsumeAGuildRealmFirst",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.TradeskillAchievementRewardTests.ArchiveRefreshAlwaysUsesAchievementOwner(grantDirectly: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.TradeskillAchievementRewardTests.ArchiveRefreshAlwaysUsesAchievementOwner(grantDirectly: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.TradeskillAchievementRewardTests.CompleteCraftItemTechTreeAchievement_GrantsRewardSchematicAndEnsuresTalentPoints",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.TradeskillAchievementRewardTests.CompleteTradeskillTierTechTreeAchievement_EnsuresTalentPointFromTierOwner",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Achievement.TradeskillAchievementRewardTests.GrantCompletedTradeskillAchievementRewards_BackfillsAlreadyCompletedTechTreeRewards",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildAchievementRecoveryTests.ADetachedRowOrReplacedManagerCannotSaveTheOriginalGuild",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildAchievementRecoveryTests.AFailedNewParentDoesNotConsumeItsInitialAchievement",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildAchievementRecoveryTests.AcceptedAchievementsCommitBeforeDisbandCleanupAndCleanupRejectsFurtherProgress",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildAchievementRecoveryTests.AchievementOnlyPublicProgressReachesThePeriodicOwner",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildAchievementRecoveryTests.BoundAchievementSaveRejectsAnIdenticalForeignDatabase",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildAchievementRecoveryTests.CharacterAchievementDelegationAllowsConcurrentOwnerReads",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildAchievementRecoveryTests.DirectAchievementSaveCanPersistAcceptedProgress",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildAchievementRecoveryTests.DirectBoundRowOrManagerSavesTheirCompleteParent(rowSave: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildAchievementRecoveryTests.DirectBoundRowOrManagerSavesTheirCompleteParent(rowSave: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildAchievementRecoveryTests.FailedAnnouncementRetriesAnImmutablePayloadWithoutRepeatingAcknowledgedUpdates",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildAchievementRecoveryTests.FailedDirectSaveRetainsTheAcceptedAchievementCreate",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildAchievementRecoveryTests.LateForeignSqlAndTrackedAchievementRowsRejectTheWholeGuildUnit",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildAchievementRecoveryTests.LateManagerReplacementCannotCommitAnUnacknowledgeableGuildUnit",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildAchievementRecoveryTests.LoadedRawProgressAndCompletionRemainUnchangedAcrossSiblingSaves",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildAchievementRecoveryTests.LostAcknowledgementRetainsCompletionAndPublishesTheOriginalWinningName",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildAchievementRecoveryTests.ProgressIsPublishedOnlyAfterCommitAndInitialPacketsNeverExposeLaterIntent",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildAchievementRecoveryTests.PublicationFailureRetainsTheExactEarlierProgressBeforeLaterProgress",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildAchievementRecoveryTests.RealmFirstAnnouncementWaitsForTheCompletedGuildRow",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildAchievementRecoveryTests.ReservedRealmFirstSurvivesAcceptedCompletionTimestampEdits(clearBeforeSave: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildAchievementRecoveryTests.ReservedRealmFirstSurvivesAcceptedCompletionTimestampEdits(clearBeforeSave: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildAchievementRecoveryTests.RollbackRetainsCreationAndLaterProgressWithSiblingGuildData",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.AcceptedFeeRemainsProvisionalUntilTheOriginalCharacterTransactionCommits",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.ChangedAcceptedMetadataRemainsRecoverableUntilItsOriginalCatalogIsRestored",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.ChangedFormulaAndLateEarningCannotChangeTheAcceptedCreationFee",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CharacterFeedbackCannotCommitAheadOfItsRejectedGuildCompletion",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationCommitsFeeMembershipAffiliationAndEveryPlotTogether",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationFreezesThePrivateResidenceAgainstIndependentEditsAndSaves",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationKeepsTheDraftAndResidencePrivateBeforeItsFeeCommits",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationParticipantFailureRetainsAndRetriesTheEntireAcceptedGraph(table: \"character_currency\")",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationParticipantFailureRetainsAndRetriesTheEntireAcceptedGraph(table: \"guild_rank\")",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationParticipantFailureRetainsAndRetriesTheEntireAcceptedGraph(table: \"residence_plot\")",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationPreservesAnExistingOrdinaryGuildAndItsAffiliation",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationPreservesDirectFreeRegistration",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationPublicResidenceFactoryCannotPublishAnotherUnpaidRoot",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationPublishesNeitherSuccessNorAdmissionToAReplacementPlayer",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationReceiptCannotAuthorizeForeignResidenceRows(plot: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationReceiptCannotAuthorizeForeignResidenceRows(plot: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationReconcilesLostAcknowledgementWithoutAnotherFeeOrPlotGraph",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationRetainsAcceptedFeeAndPrivateGraphsThroughOrdinaryFollowup",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityCreationRetriesRejectedJoinWithoutReplayingAcceptedSuccessOrDebit",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationAdmissionRecognizesTheCompleteGraphWithoutRefundOrRedelivery",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationCannotChargeTheStalePayerOfAnotherAccountsCharacter",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationCannotCommitAnUnpaidGraphWhenAuthRejectsItsDebit",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationCannotDebitAfterItsAdmittedEpochIsSuperseded",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationCannotPublishItsWalletOrSuccessToAReplacementPlayer",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationDefersSuccessUntilThePayerAndCompleteGraphCommit",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationKeepsItsAcceptedFeeWhileEarlierEarningPersists",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationNewAdmissionCompletesAnUnfinishedRefundFromItsDurableAnchor",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationPreservesAZeroAlternateFeeWithoutAnAuthDebit",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationReconcilesLostCommitRepliesWithoutAnotherNetPayment(authFailure: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationReconcilesLostCommitRepliesWithoutAnotherNetPayment(authFailure: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationRefundsARejectedCharacterGraphBeforeRetrying",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationRejectsARecoveryRouteDifferentFromItsCompleteSealedGraph",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationRejectsAnOrdinaryCreditReceiptAsAuthAuthority",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationRetriesAFailedWalletObservationWithoutAnotherDebit",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationSettlesTheDurableAuthDebitWithoutChargingCharacterCredits",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CommunityTokenCreationWalletReplyRetryDoesNotReplayAnAcceptedGrantOrPayment",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.CompletingGuildAchievementFeedsCharacterProgressIntoTheRetainedOrdinarySave",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.ConvergingFeedbackFreezesEligibilityForActualCompletedBranches(negateSibling: False, siblingRemainsPartial: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.ConvergingFeedbackFreezesEligibilityForActualCompletedBranches(negateSibling: False, siblingRemainsPartial: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.ConvergingFeedbackFreezesEligibilityForActualCompletedBranches(negateSibling: True, siblingRemainsPartial: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.ConvergingFeedbackFreezesEligibilityForActualCompletedBranches(negateSibling: True, siblingRemainsPartial: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.DeepFeedbackRecipesRetainEveryCausalAncestor(negateAncestor: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.DeepFeedbackRecipesRetainEveryCausalAncestor(negateAncestor: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.DescendantFeedbackEligibilityIsFrozenOnOriginalActor(acceptDescendant: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.DescendantFeedbackEligibilityIsFrozenOnOriginalActor(acceptDescendant: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.DirectFeedbackSiblingSeesEarlierCompletionInTheSameAcceptedEvent(negateEarlier: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.DirectFeedbackSiblingSeesEarlierCompletionInTheSameAcceptedEvent(negateEarlier: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.DraftStructuralRemovalCannotBypassThePaidCreationFence(rank: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.DraftStructuralRemovalCannotBypassThePaidCreationFence(rank: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.EarningAfterLocalAdoptionRetainsGuildForwardingUntilTheOrdinarySaveSettles",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.FailedEligibilityPreparationCannotCommitAnUnaccompaniedGuildCompletion",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.FailedGuildMetaForwardingRetriesTheRemainingChainWithoutCompletingItsParentAgain",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.GuildCompletionFeedbackKeepsItsGuildMetaInTheSameParentTransaction",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.GuildMetaFeedbackSharesOneAtomicCharacterDelivery(negateEarlier: False, replaceAfterSnapshot: False, blockMetadata: 0)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.GuildMetaFeedbackSharesOneAtomicCharacterDelivery(negateEarlier: False, replaceAfterSnapshot: False, blockMetadata: 1)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.GuildMetaFeedbackSharesOneAtomicCharacterDelivery(negateEarlier: False, replaceAfterSnapshot: False, blockMetadata: 2)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.GuildMetaFeedbackSharesOneAtomicCharacterDelivery(negateEarlier: False, replaceAfterSnapshot: True, blockMetadata: 0)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.GuildMetaFeedbackSharesOneAtomicCharacterDelivery(negateEarlier: True, replaceAfterSnapshot: False, blockMetadata: 0)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.GuildMetaFeedbackSharesOneAtomicCharacterDelivery(negateEarlier: True, replaceAfterSnapshot: False, blockMetadata: 1)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.GuildMetaFeedbackSharesOneAtomicCharacterDelivery(negateEarlier: True, replaceAfterSnapshot: False, blockMetadata: 2)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.GuildMetaFeedbackSharesOneAtomicCharacterDelivery(negateEarlier: True, replaceAfterSnapshot: True, blockMetadata: 0)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.GuildRemainsPrivateThroughTheOrdinaryFollowupSoARenameCannotStrandItsOwner",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.LaterCharacterProgressSurvivesAnEarlierFrozenFeedbackSave",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.LostCharacterAcknowledgementIsRecoveredWithoutApplyingItsContributionAgain",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.LostCommitAcknowledgementReconcilesTheCompleteCreateWithoutAnotherFee",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.NestedPreparationRetryKeepsTheOriginalGuildSiblingOrder(negateEarlier: False, partialSibling: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.NestedPreparationRetryKeepsTheOriginalGuildSiblingOrder(negateEarlier: False, partialSibling: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.NestedPreparationRetryKeepsTheOriginalGuildSiblingOrder(negateEarlier: True, partialSibling: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.NestedPreparationRetryKeepsTheOriginalGuildSiblingOrder(negateEarlier: True, partialSibling: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.OriginalActorCanRetryAnUnfinishedEligibilityPreparation(useSetter: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.OriginalActorCanRetryAnUnfinishedEligibilityPreparation(useSetter: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.OriginalCleanupKeepsItsAcceptedFeedbackAndLaterEditsWhileReplacementCannotTakeItsSave(replaceRegistry: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.OriginalCleanupKeepsItsAcceptedFeedbackAndLaterEditsWhileReplacementCannotTakeItsSave(replaceRegistry: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.ParentRollbackOrLostAcknowledgementRetainsOneRecoverableFeedbackIntent(loseAcknowledgement: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.ParentRollbackOrLostAcknowledgementRetainsOneRecoverableFeedbackIntent(loseAcknowledgement: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.PendingNameAndDraftGraphCannotBeTakenByAnotherCreationOrSave",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.PeriodicGuildSaveCannotCommitAnUnpaidCreation",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.PublicCreationDoesNotPublishSuccessBeforeItsFeeAndGuildCommit",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RealJoinAchievementsReachOrdinarySettlementWithoutOpeningTheDraftFence(matching: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RealJoinAchievementsReachOrdinarySettlementWithoutOpeningTheDraftFence(matching: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.ReceiptCallbackCannotAuthorizeForeignGuildRows(member: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.ReceiptCallbackCannotAuthorizeForeignGuildRows(member: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RecipientReplacementAfterSnapshotCannotCommitTheStaleDelivery",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RecoveredRetailCreationFeesCommitOnceAndPublishThePaidGraph(community: False, tokens: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RecoveredRetailCreationFeesCommitOnceAndPublishThePaidGraph(community: True, tokens: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RecoveredRetailCreationFeesCommitOnceAndPublishThePaidGraph(community: True, tokens: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.ReentrantDeliveryDuringFrozenSaveDoesNotRepeatItsContribution",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.ReentrantWorldUpdateDuringAuthCannotStartASecondCreationAttempt",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RejectedCharacterFeedbackSaveRetainsItsIntentAndRecoversOneContribution(rejection: \"achievement\")",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RejectedCharacterFeedbackSaveRetainsItsIntentAndRecoversOneContribution(rejection: \"delivery\")",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RejectedCharacterFeedbackSaveRetainsItsIntentAndRecoversOneContribution(rejection: \"recipient-identity\")",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RejectedDeferredGuildEffectDoesNotRepeatCommittedCharacterJoinProgress",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RejectedIntentReceiptRollsBackItsGuildParent",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RejectedJoinPacketRetriesWithoutRepeatingFeeOrEarlierSuccess",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RejectedParticipantRollsBackFeeGuildAndAffiliationThenRetriesTogether(table: \"character\")",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RejectedParticipantRollsBackFeeGuildAndAffiliationThenRetriesTogether(table: \"character_currency\")",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RejectedParticipantRollsBackFeeGuildAndAffiliationThenRetriesTogether(table: \"guild_rank\")",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RepeatedFeedbackAfterDeliveryDoesNotIncrementTheSameScalarAgain",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.ReplacedSessionPlayerCannotReceiveCreationSuccessOrReopenAdmission",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.ReusingClearedContextAfterRollbackReenrolsTheParentIntent",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.StaleOriginalRecipientLeavesIntentForFreshOwnerWithoutRecheckingEligibility(replacement: \"account-epoch\")",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.StaleOriginalRecipientLeavesIntentForFreshOwnerWithoutRecheckingEligibility(replacement: \"events\")",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.StaleOriginalRecipientLeavesIntentForFreshOwnerWithoutRecheckingEligibility(replacement: \"manager\")",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.StaleOriginalRecipientLeavesIntentForFreshOwnerWithoutRecheckingEligibility(replacement: \"session\")",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.StaleOriginalRecipientLeavesIntentForFreshOwnerWithoutRecheckingEligibility(replacement: \"session-player\")",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.AcceptedDisbandCannotSendABoundChildWriteIntoAForeignDatabase(rank: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.AcceptedDisbandCannotSendABoundChildWriteIntoAForeignDatabase(rank: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankFrozenSavePublishesOnlyItsAcceptedSequenceAndRetainsTheLaterEdit",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankLaterOrdinaryEditRetainsItsReadbackBehindTheQueuedBankSnapshot",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankLostCommitAcknowledgementWaitsForStoredObservation",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankNoOpIsAcknowledgedAndCoalescedSettingsUseOneConfirmedGraph",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankOriginalRecipientReplacementStopsLaterPacketsButNotOtherMembers(change: \"account-session\")",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankOriginalRecipientReplacementStopsLaterPacketsButNotOtherMembers(change: \"epoch\")",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankOriginalRecipientReplacementStopsLaterPacketsButNotOtherMembers(change: \"player\")",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankPendingSettingsAreNotLeakedByOrdinaryRankBroadcast",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankPublicSettingPersistsAndPublishesConfirmedReadback(operation: BankTabPermissions, value: 1134907106097365023)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankPublicSettingPersistsAndPublishesConfirmedReadback(operation: RepairLimitChange, value: 9223372036854775807)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankPublicSettingPersistsAndPublishesConfirmedReadback(operation: WithdrawalLimitChange, value: 777)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankPublicationWaitsForEachOriginalWorldQueue",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankRejectedGraphRetainsAllThreeSettingsWithoutEarlySuccess",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankRejectedMutableReplyRetriesFreshWithoutReplayingAcceptedPacketsOrSql(target: \"rank\")",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankRejectedMutableReplyRetriesFreshWithoutReplayingAcceptedPacketsOrSql(target: \"result\")",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankRejectsFullWidthOrNonLowerRankWithoutMutation(rank: 0)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankRejectsFullWidthOrNonLowerRankWithoutMutation(rank: 10)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankRejectsFullWidthOrNonLowerRankWithoutMutation(rank: 256)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankRejectsFullWidthOrNonLowerRankWithoutMutation(rank: 4294967295)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankRejectsUnsignedNegativeMoneyAndUnprivilegedMember",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankSharedPermissionEditCannotAliasTheLeaderThroughAHighRank",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BankRankStalePlayerManagerOwnerCannotApplyANewSetting",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BoundChildSaveRejectsAForeignDatabaseWithIdenticalRows",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.BoundDirectMemberSavePreservesSiblingRankAndGuildDataIntent",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.CallerRollbackRetainsTheWholeMixedEditAndDeletionGraph",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.CaughtForeignRankEnrollmentCannotCommitOnlyTheHeader",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.DeparturePublishesOnlyAfterItsPeriodicCommit",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.DirectOrdinarySavePersistsTheCompleteAcceptedEdit",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.DisbandRejectsForeignTrackedTypeBeforeAnyFlush",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.FailedDisbandRetainsEarlierOrdinaryEditsAndPendingCollectionDeletes(initialTaxes: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.FailedDisbandRetainsEarlierOrdinaryEditsAndPendingCollectionDeletes(initialTaxes: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.FailedMemberDepartureRetainsDeletionForPeriodicRetry",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.FailedPeriodicUnitRetainsAcceptedHeaderDataRankAndMemberEdits",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.FailedRankDeletionRetainsTheOriginalMemberlessRankForRetry",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.HeldPublicationKeepsThePeriodicOriginalActorInFlight",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.LateDisbandRecoveryRejectsForeignTombstoneIntent(headerChange: False)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.LateDisbandRecoveryRejectsForeignTombstoneIntent(headerChange: True)",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.LateSqlTamperingRejectsTheWholeCapturedGraph",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.LaterAcceptedDisbandEditsPersistBeforeCleanupAndRetirement",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.LaterAcceptedEditsSurviveAnEarlierExplicitUnitAndEquivalentResave",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.LaterDeletionOfANewRankSurvivesItsEarlierInsertCommit",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.OrdinaryHeaderEditCannotAdmitAnUnacceptedTrackedName",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.PublicMotdOnlyEditReachesThePeriodicSave",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.PublicOfflineKickFinishesWithoutDereferencingAnAbsentPlayer",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.PublicPromotionSkipsARankRetainedForFailedDeletion",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.PublicTaxToggleUsesItsParsedBooleanAndPersists",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.PublicationFailureRetriesTheOriginalMessageWithoutRepeatingCommittedSql",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.RejoinAfterAnEarlierDeleteFlushKeepsItsLaterMembershipIntent",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.SuppressingATrackedMemberWriteCannotAcknowledgeItsAcceptedValue",
+      "outcome": "Passed"
+    },
+    {
+      "case": "NexusForever.Game.Tests.Guild.GuildMutationRecoveryTests.UnflushedCommitCannotAcknowledgeOrPublishAMemberDeparture",
+      "outcome": "Passed"
+    }
+  ]
+}

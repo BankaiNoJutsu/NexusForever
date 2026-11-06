@@ -796,6 +796,7 @@ namespace NexusForever.Game.Entity
             Inventory.Update(lastTick);
             QuestManager.Update(lastTick);
             ChallengeManager.Update(lastTick);
+            (AchievementManager as CharacterAchievementManager)?.PumpGuildFeedbackRecovery(lastTick);
             ResurrectionManager.Update(lastTick);
             UpdatePendingGhostSpawn(lastTick);
             UpdatePvPFlagDisable(lastTick);
@@ -893,6 +894,10 @@ namespace NexusForever.Game.Entity
 
         private void Save(Action callback, Action failureCallback)
         {
+            if (AchievementManager is CharacterAchievementManager { IsApplyingGuildFeedback: true })
+            {
+                DeferInventorySave(callback, failureCallback); return;
+            }
             if (QuestManager is QuestManager { IsContractCompletionMutationInProgress: true }
                 or QuestManager { IsOrdinaryCompletionMutationInProgress: true }
                 or QuestManager { IsPublicEventQuestMutationInProgress: true })

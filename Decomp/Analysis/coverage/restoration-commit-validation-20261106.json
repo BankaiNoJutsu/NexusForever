@@ -1,0 +1,120 @@
+{
+  "status": "Passed isolated publication preflight; retail goal remains paused",
+  "baseCommit": "96b4d1a66a428f48d01724538d4e74836ab5b6bb",
+  "testedSourceTree": "730b5bf269cdbe27f00bd2ee669639c13a88880f",
+  "owningBuild": {
+    "passed": true,
+    "warnings": [
+      "Existing ASPIRE010"
+    ],
+    "errors": 0
+  },
+  "scopedSQLiteTests": {
+    "total": 341,
+    "executed": 341,
+    "passed": 341,
+    "failed": 0,
+    "error": 0,
+    "timeout": 0,
+    "aborted": 0,
+    "inconclusive": 0,
+    "passedButRunAborted": 0,
+    "notRunnable": 0,
+    "notExecuted": 0,
+    "disconnected": 0,
+    "warning": 0,
+    "completed": 0,
+    "inProgress": 0,
+    "pending": 0
+  },
+  "excludedUnrelatedCatalogCases": [
+    "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RecoveredRetailCreationFeesCommitOnceAndPublishThePaidGraph(community: False, tokens: False)",
+    "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RecoveredRetailCreationFeesCommitOnceAndPublishThePaidGraph(community: True, tokens: False)",
+    "NexusForever.Game.Tests.Guild.GuildCreationFinanceTests.RecoveredRetailCreationFeesCommitOnceAndPublishThePaidGraph(community: True, tokens: True)"
+  ],
+  "newlyAddedCaseNames": [],
+  "sourceFiles": [
+    {
+      "path": "Source/NexusForever.Game.Tests/Guild/GuildAchievementAtomicityTests.cs",
+      "gitBlob": "05a10da62a2981f02d5e1dba187807b562481d97",
+      "sha256": "c0b157faff9dd196374d81f8f1a72ab4abb4e9b9a5dc0d25b98c4b5ba559a0e3"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Guild/GuildAchievementFeedbackRecoveryTests.cs",
+      "gitBlob": "b27c514cea162e1f10f01b293557e9a6b1d584b8",
+      "sha256": "0c25c08432ef4a26a336f9fd562fa968bafe7c319a00e0f2f08ec7f058b8ecb9"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Guild/GuildAchievementProviderQualification.cs",
+      "gitBlob": "e160176ad7d4bbf3bc8fa5ad983fc517dd25a28a",
+      "sha256": "e7f6aef3c42757c2f8b1ffe47e0d0125c76bd232d450c35fe2c12daaaaac82bc"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Guild/GuildCreationFinanceTests.cs",
+      "gitBlob": "26dba09c3dfcee4aab710565a07bfe1a3acf69ba",
+      "sha256": "d27610c84da0d4c95cf4f9ab4c4697c483fac1bc671445c1fbc7b8e43aaf9a6b"
+    },
+    {
+      "path": "Source/NexusForever.Game/Achievement/BaseAchievementManager.cs",
+      "gitBlob": "7c0d9ddc825ff92b8b7afa63365db1ed60b78d9a",
+      "sha256": "a3f501717bf3e0ead48ff689290ce35274a310ed57435a92972c431eb9b5c8ee"
+    },
+    {
+      "path": "Source/NexusForever.Game/Achievement/CharacterAchievementManager.cs",
+      "gitBlob": "2b57fcf90fdcc1984256be2e5c1add521ff315be",
+      "sha256": "a544d5d9b39560ae793d8dc1cbf773c04cd8ab86c54e3a5b04034d5dfa1d8ea7"
+    },
+    {
+      "path": "Source/NexusForever.Game/Achievement/CharacterAchievementManager.GuildFeedback.cs",
+      "gitBlob": "33d50bcdb45eb4376b173c1f753720522efe06e7",
+      "sha256": "ff812f5256dcafd58d993c09d64bc5196bb5c14098f4067f9fc598ec166411e4"
+    },
+    {
+      "path": "Source/NexusForever.Game/Achievement/CharacterAchievementManager.GuildFeedbackEligibility.cs",
+      "gitBlob": "d13ff7c85cf6dee8d01e885ff2faa634557e2abe",
+      "sha256": "eeb70db0a5b0df5e3659174f01fbf718829bd2fa6c7a5d308d7f8099c67d582d"
+    },
+    {
+      "path": "Source/NexusForever.Game/Achievement/GuildAchievementFeedbackReceipt.cs",
+      "gitBlob": "8d51233e30d058cb03ae23cade7096873038792f",
+      "sha256": "b70577f9110ca568b17ff1d64f6faa0d16ad43dd4cc3f1bdd587ec2ed4a9ad5e"
+    },
+    {
+      "path": "Source/NexusForever.Game/Achievement/GuildAchievementManager.cs",
+      "gitBlob": "90bf09818ab29e337c496bbebd8909041ce83b8e",
+      "sha256": "77eb17d81a2fa2d02710e09b5d911cca6be753cd7afdfa120689ecba5ebd8194"
+    },
+    {
+      "path": "Source/NexusForever.Game/Achievement/GuildAchievementManager.Feedback.cs",
+      "gitBlob": "2549d67f6978e14276ea35d2b62fb58a942bbd9d",
+      "sha256": "7044fca91c2f31bbda1a421d8c7d580ca56ae2a2f7162bcd354c28021e91414e"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/Player.cs",
+      "gitBlob": "32e94f8ccdade37fddc6e7c282b8d8c9ec6e7077",
+      "sha256": "0d4136cc1eed3efdfa1600b32afc677414ced70dfb1502b25c8b33112f3253b2"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/Player.ExperiencePersistence.cs",
+      "gitBlob": "91057316d171175f7d3425f720c69d036af51606",
+      "sha256": "425289514c05ec5f83f97da83033c3902f6373be1ed0b60c658b0a0090f40c09"
+    },
+    {
+      "path": "Source/NexusForever.Game/Guild/GuildMutationPersistence.cs",
+      "gitBlob": "6dad54e281af27fc44da0c4714fd2c6a875c08e4",
+      "sha256": "0d7795f5a10ccb276241825b3f92f7cd0e942646eba152816510a3cc29eaa51b"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/ExperiencePersistence.cs",
+      "gitBlob": "5c7794638e1d0add4aab4ed8c73a556e4387a59d",
+      "sha256": "93ef14a340662e9bd97c7eca3f1c5e951b9f7db64b6f98f09513f6be5e1c493e"
+    }
+  ],
+  "runtimeGameSHA256": "acd2df36fb41bedd05284309984a45f96ae97b39b89c59c290fd0af0a130ee4e",
+  "testAssemblySHA256": "828074ee611c2dff73a036c3dd89d1c932806b0f4c9a9530f8577f3a9961998a",
+  "rawTrxSHA256": "036e297140124492f62b8b13754996b3c1ef2918a974d6ad16f885eae0b7dc36",
+  "historicalProviderQualification": "51 MySQL and prior344 SQLite belong to the earlier mixed working-tree candidate. No MySQL/provider or physical/hosted restart rerun was performed for this isolated commit.",
+  "sourceSelection": "Preserved all achievement handoff changes; omitted unrelated PvP property and Guild creation catalog/provider adaptations. Three other source files differ from historical hashes only by UTF-8 BOM/line-ending representation.",
+  "runtimeChanges": "No service/client launch; all previous private engines remain stopped",
+  "rawEvidenceRoot": "artifacts/continuation-20261106/restoration-commit"
+}

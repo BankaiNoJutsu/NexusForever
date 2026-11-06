@@ -340,6 +340,11 @@ public sealed partial class GuildCreationFinanceTests
         Assert.True(f.Session.CanProcessIncomingPackets);
     }
 
+    private readonly Func<(DbContextOptions<CharacterContext> Character, DatabaseConnectionString Auth)> providerFixture;
+    public GuildCreationFinanceTests() { }
+    internal GuildCreationFinanceTests(Func<(DbContextOptions<CharacterContext> Character, DatabaseConnectionString Auth)> providerFixture)
+        => this.providerFixture = providerFixture;
+
     private sealed class InterceptedDatabase(SourceFixture source, IInterceptor interceptor) : CharacterDatabase
     {
         public override Task SaveGuildCreationReconciliation(ulong characterId, Action<CharacterContext> action, GuildCreationSaveReconciliation receipt)
@@ -348,9 +353,12 @@ public sealed partial class GuildCreationFinanceTests
             => CharacterAtomicSave.ExecuteCommunityCreationReconciliation(() => source.Context(interceptor), characterId, action, receipt);
     }
 
-    private static async Task<Fixture> Create(IInterceptor interceptor = null, bool matchingAchievements = false, bool completeGuildAchievement = false, bool community = false, bool tokens = false)
+    private async Task<Fixture> Create(IInterceptor interceptor = null, bool matchingAchievements = false, bool completeGuildAchievement = false, bool community = false, bool tokens = false,
+        NexusForever.Game.Abstract.Prerequisite.IPrerequisiteManager achievementPrerequisites = null,
+        IPlayerManager achievementPlayers = null)
     {
-        var source = new SourceFixture(null); source.Seed();
+        var configured = providerFixture?.Invoke();
+        var source = new SourceFixture(configured?.Character); source.Seed();
         var tables = source.Source.Tables;
         var table = (RecordingDispatchProxy<IGameTableManager>)(object)tables;
         table.SetProperty(nameof(IGameTableManager.CurrencyType), PlayerBindPointTests.Table(new CurrencyTypeEntry { Id = 1, CapAmount = 1000000 }));
@@ -367,10 +375,13 @@ public sealed partial class GuildCreationFinanceTests
         var database = interceptor == null ? new CharacterDatabase() : new InterceptedDatabase(source, interceptor);
         using (var seed = source.Context())
         {
+            // Capture before the first open: MySqlConnector removes credentials afterwards.
+            var configuration = new DatabaseConnectionString { Provider = seed.Database.IsSqlite() ? DatabaseProvider.Sqlite : DatabaseProvider.MySql,
+                ConnectionString = seed.Database.GetDbConnection().ConnectionString };
             seed.Character.Single().AccountId = 12; seed.Character.Single().Name = "Leader";
             seed.CharacterCurrency.Add(new CharacterCurrencyModel { Id = 42, CurrencyId = 1, Amount = 5000 });
             await seed.SaveChangesAsync();
-            database.Initialise(new DatabaseConnectionString { Provider = DatabaseProvider.Sqlite, ConnectionString = seed.Database.GetDbConnection().ConnectionString });
+            database.Initialise(configuration);
         }
         var databases = RecordingDispatchProxy<IDatabaseManager>.Create(out var db);
         db.SetMethodReturn(nameof(IDatabaseManager.GetDatabase), database);
@@ -396,7 +407,8 @@ public sealed partial class GuildCreationFinanceTests
         GlobalResidenceManager residences = null;
         var services = new ServiceCollection();
         services.AddKeyedTransient<IGuildBase>(GuildType.Guild, (_, _) => new GameGuild(realm, publisher, filter,
-            characterManager: characters, gameTableManager: tables, globalGuildManager: guilds, globalAchievementManager: achievements));
+            characterManager: characters, gameTableManager: tables, globalGuildManager: guilds, globalAchievementManager: achievements,
+            prerequisiteManager: achievementPrerequisites));
         services.AddKeyedTransient<IGuildBase>(GuildType.Community, (_, _) => new Community(realm, publisher, residences, filter, null, characters, guilds));
         var factory = new GuildFactory(services.BuildServiceProvider());
         guilds = new GlobalGuildManager(factory, databases); guilds.Initialise();
@@ -429,7 +441,8 @@ public sealed partial class GuildCreationFinanceTests
         var currency = new CurrencyManager(tables); currency.Initialise(actor.Player, model); actor.Set(nameof(Player.CurrencyManager), currency);
         var membership = new GuildManager(publisher, filter, guilds, realm, gameTableManager: tables);
         actor.Set(nameof(Player.GuildManager), membership); membership.Initialise(actor.Player, model);
-        actor.Set(nameof(Player.AchievementManager), new CharacterAchievementManager(actor.Player, model, globalAchievementManager: achievements, gameTableManager: tables));
+        actor.Set(nameof(Player.AchievementManager), new CharacterAchievementManager(actor.Player, model, globalAchievementManager: achievements,
+            gameTableManager: tables, prerequisiteManager: achievementPrerequisites, playerManager: achievementPlayers));
         if (tokenAuth != null)
         {
             var wallets = new NexusForever.Game.Account.Currency.AccountCurrencyManager(actor.Player.Account, tokenAuth.Model, tables);
@@ -460,14 +473,33 @@ public sealed partial class GuildCreationFinanceTests
         internal async Task Flush()
         {
             var elapsed = Stopwatch.StartNew();
-            for (int i = 0; i < 300; i++)
+            var field = typeof(GlobalGuildManager).GetField("guildSavesInFlight", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var gate = typeof(GlobalGuildManager).GetField("cacheLock", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(Guilds);
+            var creations = typeof(GlobalGuildManager).GetField("paidCreations", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            bool ObservingWallet()
             {
-                Guilds.Update(61); Actor.Events.Update(.01); await Task.Delay(5);
-                var field = typeof(GlobalGuildManager).GetField("guildSavesInFlight", BindingFlags.Instance | BindingFlags.NonPublic)!;
-                var gate = typeof(GlobalGuildManager).GetField("cacheLock", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(Guilds);
-                bool active; lock (gate) active = ((HashSet<ulong>)field.GetValue(Guilds)).Count != 0;
-                if (i > 8 && !active && !Actor.Events.PendingEvents) break;
-                Assert.True(elapsed.Elapsed < TimeSpan.FromSeconds(20));
+                lock (gate)
+                    foreach (object creation in (System.Collections.IEnumerable)creations.GetValue(Guilds))
+                    {
+                        object payment = creation.GetType().GetField("tokenPayment", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(creation);
+                        if (payment?.GetType().GetField("observation", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(payment) is Task { IsCompleted: false })
+                            return true;
+                    }
+                return false;
+            }
+            // A completed event hands work back to the following world tick.
+            // Drain each tick's SQL/events before advancing the coordinator again.
+            for (int i = 0; i < 10; i++)
+            {
+                Guilds.Update(61);
+                bool active;
+                do
+                {
+                    Actor.Events.Update(.01); await Task.Delay(5);
+                    lock (gate) active = ((HashSet<ulong>)field.GetValue(Guilds)).Count != 0;
+                    Assert.True(elapsed.Elapsed < TimeSpan.FromSeconds(20), "Guild creation save/event work did not settle.");
+                }
+                while (active || Actor.Events.PendingEvents || ObservingWallet());
             }
             Assert.Empty(Actor.Errors);
         }

@@ -1,5 +1,17 @@
 # Continue on another machine
 
+6 November user-requested pause: resume [provider packet timestamps and hosted
+World/Auth restart](Decomp/Analysis/PROVIDER_PACKET_HOSTED_RESTART_HANDOFF.md)
+on the machine with verified build16042 runtime assets. The private test MySQL
+generation is stopped; no new schema or hosted service was created. Timestamp
+qualification is unfinished: six draft cases stopped at missing Guild packet
+capture, not a timestamp mismatch, and the draft is outside active Source.
+The note preserves the corrected UTC-conversion hypothesis, exact evidence,
+completed prior MySQL/headless checks and destination-machine acceptance steps.
+This pause supersedes older active-goal descriptions below for this chat.
+The [copyable resume prompt](Decomp/Analysis/RETAIL_RESTORATION_RESUME_PROMPT.md)
+and inactive timestamp draft are tracked for transfer.
+
 Latest combat Source result:
 [original threat relations](Decomp/Analysis/COMBAT_THREAT_RELATION_LIFECYCLE.md)
 preserve original actors/managers/entry identities and complete reciprocal
