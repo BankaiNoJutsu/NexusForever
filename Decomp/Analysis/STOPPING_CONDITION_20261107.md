@@ -1,5 +1,10 @@
 # Stopping condition statement (2026-11-07)
 
+Correction (same day): the matrix triage's small Source gaps were still actionable, so "no actionable independent slice
+remains" was premature when first written. Three were fixed in [SOURCE_ROBUSTNESS_FIXES_20261107.md](SOURCE_ROBUSTNESS_FIXES_20261107.md).
+Two micro-slices stay open (UnitEntity unguarded Spell4 reads, RavelSignal handler dispatch pin); everything in the table
+below is unchanged.
+
 The unified prompt's stopping condition: after a full pass of the ledger, no actionable independent slice remains,
 and the gates blocking each remaining item are stated precisely. This is a stopping condition, not completion and
 not a retail-parity claim. Passes: [LEDGER_GATE_PASS_20261106.md](LEDGER_GATE_PASS_20261106.md) (queue, F-001 to F-036,
