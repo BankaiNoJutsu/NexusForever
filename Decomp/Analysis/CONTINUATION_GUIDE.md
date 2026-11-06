@@ -1,5 +1,12 @@
 # Client Binary Decompile Continuation Guide
 
+[Actual guild-bank catalog](GUILD_BANK_NATIVE_CONTRACTS_2026_11_05.md#actual-formula-and-perk-inputs-qualified)
+now resolves bank dimensions, withdrawal selectors and all25 perk dependency/
+enum joins, including the five tab purchase rows. The owning-reader check,
+six payloads and29 retained native spans qualify input data only; reviews pass.
+Financial Source integration, authority/reset/provider/native gates remain;
+handlers stay diagnostic and client/CUA remain stopped.
+
 [Communicator finite reputation bounds](NATIVE_STATIC_CONTRACT_COMMUNICATOR_CROSSCHECK.md#finite-reputation-bounds-implemented-with-actual-tables)
 now use zero as no bound, with unchanged nonfinite policy. Actual-table/native
 corroboration,178 reputation checks, six parsed report cases and121 scoped tests

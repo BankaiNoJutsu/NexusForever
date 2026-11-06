@@ -1,5 +1,10 @@
 # Public guild bank rank settings
 
+The later [actual formula/perk qualification](GUILD_BANK_NATIVE_CONTRACTS_2026_11_05.md#actual-formula-and-perk-inputs-qualified)
+resolves catalog values and dependency joins. Financial storage/settlement,
+authenticator/banker/reset rules and provider/native/retail remain open; this
+does not change the completed rank-settings implementation below.
+
 5 November 2026. Public Guild operations23/24/30 now update bank permissions,
 money withdrawal limits and repair limits through the original recoverable
 guild graph, with confirmed rank readback on the original World recipients.

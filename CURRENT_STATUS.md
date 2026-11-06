@@ -1,5 +1,11 @@
 # NexusForever Feature Restoration - Current Status
 
+[Actual guild-bank catalog](Decomp/Analysis/GUILD_BANK_NATIVE_CONTRACTS_2026_11_05.md#actual-formula-and-perk-inputs-qualified)
+qualifies128 slots, the eight withdrawal choices and all25 perk dependency/enum
+joins. The five bank-tab IDs/costs are now pinned to recovered16042 tables;
+build/readers and both reviews pass. Financial storage/settlement and the named
+authority/reset/provider/native gates remain open; handlers stay diagnostic.
+
 [Communicator zero reputation bounds](Decomp/Analysis/NATIVE_STATIC_CONTRACT_COMMUNICATOR_CROSSCHECK.md#finite-reputation-bounds-implemented-with-actual-tables)
 now admit finite negative standing when the row has no lower bound, preserving
 existing nonfinite policy. The actual4105-row index,178 reputation checks,

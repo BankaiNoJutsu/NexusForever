@@ -1,5 +1,13 @@
 # Continue on another machine
 
+Latest bank input qualification:
+[actual formula/perk catalog](Decomp/Analysis/GUILD_BANK_NATIVE_CONTRACTS_2026_11_05.md#actual-formula-and-perk-inputs-qualified)
+pins128 slots,0/1/2/5/10/25/50/−1 withdrawal selectors and the five tab perk IDs/raw
+costs. All25 perk/enum/dependency joins, eight activation spells and five Guild
+achievement prerequisites resolve. Both reviews pass. Financial Source service,
+authenticator/banker/reset/provider/native/retail remain open; no default unlock
+or financial handler enablement occurred. Client/CUA remain stopped.
+
 Latest communicator Source result:
 [finite reputation bounds](Decomp/Analysis/NATIVE_STATIC_CONTRACT_COMMUNICATOR_CROSSCHECK.md#finite-reputation-bounds-implemented-with-actual-tables)
 fixes the actual Q9159 negative-standing report with zero bounds.22 new/all121

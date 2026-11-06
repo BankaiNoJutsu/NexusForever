@@ -1,0 +1,630 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-06T03:36:14.882710+00:00",
+  "baseCommit": "f791dc37977650ecc21450375b45654baffe78a1",
+  "milestone": "Actual guild bank formula/perk inputs and complete catalog joins",
+  "classification": "Qualified actual input catalog and unchanged Source joins; bank financial service/authority/reset/deployment/native/retail and overall Goal remain open",
+  "sourceInputs": [
+    {
+      "path": "Source/NexusForever.GameTable/GameTable.cs",
+      "sha256": "d9822c69a9427f44d8a5cdfce2638cff38793287d8bac866727f1adf501ecefc",
+      "gitBlob": "00860ac2fe965c9081dd40b4769382ce2f04c1d8",
+      "unchangedAtHead": true
+    },
+    {
+      "path": "Source/NexusForever.GameTable/TextTable.cs",
+      "sha256": "6d748c200fb733415b191cd743a1b2a4352c27ce7b30d20cf37242eef7622a2a",
+      "gitBlob": "9345dccd0c5c7c4a73fdbc45668d175395e50173",
+      "unchangedAtHead": true
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/GameFormulaEntry.cs",
+      "sha256": "42c6a05654a479b5b5d362df1e268976ef8adc205cb169ca08904836c7197683",
+      "gitBlob": "5a4f618528c85b09143e72aaa9d3c59c1b4d1297",
+      "unchangedAtHead": true
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/GuildPerkEntry.cs",
+      "sha256": "0c9f9d58b92c85a2933e8168818045aa3a9be578101262472c707cc01aa28f28",
+      "gitBlob": "6d156e70227f6e1d16e25cb5008e60f63967eef7",
+      "unchangedAtHead": true
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/GuildPermissionEntry.cs",
+      "sha256": "f36e3e88865affab3fae212833e0664efbde9dac2f7b53e35904555a49a44cbd",
+      "gitBlob": "1cc25240ac618941bfadfe1b57f36ce10638e501",
+      "unchangedAtHead": true
+    },
+    {
+      "path": "Source/NexusForever.Game.Static/Guild/GuildPerk.cs",
+      "sha256": "e57e4516cabebaa5fed445fb852220a4361b960a6571abbcfb890b10fb14b670",
+      "gitBlob": "f0a2515ff416dab7d0a97ae18113681a69c1b50f",
+      "unchangedAtHead": true
+    },
+    {
+      "path": "Source/NexusForever.Game.Static/Guild/GuildRankPermission.cs",
+      "sha256": "c4ac68ad0faf4a5c8514b3549ce0f1801df0d20a45c6b3ac641e9dbb1ec71898",
+      "gitBlob": "f2e10babe7cc665157e5082131de406aa1695aeb",
+      "unchangedAtHead": true
+    },
+    {
+      "path": "Source/NexusForever.Database.Character/Model/GuildDataModel.cs",
+      "sha256": "3a2e2c20656dcbe520922d4c1b6170ba9ed3b48ec9841ca249941d54db1c46c6",
+      "gitBlob": "d3c481520122012dfed13b30cd29d9b2d9925255",
+      "unchangedAtHead": true
+    },
+    {
+      "path": "Source/NexusForever.Database.Character/Model/GuildModel.cs",
+      "sha256": "c30b16bef1952467b6650a30e917af40370fa0559bc229df728c07efe106cf1f",
+      "gitBlob": "c588857f03ec8405e39eea005af20304084427f2",
+      "unchangedAtHead": true
+    },
+    {
+      "path": "Source/NexusForever.Game/Guild/GuildBase.BankRankSettings.cs",
+      "sha256": "4b9f40f0dd308a75ae004ae5d2d59005072344257be6d7bef37bfb9ff5573796",
+      "gitBlob": "59517c2b87cc14293d30c7ff8f3be2529939bbc0",
+      "unchangedAtHead": true
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/Network/Message/Handler/Guild/ClientGuildBankMoneyTransactionHandler.cs",
+      "sha256": "0368943f148ffe3bc11c79264b372ee9a09886f61da735c4bc8a6bb93fb84c9e",
+      "gitBlob": "6bf0e1c9da62f3036f7f85e3546242ce6b6af1c9",
+      "unchangedAtHead": true
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/Network/Message/Handler/Guild/ClientGuildBankTransactionHandler.cs",
+      "sha256": "7ae7af620b3dceddf11e3b0d716009c35f01e32ee65a8690c95734ebff2d79c9",
+      "gitBlob": "a07ee02e65bd17952c33ae862540905a6011fec7",
+      "unchangedAtHead": true
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/Network/Message/Handler/Guild/ClientGuildBankTransaction2Handler.cs",
+      "sha256": "50ef1f2393bf2e5edc1e9e9e66acae9b0d8f1ba798aae201c18d659dd1a88aae",
+      "gitBlob": "b1592f0a4d7c930e103d537250c0ec89eb821262",
+      "unchangedAtHead": true
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/Network/Message/Handler/Guild/ClientGuildBankTabOpenHandler.cs",
+      "sha256": "9102aa49f25ec0279bf92bb2c856cae61299cc27c870ab44e4e164d8958ffb0b",
+      "gitBlob": "e17f6616b4140e37b40f38289046679e77045ef5",
+      "unchangedAtHead": true
+    }
+  ],
+  "finalInputs": {
+    "path": "artifacts/continuation-20261106/guild-bank-catalog/final-inputs.json",
+    "sha256": "088983d1ddd53dd1b69c9db75ecef69f719a47e94fa99bf12397a7689a4ed690"
+  },
+  "qualifiedInputs": {
+    "result": {
+      "path": "artifacts/continuation-20261106/guild-bank-catalog/qualification-01/result.json",
+      "sha256": "740ebc75dc3015a2677215be971933d374297992e97ca6692d88bab3f58da011"
+    },
+    "payloads": [
+      {
+        "Path": "DB/GameFormula.tbl",
+        "Bytes": 63872,
+        "Sha256": "541e1781b8ed5e890cd194e0ad8bf1ceae63cbbb5308026679bc8459e2c1c007",
+        "PackedSha1": "a69fb9dc9b20eb912c20569cd92999a6bdb821f5"
+      },
+      {
+        "Path": "DB/GuildPerk.tbl",
+        "Bytes": 4336,
+        "Sha256": "ec2c960d7d3c1e00a283b47623d52d9b5a2a0f02843858eda5da25b98ab9e681",
+        "PackedSha1": "b3e77106c18fc296266f18c4d5b533ad936ca615"
+      },
+      {
+        "Path": "DB/GuildPermission.tbl",
+        "Bytes": 3120,
+        "Sha256": "8be0e6ce51e484bac0fc61e443431d99a3ce65fc11d4e5d741bed2727176b2cf",
+        "PackedSha1": "957de79c99a2db4b6b1697e4f130b446f1dbdf95"
+      },
+      {
+        "Path": "DB/Achievement.tbl",
+        "Bytes": 505904,
+        "Sha256": "a613fbf12a54f8196169eb79a3431f549bcd36300a34bd85cb984f81b64bca30",
+        "PackedSha1": "5ab9b01b943e1198078ef8446e9e2c35db3bffe1"
+      },
+      {
+        "Path": "DB/Spell4.tbl",
+        "Bytes": 35688224,
+        "Sha256": "303c03cf9ee268b1556cc65c2b56c62d21d083504a7a16eac2cac80d34f1914d",
+        "PackedSha1": "e9b8c4b072cc41dc23136595a29614cd076b0d44"
+      },
+      {
+        "Path": "en-US.bin",
+        "Bytes": 41690224,
+        "Sha256": "588e385a0e8dee8b92dc79018070a17e78d3efd535b948224702effecafa5cf7",
+        "PackedSha1": "f9f76c7a2c81c7cf08c394e1e7d5c298eb17b145"
+      }
+    ],
+    "manifestSha256": "bfb15d7824bb7ed4f4b03cc26411b3adb07317744ff2939b9fd1101c476902ad",
+    "independentIndexSha256": "d2ff4f9ad24c0386f73dbb3a67336607ccfda3a6ee1856f896950d7c75fc58e2",
+    "indexedCorpusFiles": 385,
+    "selectedPayloads": 6,
+    "readerSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+    "staticEnumSha256": "779eb188ecdfdbd6d3f50dfa60466b11e4472a4762e4c827d998eeae7136961e",
+    "previousIndependentDecompressionReused": true
+  },
+  "catalog": {
+    "formulaRows": 1217,
+    "perkRows": 25,
+    "permissionRows": 30,
+    "slotsPerTab": 128,
+    "slotFormula": 644,
+    "selectorValues": [
+      0,
+      1,
+      2,
+      5,
+      10,
+      25,
+      50,
+      -1
+    ],
+    "formulaSelectors": {
+      "1": 757,
+      "2": 758,
+      "3": 759,
+      "4": 760,
+      "5": 761,
+      "6": 762
+    },
+    "bankTabs": [
+      {
+        "Ordinal": 1,
+        "PerkId": 36,
+        "LuaName": "BankTab1",
+        "PurchaseInfluenceCost": 100000,
+        "Requires": [],
+        "Title": "Guild Bank Tab 1"
+      },
+      {
+        "Ordinal": 2,
+        "PerkId": 3,
+        "LuaName": "BankTab2",
+        "PurchaseInfluenceCost": 250000,
+        "Requires": [
+          36
+        ],
+        "Title": "Guild Bank Tab 2"
+      },
+      {
+        "Ordinal": 3,
+        "PerkId": 7,
+        "LuaName": "BankTab3",
+        "PurchaseInfluenceCost": 500000,
+        "Requires": [
+          3
+        ],
+        "Title": "Guild Bank Tab 3"
+      },
+      {
+        "Ordinal": 4,
+        "PerkId": 8,
+        "LuaName": "BankTab4",
+        "PurchaseInfluenceCost": 750000,
+        "Requires": [
+          7
+        ],
+        "Title": "Guild Bank Tab 4"
+      },
+      {
+        "Ordinal": 5,
+        "PerkId": 9,
+        "LuaName": "BankTab5",
+        "PurchaseInfluenceCost": 1000000,
+        "Requires": [
+          8
+        ],
+        "Title": "Guild Bank Tab 5"
+      }
+    ],
+    "perks": [
+      {
+        "Id": 3,
+        "SourceName": "GuildBankTab2",
+        "LuaName": "BankTab2",
+        "PurchaseInfluenceCost": 250000,
+        "ActivateInfluenceCost": 0,
+        "Spell4IdActivate": 0,
+        "Requires": [
+          36
+        ],
+        "AchievementIdRequired": 0
+      },
+      {
+        "Id": 6,
+        "SourceName": "GuildExperienceEnhancer",
+        "LuaName": "",
+        "PurchaseInfluenceCost": 2000000,
+        "ActivateInfluenceCost": 150000,
+        "Spell4IdActivate": 43323,
+        "Requires": [
+          35
+        ],
+        "AchievementIdRequired": 0
+      },
+      {
+        "Id": 7,
+        "SourceName": "GuildBankTab3",
+        "LuaName": "BankTab3",
+        "PurchaseInfluenceCost": 500000,
+        "ActivateInfluenceCost": 0,
+        "Spell4IdActivate": 0,
+        "Requires": [
+          3
+        ],
+        "AchievementIdRequired": 0
+      },
+      {
+        "Id": 8,
+        "SourceName": "GuildBankTab4",
+        "LuaName": "BankTab4",
+        "PurchaseInfluenceCost": 750000,
+        "ActivateInfluenceCost": 0,
+        "Spell4IdActivate": 0,
+        "Requires": [
+          7
+        ],
+        "AchievementIdRequired": 0
+      },
+      {
+        "Id": 9,
+        "SourceName": "GuildBankTab5",
+        "LuaName": "BankTab5",
+        "PurchaseInfluenceCost": 1000000,
+        "ActivateInfluenceCost": 0,
+        "Spell4IdActivate": 0,
+        "Requires": [
+          8
+        ],
+        "AchievementIdRequired": 0
+      },
+      {
+        "Id": 10,
+        "SourceName": "GuildInfluenceEnhancer",
+        "LuaName": "",
+        "PurchaseInfluenceCost": 200000,
+        "ActivateInfluenceCost": 150000,
+        "Spell4IdActivate": 45838,
+        "Requires": [],
+        "AchievementIdRequired": 0
+      },
+      {
+        "Id": 16,
+        "SourceName": "FlaskOfExperience",
+        "LuaName": "",
+        "PurchaseInfluenceCost": 300000,
+        "ActivateInfluenceCost": 0,
+        "Spell4IdActivate": 0,
+        "Requires": [],
+        "AchievementIdRequired": 2948
+      },
+      {
+        "Id": 17,
+        "SourceName": "GuildPrestigeEnhancer",
+        "LuaName": "",
+        "PurchaseInfluenceCost": 450000,
+        "ActivateInfluenceCost": 150000,
+        "Spell4IdActivate": 44997,
+        "Requires": [
+          31
+        ],
+        "AchievementIdRequired": 0
+      },
+      {
+        "Id": 18,
+        "SourceName": "GuildReputationEnhancer",
+        "LuaName": "",
+        "PurchaseInfluenceCost": 400000,
+        "ActivateInfluenceCost": 150000,
+        "Spell4IdActivate": 44998,
+        "Requires": [
+          32
+        ],
+        "AchievementIdRequired": 0
+      },
+      {
+        "Id": 19,
+        "SourceName": "GuildRenownEnhancer",
+        "LuaName": "",
+        "PurchaseInfluenceCost": 600000,
+        "ActivateInfluenceCost": 150000,
+        "Spell4IdActivate": 45834,
+        "Requires": [
+          33
+        ],
+        "AchievementIdRequired": 0
+      },
+      {
+        "Id": 20,
+        "SourceName": "GuildCoinDropEnhancer",
+        "LuaName": "",
+        "PurchaseInfluenceCost": 950000,
+        "ActivateInfluenceCost": 150000,
+        "Spell4IdActivate": 45835,
+        "Requires": [
+          34
+        ],
+        "AchievementIdRequired": 3096
+      },
+      {
+        "Id": 21,
+        "SourceName": "FlaskOfPrestige",
+        "LuaName": "",
+        "PurchaseInfluenceCost": 500000,
+        "ActivateInfluenceCost": 0,
+        "Spell4IdActivate": 0,
+        "Requires": [
+          32
+        ],
+        "AchievementIdRequired": 2956
+      },
+      {
+        "Id": 22,
+        "SourceName": "FlaskOfRenown",
+        "LuaName": "",
+        "PurchaseInfluenceCost": 850000,
+        "ActivateInfluenceCost": 0,
+        "Spell4IdActivate": 0,
+        "Requires": [
+          34
+        ],
+        "AchievementIdRequired": 0
+      },
+      {
+        "Id": 23,
+        "SourceName": "FlaskOfGreed",
+        "LuaName": "",
+        "PurchaseInfluenceCost": 650000,
+        "ActivateInfluenceCost": 0,
+        "Spell4IdActivate": 0,
+        "Requires": [
+          33
+        ],
+        "AchievementIdRequired": 0
+      },
+      {
+        "Id": 25,
+        "SourceName": "FlaskOfReputation",
+        "LuaName": "",
+        "PurchaseInfluenceCost": 600000,
+        "ActivateInfluenceCost": 0,
+        "Spell4IdActivate": 0,
+        "Requires": [
+          33
+        ],
+        "AchievementIdRequired": 2955
+      },
+      {
+        "Id": 27,
+        "SourceName": "SummonMobileBank",
+        "LuaName": "",
+        "PurchaseInfluenceCost": 150000,
+        "ActivateInfluenceCost": 25000,
+        "Spell4IdActivate": 52770,
+        "Requires": [],
+        "AchievementIdRequired": 0
+      },
+      {
+        "Id": 28,
+        "SourceName": "SummonMobileRepairVendor",
+        "LuaName": "",
+        "PurchaseInfluenceCost": 500000,
+        "ActivateInfluenceCost": 50000,
+        "Spell4IdActivate": 52787,
+        "Requires": [
+          32
+        ],
+        "AchievementIdRequired": 2949
+      },
+      {
+        "Id": 29,
+        "SourceName": "FlaskOfSpeed",
+        "LuaName": "",
+        "PurchaseInfluenceCost": 2000000,
+        "ActivateInfluenceCost": 0,
+        "Spell4IdActivate": 0,
+        "Requires": [
+          35
+        ],
+        "AchievementIdRequired": 0
+      },
+      {
+        "Id": 31,
+        "SourceName": "Tier2Guild",
+        "LuaName": "Tier2Unlock",
+        "PurchaseInfluenceCost": 300000,
+        "ActivateInfluenceCost": 0,
+        "Spell4IdActivate": 0,
+        "Requires": [],
+        "AchievementIdRequired": 0
+      },
+      {
+        "Id": 32,
+        "SourceName": "Tier3Guild",
+        "LuaName": "Tier3Unlock",
+        "PurchaseInfluenceCost": 450000,
+        "ActivateInfluenceCost": 0,
+        "Spell4IdActivate": 0,
+        "Requires": [],
+        "AchievementIdRequired": 0
+      },
+      {
+        "Id": 33,
+        "SourceName": "Tier4Guild",
+        "LuaName": "Tier4Unlock",
+        "PurchaseInfluenceCost": 600000,
+        "ActivateInfluenceCost": 0,
+        "Spell4IdActivate": 0,
+        "Requires": [],
+        "AchievementIdRequired": 0
+      },
+      {
+        "Id": 34,
+        "SourceName": "Tier5Guild",
+        "LuaName": "Tier5Unlock",
+        "PurchaseInfluenceCost": 750000,
+        "ActivateInfluenceCost": 0,
+        "Spell4IdActivate": 0,
+        "Requires": [],
+        "AchievementIdRequired": 0
+      },
+      {
+        "Id": 35,
+        "SourceName": "Tier6Guild",
+        "LuaName": "Tier6Unlock",
+        "PurchaseInfluenceCost": 900000,
+        "ActivateInfluenceCost": 0,
+        "Spell4IdActivate": 0,
+        "Requires": [],
+        "AchievementIdRequired": 0
+      },
+      {
+        "Id": 36,
+        "SourceName": "GuildBankTab1",
+        "LuaName": "BankTab1",
+        "PurchaseInfluenceCost": 100000,
+        "ActivateInfluenceCost": 0,
+        "Spell4IdActivate": 0,
+        "Requires": [],
+        "AchievementIdRequired": 0
+      },
+      {
+        "Id": 37,
+        "SourceName": "FlaskOfHarvesting",
+        "LuaName": "",
+        "PurchaseInfluenceCost": 300000,
+        "ActivateInfluenceCost": 0,
+        "Spell4IdActivate": 0,
+        "Requires": [
+          31
+        ],
+        "AchievementIdRequired": 0
+      }
+    ],
+    "perkGraphAcyclic": true,
+    "sourceEnumIdsMatchAll25Perks": true,
+    "activationSpellReferencesResolved": 8,
+    "achievementReferencesResolved": [
+      {
+        "Perk": 16,
+        "Achievement": 2948,
+        "IsGuild": true,
+        "AchievementTypeId": 75
+      },
+      {
+        "Perk": 20,
+        "Achievement": 3096,
+        "IsGuild": true,
+        "AchievementTypeId": 75
+      },
+      {
+        "Perk": 21,
+        "Achievement": 2956,
+        "IsGuild": true,
+        "AchievementTypeId": 87
+      },
+      {
+        "Perk": 25,
+        "Achievement": 2955,
+        "IsGuild": true,
+        "AchievementTypeId": 89
+      },
+      {
+        "Perk": 28,
+        "Achievement": 2949,
+        "IsGuild": true,
+        "AchievementTypeId": 33
+      }
+    ],
+    "allPerkEnglishTitlesDescriptionsResolved": true,
+    "bankPermissionRows": [
+      {
+        "id": 4,
+        "luaVariable": "bSpendInfluence",
+        "guildTypeEnumFlags": 2
+      },
+      {
+        "id": 13,
+        "luaVariable": "bBankTabRename",
+        "guildTypeEnumFlags": 2
+      },
+      {
+        "id": 29,
+        "luaVariable": "bBankTabLog",
+        "guildTypeEnumFlags": 2
+      }
+    ]
+  },
+  "nativeCorroboration": {
+    "path": "artifacts/continuation-20261106/guild-bank-catalog/retained-native-binding.json",
+    "sha256": "c619ce21d447f69b091563534741361571708b3d846d79796005eae0beca3268",
+    "retainedRangesMatched": 29,
+    "freshNativeOperation": false
+  },
+  "validation": {
+    "helperBuild": {
+      "path": "artifacts/continuation-20261106/guild-bank-catalog/qualification-build.log",
+      "sha256": "5a17027d28420bdf8f06edc3b61d8af6e51eb24ce0b79b208a8190116696ba3a",
+      "warnings": 0,
+      "errors": 0,
+      "seconds": 2.77
+    },
+    "semanticQualificationSeconds": 1.7373765,
+    "sourceBuildOrTestSuiteRerun": false,
+    "reason": "Data-only milestone; fourteen relevant Source inputs are unchanged.",
+    "helperCompileDiagnostic": {
+      "path": "artifacts/continuation-20261106/guild-bank-catalog/helper-text-return-diagnostic.log",
+      "sha256": "08be947e2fd4c1b30ee7e4a2a348bec0ab77e657a43fc9d705860b32a20020c0"
+    }
+  },
+  "remaining": {
+    "unfinishedSource": [
+      "Bank balance/tabs/item custody/influence/purchased-perk persistence graph",
+      "Character/guild debit-credit settlement, concurrency/replay and committed financial replies",
+      "Activation/spell application and consumable perk delivery"
+    ],
+    "specificEvidenceGates": [
+      "Authoritative authenticator policy",
+      "Banker interaction authority",
+      "Daily counter/reset calendar ownership"
+    ],
+    "qualificationGates": [
+      "Configured providers/copied-upgrade",
+      "Physical failure/restart",
+      "Sockets/deployment/native/retail"
+    ]
+  },
+  "preserved": {
+    "productionSourceEdited": false,
+    "schemaEdited": false,
+    "financialHandlersDiagnostic": true,
+    "noDefaultTabOrPerkGrant": true,
+    "originalRuntimeConfigurationAndDataUntouched": true,
+    "foreignWorkPreserved": true,
+    "nativeClientAndComputerUseStopped": true,
+    "entitlements": "15:1/17:1 preserved; no automatic44/seven grants"
+  },
+  "upstream": {
+    "path": "artifacts/continuation-20261106/guild-bank-catalog/upstream-refresh.json",
+    "sha256": "c0b884623029acc9cdefede895d34b0c699122a907b1e74cf9f4131fc7a1691b",
+    "latestPrs": 20,
+    "headsBasesStatesUnchanged": true,
+    "pr608": "open",
+    "pr609": "closed/unmerged"
+  },
+  "limits": [
+    "Raw catalog prices are not display-scaled currency, influence earning or purchase authorization.",
+    "Catalog availability does not imply a default unlocked tab or a deployed banking service.",
+    "Permission row/source-bit correspondence is not complete native/server permission or WarParty qualification.",
+    "Resolved activation spells and achievement prerequisites do not establish their gameplay execution.",
+    "No Source defect, implemented transaction, public purchase or retail completeness is claimed."
+  ],
+  "reviews": {
+    "path": "artifacts/continuation-20261106/guild-bank-catalog/reviews.json",
+    "sha256": "423145db16fcc06be2e39489d3a3a5cd193d8c105a3c628309ac12edf58178c5",
+    "specFindings": 0,
+    "standardsFindings": 0
+  }
+}

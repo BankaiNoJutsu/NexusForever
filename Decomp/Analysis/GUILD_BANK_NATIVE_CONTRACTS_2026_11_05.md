@@ -1,5 +1,10 @@
 # Guild bank native request and limit contracts
 
+6 November 2026: [actual formula/perk inputs are now qualified](#actual-formula-and-perk-inputs-qualified).
+The missing catalog values below are superseded by recovered build16042 data.
+Financial storage/settlement and the named authority/policy gates remain unfinished;
+money/item/tab-open handlers remain diagnostic.
+
 Later [public rank-settings implementation](GUILD_BANK_RANK_SETTINGS.md) completes
 operations23/24/30 with original-owner persistence and confirmed World readback.
 Its22 new/346 affected cases and reviews are separate Source evidence. The
@@ -110,3 +115,88 @@ establishes no server reset calendar, unlocked tab count, active formula values
 or accepted retail transaction. Keep the log-only money/item/tab-open boundary
 until that coherent service exists. Other assessment and gameplay work remains
 active; do not repeat the already completed LAS or creation slices.
+
+## Actual formula and perk inputs qualified
+
+6 November 2026, parent `f791dc37977650ecc21450375b45654baffe78a1`.
+The recovered build16042 catalog resolves the bank formula/perk input gate.
+This is data and existing Source qualification; no production/schema, deployed
+configuration, default unlock or grant changes are made.
+
+The focused helper checks six selected payloads against the retained recovery
+manifest and independent original-index catalog, including decoded SHA256/SHA1,
+packed SHA256/indexed SHA1 and extents. Owning C# readers parse GameFormula,
+GuildPerk, GuildPermission, Achievement, Spell4 and English text. It loads1217
+formula rows, all25 perks and all30 permission rows. Both manifests retain their
+385-file identity; the previous independent decompression qualification is reused.
+
+### Bank dimensions and withdrawal selectors
+
+GameFormula644 has Dataint0=128. Therefore the actual client-table value is128
+slots, rather than the native helper's64-slot missing-row fallback.
+The retained native selector-to-formula mapping gives:
+
+| Packed selector | Lua choice ID | Actual count/source |
+| ---: | ---: | --- |
+|0|1|0, native constant|
+|1|2|1, GameFormula757|
+|2|3|2, GameFormula758|
+|3|4|5, GameFormula759|
+|4|5|10, GameFormula760|
+|5|6|25, GameFormula761|
+|6|7|50, GameFormula762|
+|7|8|−1, native unlimited sentinel|
+
+These are item-withdrawal selector values, not currency limits or a reset
+calendar. They do not establish how many tabs a newly created guild owns.
+
+### Bank tab purchase catalog
+
+The table's Lua names and English titles identify the following chain. Costs
+below are raw PurchaseInfluenceCost fields; no display scaling or earning rule
+is inferred.
+
+| Display tab | Perk ID | Raw purchase cost | Required perk |
+| ---: | ---: | ---: | ---: |
+|1|36|100000|none|
+|2|3|250000|36|
+|3|7|500000|3|
+|4|8|750000|7|
+|5|9|1000000|8|
+
+All five have zero activation cost/spell. A purchase uses the perk ID, preserving
+the mapped operation25 UInt64 contract. Catalog presence does not grant Tab1 or
+prove an initial unlocked-tab policy.
+
+All25 actual perk IDs match the current Source enum. Every dependency resolves
+and the complete prerequisite graph is acyclic. All eight nonzero activation
+spell references resolve. All five achievement prerequisites resolve to rows
+carrying the Guild flag. Each perk's English title and description resolves.
+The three bank-related permission rows are bSpendInfluence/id4,
+bBankTabRename/id13 and bBankTabLog/id29, each with GuildTypeEnumFlags=2.
+Their IDs correspond to the current Source bit constants; this is a catalog/
+Source join, not qualification of every server permission or WarParty policy.
+
+### Evidence and remaining integration
+
+The helper build passes with zero warnings/errors in2.77s and semantic/data
+qualification passes in1.74s. The initial helper string-return compile diagnostic
+is retained separately; no production failure was reproduced or claimed.
+All29 previously mapped native spans independently match bytes in the same pinned
+PE. This rebinds retained evidence without a new Ghidra/REA/client operation.
+No Source build or suite was rerun because the relevant fourteen Source inputs
+are unchanged. The [portable record](coverage/guild-bank-catalog-20261106.json)
+binds the helper, six payloads, reader/enum assemblies, graph/joins, Source
+observations, retained native spans and final reviews. Raw evidence remains under
+`artifacts/continuation-20261106/guild-bank-catalog/`.
+
+The catalog gate is closed; the bank is still unfinished. GuildDataModel/GuildModel
+have no bank balance, tab/custody, influence wallet or purchased-perk graph.
+Character/guild debit-credit settlement, durable counters and committed financial
+replies remain Source implementation work. Authenticator authority, banker access
+and daily reset policy still need their specific evidence. Activation/spell
+application and consumable perk delivery require their own integration; a resolved
+Spell4 reference is not an implemented effect. Configured providers, copied-upgrade,
+failure/restart, sockets/deployment and native/retail remain open. Keep financial
+handlers diagnostic until a coherent service connects these requirements.
+Continue independent actionable gameplay/progression; client/CUA remain stopped.

@@ -1,5 +1,15 @@
 # Assessment follow-through goal
 
+[Guild-bank actual formula/perk inputs](GUILD_BANK_NATIVE_CONTRACTS_2026_11_05.md#actual-formula-and-perk-inputs-qualified)
+are qualified: formula644=128 slots, selector vector0/1/2/5/10/25/50/−1, five bank
+tab IDs/raw prices/dependency chain, all25 perk/enum joins, eight activation spells
+and five Guild-flagged achievements. Six selected payloads and29 retained native
+spans bind the result; both reviews pass. Missing catalog bytes/values are no
+longer this bank gate. Financial graph/settlement and committed replies remain
+Source work; authenticator/banker/reset rules need specific evidence. Keep
+financial handlers diagnostic until the coherent service exists, and continue
+independent actionable gameplay/progression. No Source/schema/default/grant changes.
+
 [#609 finite communicator reputation bounds](NATIVE_STATIC_CONTRACT_COMMUNICATOR_CROSSCHECK.md#finite-reputation-bounds-implemented-with-actual-tables)
 are implemented after recovered TBL data corroborates the retained native branch.
 One zero-minimum floor discrepancy is fixed through the parsed Q9159 report and
