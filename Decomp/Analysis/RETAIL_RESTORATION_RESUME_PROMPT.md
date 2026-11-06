@@ -23,6 +23,16 @@ EPMD are stopped; original MySQL/data/entitlements and empty queues are preserve
 Exact source/DLL/receipt/packet/lifecycle/cleanup witnesses are in
 coverage/provider-packet-hosted-restart-20261106.json and local ignored artifacts.
 
+The next Source milestone, ICComm membership ownership, is also qualified:
+24 new/50 scoped cases, isolated owning/test builds, exact source/DLL bindings
+and both self-review axes pass. Read ICCOMM_MEMBERSHIP_OWNERSHIP.md and its
+coverage record. It fixes stale GUID/session/membership authority without new
+quota/entitlement/persistence rules. No database or service was started for it.
+It is Source/public-handler evidence, separate from the earlier hosted candidate.
+The dedicated editable worktree is I:/GIT/NexusForever-iccomm-20261106; locate the
+current checkout instead of assuming that path remains valid. Preserve the
+separate concurrent Q3777 provider work.
+
 Continue the next actionable restoration outcome from current evidence.
 Unknown290 already has an aliased native dispatch body and a Source ServerControl
 proxy, but actual row44606/raid eligibility is unqualified. Unknown203 dispatches

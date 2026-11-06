@@ -1,5 +1,12 @@
 # Missing Feature and Opcode Decode Matrix
 
+F-012 Source follow-through: [ICComm membership ownership](ICCOMM_MEMBERSHIP_OWNERSHIP.md)
+now binds public requests and accepted packet publication to the original Player,
+session and membership handle. All 24 new/all 50 scoped cases and both self-review
+axes pass. This closes the reproduced stale-owner boundary, not socket/native
+callbacks, entitlement/quota/throttle/reconnect or retail qualification. F-012
+remains partial; chat auxiliary producer gates are unchanged.
+
 5 November [complete family-level blocker audit](ALL_REMAINING_BLOCKERS_RESEARCH_2026_11_05.md)
 reconciles every F-001..F-036 area and the broader Source/data/provider/native
 requirements. It supersedes older `06DF/07D5` marketplace and `07CD` rotation
