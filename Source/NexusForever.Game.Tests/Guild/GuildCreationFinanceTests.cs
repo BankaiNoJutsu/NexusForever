@@ -408,7 +408,7 @@ public sealed partial class GuildCreationFinanceTests
         var services = new ServiceCollection();
         services.AddKeyedTransient<IGuildBase>(GuildType.Guild, (_, _) => new GameGuild(realm, publisher, filter,
             characterManager: characters, gameTableManager: tables, globalGuildManager: guilds, globalAchievementManager: achievements,
-            prerequisiteManager: achievementPrerequisites));
+            prerequisiteManager: achievementPrerequisites, playerManager: achievementPlayers));
         services.AddKeyedTransient<IGuildBase>(GuildType.Community, (_, _) => new Community(realm, publisher, residences, filter, null, characters, guilds));
         var factory = new GuildFactory(services.BuildServiceProvider());
         guilds = new GlobalGuildManager(factory, databases); guilds.Initialise();

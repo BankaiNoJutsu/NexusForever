@@ -1,5 +1,16 @@
 # Assessment follow-through goal
 
+6 November resumed continuation: [provider packet and hosted World/Auth qualification](PROVIDER_PACKET_HOSTED_RESTART_HANDOFF.md)
+passes 16 SQLite/16 configured MySQL timestamp probes and 118 scoped Guild cases.
+No production timestamp change was needed. Frozen hosted replacement passes
+full socket/bootstrap/closed-presence cycles and prepared pending/delivered/
+duplicate recovery; immediate admission still waits for the first realm heartbeat.
+All 23 new schemas and 11 service generations are absent; broker/EPMD stopped,
+queues retained empty, original data/entitlements preserved. The next pass
+reconciles 290's existing Source alias and 203's client no-op without authorizing
+raid eligibility. Overall restoration is resumed/unfinished; native client and
+Computer Use remain stopped. This supersedes historical pause/next-step text.
+
 [Q3777 canonical fragment pickup](Q3777_CANONICAL_FRAGMENT_PICKUP.md) completes
 the existing range producer's physical item6998 grant and owned-count progress.
 Seven baseline failures and three executed review negatives are fixed;

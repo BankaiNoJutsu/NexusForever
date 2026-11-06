@@ -1,58 +1,41 @@
-# Resume retail restoration on the asset-owning machine
+# Resume retail restoration after hosted qualification
 
-Paste the following into a chat on the machine with the runtime assets.
+The timestamp and bounded hosted milestones are complete. Read the latest
+[handoff](PROVIDER_PACKET_HOSTED_RESTART_HANDOFF.md) and its portable coverage;
+the older machine-transfer prompt remains in Git history.
 
 ```text
-Resume the NexusForever retail restoration for WildStar build16042. Start with
-provider packet timestamps, then hosted World/Auth restart qualification.
+Resume the existing unfinished NexusForever build16042 retail restoration.
+Locate the actual checkout and runtime assets; do not reuse historical paths
+or PIDs. Read AGENTS.md, Tools/Setup/README.md, CURRENT_STATUS.md,
+Decomp/Analysis/RETAIL_RESTORATION_GOAL_PROMPT.md,
+Decomp/Analysis/ASSESSMENT_REMAINING_WORK.md and the latest
+Decomp/Analysis/PROVIDER_PACKET_HOSTED_RESTART_HANDOFF.md.
+Preserve unrelated work and do not create a duplicate Goal.
 
-Locate the actual checkout and verified runtime assets; do not assume historical
-drive letters, paths or process IDs. Read AGENTS.md, Tools/Setup/README.md,
-Decomp/Analysis/RETAIL_RESTORATION_GOAL_PROMPT.md and
-Decomp/Analysis/PROVIDER_PACKET_HOSTED_RESTART_HANDOFF.md. Preserve unrelated work
-and resume the existing restoration goal without creating a duplicate.
+Reuse the completed MySQL51/SQLite344/headless failure/restart proof and the
+new16 SQLite/16 MySQL wire timestamp and118 scoped Guild checks. Production
+timestamps were correct at the tested boundary. Frozen World/Auth replacement,
+full socket/bootstrap/disconnect/closed-presence cycles and prepared actual7194
+pending/delivered/duplicate recovery pass. The first Auth heartbeat is distinct
+from Hosting started. All23 new schemas and11 service generations, broker and
+EPMD are stopped; original MySQL/data/entitlements and empty queues are preserved.
+Exact source/DLL/receipt/packet/lifecycle/cleanup witnesses are in
+coverage/provider-packet-hosted-restart-20261106.json and local ignored artifacts.
 
-Current checkpoint:
-- The previous achievement handoff milestone passed51 MySQL cases,344 scoped
-  SQLite cases, six forced producer-loss windows plus a normal control, and
-  pending/delivered recovery across a normal MySQL restart. Reuse retained
-  evidence where applicable; these are headless checks, not hosted qualification.
-- All private qualification MySQL generations were stopped. No hosted World/Auth
-  restart was qualified. No production packet-timestamp change was made.
-- Six draft timestamp tests failed because the fixture captured no Guild update
-  packet, before timestamp comparison. This is not a timestamp defect witness.
-  The portable draft is retained outside active Source as
-  Decomp/Analysis/continuation/GuildAchievementPacketTimestampTests.draft.cs.txt.
-- Microsoft documents that DateTime.ToFileTimeUtc treats an unspecified Kind as
-  UTC. Do not assume MySqlConnector's default unspecified Kind causes an offset.
+Continue the next actionable restoration outcome from current evidence.
+Unknown290 already has an aliased native dispatch body and a Source ServerControl
+proxy, but actual row44606/raid eligibility is unqualified. Unknown203 dispatches
+to a client no-op; that does not establish a server predicate or authorize a
+bypass/rename. Seek a non-stub server/retail witness before reopening that semantic
+question; proceed with independent public gameplay work when none is available.
+All-member fanout, durable global-first, other providers/routes, native achievement
+UI/earning and broader retail gaps remain open. A prepared recovery fixture and
+generic login success do not prove earning or retail parity.
 
-First finish provider packet timestamp qualification. Inspect actual Guild
-broadcast recipient registration and committed publication draining, repair the
-fixture and resolve its analyzer warnings. Exercise configured MySQL-loaded rows
-through committed updates, fresh-owner initial packets, legacy row Build and
-Character completion publication. Serialize and read the actual wire fields.
-Cover null completion, winter, summer, both clock-change boundaries and
-fractional seconds. Compare with stored SQL dates, accounting for provider
-precision. Preserve progress, credited masks, actor ownership and precommit
-publication exclusion. Keep production unchanged if these checks agree; fix
-behavior only after reproducing a real defect.
-
-Then qualify hosted World/Auth restart. Verify the build16042 table/map cache,
-private configuration, database routes, broker and current owned service
-generations. Read Tools/NexusForever.LoadTest/README.md before protocol runs.
-Prepare a frozen candidate using incremental World/Auth project builds. Restart
-only validated owned World/Auth generations through the documented mechanism;
-preserve other services, original data, entitlements and broker queues. Require
-actual hosted readiness and complete authentication/world/bootstrap/disconnect/
-cleanup cycles before and after restart. Exercise pending achievement feedback
-and duplicate recovery where supported, retaining exact row, receipt, packet
-and lifecycle witnesses. Generic login success does not prove achievement earning.
-
-Use meaningful scoped checks and required reviews. Update canonical status,
-evidence and remaining-work records with exact source/DLL identities and cleanup
-proofs. Keep hosted startup, socket login, achievement recovery, native behavior
-and retail parity separate. Computer Use and native-client launch remain stopped.
-Do not fabricate assets or weaken validation. Avoid full-solution builds and full
-test-suite runs unless explicitly requested. The overall restoration remains
-unfinished; continue to the next actionable outcome after these milestones.
+Computer Use and native-client launch remain stopped. Use incremental owning
+project builds and meaningful scoped checks; no full-solution builds or full
+suite unless explicitly requested. Complete reviews and update canonical records
+with exact identities and cleanup proofs after each coherent milestone. Keep
+working through actionable outcomes; do not mark overall restoration complete.
 ```

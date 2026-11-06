@@ -1,4 +1,147 @@
-# Provider packet timestamps and hosted restart — paused for machine transfer
+# Provider packet timestamps and hosted restart — qualified continuation
+
+
+## 6 November 2026 asset-owning-machine result
+
+The current user resumed this continuation. The bounded timestamp and hosted
+restart milestones below are complete; the overall restoration remains unfinished.
+The following historical pause is retained for provenance, not as a current stop.
+Computer Use and native-client launch remain stopped. No duplicate Goal was created.
+
+Actual checkout: `I:/GIT/NexusForever-restoration-20261106`, branch
+`codex/provider-packet-hosted-restart-20261106`, base `84483cc8` (includes
+`b3fd74ab`). The supplied `I:/GIT/NexusForever` was the separate clean
+`game_rework` checkout; it and the older assessment checkouts were preserved.
+Canonical portable evidence is
+[provider-packet-hosted-restart-20261106.json](coverage/provider-packet-hosted-restart-20261106.json).
+Raw evidence remains in the new checkout under
+`artifacts/provider-packet-hosted-restart-20261106/`.
+
+### Timestamp hypothesis rejected at the tested boundary
+
+The fixture omitted the real Guild's `IPlayerManager` recipient lookup. Its
+committed publications also require `PublishMutationsAsync`, independently of
+Character events. The fixture now supplies the directory, registers the loaded
+member through `OnPlayerLogin`, and explicitly drains committed Guild messages.
+Reloaded Guilds also receive the character directory needed by normal login.
+Character initialization emits a separate Guild initial packet, so the Character
+oracle selects the Character row rather than blindly taking the last packet.
+
+All 16 new SQLite cases and the same 16 configured MySQL 8.0.46 probes pass; all 49
+Character migrations apply per isolated MySQL fixture. The 118-case scoped Guild
+fixture suite passes, including ownership, rollback and publication boundaries.
+Winter, summer, the seconds on both sides of both Zurich clock changes, fractional
+seconds and null completion are covered. Actual packet writers/readers verify the
+update deletion flag/count, initial count and each 15/32/32/64-bit row field.
+
+Coverage includes a provider-loaded real Guild row through another committed
+update, fresh-owner initial packets, legacy row Build and Character committed
+completion/fresh-owner packets. Progress and separate credited masks are preserved;
+null remains zero and precommit Guild publication stays excluded. MySQL reads
+have unspecified Kind; fractional `.8001234` stores at the next whole second in
+this configured schema, and the wire matches that stored value. No production
+conversion, database default, ownership guard or publication behavior changed.
+The inactive six-case draft remains historical, outside active Source.
+
+### Hosted replacement and prepared socket recovery
+
+The discovered client is `D:/WildStar/Client64/WildStar64.exe`, version
+`1.7.8.16042`, SHA256
+`231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`.
+The retained cache at
+`I:/GIT/NexusForever-assessment-report/remaining-goal/full-prepared-assets`
+passes runtime table/map stream validation and all 1,211 inventory hashes
+(386 table-directory files,825 maps), without an incomplete marker. No asset
+was fabricated, regenerated or weakened for startup.
+
+Incremental World/Auth and supporting API project builds were frozen with
+private copied configs and seven new `nexus_assessment_20261106_restart_*`
+schemas. All seven source schemas match independent post-run dumps exactly,
+excluding only mysqldump's completion comment, including original entitlements.
+The original MySQL80 service remains running. The private broker used a new
+state directory/node/port 5686; original broker state/queues were not reset.
+
+The documented owned Start-Process/Stop-Process mechanism was adapted to the
+new frozen root, with exact executable, start-time and hash guards. Only World
+34692/start 10:46:10.3909327Z and Auth 27972/start 10:46:10.3475675Z were replaced
+with World 35628/start 10:51:22.4590536Z and Auth 36756/start 10:51:22.4393320Z.
+All times are UTC on 6 November 2026. The seven other newly owned service
+generations remained identical across that replacement. These PIDs are now
+terminal evidence, never instructions to reuse them.
+
+Passing protocol cycles include first-generation baseline and delivered-state
+relog, then replacement-generation pending recovery, delivered control and a
+second pending-account relog. Each requires actual ChangeWorld/PlayerCreate
+bootstrap, ClientEnteredWorld acknowledgement, disconnect, offline Character
+and closed Friendship presence for a newer Auth epoch. Six queues drain to
+zero ready/unacknowledged messages. Hosting started alone is insufficient:
+Auth initially returned NoRealmsAvailableAtThisTime before its 15-second realm
+heartbeat. That attempt is retained and excluded; later full admission passes.
+
+Recovery uses explicitly prepared accepted eligibility, actual 7194 metadata and
+its six checklist rows, plus parent 7187. It does not claim raid/group earning.
+Account 28/Character 75 carries intent
+`g000000000000004b93f3cf4da9a6bcb` across replacement with no delivery, then receives
+one `ServerAchievementUpdate` and its exact matching h-marker. Account 29/Character 76
+retains delivered control `g000000000000004c3d8f5e2203f1e97`. Both remain
+ProgressState 1, separate CreditedChecklistMask 0, null completion/wire zero.
+Intent payloads/timestamps remain exact, replay adds no credit, and currency
+is unchanged. The initial temporary control oracle incorrectly expected credited
+mask 1; its failure is retained separately, and the corrected oracle agrees with
+the existing actual-profile contract above. No production fix resulted.
+
+### Identity, reviews, cleanup and next outcome
+
+The portable record pins exact changed-test and relevant production sources,
+DLLs and helper hashes. Complete local manifests cover 6,319 source/input files
+and 1,264 frozen runtime files. Compiler PDB checksums match 1,018 Game, 460 World,
+11 Auth and 725 test documents. All runtime files remain unchanged through the
+cycles. Game.Tests builds retain the existing ASPIRE010 dependency warning;
+there are no new xUnit analyzer warnings. World/Auth owning builds pass.
+
+Separate Spec and Standards self-review passes found no open material findings;
+these are primary-agent reviews, not independent reviewer claims. Raw review
+and diagnostic records are retained. All 16 provider schemas and seven hosted
+copies are independently absent. All 11 recorded service generations, owned
+listeners, broker node and EPMD are stopped. The six new queues were empty
+with zero consumers before normal broker shutdown and remain retained on disk.
+Only temporary services created by this continuation were cleaned up.
+
+The next evidence pass reconciled a stale prerequisite premise against the
+installed hash: cached dispatcher 1404a2100 case 0x122 calls slot +0x3a8; direct PE
+vtable 140b67740 read resolves it to 14049efa0, already registered in Source for
+Unknown290 and UnderForcedMovement. Source still proxies ServerControl; actual
+44606/raid eligibility is unqualified. Case 0xcb/slot +0x348 resolves to 140001ba0
+(return 0), confirming Unknown203's client no-op. This does not establish a
+server predicate or authorize a bypass/rename. REA verified PE/x86_64 identity
+and was closed; no new native analysis engine or native execution was used.
+Keep raid/group eligibility, all-member fanout, durable global-first, other
+providers/routes and native UI/retail parity open. Reopen203 only with a
+non-stub server/retail witness; do not repeatedly rediscover the client stub.
+
+Git-only transfer still omits raw TRX/logs, private configs, SQL dumps, frozen
+DLLs and temporary probe sources. Transfer the ignored evidence separately if
+needed. The prior MySQL 51/SQLite 344/headless-restart qualification remains
+retained and was reused, not rerun or relabeled as hosted proof.
+
+
+Commands for the scoped source checks (from the qualified checkout):
+
+```powershell
+dotnet build Source/NexusForever.WorldServer/NexusForever.WorldServer.csproj --no-restore -v quiet --nologo
+dotnet build Source/NexusForever.AuthServer/NexusForever.AuthServer.csproj --no-restore -v quiet --nologo
+dotnet build Source/NexusForever.Game.Tests/NexusForever.Game.Tests.csproj --no-restore -v quiet --nologo
+dotnet test Source/NexusForever.Game.Tests/NexusForever.Game.Tests.csproj --no-build --no-restore --filter FullyQualifiedName~GuildCreationFinanceTests
+```
+
+The retained temporary provider runner invokes the same test probes using
+configured provider options and per-case migrated schemas. The hosted adapter
+compiles the existing LoadTest protocol sources and adds only local fixture,
+SQL, packet and lifecycle observations; its source and DLL hashes are pinned.
+It reads private configuration in process, without connection strings on its
+command line. No reusable production scenario or native earning producer was added.
+
+## Historical machine-transfer checkpoint
 
 6 November2026. The user explicitly stopped this continuation so it can resume
 on the machine holding the runtime assets. This supersedes older active-goal
