@@ -23,6 +23,34 @@ EPMD are stopped; original MySQL/data/entitlements and empty queues are preserve
 Exact source/DLL/receipt/packet/lifecycle/cleanup witnesses are in
 coverage/provider-packet-hosted-restart-20261106.json and local ignored artifacts.
 
+The next Source milestone, ICComm membership ownership, is also qualified:
+24 new/50 scoped cases, isolated owning/test builds, exact source/DLL bindings
+and both self-review axes pass. Read ICCOMM_MEMBERSHIP_OWNERSHIP.md and its
+coverage record. It fixes stale GUID/session/membership authority without new
+quota/entitlement/persistence rules. No database or service was started for it.
+It is Source/public-handler evidence, separate from the earlier hosted candidate.
+The dedicated editable worktree is I:/GIT/NexusForever-iccomm-20261106; locate the
+current checkout instead of assuming that path remains valid. Preserve the
+separate concurrent Q3777 provider work.
+
+The subsequent hosted ICComm socket milestone passes bounded Global and prepared-
+Guild scenarios: seven sessions/55 frames/18 message attempts per scope and 66
+scoped tests. Read ICCOMM_SOCKET_RECONNECT_QUALIFICATION.md and its portable record.
+All nine owned services, broker/EPMD and seven copied schemas were cleaned up;
+seven original schemas match their before dumps. Native/automatic reconnect,
+positive Group/live scope changes and policy semantics remain open. Abortive
+Linger(0) was requested; no captured TCP RST is claimed.
+
+The character-list costume preview fix now passes 93 scoped cases. Read
+CHARACTER_LIST_COSTUME_PREVIEW.md and its portable record. Its three final cases
+fail on the frozen pre-fix DLL at the null-Player wardrobe guard, then pass using
+the loaded costume view. Live save/ownership guards remain unchanged. Those
+original socket runs omitted the character row but could select its SQL ID;
+they do not qualify native character selection. Next qualify this changed World
+DLL on new private copies: decode ServerCharacterList wire rows and require the
+owned selected Character to be present before selection, then rerun ICComm.
+No new service/broker/database was launched for the Source-only follow-through.
+
 Reuse the completed physical BOP binding and loot-feedback milestone recorded in
 Decomp/Analysis/PHYSICAL_LOOT_DELIVERY_FEEDBACK.md and its portable coverage JSON.
 The accepted whole award and collect transition precede fallible UI; retries do

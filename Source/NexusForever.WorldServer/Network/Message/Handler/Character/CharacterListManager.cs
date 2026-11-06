@@ -165,13 +165,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Character
 
                 try
                 {
-                    // create a temporary Inventory and CostumeManager to show equipped gear
+                    // Pregame presentation has no live Player or wardrobe save owner.
                     var inventory      = new Inventory(null, character, itemManager: itemManager);
-                    var costumeManager = new CostumeManager(null, character, itemManager);
-
-                    ICostume costume = null;
-                    if (costumeManager.CostumeIndex.HasValue)
-                        costume = costumeManager.GetCostume((byte)character.ActiveCostumeIndex);
+                    CharacterCostumeModel costumeModel = character.ActiveCostumeIndex >= 0
+                        ? character.Costume.SingleOrDefault(row => row.Index == character.ActiveCostumeIndex)
+                        : null;
+                    ICostume costume = costumeModel != null ? new NexusForever.Game.Entity.Costume(costumeModel, itemManager) : null;
 
                     listCharacter.GearMask = costume?.VisibilityMask ?? 0xFFFFFFFF;
 

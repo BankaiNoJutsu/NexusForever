@@ -1,0 +1,109 @@
+{
+  "Date": "2026-11-06",
+  "BaseHEAD": "d7d6e64704e91a27ce69a765415b062c1dc0e2fd",
+  "Branch": "codex/iccomm-membership-ownership-20261106",
+  "Classification": "Character-list costume preview Source-qualified; changed hosted candidate not qualified",
+  "ChangedSources": [
+    "Source/NexusForever.WorldServer/Network/Message/Handler/Character/CharacterListManager.cs",
+    "Source/NexusForever.Game.Tests/Pregame/CharacterListManagerTests.cs"
+  ],
+  "SourceSHA256": {
+    "Source/NexusForever.WorldServer/Network/Message/Handler/Character/CharacterListManager.cs": "0498cdbe3669a845be8d635b3491bb67d92f22ec561a8292152394b2c6df3f71",
+    "Source/NexusForever.Game/Entity/CostumePersistence.cs": "c2dfa1e1b3eb9e6e4f245c7ac21d3ffbb9dde4a32d52902aad62a8a40332cf33",
+    "Source/NexusForever.Game/Entity/CostumeManager.cs": "36a4577abf421d6076cf667ed585dc98a9f31a838041cc960daa76e97cfe37fc",
+    "Source/NexusForever.Game.Tests/Pregame/CharacterListManagerTests.cs": "7d49e15e935b8c72478c20d2d4fa6b04e893bc43b03c00de99cc1a9108b789ca",
+    "Source/NexusForever.Game/Entity/Costume.cs": "7a2d6ec142fad7c0f8157fdc2fb2d250ca00ee29f04ba996d461bd3f5fcd53b0"
+  },
+  "BaselineBinarySHA256": {
+    "NexusForever.WorldServer.pdb": "29be6695070c318baca9d4e0b6c1126149e08df14cb186e03ca14b5f439efec4",
+    "NexusForever.Game.Tests.dll": "bf1fd0530e41a427cbe38fee7d097d55d2f456c643fa156b881a08f4c91cc29a",
+    "NexusForever.Game.Tests.pdb": "616933b954b5ed895e00cc4b813690b1390a3317dcb5c873f78e01c7c3a72f14",
+    "NexusForever.WorldServer.dll": "db621fbbab0101a2f54b8950dd4731781b3b0bcf63084ee496dfe8f8354adb13"
+  },
+  "FinalBinarySHA256": {
+    "NexusForever.WorldServer.pdb": "26b5acd8942b9ae4234e691e41163d3c19cff63cb7e7fee672c8ed9ac3de554a",
+    "NexusForever.Game.pdb": "70b375db7dcffb039436f33330872968982a2601fd77b0b755543104ece180bb",
+    "NexusForever.WorldServer.dll": "331f47008d1a86bfa6d8a0d2db674a182861f89ae7b66eab23030ce75cbf7730",
+    "NexusForever.Game.Tests.dll": "9fb9210acbe7ddec81bae1d75a82991c9d70ed2ec8cb381371041b984b00e01e",
+    "NexusForever.Game.Tests.pdb": "772d6956ae613ca7cbe5c4c04890d772ffc584cdec0e54b7557001e2e05ddc8d",
+    "NexusForever.Game.dll": "c6bed9f97e10a363cb61eeb403d35321708d5decaa53afc6a43ff51376c6dc97"
+  },
+  "CompilerSourceBinding": [
+    {
+      "File": "NexusForever.Game.pdb",
+      "CompilerDocuments": 1018,
+      "SHA256": "70B375DB7DCFFB039436F33330872968982A2601FD77B0B755543104ECE180BB"
+    },
+    {
+      "File": "NexusForever.WorldServer.pdb",
+      "CompilerDocuments": 460,
+      "SHA256": "26B5ACD8942B9AE4234E691E41163D3C19CFF63CB7E7FEE672C8ED9AC3DE554A"
+    },
+    {
+      "File": "NexusForever.Game.Tests.pdb",
+      "CompilerDocuments": 727,
+      "SHA256": "772D6956AE613CA7CBE5C4C04890D772FFC584CDEC0E54B7557001E2E05DDC8D"
+    }
+  ],
+  "Baseline": {
+    "TRXSHA256": "25abb9f0d635e6e54b78a941b2cf18d9adbde29b17c5c7a6b062288284d0b269",
+    "Witness": "Final tests on frozen pre-fix World DLL fail with CostumeManager null-Player guard stack; final DLL/PDB restored and hash-verified afterward",
+    "Cases": 3,
+    "Failed": 3
+  },
+  "Final": {
+    "ScopedPassed": 93,
+    "Failed": 0,
+    "TRXSHA256": "648207bff04e5cfec737870b635adc5a83441f946fa6fe4d0a9dd7b2b82f123f",
+    "WorldBuildWarnings": 0,
+    "FullSolutionOrSuite": false,
+    "TestWarning": "Existing ASPIRE010 only"
+  },
+  "Reviews": {
+    "Spec": "Primary-agent self-review: actual omitted-character regression reproduced; loaded view preserves inactive/missing selection, visibility/appearance/bones/level; live persistence and owner guards unchanged",
+    "Standards": "Primary-agent self-review: project builds and scoped checks; final identical tests replayed against pre-fix DLL; draft fixture/compile diagnostics retained; final binary restoration verified; Q3777 preserved",
+    "OpenFindings": 0,
+    "IndependentReviewer": false
+  },
+  "Runtime": {
+    "BrokerStarted": false,
+    "PriorCleanupRetained": true,
+    "ServicesStarted": 0,
+    "HostedQualification": false,
+    "DatabaseWrites": 0,
+    "Q3777Preserved": true,
+    "ComputerUse": false,
+    "OriginalMySQL": "Running",
+    "NativeClientLaunched": false
+  },
+  "Limits": [
+    "Source/packet-object regression; changed World DLL needs hosted wire-row qualification",
+    "Previous ICComm peers selected SQL IDs despite character-list row omission",
+    "Initial draft fixtures lacked static inventory initialization and seven costume slots; their failures are not the valid baseline",
+    "No native selection, retail parity or broad presentation/content claim"
+  ],
+  "Next": "Use newly owned copies and frozen changed World candidate; decode actual ServerCharacterList and require owned selected row before CharacterSelect; rerun bounded ICComm cycles",
+  "RawEvidence": "I:\\GIT\\NexusForever-iccomm-20261106\\artifacts\\character-list-costume-20261106",
+  "EvidenceSHA256": {
+    "final-02.log": "98082fe46934f63351970fd23baeff5879cf740b9f8d5d8d6a0723a7ec48e6f7",
+    "seal.ps1": "14d251047adc30f60dce60f2133f8981fe4d001f789ac1cb80896363c5841572",
+    "baseline-build.log": "735d620f2755f08d5286d69d9075694ee583153a1d51720ff25720bbf7fa876c",
+    "corrected-baseline.log": "a430a0ecafa6bb6ef0170cb9b31744e662626f7f5c1e2c51d011844eee49b7fa",
+    "compiler-source-proof.json": "8ce82db95e7d22c7ae8a2e84f8b4383cdebc133f0823964a28614ef43b106cc0",
+    "world-build-02.log": "9c14fead06c949d9331828d59483d747e097529fcf449921dfd59611bf4067ea",
+    "final-03.log": "4a141664b76bf0684da2796122b2e75be67cd7d115312eee88dd5c272ee1c47b",
+    "final.log": "cca66dd837cd102c28ade1a647df15984da256f8996dfe236253e9846fc3ab4c",
+    "world-build.log": "8eae847d5fc8ae7ad78fc3d09c2f2190d9fc2e35aedbf530c679582eb76cac52",
+    "final-03.trx": "648207bff04e5cfec737870b635adc5a83441f946fa6fe4d0a9dd7b2b82f123f",
+    "final.trx": "3537e5ed5cbf103e954e9897066a57d429afa3d32c89d88cff5e1b405e8bf078",
+    "test-build-03.log": "7f9a2aa951081c39180f438ac9a9c3c5152432a4142da0ab10f3741c8b5d7f1e",
+    "diagnostic-build.log": "312aabe49a42d0c56a792867cc1298f6c09e1359c594ee4b29a609f5c62805bc",
+    "corrected-baseline.trx": "25abb9f0d635e6e54b78a941b2cf18d9adbde29b17c5c7a6b062288284d0b269",
+    "baseline.trx": "54f8b59957b181e51a8d89e3b7d140c26f40d53091f8c2deea384ccf6f5a328f",
+    "baseline.log": "302a13ec69070e0ee4ecdcadc2d13052407b04deac2c176b873821088dee6819",
+    "final-02.trx": "b33393dbc6ef64e438ef22bc3d7a2507b36eaf0c11d6cb27f8a337770e38e831",
+    "test-build.log": "5559b64aeb3b6300c8b82f609b81120fca7233aecab7d8651004e746baf39ac3",
+    "test-build-02.log": "ab7e9bd1013c7ef831206082a2b0f492834054df58cdabab50d145e592f037c4",
+    "diagnostic.log": "4b67414b961f4c53efa5a44a3bb32fcf3df06515e943bc4e47d91cd348eec0d5"
+  }
+}

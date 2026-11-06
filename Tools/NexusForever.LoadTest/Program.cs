@@ -42,6 +42,8 @@ internal static class Program
                     => await ChallengeRewardsCommand.Run(new CliArgs(args.Skip(2))),
                 "run" when args.Length > 1 && args[1].Equals("contract-acceptance", StringComparison.OrdinalIgnoreCase)
                     => await ContractAcceptanceCommand.Run(new CliArgs(args.Skip(2))),
+                "run" when args.Length > 1 && args[1].Equals("iccomm-reconnect", StringComparison.OrdinalIgnoreCase)
+                    => await ICCommReconnectCommand.Run(new CliArgs(args.Skip(2))),
                 "report" => await ReportCommand.Run(new CliArgs(args.Skip(1))),
                 _ => Usage()
             };
@@ -62,6 +64,7 @@ internal static class Program
         Console.Error.WriteLine("  NexusForever.LoadTest run login-world --client-entered-world-delay-ms 0");
         Console.Error.WriteLine("  NexusForever.LoadTest run challenge-rewards --user loadtest9701@example.local --recipe recipe.json --allow-fixture-placement");
         Console.Error.WriteLine("  NexusForever.LoadTest run contract-acceptance --user loadtest9701@example.local --quest 9880 --allow-contract-acceptance");
+        Console.Error.WriteLine("  NexusForever.LoadTest run iccomm-reconnect --runtime-config WorldServer.json --user loadtest9821@example.local --second-user loadtest9822@example.local --outsider-user loadtest9823@example.local --allow-owned-iccomm");
         Console.Error.WriteLine("  NexusForever.LoadTest report --input artifacts\\load-tests");
         return 1;
     }
@@ -953,6 +956,12 @@ internal sealed class GameProtocolClient : IAsyncDisposable
         }
 
         return buffer;
+    }
+
+    internal void Abort()
+    {
+        tcpClient.Client.LingerState = new LingerOption(true, 0);
+        tcpClient.Dispose();
     }
 
     public ValueTask DisposeAsync()

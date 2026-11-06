@@ -1,5 +1,11 @@
 # ICComm join correlation and named scoped channels
 
+Later Source result: [membership/publication ownership](ICCOMM_MEMBERSHIP_OWNERSHIP.md)
+fixes reused-GUID sends/removals and stale delivery after session, scope or
+membership replacement. All 50 ICComm cases pass, including 24 new controls,
+with isolated builds and both self-review axes. This preserves the name/key
+contracts below; native/socket and retail policy gates remain separate.
+
 5 November 2026. The real public join/message/not-joined handlers now preserve
 the requested ICComm channel identity. Guild replies no longer substitute the
 guild display name; failed joins retain the name needed to select the client's

@@ -102,6 +102,39 @@ To resume unclaimed earned state after a failed observation, `--placement-offset
 can start at a later supplied spawn. It does not reset Challenge progress,
 points, attempts, selected rows or receipts.
 
+### ICComm sockets and explicit reconnect
+
+Use three newly prepared, distinct numbered Load accounts in copied local
+assessment schemas. Start the validated owned services first. The command reads
+World database routes and sibling Auth/STS configured endpoints from the staged
+private configuration; all endpoints must be loopback. It does not seed users,
+alter membership, start services or write SQL. Guild mode requires the first two
+actors to be ordinary members of the same prepared Guild and the outsider to
+have no Guild membership.
+
+```powershell
+dotnet run --project Tools/NexusForever.LoadTest -- run iccomm-reconnect `
+  --runtime-config $ownedWorldConfig `
+  --user loadtest9821@example.local --second-user loadtest9822@example.local `
+  --outsider-user loadtest9823@example.local --channel-type Global `
+  --allow-owned-iccomm --output artifacts/load-tests/iccomm-global
+```
+
+Repeat with `--channel-type Guild` and a fresh output directory. Global/Guild are
+the supported positive scopes; no-group rejection is also checked. All actors
+complete normal STS/Auth/World entry. The scenario checks actual wire join/result/
+echo/directed fields, named-channel isolation, not-joined cleanup, normal logout,
+requested abortive `Linger(0)` close, new login epochs, explicit rejoin and empty
+channel removal. Abortive-close intent does not itself prove a captured TCP RST.
+Read-only SQL must show offline/closed presence and unchanged economy/entitlements
+at completion. Negative delivery observation is bounded to 500 ms per attempt.
+The report and transcripts omit auth tokens and never overwrite evidence.
+
+This tests protocol peers, not native callbacks or automatic reconnect. Prepared
+Guild membership does not qualify public guild creation, positive Group behavior,
+live scope changes, retail policy or entitlement/quota/throttle semantics. See
+[the qualified candidate and remaining limits](../../Decomp/Analysis/ICCOMM_SOCKET_RECONNECT_QUALIFICATION.md).
+
 ### Contract acceptance persistence
 
 On a prepared isolated assessment stack, use an actual offered Contract whose

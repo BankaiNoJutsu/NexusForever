@@ -3,6 +3,7 @@ using NexusForever.Game.Abstract.Guild;
 using NexusForever.Game.Abstract.ICComm;
 using NexusForever.Game.Static.ICComm;
 using NexusForever.Network.World.Message.Model.ICComm;
+using NexusForever.Network.Session;
 
 namespace NexusForever.Game.ICComm
 {
@@ -14,8 +15,12 @@ namespace NexusForever.Game.ICComm
             public ICCommChannelType Type { get; init; }
             public ulong ScopeId { get; init; }
             public string KeyName { get; init; }
-            public Dictionary<uint, IPlayer> Members { get; } = [];
+            public Dictionary<uint, Membership> Members { get; } = [];
         }
+
+        // The numeric world GUID is an index, not authority to inherit another
+        // actor's membership. A leave/rejoin also creates a new delivery owner.
+        private sealed record Membership(uint Guid, IPlayer Player, IGameSession Session);
 
         private const int MaxMessageLength = 512;
 
@@ -35,12 +40,16 @@ namespace NexusForever.Game.ICComm
             if (player == null)
                 return ICCommJoinResult.BadName;
 
+            var admitted = new Membership(player.Guid, player, player.Session);
+
             ICCommJoinResult? keyFailure = TryCreateChannelKey(player, type, guildId, name, out ulong scopeId, out string keyName);
             if (keyFailure.HasValue)
                 return keyFailure;
 
             lock (syncRoot)
             {
+                if (!OwnsActor(admitted)) return ICCommJoinResult.BadName;
+
                 var key = (type, scopeId, keyName);
                 if (!channelsByKey.TryGetValue(key, out ICCommChannel channel))
                 {
@@ -56,12 +65,14 @@ namespace NexusForever.Game.ICComm
                     channelsById.Add(channel.Id, channel);
                 }
 
-                channel.Members[player.Guid] = player;
+                if (!channel.Members.TryGetValue(admitted.Guid, out Membership previous)
+                    || !ReferenceEquals(previous.Player, player) || !ReferenceEquals(previous.Session, admitted.Session))
+                    channel.Members[admitted.Guid] = admitted;
 
-                if (!channelsByPlayer.TryGetValue(player.Guid, out HashSet<ulong> playerChannels))
+                if (!channelsByPlayer.TryGetValue(admitted.Guid, out HashSet<ulong> playerChannels))
                 {
                     playerChannels = [];
-                    channelsByPlayer.Add(player.Guid, playerChannels);
+                    channelsByPlayer.Add(admitted.Guid, playerChannels);
                 }
 
                 playerChannels.Add(channel.Id);
@@ -79,49 +90,60 @@ namespace NexusForever.Game.ICComm
             if (string.IsNullOrWhiteSpace(message) || message.Length > MaxMessageLength)
                 return ICCommMessageResult.InvalidText;
 
-            List<IPlayer> recipients;
+            ICCommChannel channel;
+            Membership sender;
+            List<Membership> recipients;
+            string senderName;
             lock (syncRoot)
             {
-                if (!channelsById.TryGetValue(iccommId, out ICCommChannel channel) ||
-                    !channel.Members.ContainsKey(player.Guid))
-                {
+                if (!channelsById.TryGetValue(iccommId, out channel)
+                    || !channel.Members.TryGetValue(player.Guid, out sender)
+                    || !ReferenceEquals(sender.Player, player))
                     return ICCommMessageResult.NotInChannel;
-                }
 
-                if (!IsChannelMemberCurrent(channel, player))
+                if (!IsChannelMemberCurrent(channel, sender))
                 {
-                    RemoveMembership(player.Guid, channel.Id);
+                    RemoveMembership(channel, sender);
                     return ICCommMessageResult.NotInChannel;
                 }
 
                 PruneStaleMembers(channel);
-
-                recipients = GetRecipients(channel, player, recipientName);
-                if (!string.IsNullOrWhiteSpace(recipientName) && recipients.Count == 0)
+                recipients = GetRecipients(channel, sender, recipientName);
+                senderName = player.Name;
+                if (!IsChannelMemberCurrent(channel, sender)
+                    || !string.IsNullOrWhiteSpace(recipientName) && recipients.Count == 0)
                     return ICCommMessageResult.NotInChannel;
             }
 
-            player.Session?.EnqueueMessageEncrypted(new ServerICCommMessageResult
+            // Enqueues can call outward code. Recheck the accepted membership
+            // before each publication and always use its original session.
+            if (!CanPublish(channel, sender)) return ICCommMessageResult.NotInChannel;
+            sender.Session.EnqueueMessageEncrypted(new ServerICCommMessageResult
             {
                 IccomId   = iccommId,
                 MessageId = messageId,
                 Result    = ICCommMessageResult.Sent
             });
 
-            player.Session?.EnqueueMessageEncrypted(new ServerICCommOrderedMessage
+            // Once acknowledged, losing the owner cancels the remaining work;
+            // it must not produce a contradictory second request result.
+            if (!CanPublish(channel, sender)) return ICCommMessageResult.Sent;
+            sender.Session.EnqueueMessageEncrypted(new ServerICCommOrderedMessage
             {
                 IccomId   = iccommId,
                 MessageId = messageId,
                 Message   = message
             });
 
-            foreach (IPlayer recipient in recipients)
+            foreach (Membership recipient in recipients)
             {
-                recipient.Session?.EnqueueMessageEncrypted(new ServerICCommDirectedMessage
+                if (!CanPublish(channel, sender)) break;
+                if (!CanPublish(channel, sender, recipient)) continue;
+                recipient.Session.EnqueueMessageEncrypted(new ServerICCommDirectedMessage
                 {
                     IccomId    = iccommId,
                     Message    = message,
-                    SenderName = player.Name
+                    SenderName = senderName
                 });
             }
 
@@ -135,7 +157,10 @@ namespace NexusForever.Game.ICComm
 
             lock (syncRoot)
             {
-                return RemoveMembership(player.Guid, iccommId);
+                return channelsById.TryGetValue(iccommId, out ICCommChannel channel)
+                    && channel.Members.TryGetValue(player.Guid, out Membership member)
+                    && ReferenceEquals(member.Player, player) && ReferenceEquals(member.Session, player.Session)
+                    && RemoveMembership(channel, member);
             }
         }
 
@@ -145,9 +170,9 @@ namespace NexusForever.Game.ICComm
             {
                 foreach (ICCommChannel channel in channelsById.Values.ToArray())
                 {
-                    foreach (IPlayer member in channel.Members.Values.ToArray())
+                    foreach (Membership member in channel.Members.Values.ToArray())
                         if (!IsChannelMemberCurrent(channel, member))
-                            RemoveMembership(member.Guid, channel.Id);
+                            RemoveMembership(channel, member);
                 }
             }
         }
@@ -186,29 +211,47 @@ namespace NexusForever.Game.ICComm
             }
         }
 
-        private static bool IsChannelMemberCurrent(ICCommChannel channel, IPlayer player)
-        {
-            if (player == null || !player.InWorld)
-                return false;
+        private static bool OwnsActor(Membership member)
+            => member.Player.Guid == member.Guid && member.Session != null
+                && ReferenceEquals(member.Player.Session, member.Session)
+                && (member.Session is not IPlayerSession bound || ReferenceEquals(bound.Player, member.Player))
+                && member.Session is not NetworkSession { IsDisconnecting: true };
 
-            switch (channel.Type)
+        private bool IsChannelMemberCurrent(ICCommChannel channel, Membership member)
+        {
+            if (!OwnsActor(member) || !member.Player.InWorld) return false;
+            bool scope = channel.Type switch
             {
-                case ICCommChannelType.Global:
-                    return true;
-                case ICCommChannelType.Group:
-                    return player.GroupAssociation == channel.ScopeId;
-                case ICCommChannelType.Guild:
-                    return player.GuildManager?.Guild?.Id == channel.ScopeId;
-                default:
+                ICCommChannelType.Global => true,
+                ICCommChannelType.Group => member.Player.GroupAssociation == channel.ScopeId,
+                ICCommChannelType.Guild => member.Player.GuildManager?.Guild?.Id == channel.ScopeId,
+                _ => false
+            };
+            // Property access can reenter. Validate the exact retained handle
+            // after reading actor/session/scope state, not only its numeric key.
+            return scope && channelsById.TryGetValue(channel.Id, out var current) && ReferenceEquals(current, channel)
+                && channel.Members.TryGetValue(member.Guid, out var registered) && ReferenceEquals(registered, member);
+        }
+
+        private bool CanPublish(ICCommChannel channel, Membership sender, Membership recipient = null)
+        {
+            lock (syncRoot)
+            {
+                if (!IsChannelMemberCurrent(channel, sender)) return false;
+                if (recipient != null && !IsChannelMemberCurrent(channel, recipient))
+                {
+                    RemoveMembership(channel, recipient);
                     return false;
+                }
+                return IsChannelMemberCurrent(channel, sender);
             }
         }
 
         private void PruneStaleMembers(ICCommChannel channel)
         {
-            foreach (IPlayer member in channel.Members.Values.ToArray())
+            foreach (Membership member in channel.Members.Values.ToArray())
                 if (!IsChannelMemberCurrent(channel, member))
-                    RemoveMembership(member.Guid, channel.Id);
+                    RemoveMembership(channel, member);
         }
 
         private static string NormaliseDisplayName(string name)
@@ -216,33 +259,33 @@ namespace NexusForever.Game.ICComm
             return (name ?? string.Empty).Trim();
         }
 
-        private static List<IPlayer> GetRecipients(ICCommChannel channel, IPlayer sender, string recipientName)
+        private List<Membership> GetRecipients(ICCommChannel channel, Membership sender, string recipientName)
         {
-            IEnumerable<IPlayer> members = channel.Members.Values
-                .Where(m => m.InWorld && m.Guid != sender.Guid);
+            IEnumerable<Membership> members = channel.Members.Values.ToArray()
+                .Where(member => !ReferenceEquals(member, sender) && IsChannelMemberCurrent(channel, member));
 
             if (!string.IsNullOrWhiteSpace(recipientName))
             {
                 string normalisedRecipient = recipientName.Trim();
-                members = members.Where(m => string.Equals(m.Name, normalisedRecipient, StringComparison.OrdinalIgnoreCase));
+                members = members.Where(member => string.Equals(member.Player.Name, normalisedRecipient, StringComparison.OrdinalIgnoreCase));
             }
 
             return members.ToList();
         }
 
-        private bool RemoveMembership(uint playerGuid, ulong channelId)
+        private bool RemoveMembership(ICCommChannel channel, Membership member)
         {
-            if (!channelsById.TryGetValue(channelId, out ICCommChannel channel))
+            if (!channelsById.TryGetValue(channel.Id, out var current) || !ReferenceEquals(current, channel)
+                || !channel.Members.TryGetValue(member.Guid, out var registered) || !ReferenceEquals(registered, member))
                 return false;
 
-            if (!channel.Members.Remove(playerGuid))
-                return false;
+            channel.Members.Remove(member.Guid);
 
-            if (channelsByPlayer.TryGetValue(playerGuid, out HashSet<ulong> playerChannels))
+            if (channelsByPlayer.TryGetValue(member.Guid, out HashSet<ulong> playerChannels))
             {
-                playerChannels.Remove(channelId);
+                playerChannels.Remove(channel.Id);
                 if (playerChannels.Count == 0)
-                    channelsByPlayer.Remove(playerGuid);
+                    channelsByPlayer.Remove(member.Guid);
             }
 
             if (channel.Members.Count == 0)

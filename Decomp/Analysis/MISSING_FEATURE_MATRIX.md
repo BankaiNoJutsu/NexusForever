@@ -1,5 +1,12 @@
 # Missing Feature and Opcode Decode Matrix
 
+F-012: [ICComm socket and explicit reconnect qualification](ICCOMM_SOCKET_RECONNECT_QUALIFICATION.md)
+passes bounded Global/prepared-Guild sessions, actual wire observations, normal
+and requested abortive cleanup and explicit rejoin; 66 scoped tests pass.
+Native/automatic reconnect, positive Group and policy gates remain open. F-012
+stays partial; the [character-list preview fix](CHARACTER_LIST_COSTUME_PREVIEW.md)
+passes 93 scoped cases and awaits separate hosted wire-row qualification.
+
 5 November [complete family-level blocker audit](ALL_REMAINING_BLOCKERS_RESEARCH_2026_11_05.md)
 reconciles every F-001..F-036 area and the broader Source/data/provider/native
 requirements. It supersedes older `06DF/07D5` marketplace and `07CD` rotation

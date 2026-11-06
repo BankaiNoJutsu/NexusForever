@@ -1,5 +1,15 @@
 # Assessment follow-through goal
 
+[ICComm socket and explicit reconnect qualification](ICCOMM_SOCKET_RECONNECT_QUALIFICATION.md) passes Global and
+prepared-Guild runs on the frozen ownership candidate: seven sessions, 55 wire
+frames and 18 message attempts per scope; 66 scoped tests pass. Normal and
+requested abortive closes require saved offline/closed presence and fresh epochs;
+old membership requires explicit rejoin. All nine services, isolated broker/EPMD
+and seven copied schemas are cleaned up; original data and Q3777 work are preserved.
+[The character-list costume preview fix](CHARACTER_LIST_COSTUME_PREVIEW.md) passes 93 scoped cases;
+its changed World DLL still needs hosted wire-row qualification. F-012/retail remain partial: native callbacks, automatic reconnect, positive
+Group, live scope changes and policy gates remain open. Native/CUA stay stopped.
+
 6 November resumed continuation: [provider packet and hosted World/Auth qualification](PROVIDER_PACKET_HOSTED_RESTART_HANDOFF.md)
 passes 16 SQLite/16 configured MySQL timestamp probes and 118 scoped Guild cases.
 No production timestamp change was needed. Frozen hosted replacement passes

@@ -1,5 +1,7 @@
 using System.Collections;
+using System.Reflection;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 using NexusForever.Database;
 using NexusForever.Database.Configuration.Model;
 using NexusForever.Database.Auth;
@@ -41,6 +43,57 @@ namespace NexusForever.Game.Tests.Pregame;
 
 public class CharacterListManagerTests
 {
+    [Theory]
+    [InlineData(-1, false, uint.MaxValue)]
+    [InlineData(0, true, 123u)]
+    [InlineData(0, false, uint.MaxValue)]
+    public void CharacterListIncludesLoadedCharacterWithoutALivePlayer(int active, bool hasCostume, uint expectedMask)
+    {
+        if (AssetManager.InventoryLocationCapacities == null)
+            typeof(AssetManager).GetMethod("CacheInventoryBagCapacities", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .Invoke(new AssetManager(), null);
+        var session = new TestWorldSession();
+        session.Account = new TestAccount(session);
+        var model = new CharacterModel { Id = 75, Name = "LoadedPreview", ActiveCostumeIndex = (sbyte)active, Level = 1 };
+        model.Appearance.Add(new CharacterAppearanceModel { Id = model.Id, Slot = 2, DisplayId = 321 });
+        model.Bone.Add(new CharacterBoneModel { Id = model.Id, BoneIndex = 0, Bone = 1.25f });
+        model.Stat.Add(new CharacterStatModel { Id = model.Id, Stat = (byte)Stat.Level, Value = 17 });
+        if (hasCostume)
+        {
+            var costume = new CharacterCostumeModel { Id = model.Id, Index = 0, VisibilityMask = 123 };
+            for (byte slot = 0; slot < 7; slot++)
+                costume.CostumeItem.Add(new CharacterCostumeItemModel { Id = model.Id, Index = 0, Slot = slot });
+            model.Costume.Add(costume);
+        }
+        var logger = new PreviewLogger();
+        var manager = new CharacterListManager(logger,
+            new UnusedDatabaseManager(), new TestRealmContext(), new NoOpGlobalStorefrontManager());
+
+        manager.QueueCharacterListPackets(session, Task.FromResult(new List<CharacterModel> { model }));
+        session.Events.Update(0d);
+
+        Assert.Null(session.Player);
+        Assert.Empty(logger.Errors);
+        var row = Assert.Single(Assert.Single(session.EncryptedMessages.OfType<ServerCharacterList>()).Characters);
+        Assert.Equal(model.Id, row.Id); Assert.Equal(model.Name, row.Name);
+        Assert.Equal(expectedMask, row.GearMask); Assert.Equal(17u, row.Level);
+        Assert.Equal((ushort)321, Assert.Single(row.Appearance).DisplayId);
+        Assert.Equal(1.25f, Assert.Single(row.Bones));
+        Assert.Empty(row.Gear);
+        Assert.Equal((sbyte)active, model.ActiveCostumeIndex);
+        Assert.Equal(hasCostume ? 1 : 0, model.Costume.Count);
+        Assert.Same(model, Assert.Single(session.Characters));
+    }
+
+    private sealed class PreviewLogger : ILogger<CharacterListHandler>
+    {
+        internal List<Exception> Errors { get; } = [];
+        public IDisposable BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => true;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+        { if (exception != null) Errors.Add(exception); }
+    }
+
     [Fact]
     public void QueueCharacterListPackets_SendsAccountStateBeforeCharacterLoadCompletes()
     {

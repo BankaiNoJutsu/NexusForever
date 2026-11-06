@@ -1,0 +1,138 @@
+{
+  "Date": "2026-11-06",
+  "Classification": "Implemented and Source/public-handler verified; retail restoration unfinished",
+  "BaseHEAD": "3fae8296c736a27da2d4811d208c54d133c788c4",
+  "PublicationParent": "3fae8296c736a27da2d4811d208c54d133c788c4",
+  "DedicatedCheckout": "I:\\GIT\\NexusForever-iccomm-20261106",
+  "Branch": "codex/iccomm-membership-ownership-20261106",
+  "ChangedSources": {
+    "Source/NexusForever.Game/ICComm/ICCommManager.cs": "91e44f66bddb3519c0a497ca68c89193d52db661216a90f1d2110894d4b138e6",
+    "Source/NexusForever.WorldServer/Network/Message/Handler/ICComm/ClientICCommHandlers.cs": "841e5067b7fd5e09d8cb77f45499fead5ea252d7ab3a6be0418677ae93ea309b",
+    "Source/NexusForever.Game.Tests/ICComm/ICCommOwnershipTests.cs": "86127ac78fff4a9871a9a082b74eaa703c0737e89f404cb2eddcd5eeaf2bc561"
+  },
+  "BaselineProductionSources": {
+    "Source/NexusForever.Game/ICComm/ICCommManager.cs": "46a306a55135c01b49dd88bb842df1052d892f7459572d87bc10db98561977a2",
+    "Source/NexusForever.WorldServer/Network/Message/Handler/ICComm/ClientICCommHandlers.cs": "7037236a98547acff115f1cb43c5e2a68b648c5aaed20d350c9a2308dcca928f"
+  },
+  "InitialBaseline": {
+    "NewCases": 20,
+    "Failed": 20
+  },
+  "FinalBaselineReplay": {
+    "SameFinalCases": 24,
+    "Failed": 23,
+    "Passed": 1,
+    "TRXSHA256": "4dd7ead5b24a687b97d7bb79f9d6f675f5b3ef76fb3935e16317d021c5c95620"
+  },
+  "Final": {
+    "NewCases": 24,
+    "ScopedCases": 50,
+    "Failed": 0,
+    "TRXSHA256": "05171f9fc3eb8f46182ec0a0cb928a819e191e791f74dddeda30621f2d4befff",
+    "OwningBuild": "WorldServer: zero warnings/errors",
+    "TestBuild": "Game.Tests: existing ASPIRE010 only; no new analyzer warnings"
+  },
+  "CompilerSourceBinding": [
+    {
+      "File": "NexusForever.Game.pdb",
+      "CompilerDocuments": 1018,
+      "SHA256": "54294EF72015F10C0C076BA391D95612FDC3221A294129DF7583197ECEB0F347"
+    },
+    {
+      "File": "NexusForever.WorldServer.pdb",
+      "CompilerDocuments": 460,
+      "SHA256": "CC79222DF80E43854ABCE5A88E804BE608C38D11ECE8D5F6C441CB58B8D12D10"
+    },
+    {
+      "File": "NexusForever.Game.Tests.pdb",
+      "CompilerDocuments": 726,
+      "SHA256": "056ADB8D6840407DDC86D731A74E3CB477DFCE30EC5BEEA9B301B3DCA81F0B56"
+    }
+  ],
+  "Binaries": {
+    "final-bin\\NexusForever.Game.Abstract.dll": "b49843e5cbece041abee2e1b4b8a9138d1beb6756d84bd1571fed9fffd06e51f",
+    "final-bin\\NexusForever.Game.Abstract.pdb": "c933ad4779356447eb23a5de254b15fb17affbd78b35df8ef28e6916bd3f5238",
+    "final-bin\\NexusForever.Game.dll": "23487cfc253ca65646b0ef8f8bce082e5bb8837201bbcdffa89f37296343a445",
+    "final-bin\\NexusForever.Game.pdb": "54294ef72015f10c0c076ba391d95612fdc3221a294129df7583197eceb0f347",
+    "final-bin\\NexusForever.Game.Static.dll": "039a807c50b195e422e6069d3864bfded0d01017a48862841ae5ad7000bcbc77",
+    "final-bin\\NexusForever.Game.Static.pdb": "910a137f477de0637b984aa161a48a348e63d0e2467971f12456e574fa3e7de9",
+    "final-bin\\NexusForever.Game.Tests.dll": "3c09f4f7366ced5a8e81af1ae666b70bca232c04be2e707198fd96ae160d87c7",
+    "final-bin\\NexusForever.Game.Tests.pdb": "056adb8d6840407ddc86d731a74e3cb477dfce30ec5beea9b301b3dca81f0b56",
+    "final-bin\\NexusForever.GameTable.dll": "10887247f6ea3639b95d6a6edbef9bfb76090d3fd398839f4229815b0c94b7ef",
+    "final-bin\\NexusForever.GameTable.pdb": "bd987acb5440ba22da5e10dcbcd7d115308686e45487d0ea9c0a3a5a30a6dce1",
+    "final-bin\\NexusForever.Network.World.dll": "36c921393ea34849ebcbb391aaec5affee1e1938136ac3bd2348f9df9b83398a",
+    "final-bin\\NexusForever.Network.World.pdb": "09c607c68ca2b7ca9d5db606433fcc396bc15c2877a033b13cf389b1c81abc51",
+    "final-bin\\NexusForever.WorldServer.dll": "c9b7102633c6121a2ecd1fc2c35f873d2b757ce8feeb07db0c3a072fb3e60372",
+    "final-bin\\NexusForever.WorldServer.pdb": "cc79222df80e43854abce5a88e804be608c38d11ece8d5f6c441cb58b8d12d10",
+    "baseline-replay-bin\\NexusForever.Game.Abstract.dll": "b49843e5cbece041abee2e1b4b8a9138d1beb6756d84bd1571fed9fffd06e51f",
+    "baseline-replay-bin\\NexusForever.Game.Abstract.pdb": "c933ad4779356447eb23a5de254b15fb17affbd78b35df8ef28e6916bd3f5238",
+    "baseline-replay-bin\\NexusForever.Game.dll": "07a3f728fb76ce829ce809ba7bfae471881e3906ae1f85d32ea6ff7f5cb0eb65",
+    "baseline-replay-bin\\NexusForever.Game.pdb": "fa1f2096c9587c77a6e8648699c1a7d7cbcd3eb9212a74c42a70485517f1fe4f",
+    "baseline-replay-bin\\NexusForever.Game.Static.dll": "039a807c50b195e422e6069d3864bfded0d01017a48862841ae5ad7000bcbc77",
+    "baseline-replay-bin\\NexusForever.Game.Static.pdb": "910a137f477de0637b984aa161a48a348e63d0e2467971f12456e574fa3e7de9",
+    "baseline-replay-bin\\NexusForever.Game.Tests.dll": "44f4bb80b2950bed6c67137fb46dd534b8a81eefbbccc0b8dde45981fcfc850f",
+    "baseline-replay-bin\\NexusForever.Game.Tests.pdb": "8ab195e7d8f32706063d206658f6628d4a69e59ca0cd7b4549d80d74159307ad",
+    "baseline-replay-bin\\NexusForever.GameTable.dll": "10887247f6ea3639b95d6a6edbef9bfb76090d3fd398839f4229815b0c94b7ef",
+    "baseline-replay-bin\\NexusForever.GameTable.pdb": "bd987acb5440ba22da5e10dcbcd7d115308686e45487d0ea9c0a3a5a30a6dce1",
+    "baseline-replay-bin\\NexusForever.Network.World.dll": "36c921393ea34849ebcbb391aaec5affee1e1938136ac3bd2348f9df9b83398a",
+    "baseline-replay-bin\\NexusForever.Network.World.pdb": "09c607c68ca2b7ca9d5db606433fcc396bc15c2877a033b13cf389b1c81abc51",
+    "baseline-replay-bin\\NexusForever.WorldServer.dll": "f696e44d46c736be11ba6654c46c59cf911ebb54ccbc27af9c4f0cd0a1c2d01d",
+    "baseline-replay-bin\\NexusForever.WorldServer.pdb": "6506ffda314f6fb8898595e4c144a9d1f0938d772ee716d4252529847d2285c5"
+  },
+  "Reviews": {
+    "Date": "2026-11-06",
+    "Reviewer": "Primary agent; separate Spec and Standards self-review passes",
+    "Spec": {
+      "OpenFindings": [],
+      "Checked": [
+        "Exact Player/session membership handles and late old-socket request exclusion",
+        "Same-owner repeat join compatibility and leave/rejoin handle replacement",
+        "Sender and recipient rechecks after acknowledgement/echo/earlier-recipient callbacks",
+        "Accepted sender-name snapshot and non-contradictory cancellation after Sent",
+        "Captured GUID pruning with another owner/channel sharing the numeric index",
+        "24 final regressions/controls: original production23 failed1 passed; fixed all24 passed",
+        "Existing26 ICComm cases preserved; full scoped final50 passed"
+      ]
+    },
+    "Standards": {
+      "OpenFindings": [],
+      "Checked": [
+        "Only manager/handlers/new tests affect production boundary; no packet/model/default policy changes",
+        "No enqueue while holding membership gate",
+        "Fresh source-only candidate excludes concurrent Q3777 edits and shares no build outputs",
+        "Frozen baseline and final DLLs, matching owning/test runtime binaries and compiler documents",
+        "No database writes, server/broker restart, native launch or Computer Use in this slice"
+      ]
+    },
+    "ReviewCorrection": "Strengthened the captured-GUID cleanup control to require removal of the abandoned channel, then replayed the same final24 cases against both production versions."
+  },
+  "SourceAcceptance": [
+    "Unjoined/replaced actors cannot send or remove another membership merely by numeric GUID",
+    "A replacement session needs a fresh join; late requests on old sockets cannot operate the new membership",
+    "A leave/rejoin creates a new delivery handle; repeated joins by unchanged owner retain their handle",
+    "Revalidate sender and recipient lifetime, scope and session before each packet",
+    "After Sent, owner loss stops remaining work without a contradictory failure reply",
+    "No payload crosses to replacement recipients or sessions, and sender name remains the accepted snapshot",
+    "Captured GUID cleanup removes only its exact handle and preserves newer memberships"
+  ],
+  "UnchangedPolicies": [
+    "Global canonicalization and exact requested-name replies",
+    "Group/Guild scope and name keys",
+    "512-character message bound and existing result/order semantics",
+    "No entitlement/quota/throttle/circle/persistence policy introduced"
+  ],
+  "Limits": [
+    "No live socket or native ICComm callback qualification",
+    "No provider/database, broker/restart, cross-realm or retail traffic qualification",
+    "No entitlement identity, quota, automatic rejoin or persistent-channel policy claim"
+  ],
+  "Resources": {
+    "ServicesLaunched": 0,
+    "DatabasesWritten": 0,
+    "NativeClientAndComputerUse": "Stopped",
+    "RawEvidence": "I:\\GIT\\NexusForever-restoration-20261106\\artifacts\\iccomm-ownership-20261106",
+    "CandidateSource": "I:\\GIT\\NexusForever-restoration-20261106\\artifacts\\iccomm-ownership-20261106\\qualified-candidate",
+    "BaselineAndFinalBinaries": "baseline-replay-bin / final-bin retained separately"
+  },
+  "UnrelatedWork": "Q3777 provider source/docs/coverage left in original worktree, excluded from the archived HEAD candidate and this commit; only byte-verified ICComm edits were transferred and removed from that worktree."
+}
