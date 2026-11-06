@@ -1,5 +1,9 @@
 # Assessment follow-through goal
 
+[Fresh MySQL 8.0.46 migration qualification](MYSQL_8_0_FRESH_MIGRATION_QUALIFICATION_20261107.md) (2026-11-07): the current source's
+migrations apply cleanly to seven fresh disposable schemas (Character 49, Auth 42, World 17, Group 1, Chat 1, Friendship 2, Query 1),
+schemas dropped afterwards. Forward migration only on one 8.0 minor; no copied-upgrade, public-flow, recovery, socket or load run.
+
 [Source robustness fixes](SOURCE_ROBUSTNESS_FIXES_20261107.md) (2026-11-07): three independent gaps from the matrix triage were reproduced
 and fixed: mail attachment delete validation, missing TradeskillTier table, missing housing plug/decor tables. Source/SQLite only:
 3 failing-first tests, plus 343 Mail, 1,108 Tradeskill/Prerequisite/Crafting and 388 Housing cases pass (separate scopes).
