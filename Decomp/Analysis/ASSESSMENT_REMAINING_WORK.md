@@ -1,5 +1,10 @@
 # Assessment follow-through goal
 
+[Unmapped achievement type candidates](ACHIEVEMENT_UNMAPPED_TYPE_CANDIDATES_20261106.md) (2026-11-06): retail achievement text
+from the local reference databases gives a candidate meaning for most of the 39 unmapped types (type 12 = scripted;
+87/88/96/61/94/102 = PvP stats; 109/112/114/83 = housing). Candidates only, from third-party descriptions, not server proof.
+MySQL 8.0 is running locally and its reference databases are usable; the MySQL runtime gate is not absolute on this machine.
+
 [Quest objective type census](QUEST_OBJECTIVE_TYPE_CENSUS_20261106.md) (2026-11-06): 10,026 of 10,031 retail objective rows
 use a type the server references; only 5 rows (UNUSED19/Unknown27/Unknown29) do not. Census only.
 
