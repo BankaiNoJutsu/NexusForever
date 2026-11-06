@@ -1,5 +1,18 @@
 # Assessment follow-through goal
 
+[Committed Path item quantity publication](PATH_ITEM_QUANTITY_PUBLICATION.md)
+completes supported level/mission/episode add/stack notification settlement:
+full original Player save confirmation, current Item membership/count capture,
+related ordinary quantity/removal ordering and fresh original-actor retries.
+Eight baseline cases and five executed review counterexamples are fixed;
+17 new/all355 scoped cases, clean owning/test builds and both reviews pass.
+Later Auth changes wait their own save; direct Inventory.Save cannot confirm
+the reward marker. Overflow delivery, reward/count/flag rules, wider inventory
+movement/property/effect publication and actual/provider/native/retail remain
+open. Reuse this completed slice. The overall Goal has resumed and remains active;
+client launch and Computer Use remain stopped.
+
+
 [Actual-catalog Contract configured MySQL recovery](CONTRACT_ACTUAL_MYSQL_RECOVERY.md)
 completes the representative fresh-provider physical producer-loss gate:
 eight windows, seven real kills and seven spent original-claim replays pass

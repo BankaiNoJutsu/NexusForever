@@ -1,5 +1,15 @@
 # Continue on another machine
 
+Latest Path Source result:
+[item quantity publication](Decomp/Analysis/PATH_ITEM_QUANTITY_PUBLICATION.md)
+confirms supported level/mission/episode add/stack packets with the original
+Player save and orders related quantity/removal notices. Eight baseline/five
+review failures are fixed;17 new/all355 scoped cases, clean builds and both
+reviews pass. Overflow, wider movement/properties and provider/native remain
+open. The overall Goal has resumed; client/CUA remain stopped. Preserve foreign
+Player edits; only the reviewed inventory-publication hunk is committed.
+
+
 Latest Contract provider result:
 [actual-catalog MySQL recovery](Decomp/Analysis/CONTRACT_ACTUAL_MYSQL_RECOVERY.md)
 passes eight windows, seven producer kills and seven spent original-claim replays

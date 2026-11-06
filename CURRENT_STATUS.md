@@ -1,5 +1,13 @@
 # NexusForever Feature Restoration - Current Status
 
+[Committed Path item quantities](Decomp/Analysis/PATH_ITEM_QUANTITY_PUBLICATION.md)
+now publish supported level/mission/episode item adds and stack updates only
+after the original Player save. Related ordinary quantity/removal notices stay
+ordered; removed items cannot get ghost adds. Eight baseline/five review failures
+are fixed;17 new/all355 scoped cases, clean builds and both final reviews pass.
+Overflow, wider inventory movement/properties/provider/native remain open.
+
+
 [Actual-catalog Contract MySQL recovery](Decomp/Analysis/CONTRACT_ACTUAL_MYSQL_RECOVERY.md)
 passes eight representative windows, seven physical producer terminations and
 seven spent-claim replays on fresh configured MySQL 8.4.13 Auth/Character schemas.

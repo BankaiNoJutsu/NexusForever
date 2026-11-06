@@ -1,0 +1,1011 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-06T08:48:41.189091+00:00",
+  "baseCommit": "d3c13e9a445a9d055f40d47d63ab93cfcedf7435",
+  "milestone": "Committed Path item quantity publication",
+  "classification": "Implemented original-Player Source/SQLite quantity/removal publication boundary; wider Path and retail qualification remain open; overall Goal active",
+  "behavior": [
+    "Supported level, mission and episode item adds/stack updates wait for the complete original Player Character save. Frozen inventory capture includes only notices accepted before that capture; direct Inventory.Save cannot confirm a Path reward marker.",
+    "Full-save capture freezes the current Item membership and quantity. Removed-item adds/stacks are suppressed. Related ordinary add/stack/delete notices on a pending/ready Path Item GUID stay ordered and preserve their original reasons; unrelated ordinary items keep the existing route.",
+    "Commit failure retains notices. Successful callbacks confirm captured notice identities only, so later Auth earning/consumption waits for its own save. Partial enqueue failure retries from the first undelivered packet without replaying the grant.",
+    "Every attempt constructs a fresh packet/deep item payload. Original Player/PathManager/inventory/Character/realm/account/id/epoch/session/queue ownership and disconnect state fence publication."
+  ],
+  "sources": [
+    {
+      "path": "Source/NexusForever.Game/Entity/Inventory.BankPublication.cs",
+      "candidateSha256": "7503e83c81ff173fec3756279ecec40fa81d3282efbfdca1581c18a6c7241342",
+      "expectedStagedBlob": "b646e8c3c2f8af09ec3e7c7e57cd09b5386f1caa",
+      "rootSameBytes": true,
+      "foreignRootHunksExcluded": false,
+      "rootRawSha256": "7503e83c81ff173fec3756279ecec40fa81d3282efbfdca1581c18a6c7241342",
+      "sourceConvention": "Candidate raw SHA256 binds compilation; expectedStagedBlob is Git clean-filtered. Root Player excludes foreign hunks; other root files match clean-filtered blobs."
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/Inventory.NormalSave.cs",
+      "candidateSha256": "faa54131c9b5186be137a4537dd4ceb7ff1a6fa6f318d21b2a6e27e482831d68",
+      "expectedStagedBlob": "cc78ff8447357b99915fa8ce7ffaade648b0af8a",
+      "rootSameBytes": false,
+      "foreignRootHunksExcluded": false,
+      "rootRawSha256": "df5c2d0a9f543a9040a595a95f59cb80ed57a1749c57552f3a9164f3c629871b",
+      "sourceConvention": "Candidate raw SHA256 binds compilation; expectedStagedBlob is Git clean-filtered. Root Player excludes foreign hunks; other root files match clean-filtered blobs."
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/Inventory.PathItemPublication.cs",
+      "candidateSha256": "3c3465946192226c6cd2d2b980de709b8e12d1ac960292f97b448002256483c3",
+      "expectedStagedBlob": "a278073dbbb907bd284d94ae964ce6b8323db961",
+      "rootSameBytes": true,
+      "foreignRootHunksExcluded": false,
+      "rootRawSha256": "3c3465946192226c6cd2d2b980de709b8e12d1ac960292f97b448002256483c3",
+      "sourceConvention": "Candidate raw SHA256 binds compilation; expectedStagedBlob is Git clean-filtered. Root Player excludes foreign hunks; other root files match clean-filtered blobs."
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/Player.NormalRewardSave.cs",
+      "candidateSha256": "1490eaed89d298de68b51107adb751b01587ce53dd93ab61d8a9d8fdf8382e36",
+      "expectedStagedBlob": "9572130e3af23a1b6564689860690d39ab807d23",
+      "rootSameBytes": true,
+      "foreignRootHunksExcluded": false,
+      "rootRawSha256": "1490eaed89d298de68b51107adb751b01587ce53dd93ab61d8a9d8fdf8382e36",
+      "sourceConvention": "Candidate raw SHA256 binds compilation; expectedStagedBlob is Git clean-filtered. Root Player excludes foreign hunks; other root files match clean-filtered blobs."
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/Player.cs",
+      "candidateSha256": "58ab3fe71da6d08a1aa055204b5828713d5032cb073669fbc23639ce53f85b30",
+      "expectedStagedBlob": "303902eb5d20ae8b9a0c793302092e906efe8c4b",
+      "rootSameBytes": false,
+      "foreignRootHunksExcluded": true,
+      "rootRawSha256": "a11e483ea50a607e2711bb0701946ac532cd62f5041253787997e48cf41c172e",
+      "sourceConvention": "Candidate raw SHA256 binds compilation; expectedStagedBlob is Git clean-filtered. Root Player excludes foreign hunks; other root files match clean-filtered blobs."
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Entity/PlayerExperiencePersistenceTests.cs",
+      "candidateSha256": "a5a8f8cbbd8893546a4f826b4e313c124a1fbccacbb7bed73e3bc1711c6ce065",
+      "expectedStagedBlob": "ed90c318b7adf67bb5f691754078ead1d5be32d7",
+      "rootSameBytes": false,
+      "foreignRootHunksExcluded": false,
+      "rootRawSha256": "3d9be788567db42234d8ae9948d66612aa9211c7b56727e08dab2300121dbdbd",
+      "sourceConvention": "Candidate raw SHA256 binds compilation; expectedStagedBlob is Git clean-filtered. Root Player excludes foreign hunks; other root files match clean-filtered blobs."
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Entity/PlayerExperiencePersistenceTests.PathItems.cs",
+      "candidateSha256": "239b16281798adc09859de446c2f71f0ef6402c07ba6f65300f5c6f603b7129a",
+      "expectedStagedBlob": "b8caa9ade5503613e9a78eb46056b20589685a7a",
+      "rootSameBytes": true,
+      "foreignRootHunksExcluded": false,
+      "rootRawSha256": "239b16281798adc09859de446c2f71f0ef6402c07ba6f65300f5c6f603b7129a",
+      "sourceConvention": "Candidate raw SHA256 binds compilation; expectedStagedBlob is Git clean-filtered. Root Player excludes foreign hunks; other root files match clean-filtered blobs."
+    }
+  ],
+  "sourceBoundary": {
+    "base": "d3c13e9a445a9d055f40d47d63ab93cfcedf7435",
+    "trackedSourceFiles": 6298,
+    "ownedTrackedDifferences": [
+      "Source/NexusForever.Game/Entity/Inventory.BankPublication.cs",
+      "Source/NexusForever.Game/Entity/Inventory.NormalSave.cs",
+      "Source/NexusForever.Game/Entity/Player.NormalRewardSave.cs",
+      "Source/NexusForever.Game/Entity/Player.cs",
+      "Source/NexusForever.Game.Tests/Entity/PlayerExperiencePersistenceTests.cs"
+    ],
+    "newSourceFiles": [
+      "Source/NexusForever.Game/Entity/Inventory.PathItemPublication.cs",
+      "Source/NexusForever.Game.Tests/Entity/PlayerExperiencePersistenceTests.PathItems.cs"
+    ],
+    "historicalDifferences": [
+      "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+      "Source/NexusForever.ClientConnector/packages.config",
+      "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+      "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+      "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+      "Source/NexusForever.Database/NexusForever.Database.csproj",
+      "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+      "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj"
+    ],
+    "differences": [
+      {
+        "path": "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+        "head": "9b4e604e08391bf229552fa04081ecf9c74fec4d",
+        "candidate": "7de92fafe0c2474ba8428ca9ceee883d39138b46"
+      },
+      {
+        "path": "Source/NexusForever.ClientConnector/packages.config",
+        "head": "fa4b77dc45783358023c1cd38e6ff9bad122aea4",
+        "candidate": "8ab13a9023dec3cf548ee61ba183013bd098a297"
+      },
+      {
+        "path": "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+        "head": "64769a2266f7feab861fcc61cd2b00a0a05da8c4",
+        "candidate": "74272fd6bf29afac14c5d62cb172e81b4edee19a"
+      },
+      {
+        "path": "Source/NexusForever.Database/NexusForever.Database.csproj",
+        "head": "61f9d5326c59ec7018164eba605a01f4081dfded",
+        "candidate": "163c4f01e198e71066afcd9089a367c78b4c3de6"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Entity/PlayerExperiencePersistenceTests.cs",
+        "head": "ba024da16eecf10ce08e51171eca22cadec8a35f",
+        "candidate": "ed90c318b7adf67bb5f691754078ead1d5be32d7"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/Inventory.BankPublication.cs",
+        "head": "f9e46d9b431a6e2cbc53e741e768a66ba8e34f02",
+        "candidate": "b646e8c3c2f8af09ec3e7c7e57cd09b5386f1caa"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/Inventory.NormalSave.cs",
+        "head": "add6f5382f85d2f61ddb729b0db8a58164aa85ff",
+        "candidate": "cc78ff8447357b99915fa8ce7ffaade648b0af8a"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+        "head": "1ffaefc3cf8c1eb7c5b0534d4d91f28eb7001347",
+        "candidate": "6c145b847fa7316e7982ab44cfa404f4e1e7fc70"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/Player.NormalRewardSave.cs",
+        "head": "ab2b51767290e19866352d9a53a2e4b6f68964ba",
+        "candidate": "9572130e3af23a1b6564689860690d39ab807d23"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/Player.cs",
+        "head": "de72aace21ad7f3be67dc266a8148f33c3cf75a9",
+        "candidate": "303902eb5d20ae8b9a0c793302092e906efe8c4b"
+      },
+      {
+        "path": "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj",
+        "head": "74f0ec9ebbf4894dd7ef64f379a773a9e4ce1295",
+        "candidate": "ecd970da6d0d220f3caaf6780656c1809e18a9af"
+      }
+    ],
+    "comparisonConvention": "Git clean-filtered tracked blob comparison; owned raw SHA256 separate",
+    "otherUntrackedSourceFiles": []
+  },
+  "binaries": {
+    "baseline": {
+      "Aspire.Hosting.AppHost.dll": "9d241fac4ea6f912abe94bdaa1043633ce62c3989be4aadbee61cba7bd16c09f",
+      "Aspire.Hosting.dll": "9c5f526f0d2474bf1d547e09ccb2015522f4e92c48e3feb69538f0b7844f1d92",
+      "Aspire.Hosting.Docker.dll": "513608d74a705e3ad9319881a55ab245ebd0bf7127777ee5d3cbbcf66a27d358",
+      "Aspire.Hosting.MySql.dll": "91c9f18a1c51e6cfb39d8e6e3703181b113c07dad431c2d83af95d62877b453b",
+      "Aspire.Hosting.RabbitMQ.dll": "7b22016ca210d666f09f83e332ef8900db218c196b117dd1ad52c4cc53a55334",
+      "Azure.Core.Amqp.dll": "d53d832629b76fcae7f0e0352788c43c79e13480247dba11e37961b60e52c142",
+      "Azure.Core.dll": "1d6df436afdc73c30d476be938f6513c90ef8fc884a7bae280091a9bed0a5490",
+      "Azure.Identity.dll": "31574a3d35ffeb0e25a00ebb317937222fe5283b91af608613f2e3bf0f26c50a",
+      "Azure.Messaging.ServiceBus.dll": "6895bb412db0242bed71d10d3325b86d51611e578529c91108afdeb96bff08fc",
+      "Basic.Reference.Assemblies.Net100.dll": "35ce19c341334cc79951576712d105a75b681b58532c0dd010ac302936d208ba",
+      "CommandLine.dll": "8a55501cd1a1590a4bd93a17c6fdd2c01a0ed5bff1aea9036bdc78d98c9a3fad",
+      "DotNet.Glob.dll": "5263008e364a7a072eddf6d483ed988baf4f50dc0391e358b490ac6c01a6acf5",
+      "Fractions.dll": "e8407a878af8aec1f485f50a9f356c439371610fff20756d4f2284ac6c995cbf",
+      "Google.Protobuf.dll": "8997a69619b59db587a45e75a03c164a44afb613f82db138d35e1636e4cbdc73",
+      "Grpc.AspNetCore.Server.ClientFactory.dll": "c57f69775e2b8acda401efb5f152eba6cfd23d0fc9277b7d2e0ed1f1533158e3",
+      "Grpc.AspNetCore.Server.dll": "a66e142b1a3cbaf8ed3f0835faac72e0484d4eb8b1295e0d3d1de69d72e575b2",
+      "Grpc.Core.Api.dll": "440b6b0a5beca40718a01b3e892baa6e2fd03933f3f501fc40e2a956b0d937a1",
+      "Grpc.Net.Client.dll": "4070680267f1eba977958284088f8bf63bccb2f9fea873d6b244fd7d4b76afd3",
+      "Grpc.Net.ClientFactory.dll": "b62b17995c8576378e790ce1c5dff994c0cf605a6d7da7510078857f59f09d97",
+      "Grpc.Net.Common.dll": "c6ee8099f5fd7013825d2ff636375391c8992704ad40b9819f6c9078c25c6574",
+      "HealthChecks.MySql.dll": "9947a05820c92ceb061edf02271844da0fe5d6bd47a2364f6e14287f9ba1fc7d",
+      "HealthChecks.Rabbitmq.dll": "258cf95771cab344da41843ad69f19598fafe6847ce4200ea3045819ca654983",
+      "HealthChecks.Uris.dll": "32f8e0615a70e07c6c37c3e2e0774207c84d2f2695942fba82e7bc3bee1a5708",
+      "Hex1b.dll": "1113557a5737e1fac2fdda1f6579737c50eac4620e83fefb3c29fa2ecc9b12bc",
+      "KubernetesClient.dll": "1fdb3ddc3db829a3f4015afc328a00d3747fb228c7866df6f765be4cedb800ce",
+      "MessagePack.Annotations.dll": "bd364b1513c9df5d4063b6ee3602a5bf951507484f46a2366a6f2a9aeb1c4cf2",
+      "MessagePack.dll": "1ebc0c2baec5a89b3738e892d61c92f037dd588db52412e1e3bdf2adc407aa94",
+      "Microsoft.Azure.Amqp.dll": "eb58a9058b6cde95081608e1921967cc704d6e411745436b20c68caa37389980",
+      "Microsoft.Bcl.AsyncInterfaces.dll": "f1e1d6e1a2990071b450bdf6c9618408ac0e3f24a3c7a3bef1f50508ba732ca5",
+      "Microsoft.CodeAnalysis.CSharp.dll": "54142770a00e594942ee8923726ea49126303d0c523932886c2417eb66dc07f8",
+      "Microsoft.CodeAnalysis.dll": "ad857f1ce7f8e26c2722ade705fac3f90502a47590c14075df1327210f10b1ef",
+      "Microsoft.Data.Sqlite.dll": "1078d41c6c0f2cee48a8b706e3a54ce145705993f19f703d2b3bdf2abcc59088",
+      "Microsoft.EntityFrameworkCore.Abstractions.dll": "98c8252995283ef0884b904dbab03696ca7f71a05b8dde34dace5eeb9bf4382c",
+      "Microsoft.EntityFrameworkCore.dll": "acb89dff050d681fab6f86d2175929471200b9bed66ac9321cbe6a17eaa26933",
+      "Microsoft.EntityFrameworkCore.Relational.dll": "ac1146e68d53d56b79e9473f68c557999de99674be392bbbbb02ae93a296b93e",
+      "Microsoft.EntityFrameworkCore.Sqlite.dll": "b8c5027b27be2012094699cbd5260239778a1891dc5c1887797d331b67f0ef89",
+      "Microsoft.Extensions.AI.Abstractions.dll": "dd444efc3b9e2db2e4e7616909731b8dde824b554455014002167918b823eac4",
+      "Microsoft.Extensions.DependencyModel.dll": "2385bfbc9344e03acb2ff44f1ed21a3770fbafdf1ba4be2dbcacd42027b8c3bd",
+      "Microsoft.Extensions.Hosting.Systemd.dll": "b83961fadb9b88ed05ccb4dea45165b5393b4eaf1258dce0b7d0f60e9c0c1d46",
+      "Microsoft.Extensions.Hosting.WindowsServices.dll": "caa306587f796d0290aada4fdfaec1394f1f206409ea4d5a20f309b61fc59959",
+      "Microsoft.Identity.Client.dll": "5795027e9ae95eececb310a4fed3c502bb368039d186ab0884f64b7792b84717",
+      "Microsoft.Identity.Client.Extensions.Msal.dll": "07109a2f30df782300077a567ade47cbd0a0502c75cd7c8a62192f7d64bb004e",
+      "Microsoft.IdentityModel.Abstractions.dll": "24e97b54b6b5c234a124a336757e3116617ac6c30b655cdae74517dc2ecb5746",
+      "Microsoft.NET.StringTools.dll": "887dec541cd0a719b7111458eb90a83b4491d6dd24eff2b16cf03d2782fd26a0",
+      "Microsoft.TestPlatform.CommunicationUtilities.dll": "7ed97ccfd6f9c74f054de4cf84a7b4b0179eb6064e3a406e746849c6989e0d6a",
+      "Microsoft.TestPlatform.CoreUtilities.dll": "db70e6632a13a6d46cc3bb75f71273b3e9c64ca1e5dd0537572fb0dadf444009",
+      "Microsoft.TestPlatform.CrossPlatEngine.dll": "eaf5a87745d6ab7f7ef7db6e85dfa96817ecdb06b51a642edd6f9c6b805c3616",
+      "Microsoft.TestPlatform.PlatformAbstractions.dll": "f5541efe526d719aef103026770faf0435218afc5be90f653a01886ff8bebc80",
+      "Microsoft.TestPlatform.Utilities.dll": "358ae71a7f820dfd7e3b2d86ad9a7402c72166c7197bccd89f39b9d62ec3f0ae",
+      "Microsoft.VisualStudio.CodeCoverage.Shim.dll": "ef1f649984cf2ff2d4f51944270d6b1557752ba0099ec97894361abe3e6640c1",
+      "Microsoft.VisualStudio.TestPlatform.Common.dll": "6e16cf009ff956b97eef96aefc64a33a9bff7df86a8e7e6e5664ec03e648bcc1",
+      "Microsoft.VisualStudio.TestPlatform.ObjectModel.dll": "9d0a31a406ab064d2bc009a5523b5e73b71d3fe1dddd19cffe4a70f14cde3f75",
+      "Microsoft.VisualStudio.Threading.dll": "138e3548e487152de355b81303ae98e1bb52a31fe5c9107fa81a15f66404f426",
+      "Microsoft.VisualStudio.Validation.dll": "59cd5e953cce597847e515a73a1c0975cd5a6b94921a7b91e81045fa9922f57c",
+      "Microsoft.Win32.SystemEvents.dll": "ca495bf6c86b7f092d624928101985a941532d149dcd8acfea170f8a53be8850",
+      "Microting.EntityFrameworkCore.MySql.dll": "c8dc4aff0fa81bcb09c11c7bbd15780378e39317c32b23f75a85dea4a9894171",
+      "ModelContextProtocol.Core.dll": "cd434634473f1d6b945a5583d48782207a1e79b8202cf6adb174e41ed2ca4643",
+      "ModelContextProtocol.dll": "1f0760611e72588fbffe2c7bacfce55b9942d7ed5cb5cd4a3ded5d5f7600e930",
+      "MySqlConnector.dll": "a3104353e86cc96123d8015fc5a3bf4ab88b127b9180caaa4db9a006c49f467b",
+      "Nerdbank.MessagePack.dll": "fc086ce3623a9a3f9213159d438c642d225046e371489e8e7f126d4c62f188fa",
+      "Nerdbank.Streams.dll": "e5c90ffcb7a0bd0cedf51ac33e818b9f64045e9839b19701eb73460356631872",
+      "Newtonsoft.Json.dll": "a28c251dfe36d881e9e2462e171441b8b0ec156fe3f452602c9149b1b9efe05b",
+      "Nexus.Archive.dll": "fd2fc160b92cd14a6f226a5095cde744d81a3c807ca45bf78c91cf2a2ba0237b",
+      "NexusForever.API.Account.Client.dll": "dcc138d6ebbedc6142fecadbcd0512815a32f0eb7c0266a03bbf461824951418",
+      "NexusForever.API.Character.Client.dll": "8b6ec8947c3c48537b39ee8eb5927ea4a873a149d27f25fbed2c518f820fdcc3",
+      "NexusForever.API.dll": "2cab2612f5a2463d1d091d55619dec8c718609ea3df939ecfba8e8373b2aacbe",
+      "NexusForever.Aspire.AppHost.dll": "502a444ce79cb4b804299940f807544e7ea50fa9ac0194f022bc07a46bbe60a9",
+      "NexusForever.Aspire.Database.Migrations.dll": "4924c36a806c4707d68da5e6541f0b6bd462a1eafa382e7a5710403ab80d0491",
+      "NexusForever.Cryptography.dll": "0be240820a34f144d7a0bcbf5604e493949dc092582b850ec06a4dbb5fe41a02",
+      "NexusForever.Database.Auth.dll": "a5f2852d869f372f13809519c4745940496159001a417b551a3a8aa2677cf382",
+      "NexusForever.Database.Character.dll": "e07deffeb14813d67ecf1bb0422707d3a108208fa0228ebf89e7f0c34b46e535",
+      "NexusForever.Database.Chat.dll": "1ca123c52f3930de7eaaf49ff296f817242c45fc5cac4e24ac6ac0e9e8762a2c",
+      "NexusForever.Database.dll": "a30b2064fd1410686eded7ab814429988ebccea3cbad8e2a18d5f07191c56c20",
+      "NexusForever.Database.Friendship.dll": "c34de843d4336bfee2edd1b4d7f8b25b873d6ae1712c6e3af2a652af2b71acb3",
+      "NexusForever.Database.Group.dll": "e6a745dac3fb9ef3e2c78ad6d685347aa1b50825bf631834c63279d4d366eabd",
+      "NexusForever.Database.Query.dll": "22058e812ee2ff729630958815a8559bdc189af43397e75888e6f09d304c70b2",
+      "NexusForever.Database.Sqlite.Migrations.dll": "773cafb72de8fa05f99e51bac4bf08a08ff29deece50e26505d41b333a7d07e9",
+      "NexusForever.Database.World.dll": "02b482a13ddcd662a69c8e0aebaf1d6dfcef7a8d263e561569d02dc94115c1e4",
+      "NexusForever.Game.Abstract.dll": "d60e08db57dc4eb27fd913965d01c07d456dad3ddabb4ccea144786583b55329",
+      "NexusForever.Game.dll": "dafd175ed9c2e352e84915c4d68c5587a187a3033663ece02f2cdc6803c3184f",
+      "NexusForever.Game.Static.dll": "779eb188ecdfdbd6d3f50dfa60466b11e4472a4762e4c827d998eeae7136961e",
+      "NexusForever.Game.Tests.dll": "20cd52f66de604b17f1cc702ddbef99c6116663cbd8cf89179ac45b7b4e7dc11",
+      "NexusForever.GameTable.dll": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+      "NexusForever.IO.dll": "730c11e787d926cc0740c8277e1bc1666ab38e533d8ed07b4678ba97c6b6e0ca",
+      "NexusForever.LoadTest.dll": "77a5e488f9be259dc1762280bcde6fcd6c7ec0cb56953b78454d5b11fd1013fb",
+      "NexusForever.MapGenerator.dll": "ea62235d26f8d42b1090d906202a125a8a360473dd1d9bf93733fb7af60f0778",
+      "NexusForever.Network.Auth.dll": "de7bf01546c28442714e0c7486aa37d01bc142f6168e0fbff883e116f4ebbaa9",
+      "NexusForever.Network.dll": "ab9aa9f265093846927da9b4b2871e6573b8cdaab304f7bfc5a9329d3f3ee290",
+      "NexusForever.Network.Internal.dll": "f8223b4b8b4e65db8b10af9a13959915e8e35b95a49443ec000188a0524efcae",
+      "NexusForever.Network.Sts.dll": "c567a1260a9e6c00dce554d67e9df25511a2e1295cac59e2497735349f381232",
+      "NexusForever.Network.World.dll": "f4bfeb4c4723c21796e91f9cab17d81121bfb80f2c82be6afb7696363f0d702d",
+      "NexusForever.Script.dll": "582af4ca58b07ed2ee2e109aa76660122e23bc9c680e7ff13f306bb516a66476",
+      "NexusForever.Script.Instance.dll": "69c624fe68d2993ad75773be5287681ce65895e8e0a6d5b9215a6c16c957498c",
+      "NexusForever.Script.Main.dll": "d3e958b67b19dadb7c1ae2774af67e17fbf770369186aa500433511be3b0d48c",
+      "NexusForever.Server.Character.dll": "19e92c61311aa4a58953aaf4f4bb9eba985663a29984a562dc7f652322596b31",
+      "NexusForever.Server.ChatServer.dll": "534e5e3a67d5e641ed3e1782ff80432a0ac9e01913b12f1125f44264876f0365",
+      "NexusForever.Server.Friendship.dll": "fcedff6e42584776a6c2e538eb3ab560509cebb33b816fe807f0ad6960eac9d7",
+      "NexusForever.Server.GroupServer.dll": "d916050d197079a147561667b0402af0857a42386173497ba8a4fdf21f6fc28b",
+      "NexusForever.Shared.dll": "0ed6771d65fededb95a55bb4463d1f7a102dd7d22ff84063e80e7301cd2304f0",
+      "NexusForever.StsServer.dll": "1d9624ba15b8c39c4af097cd8fd9b830bcf268eef6657f88b8c6687239133f78",
+      "NexusForever.WorldServer.dll": "190e1c0341aebc90d3b1fb73ea5f66e3e03ae71b87258b95b76b76484b318586",
+      "NLog.dll": "9a706ace1a30cf5a9e169ceddf39d69df30ad99da5c4775d86413ac766cbb825",
+      "NLog.Extensions.Logging.dll": "9372ad36ff9c48826905d6eee58598b5df42334f9b35b93527927f38ae273504",
+      "OpenTelemetry.Api.dll": "9c636063c335902c73f916c133de22fe8af476c68189080176443b0b82d4d399",
+      "OpenTelemetry.Api.ProviderBuilderExtensions.dll": "fcd57330a4a3252773a0c71b9a497ee7834f415210fa405151275f97575ed164",
+      "OpenTelemetry.dll": "a19a8b4d39a00dca043919473c0d5b46a174a4363d611c8dd237b8f2b3f8a5b8",
+      "OpenTelemetry.Exporter.OpenTelemetryProtocol.dll": "3297002036e73a2ea7385d9521464dee725bbbd6491e20c559498cbe81598a3c",
+      "OpenTelemetry.Extensions.Hosting.dll": "97e52b88bfbad51767829ba834a3a35a63692170109c21a7103f5170c389d6f9",
+      "Polly.Core.dll": "f7f50017ca9f457b854498358ae595c2a8ab69c1fd8b915139d22bed8f7e4f2a",
+      "PolyType.dll": "33d30bc1baf80b85ad9b428a388d9999eaf20999d555a6e684aa758f4f679968",
+      "QRCoder.dll": "2c9a588e08ec91f00fac37a4a43995c8f1966a6cce615e9e8c063eec3d0f145a",
+      "Quartz.dll": "b195bbaec686ec9d3a8c38fdf961cf0f3818455c99c9553e1c317a55a6024069",
+      "Quartz.Extensions.DependencyInjection.dll": "9e53ba9d6862cf12b11bd92b07527b1398b905a1adcf72b7c40076695c707a9d",
+      "Quartz.Extensions.Hosting.dll": "6cc40edeb789e85b7455045dc864b91a369fb3415323d4d45537bbaf3849e361",
+      "RabbitMQ.Client.dll": "22d9ffa8cc2de798c61ec95b3f0b576c90d3370afa7128998859d3b2734d2910",
+      "Rebus.AzureServiceBus.dll": "522bb2cc849518f9178bcb0611c7235336fe823567383f43c33bf16ae97a920f",
+      "Rebus.dll": "93ae1869924a4a114ecc2c01046369819c0f4ffffba044bc5655013846ef4dea",
+      "Rebus.RabbitMq.dll": "911aedfb5da1a76585928888d694d54880af8a1c2ec94275d8efc4ed77562413",
+      "Rebus.ServiceProvider.dll": "ddc438278adb90788513722b7ad07ae6c3cbc92f491954fed7251f9b4a4bcdc4",
+      "Semver.dll": "a99edcb96efce3d6ff019c667e132d81d879f5a92bc9337591e0b7309d7f493f",
+      "SharpCompress.dll": "db4d49f11b30f2ababc6ed98551de818d8b6f15da88fada8bccd360ea3e12d73",
+      "SQLitePCLRaw.batteries_v2.dll": "94ac800c6b93ae50a025f247547781debe18391110667c5e242f51d8ac188ffb",
+      "SQLitePCLRaw.core.dll": "3d2ed8e186f124f988ebdb45d0354185b424357be2433bba0033ab9ec31bd25b",
+      "SQLitePCLRaw.provider.e_sqlite3.dll": "232990c8372aff30574eef9cc280b486ee6f39f8a66f83ea495dd0dbae98740c",
+      "StreamJsonRpc.dll": "ddc6a4d60e6cc940aae31faafc1fdcdbe520dfa51bec8dfc7f505449291536d5",
+      "System.ClientModel.dll": "dec5e22b71a1685c5e6e97cd28b629f0aa6703fb87b6950df28e79fc1804290c",
+      "System.Drawing.Common.dll": "98d07e6b1e7d3641a8608a360b3dc273fe8a0f78926b6e1e5f679a7a074d491f",
+      "System.IO.Hashing.dll": "cea6795cf9f7b139b2215ff6de794a6f6e44e78640fb30fa4c0d5fa8472df8e5",
+      "System.Memory.Data.dll": "2c1035b0106dbb2de7913d151e06071ed617bb58bbb3d6cd46a2dd0f6a03617b",
+      "System.Security.Cryptography.ProtectedData.dll": "80566f0839ece5946e66bf9f00d723e59e371ba1341a18e00c7c7a7c49298e1d",
+      "System.ServiceProcess.ServiceController.dll": "486a4fbb24ab089926fb05ab6b95af7bb04d2ff35eef55b6858437ebc4d040dc",
+      "testhost.dll": "3c2a3ed4b330b9cdaf1ee62580b7d373ec58ccf8b71fc34e0a51de28620899e9",
+      "xunit.abstractions.dll": "3166dc70323fb30ccf1cedb0fe86f2ad122c46d254542342d90386efc4c9285c",
+      "xunit.assert.dll": "bcd9711b22d227ac8cd4c1568e72433a0f576d2ec8aae64ac508081892015b1d",
+      "xunit.core.dll": "2f7feeec8c6dec7df684c25fb80aadb292b963d09723460f03d53c5ad2088acc",
+      "xunit.execution.dotnet.dll": "e70febe547c15f8155db3e2d95c3ba4445a59cbc21a3e7541ab22ed49d3dcf7b",
+      "xunit.runner.visualstudio.testadapter.dll": "384aba4bad96399a7fd2205a5a3517b643a16f4d7e843bd0b92e1e42f81fce2a",
+      "YamlDotNet.dll": "d618138109a40e4a7250e49e2abad8c450e3636bee18d7499ab231e37fa9150a"
+    },
+    "final": {
+      "dependencies": {
+        "Aspire.Hosting.AppHost.dll": "9d241fac4ea6f912abe94bdaa1043633ce62c3989be4aadbee61cba7bd16c09f",
+        "Aspire.Hosting.dll": "9c5f526f0d2474bf1d547e09ccb2015522f4e92c48e3feb69538f0b7844f1d92",
+        "Aspire.Hosting.Docker.dll": "513608d74a705e3ad9319881a55ab245ebd0bf7127777ee5d3cbbcf66a27d358",
+        "Aspire.Hosting.MySql.dll": "91c9f18a1c51e6cfb39d8e6e3703181b113c07dad431c2d83af95d62877b453b",
+        "Aspire.Hosting.RabbitMQ.dll": "7b22016ca210d666f09f83e332ef8900db218c196b117dd1ad52c4cc53a55334",
+        "Azure.Core.Amqp.dll": "d53d832629b76fcae7f0e0352788c43c79e13480247dba11e37961b60e52c142",
+        "Azure.Core.dll": "1d6df436afdc73c30d476be938f6513c90ef8fc884a7bae280091a9bed0a5490",
+        "Azure.Identity.dll": "31574a3d35ffeb0e25a00ebb317937222fe5283b91af608613f2e3bf0f26c50a",
+        "Azure.Messaging.ServiceBus.dll": "6895bb412db0242bed71d10d3325b86d51611e578529c91108afdeb96bff08fc",
+        "Basic.Reference.Assemblies.Net100.dll": "35ce19c341334cc79951576712d105a75b681b58532c0dd010ac302936d208ba",
+        "CommandLine.dll": "8a55501cd1a1590a4bd93a17c6fdd2c01a0ed5bff1aea9036bdc78d98c9a3fad",
+        "DotNet.Glob.dll": "5263008e364a7a072eddf6d483ed988baf4f50dc0391e358b490ac6c01a6acf5",
+        "Fractions.dll": "e8407a878af8aec1f485f50a9f356c439371610fff20756d4f2284ac6c995cbf",
+        "Google.Protobuf.dll": "8997a69619b59db587a45e75a03c164a44afb613f82db138d35e1636e4cbdc73",
+        "Grpc.AspNetCore.Server.ClientFactory.dll": "c57f69775e2b8acda401efb5f152eba6cfd23d0fc9277b7d2e0ed1f1533158e3",
+        "Grpc.AspNetCore.Server.dll": "a66e142b1a3cbaf8ed3f0835faac72e0484d4eb8b1295e0d3d1de69d72e575b2",
+        "Grpc.Core.Api.dll": "440b6b0a5beca40718a01b3e892baa6e2fd03933f3f501fc40e2a956b0d937a1",
+        "Grpc.Net.Client.dll": "4070680267f1eba977958284088f8bf63bccb2f9fea873d6b244fd7d4b76afd3",
+        "Grpc.Net.ClientFactory.dll": "b62b17995c8576378e790ce1c5dff994c0cf605a6d7da7510078857f59f09d97",
+        "Grpc.Net.Common.dll": "c6ee8099f5fd7013825d2ff636375391c8992704ad40b9819f6c9078c25c6574",
+        "HealthChecks.MySql.dll": "9947a05820c92ceb061edf02271844da0fe5d6bd47a2364f6e14287f9ba1fc7d",
+        "HealthChecks.Rabbitmq.dll": "258cf95771cab344da41843ad69f19598fafe6847ce4200ea3045819ca654983",
+        "HealthChecks.Uris.dll": "32f8e0615a70e07c6c37c3e2e0774207c84d2f2695942fba82e7bc3bee1a5708",
+        "Hex1b.dll": "1113557a5737e1fac2fdda1f6579737c50eac4620e83fefb3c29fa2ecc9b12bc",
+        "KubernetesClient.dll": "1fdb3ddc3db829a3f4015afc328a00d3747fb228c7866df6f765be4cedb800ce",
+        "MessagePack.Annotations.dll": "bd364b1513c9df5d4063b6ee3602a5bf951507484f46a2366a6f2a9aeb1c4cf2",
+        "MessagePack.dll": "1ebc0c2baec5a89b3738e892d61c92f037dd588db52412e1e3bdf2adc407aa94",
+        "Microsoft.Azure.Amqp.dll": "eb58a9058b6cde95081608e1921967cc704d6e411745436b20c68caa37389980",
+        "Microsoft.Bcl.AsyncInterfaces.dll": "f1e1d6e1a2990071b450bdf6c9618408ac0e3f24a3c7a3bef1f50508ba732ca5",
+        "Microsoft.CodeAnalysis.CSharp.dll": "54142770a00e594942ee8923726ea49126303d0c523932886c2417eb66dc07f8",
+        "Microsoft.CodeAnalysis.dll": "ad857f1ce7f8e26c2722ade705fac3f90502a47590c14075df1327210f10b1ef",
+        "Microsoft.Data.Sqlite.dll": "1078d41c6c0f2cee48a8b706e3a54ce145705993f19f703d2b3bdf2abcc59088",
+        "Microsoft.EntityFrameworkCore.Abstractions.dll": "98c8252995283ef0884b904dbab03696ca7f71a05b8dde34dace5eeb9bf4382c",
+        "Microsoft.EntityFrameworkCore.dll": "acb89dff050d681fab6f86d2175929471200b9bed66ac9321cbe6a17eaa26933",
+        "Microsoft.EntityFrameworkCore.Relational.dll": "ac1146e68d53d56b79e9473f68c557999de99674be392bbbbb02ae93a296b93e",
+        "Microsoft.EntityFrameworkCore.Sqlite.dll": "b8c5027b27be2012094699cbd5260239778a1891dc5c1887797d331b67f0ef89",
+        "Microsoft.Extensions.AI.Abstractions.dll": "dd444efc3b9e2db2e4e7616909731b8dde824b554455014002167918b823eac4",
+        "Microsoft.Extensions.DependencyModel.dll": "2385bfbc9344e03acb2ff44f1ed21a3770fbafdf1ba4be2dbcacd42027b8c3bd",
+        "Microsoft.Extensions.Hosting.Systemd.dll": "b83961fadb9b88ed05ccb4dea45165b5393b4eaf1258dce0b7d0f60e9c0c1d46",
+        "Microsoft.Extensions.Hosting.WindowsServices.dll": "caa306587f796d0290aada4fdfaec1394f1f206409ea4d5a20f309b61fc59959",
+        "Microsoft.Identity.Client.dll": "5795027e9ae95eececb310a4fed3c502bb368039d186ab0884f64b7792b84717",
+        "Microsoft.Identity.Client.Extensions.Msal.dll": "07109a2f30df782300077a567ade47cbd0a0502c75cd7c8a62192f7d64bb004e",
+        "Microsoft.IdentityModel.Abstractions.dll": "24e97b54b6b5c234a124a336757e3116617ac6c30b655cdae74517dc2ecb5746",
+        "Microsoft.NET.StringTools.dll": "887dec541cd0a719b7111458eb90a83b4491d6dd24eff2b16cf03d2782fd26a0",
+        "Microsoft.TestPlatform.CommunicationUtilities.dll": "7ed97ccfd6f9c74f054de4cf84a7b4b0179eb6064e3a406e746849c6989e0d6a",
+        "Microsoft.TestPlatform.CoreUtilities.dll": "db70e6632a13a6d46cc3bb75f71273b3e9c64ca1e5dd0537572fb0dadf444009",
+        "Microsoft.TestPlatform.CrossPlatEngine.dll": "eaf5a87745d6ab7f7ef7db6e85dfa96817ecdb06b51a642edd6f9c6b805c3616",
+        "Microsoft.TestPlatform.PlatformAbstractions.dll": "f5541efe526d719aef103026770faf0435218afc5be90f653a01886ff8bebc80",
+        "Microsoft.TestPlatform.Utilities.dll": "358ae71a7f820dfd7e3b2d86ad9a7402c72166c7197bccd89f39b9d62ec3f0ae",
+        "Microsoft.VisualStudio.CodeCoverage.Shim.dll": "ef1f649984cf2ff2d4f51944270d6b1557752ba0099ec97894361abe3e6640c1",
+        "Microsoft.VisualStudio.TestPlatform.Common.dll": "6e16cf009ff956b97eef96aefc64a33a9bff7df86a8e7e6e5664ec03e648bcc1",
+        "Microsoft.VisualStudio.TestPlatform.ObjectModel.dll": "9d0a31a406ab064d2bc009a5523b5e73b71d3fe1dddd19cffe4a70f14cde3f75",
+        "Microsoft.VisualStudio.Threading.dll": "138e3548e487152de355b81303ae98e1bb52a31fe5c9107fa81a15f66404f426",
+        "Microsoft.VisualStudio.Validation.dll": "59cd5e953cce597847e515a73a1c0975cd5a6b94921a7b91e81045fa9922f57c",
+        "Microsoft.Win32.SystemEvents.dll": "ca495bf6c86b7f092d624928101985a941532d149dcd8acfea170f8a53be8850",
+        "Microting.EntityFrameworkCore.MySql.dll": "c8dc4aff0fa81bcb09c11c7bbd15780378e39317c32b23f75a85dea4a9894171",
+        "ModelContextProtocol.Core.dll": "cd434634473f1d6b945a5583d48782207a1e79b8202cf6adb174e41ed2ca4643",
+        "ModelContextProtocol.dll": "1f0760611e72588fbffe2c7bacfce55b9942d7ed5cb5cd4a3ded5d5f7600e930",
+        "MySqlConnector.dll": "a3104353e86cc96123d8015fc5a3bf4ab88b127b9180caaa4db9a006c49f467b",
+        "Nerdbank.MessagePack.dll": "fc086ce3623a9a3f9213159d438c642d225046e371489e8e7f126d4c62f188fa",
+        "Nerdbank.Streams.dll": "e5c90ffcb7a0bd0cedf51ac33e818b9f64045e9839b19701eb73460356631872",
+        "Newtonsoft.Json.dll": "a28c251dfe36d881e9e2462e171441b8b0ec156fe3f452602c9149b1b9efe05b",
+        "Nexus.Archive.dll": "fd2fc160b92cd14a6f226a5095cde744d81a3c807ca45bf78c91cf2a2ba0237b",
+        "NexusForever.API.Account.Client.dll": "dcc138d6ebbedc6142fecadbcd0512815a32f0eb7c0266a03bbf461824951418",
+        "NexusForever.API.Character.Client.dll": "8b6ec8947c3c48537b39ee8eb5927ea4a873a149d27f25fbed2c518f820fdcc3",
+        "NexusForever.API.dll": "2cab2612f5a2463d1d091d55619dec8c718609ea3df939ecfba8e8373b2aacbe",
+        "NexusForever.Aspire.AppHost.dll": "502a444ce79cb4b804299940f807544e7ea50fa9ac0194f022bc07a46bbe60a9",
+        "NexusForever.Aspire.Database.Migrations.dll": "4924c36a806c4707d68da5e6541f0b6bd462a1eafa382e7a5710403ab80d0491",
+        "NexusForever.Cryptography.dll": "0be240820a34f144d7a0bcbf5604e493949dc092582b850ec06a4dbb5fe41a02",
+        "NexusForever.Database.Auth.dll": "a5f2852d869f372f13809519c4745940496159001a417b551a3a8aa2677cf382",
+        "NexusForever.Database.Character.dll": "e07deffeb14813d67ecf1bb0422707d3a108208fa0228ebf89e7f0c34b46e535",
+        "NexusForever.Database.Chat.dll": "1ca123c52f3930de7eaaf49ff296f817242c45fc5cac4e24ac6ac0e9e8762a2c",
+        "NexusForever.Database.dll": "a30b2064fd1410686eded7ab814429988ebccea3cbad8e2a18d5f07191c56c20",
+        "NexusForever.Database.Friendship.dll": "c34de843d4336bfee2edd1b4d7f8b25b873d6ae1712c6e3af2a652af2b71acb3",
+        "NexusForever.Database.Group.dll": "e6a745dac3fb9ef3e2c78ad6d685347aa1b50825bf631834c63279d4d366eabd",
+        "NexusForever.Database.Query.dll": "22058e812ee2ff729630958815a8559bdc189af43397e75888e6f09d304c70b2",
+        "NexusForever.Database.Sqlite.Migrations.dll": "773cafb72de8fa05f99e51bac4bf08a08ff29deece50e26505d41b333a7d07e9",
+        "NexusForever.Database.World.dll": "02b482a13ddcd662a69c8e0aebaf1d6dfcef7a8d263e561569d02dc94115c1e4",
+        "NexusForever.Game.Abstract.dll": "d60e08db57dc4eb27fd913965d01c07d456dad3ddabb4ccea144786583b55329",
+        "NexusForever.Game.dll": "0d71bf3f617ac8472662912e0338ff7cc7044046b32381d833c05eac1c1b6cbf",
+        "NexusForever.Game.Static.dll": "779eb188ecdfdbd6d3f50dfa60466b11e4472a4762e4c827d998eeae7136961e",
+        "NexusForever.Game.Tests.dll": "b600e3c479774d39be3303f3af6db7956b32e4c4efd47f3edbd7a48997d17191",
+        "NexusForever.GameTable.dll": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+        "NexusForever.IO.dll": "730c11e787d926cc0740c8277e1bc1666ab38e533d8ed07b4678ba97c6b6e0ca",
+        "NexusForever.LoadTest.dll": "77a5e488f9be259dc1762280bcde6fcd6c7ec0cb56953b78454d5b11fd1013fb",
+        "NexusForever.MapGenerator.dll": "ea62235d26f8d42b1090d906202a125a8a360473dd1d9bf93733fb7af60f0778",
+        "NexusForever.Network.Auth.dll": "de7bf01546c28442714e0c7486aa37d01bc142f6168e0fbff883e116f4ebbaa9",
+        "NexusForever.Network.dll": "ab9aa9f265093846927da9b4b2871e6573b8cdaab304f7bfc5a9329d3f3ee290",
+        "NexusForever.Network.Internal.dll": "f8223b4b8b4e65db8b10af9a13959915e8e35b95a49443ec000188a0524efcae",
+        "NexusForever.Network.Sts.dll": "c567a1260a9e6c00dce554d67e9df25511a2e1295cac59e2497735349f381232",
+        "NexusForever.Network.World.dll": "f4bfeb4c4723c21796e91f9cab17d81121bfb80f2c82be6afb7696363f0d702d",
+        "NexusForever.Script.dll": "582af4ca58b07ed2ee2e109aa76660122e23bc9c680e7ff13f306bb516a66476",
+        "NexusForever.Script.Instance.dll": "69c624fe68d2993ad75773be5287681ce65895e8e0a6d5b9215a6c16c957498c",
+        "NexusForever.Script.Main.dll": "d3e958b67b19dadb7c1ae2774af67e17fbf770369186aa500433511be3b0d48c",
+        "NexusForever.Server.Character.dll": "19e92c61311aa4a58953aaf4f4bb9eba985663a29984a562dc7f652322596b31",
+        "NexusForever.Server.ChatServer.dll": "534e5e3a67d5e641ed3e1782ff80432a0ac9e01913b12f1125f44264876f0365",
+        "NexusForever.Server.Friendship.dll": "fcedff6e42584776a6c2e538eb3ab560509cebb33b816fe807f0ad6960eac9d7",
+        "NexusForever.Server.GroupServer.dll": "d916050d197079a147561667b0402af0857a42386173497ba8a4fdf21f6fc28b",
+        "NexusForever.Shared.dll": "0ed6771d65fededb95a55bb4463d1f7a102dd7d22ff84063e80e7301cd2304f0",
+        "NexusForever.StsServer.dll": "1d9624ba15b8c39c4af097cd8fd9b830bcf268eef6657f88b8c6687239133f78",
+        "NexusForever.WorldServer.dll": "190e1c0341aebc90d3b1fb73ea5f66e3e03ae71b87258b95b76b76484b318586",
+        "NLog.dll": "9a706ace1a30cf5a9e169ceddf39d69df30ad99da5c4775d86413ac766cbb825",
+        "NLog.Extensions.Logging.dll": "9372ad36ff9c48826905d6eee58598b5df42334f9b35b93527927f38ae273504",
+        "OpenTelemetry.Api.dll": "9c636063c335902c73f916c133de22fe8af476c68189080176443b0b82d4d399",
+        "OpenTelemetry.Api.ProviderBuilderExtensions.dll": "fcd57330a4a3252773a0c71b9a497ee7834f415210fa405151275f97575ed164",
+        "OpenTelemetry.dll": "a19a8b4d39a00dca043919473c0d5b46a174a4363d611c8dd237b8f2b3f8a5b8",
+        "OpenTelemetry.Exporter.OpenTelemetryProtocol.dll": "3297002036e73a2ea7385d9521464dee725bbbd6491e20c559498cbe81598a3c",
+        "OpenTelemetry.Extensions.Hosting.dll": "97e52b88bfbad51767829ba834a3a35a63692170109c21a7103f5170c389d6f9",
+        "Polly.Core.dll": "f7f50017ca9f457b854498358ae595c2a8ab69c1fd8b915139d22bed8f7e4f2a",
+        "PolyType.dll": "33d30bc1baf80b85ad9b428a388d9999eaf20999d555a6e684aa758f4f679968",
+        "QRCoder.dll": "2c9a588e08ec91f00fac37a4a43995c8f1966a6cce615e9e8c063eec3d0f145a",
+        "Quartz.dll": "b195bbaec686ec9d3a8c38fdf961cf0f3818455c99c9553e1c317a55a6024069",
+        "Quartz.Extensions.DependencyInjection.dll": "9e53ba9d6862cf12b11bd92b07527b1398b905a1adcf72b7c40076695c707a9d",
+        "Quartz.Extensions.Hosting.dll": "6cc40edeb789e85b7455045dc864b91a369fb3415323d4d45537bbaf3849e361",
+        "RabbitMQ.Client.dll": "22d9ffa8cc2de798c61ec95b3f0b576c90d3370afa7128998859d3b2734d2910",
+        "Rebus.AzureServiceBus.dll": "522bb2cc849518f9178bcb0611c7235336fe823567383f43c33bf16ae97a920f",
+        "Rebus.dll": "93ae1869924a4a114ecc2c01046369819c0f4ffffba044bc5655013846ef4dea",
+        "Rebus.RabbitMq.dll": "911aedfb5da1a76585928888d694d54880af8a1c2ec94275d8efc4ed77562413",
+        "Rebus.ServiceProvider.dll": "ddc438278adb90788513722b7ad07ae6c3cbc92f491954fed7251f9b4a4bcdc4",
+        "Semver.dll": "a99edcb96efce3d6ff019c667e132d81d879f5a92bc9337591e0b7309d7f493f",
+        "SharpCompress.dll": "db4d49f11b30f2ababc6ed98551de818d8b6f15da88fada8bccd360ea3e12d73",
+        "SQLitePCLRaw.batteries_v2.dll": "94ac800c6b93ae50a025f247547781debe18391110667c5e242f51d8ac188ffb",
+        "SQLitePCLRaw.core.dll": "3d2ed8e186f124f988ebdb45d0354185b424357be2433bba0033ab9ec31bd25b",
+        "SQLitePCLRaw.provider.e_sqlite3.dll": "232990c8372aff30574eef9cc280b486ee6f39f8a66f83ea495dd0dbae98740c",
+        "StreamJsonRpc.dll": "ddc6a4d60e6cc940aae31faafc1fdcdbe520dfa51bec8dfc7f505449291536d5",
+        "System.ClientModel.dll": "dec5e22b71a1685c5e6e97cd28b629f0aa6703fb87b6950df28e79fc1804290c",
+        "System.Drawing.Common.dll": "98d07e6b1e7d3641a8608a360b3dc273fe8a0f78926b6e1e5f679a7a074d491f",
+        "System.IO.Hashing.dll": "cea6795cf9f7b139b2215ff6de794a6f6e44e78640fb30fa4c0d5fa8472df8e5",
+        "System.Memory.Data.dll": "2c1035b0106dbb2de7913d151e06071ed617bb58bbb3d6cd46a2dd0f6a03617b",
+        "System.Security.Cryptography.ProtectedData.dll": "80566f0839ece5946e66bf9f00d723e59e371ba1341a18e00c7c7a7c49298e1d",
+        "System.ServiceProcess.ServiceController.dll": "486a4fbb24ab089926fb05ab6b95af7bb04d2ff35eef55b6858437ebc4d040dc",
+        "testhost.dll": "3c2a3ed4b330b9cdaf1ee62580b7d373ec58ccf8b71fc34e0a51de28620899e9",
+        "xunit.abstractions.dll": "3166dc70323fb30ccf1cedb0fe86f2ad122c46d254542342d90386efc4c9285c",
+        "xunit.assert.dll": "bcd9711b22d227ac8cd4c1568e72433a0f576d2ec8aae64ac508081892015b1d",
+        "xunit.core.dll": "2f7feeec8c6dec7df684c25fb80aadb292b963d09723460f03d53c5ad2088acc",
+        "xunit.execution.dotnet.dll": "e70febe547c15f8155db3e2d95c3ba4445a59cbc21a3e7541ab22ed49d3dcf7b",
+        "xunit.runner.visualstudio.testadapter.dll": "384aba4bad96399a7fd2205a5a3517b643a16f4d7e843bd0b92e1e42f81fce2a",
+        "YamlDotNet.dll": "d618138109a40e4a7250e49e2abad8c450e3636bee18d7499ab231e37fa9150a"
+      },
+      "changedFromBaseline": [
+        "NexusForever.Game.dll",
+        "NexusForever.Game.Tests.dll"
+      ],
+      "owningGameCopyMatches": true
+    },
+    "count": 138,
+    "onlyChangedDependencies": [
+      "NexusForever.Game.dll",
+      "NexusForever.Game.Tests.dll"
+    ]
+  },
+  "validation": {
+    "runs": {
+      "baseline": {
+        "sha256": "8579dffc058cc722ae581187c82bbb0cba9feae3dff708c76049f62a16ad91b5",
+        "counters": {
+          "total": "9",
+          "executed": "9",
+          "passed": "1",
+          "failed": "8",
+          "error": "0",
+          "timeout": "0",
+          "aborted": "0",
+          "inconclusive": "0",
+          "passedButRunAborted": "0",
+          "notRunnable": "0",
+          "notExecuted": "0",
+          "disconnected": "0",
+          "warning": "0",
+          "completed": "0",
+          "inProgress": "0",
+          "pending": "0"
+        },
+        "tests": [
+          {
+            "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_WaitForTheOriginalRewardMarkerAndItemCommit(merge: True)",
+            "outcome": "Failed",
+            "duration": "00:00:00.6116323"
+          },
+          {
+            "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_RetryFreshPayloadOnlyOnTheOriginalActor(replacement: \"inventory\")",
+            "outcome": "Failed",
+            "duration": "00:00:03.6890301"
+          },
+          {
+            "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_OrdinaryCreationKeepsItsExistingImmediateRoute",
+            "outcome": "Passed",
+            "duration": "00:00:00.3448269"
+          },
+          {
+            "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_RetryFreshPayloadOnlyOnTheOriginalActor(replacement: \"same\")",
+            "outcome": "Failed",
+            "duration": "00:00:00.3511560"
+          },
+          {
+            "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_WaitForTheOriginalRewardMarkerAndItemCommit(merge: False)",
+            "outcome": "Failed",
+            "duration": "00:00:00.3463846"
+          },
+          {
+            "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_RetryFreshPayloadOnlyOnTheOriginalActor(replacement: \"session\")",
+            "outcome": "Failed",
+            "duration": "00:00:00.3473018"
+          },
+          {
+            "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_EarningDuringAuthStaysHiddenUntilItsOwnFrozenSave",
+            "outcome": "Failed",
+            "duration": "00:00:00.7175085"
+          },
+          {
+            "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_RetryFreshPayloadOnlyOnTheOriginalActor(replacement: \"queue\")",
+            "outcome": "Failed",
+            "duration": "00:00:00.3976164"
+          },
+          {
+            "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_RetryFreshPayloadOnlyOnTheOriginalActor(replacement: \"epoch\")",
+            "outcome": "Failed",
+            "duration": "00:00:00.3701143"
+          }
+        ]
+      },
+      "initial-fixed": {
+        "sha256": "69f419ea07eeecd2f9caa37722b42b697dbf44b073a0f7534905eaabbde1192b",
+        "counters": {
+          "total": "9",
+          "executed": "9",
+          "passed": "9",
+          "failed": "0",
+          "error": "0",
+          "timeout": "0",
+          "aborted": "0",
+          "inconclusive": "0",
+          "passedButRunAborted": "0",
+          "notRunnable": "0",
+          "notExecuted": "0",
+          "disconnected": "0",
+          "warning": "0",
+          "completed": "0",
+          "inProgress": "0",
+          "pending": "0"
+        }
+      },
+      "pre-review-final-scoped": {
+        "sha256": "036c4251b8944143420549c1f59c21f0e61d9aca0982281421b435523c42c517",
+        "counters": {
+          "total": "350",
+          "executed": "350",
+          "passed": "350",
+          "failed": "0",
+          "error": "0",
+          "timeout": "0",
+          "aborted": "0",
+          "inconclusive": "0",
+          "passedButRunAborted": "0",
+          "notRunnable": "0",
+          "notExecuted": "0",
+          "disconnected": "0",
+          "warning": "0",
+          "completed": "0",
+          "inProgress": "0",
+          "pending": "0"
+        }
+      },
+      "review-negative": {
+        "sha256": "928cf883f001656ed70b09228a22ebed32f8a69e6b301cda376c00fbf2f3eedf",
+        "counters": {
+          "total": "5",
+          "executed": "5",
+          "passed": "0",
+          "failed": "5",
+          "error": "0",
+          "timeout": "0",
+          "aborted": "0",
+          "inconclusive": "0",
+          "passedButRunAborted": "0",
+          "notRunnable": "0",
+          "notExecuted": "0",
+          "disconnected": "0",
+          "warning": "0",
+          "completed": "0",
+          "inProgress": "0",
+          "pending": "0"
+        },
+        "tests": [
+          {
+            "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_OrdinarySameItemChangesCannotBeOverwrittenByADelayedReward(operation: \"new-merge\", expected: 4)",
+            "outcome": "Failed",
+            "duration": "00:00:04.3482632"
+          },
+          {
+            "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_OrdinaryConsumptionDuringAuthWaitsForItsOwnCommittedCount",
+            "outcome": "Failed",
+            "duration": "00:00:00.8360159"
+          },
+          {
+            "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_OrdinarySameItemChangesCannotBeOverwrittenByADelayedReward(operation: \"existing-consume\", expected: 3)",
+            "outcome": "Failed",
+            "duration": "00:00:00.4754498"
+          },
+          {
+            "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_OrdinarySameItemChangesCannotBeOverwrittenByADelayedReward(operation: \"existing-merge\", expected: 5)",
+            "outcome": "Failed",
+            "duration": "00:00:00.5549534"
+          },
+          {
+            "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_OrdinarySameItemChangesCannotBeOverwrittenByADelayedReward(operation: \"new-remove\", expected: 0)",
+            "outcome": "Failed",
+            "duration": "00:00:00.4161254"
+          }
+        ]
+      },
+      "review-fixed-focused": {
+        "sha256": "08505faae6052d4f59e246f8ba1d779260a3d2321749c6c3fffb71855e3b8134",
+        "counters": {
+          "total": "17",
+          "executed": "17",
+          "passed": "17",
+          "failed": "0",
+          "error": "0",
+          "timeout": "0",
+          "aborted": "0",
+          "inconclusive": "0",
+          "passedButRunAborted": "0",
+          "notRunnable": "0",
+          "notExecuted": "0",
+          "disconnected": "0",
+          "warning": "0",
+          "completed": "0",
+          "inProgress": "0",
+          "pending": "0"
+        }
+      },
+      "final-fixed-scoped": {
+        "sha256": "97419ce9c520f99ca0d7453a74fbc550e062f3ff525b24a344e5dff33de803e9",
+        "counters": {
+          "total": "355",
+          "executed": "355",
+          "passed": "355",
+          "failed": "0",
+          "error": "0",
+          "timeout": "0",
+          "aborted": "0",
+          "inconclusive": "0",
+          "passedButRunAborted": "0",
+          "notRunnable": "0",
+          "notExecuted": "0",
+          "disconnected": "0",
+          "warning": "0",
+          "completed": "0",
+          "inProgress": "0",
+          "pending": "0"
+        }
+      }
+    },
+    "finalFilter": "FullyQualifiedName~PlayerExperiencePersistenceTests|FullyQualifiedName~PathManagerTests|FullyQualifiedName~RewardNormalSaveSnapshotTests|FullyQualifiedName~InventoryRewardDeliveryTests",
+    "finalClassCounts": {
+      "NexusForever.Game.Tests.Entity.PathManagerTests": 150,
+      "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests": 68,
+      "NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests": 55,
+      "NexusForever.Game.Tests.Entity.InventoryRewardDeliveryTests": 82
+    },
+    "newTests": [
+      {
+        "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_RetryFreshPayloadOnlyOnTheOriginalActor(replacement: \"epoch\")",
+        "outcome": "Passed",
+        "duration": "00:00:00.6591766"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_RetryFreshPayloadOnlyOnTheOriginalActor(replacement: \"same\")",
+        "outcome": "Passed",
+        "duration": "00:00:01.6683109"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_OrdinarySameItemChangesCannotBeOverwrittenByADelayedReward(operation: \"existing-consume\", expected: 3)",
+        "outcome": "Passed",
+        "duration": "00:00:00.6944627"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_WaitForTheOriginalRewardMarkerAndItemCommit(merge: False)",
+        "outcome": "Passed",
+        "duration": "00:00:01.2299376"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_OrdinarySameItemChangesCannotBeOverwrittenByADelayedReward(operation: \"new-merge\", expected: 4)",
+        "outcome": "Passed",
+        "duration": "00:00:00.6118950"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_AConfirmedLevelGrantDoesNotReleaseALaterMissionStack",
+        "outcome": "Passed",
+        "duration": "00:00:00.4801814"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_AnIsolatedInventorySaveCannotConfirmThePathReward",
+        "outcome": "Passed",
+        "duration": "00:00:00.6187080"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_OrdinarySameItemChangesCannotBeOverwrittenByADelayedReward(operation: \"existing-merge\", expected: 5)",
+        "outcome": "Passed",
+        "duration": "00:00:01.6829225"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_OrdinaryConsumptionDuringAuthWaitsForItsOwnCommittedCount",
+        "outcome": "Passed",
+        "duration": "00:00:00.4919954"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_OrdinarySameItemChangesCannotBeOverwrittenByADelayedReward(operation: \"new-remove\", expected: 0)",
+        "outcome": "Passed",
+        "duration": "00:00:01.6871906"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_EarningDuringAuthStaysHiddenUntilItsOwnFrozenSave",
+        "outcome": "Passed",
+        "duration": "00:00:01.0516873"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_WaitForTheOriginalRewardMarkerAndItemCommit(merge: True)",
+        "outcome": "Passed",
+        "duration": "00:00:00.7492915"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_RetryFreshPayloadOnlyOnTheOriginalActor(replacement: \"inventory\")",
+        "outcome": "Passed",
+        "duration": "00:00:01.6327871"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_RetryFreshPayloadOnlyOnTheOriginalActor(replacement: \"session\")",
+        "outcome": "Passed",
+        "duration": "00:00:00.5680922"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_OrdinaryCreationKeepsItsExistingImmediateRoute",
+        "outcome": "Passed",
+        "duration": "00:00:00.8684695"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_MissionAndEpisodeShareTheConfirmedOrderedPacketCursor",
+        "outcome": "Passed",
+        "duration": "00:00:01.7672634"
+      },
+      {
+        "name": "NexusForever.Game.Tests.Entity.PlayerExperiencePersistenceTests.PathItems_RetryFreshPayloadOnlyOnTheOriginalActor(replacement: \"queue\")",
+        "outcome": "Passed",
+        "duration": "00:00:00.6999636"
+      }
+    ],
+    "fullSuiteRun": false,
+    "finalScopedSeconds": 89,
+    "finalFocusedSeconds": 18
+  },
+  "builds": {
+    "finalOwning": {
+      "seconds": 7.55,
+      "warnings": 0,
+      "errors": 0,
+      "projectReferencesBuilt": false
+    },
+    "finalTests": {
+      "seconds": 16.45,
+      "warnings": 0,
+      "errors": 0,
+      "projectReferencesBuilt": false
+    },
+    "initialOwningSeconds": 6.08,
+    "initialTestSeconds": 14.46,
+    "fullSolutionRun": false,
+    "sdkVersion": "10.0.401",
+    "commands": [
+      "dotnet build Source/NexusForever.Game/NexusForever.Game.csproj --no-restore --nologo -v minimal -p:BuildProjectReferences=false",
+      "dotnet build Source/NexusForever.Game.Tests/NexusForever.Game.Tests.csproj --no-restore --nologo -v minimal -p:BuildProjectReferences=false"
+    ],
+    "commandsWorkingDirectory": "artifacts/continuation-20261105/incoming-chat-ownership/candidate"
+  },
+  "reviews": {
+    "spec": {
+      "findings": 0,
+      "report": "Final material Spec re-review at parent d3c13e9a445a9d055f40d47d63ab93cfcedf7435.\n\nRemaining actionable Spec findings: 0.\n\nThe initial P2 is resolved. Related ordinary add/stack/delete notices now share the pending or ready Path item's GUID ordering. The capture freezes current normal-inventory membership, item Build and quantity with the Item save; removed-item add/stack notices are suppressed. Only captured notice identities are confirmed, so later Auth-time consumption or earning waits for its own save. Retry packets remain fresh deep copies and ordinary reasons are retained. Unrelated ordinary items keep their immediate route.\n\nThe five added review regressions failed against the pre-fix Game and all 17 current Path-item cases pass. This includes new/existing merges, consumption, removal and consumption during Auth. All seven isolated candidate hashes match the updated review-source-manifest.json; foreign root Player changes remain excluded.\n\nNo new defect or scope creep identified in the narrow fix. The quantity/removal boundary is explicit; broader item property/movement, overflow, payout/count policy, provider/socket/native and retail behavior remain unqualified. Initial finding chronology is retained in pre-review-review-spec-final.md. The broader affected gate must use this fixed candidate; no new workload was launched by this review.\n",
+      "initialFinding": "One P2 same-item stale count/ghost-add issue; five executed negative cases failed before the material fix."
+    },
+    "standards": {
+      "findings": 0,
+      "report": "Final Standards review: Path item committed publication\n\nVerdict: zero remaining actionable findings.\n\nThis material re-review covers review-fix.diff and the added quantity/removal regressions; the unchanged initial review carries forward. All seven isolated candidate hashes match the refreshed review-source-manifest.json. Foreign root changes remain excluded.\n\nThe reported P2 is fixed. Notices now retain GUID/kind/reason identities; the complete save captures the current Item membership, count and deep add payload. Missing-item add/stack notices are suppressed. Related ordinary quantity/removal notices remain ordered behind pending or ready Path notices and wait for their own frozen save, while unrelated ordinary messages retain their immediate route. Reference-owned capture identities prevent an earlier save completion from releasing later earning or consumption.\n\nInspected the new/existing merge, existing consumption, new-item removal and Auth-late consumption regressions alongside the original ownership, rollback, save-separation and retry controls. Parent-run evidence reports all seventeen new cases passing; this reviewer did not rerun them.\n\nDocumented coding-standard breaches: none remaining. Actionable heuristic smells: none. The small notice/capture types express distinct lifecycle responsibilities within the private product owner; no general coordination framework is introduced.\n\nNo Source edits, builds, tests or workloads were performed. Wider item properties/movement, overflow, payout, providers and native behavior remain outside this quantity/removal qualification.\n",
+      "initialFinding": "One P2 same-item stale count/ghost-add issue; five executed negative cases failed before the material fix."
+    }
+  },
+  "diagnostics": [
+    "Initial test setup had missing namespace imports, then an uninitialized global AssetManager capacity. Reusing the existing real-Player inventory fixture corrected setup; nine setup failures are retained separately and are not the eight defect reproductions.",
+    "Original corrected baseline: eight failures/one ordinary-item control. Initial fix passed nine and later350 scoped cases, but both reviews identified a real same-item ordering gap.",
+    "All five review counterexamples failed on the prior Game: new/existing merge, existing consumption, removed new item and Auth-late consumption. Revised capture and related-notice ordering passes all17new/all355scoped cases.",
+    "Read-only sealing checks initially assumed raw newline equality and list filename order. Git clean-filtered Source comparison and set-based binary difference checks corrected those checks without changing Source/binaries or repeating provider work."
+  ],
+  "upstream": {
+    "unchangedReviewedHeadsBasesStates": true,
+    "pulls": [
+      {
+        "base_sha": "d8e43d2c3cc5a05f03e56dfc388288a4126c7ed9",
+        "head_sha": "36b59aaaaebbcd0ec3e23a94fd3cf9de8975923b",
+        "merged": false,
+        "number": 604,
+        "state": "open",
+        "updated_at": "2026-11-01T03:41:35Z"
+      },
+      {
+        "base_sha": "d8e43d2c3cc5a05f03e56dfc388288a4126c7ed9",
+        "head_sha": "f9b6f7356798a41beea0768ff1f6b5a758ffeca3",
+        "merged": false,
+        "number": 609,
+        "state": "closed",
+        "updated_at": "2026-11-01T02:58:37Z"
+      },
+      {
+        "base_sha": "3588ca5f578387928e6593e3808bf15f6192b094",
+        "head_sha": "7db12d9a7c694bc5e66d9e0f4cdbc1b82155e69b",
+        "merged": false,
+        "number": 608,
+        "state": "open",
+        "updated_at": "2026-10-30T18:53:13Z"
+      },
+      {
+        "base_sha": "3588ca5f578387928e6593e3808bf15f6192b094",
+        "head_sha": "ba30ae14513461ab6bd83d691543b6a155846e1c",
+        "merged": false,
+        "number": 595,
+        "state": "open",
+        "updated_at": "2026-10-30T06:28:59Z"
+      },
+      {
+        "base_sha": "d0817fdf40e4832dbc578b7b2ea82a1b1fa378bf",
+        "head_sha": "f88b196f11b909b4e0db94db2affff3c585d971f",
+        "merged": true,
+        "number": 598,
+        "state": "closed",
+        "updated_at": "2026-10-30T02:09:40Z"
+      },
+      {
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head_sha": "7f044aad0a20419a788b8140d263ac83fcd93217",
+        "merged": false,
+        "number": 607,
+        "state": "open",
+        "updated_at": "2026-10-28T06:05:47Z"
+      },
+      {
+        "base_sha": "f9bb26efddbf304003fc8ebf484ac75bc6be84da",
+        "head_sha": "e41fb57514cc202425430684e11e5fdd8f1b71f0",
+        "merged": false,
+        "number": 588,
+        "state": "open",
+        "updated_at": "2026-10-28T05:57:43Z"
+      },
+      {
+        "base_sha": "845651e68fa1416931ea6507de1d3404d88f192e",
+        "head_sha": "38f8c19409c6fc9c3afc08744ce49cb6ed0de1db",
+        "merged": false,
+        "number": 599,
+        "state": "closed",
+        "updated_at": "2026-10-27T14:11:52Z"
+      },
+      {
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head_sha": "4ffa050ba994a82e0fb52f0b5b733c94b139367e",
+        "merged": false,
+        "number": 606,
+        "state": "open",
+        "updated_at": "2026-10-27T14:11:20Z"
+      },
+      {
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head_sha": "972ad3b4f9c7bce0a460ad0e5b5410f311b8573c",
+        "merged": false,
+        "number": 605,
+        "state": "open",
+        "updated_at": "2026-10-27T14:11:18Z"
+      },
+      {
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head_sha": "6faa74d029f95b5e29684690ee2628c10dc80b59",
+        "merged": false,
+        "number": 603,
+        "state": "open",
+        "updated_at": "2026-10-27T14:11:12Z"
+      },
+      {
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head_sha": "ffe5dc0512452fe3e383b8a8b454017c04120df4",
+        "merged": false,
+        "number": 602,
+        "state": "open",
+        "updated_at": "2026-10-27T14:11:10Z"
+      },
+      {
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head_sha": "79a36684101423cfd199047b466a2c2c839e9c2e",
+        "merged": false,
+        "number": 601,
+        "state": "open",
+        "updated_at": "2026-10-27T14:11:07Z"
+      },
+      {
+        "base_sha": "235ece6c95c99fb7774f5e564d565c675166a09d",
+        "head_sha": "1bf8de1caba3baa70620998b82317d65c96b07c8",
+        "merged": false,
+        "number": 600,
+        "state": "open",
+        "updated_at": "2026-10-27T14:11:04Z"
+      },
+      {
+        "base_sha": "f9bb26efddbf304003fc8ebf484ac75bc6be84da",
+        "head_sha": "17ef256c2f38ef6d010db807b69452d1bb2be614",
+        "merged": true,
+        "number": 593,
+        "state": "closed",
+        "updated_at": "2026-10-26T18:24:11Z"
+      },
+      {
+        "base_sha": "845651e68fa1416931ea6507de1d3404d88f192e",
+        "head_sha": "eb4db38857bb263493f56912a99184a9992d4e36",
+        "merged": true,
+        "number": 591,
+        "state": "closed",
+        "updated_at": "2026-10-26T18:23:58Z"
+      },
+      {
+        "base_sha": "d0817fdf40e4832dbc578b7b2ea82a1b1fa378bf",
+        "head_sha": "8ca89ccb31c20a286a64ac632fca8885d812cba5",
+        "merged": false,
+        "number": 597,
+        "state": "open",
+        "updated_at": "2026-10-26T15:50:33Z"
+      },
+      {
+        "base_sha": "f9bb26efddbf304003fc8ebf484ac75bc6be84da",
+        "head_sha": "56b816084bb2cdd3bcd990a52f47f9d2cb621871",
+        "merged": true,
+        "number": 587,
+        "state": "closed",
+        "updated_at": "2026-10-26T04:08:09Z"
+      },
+      {
+        "base_sha": "f9bb26efddbf304003fc8ebf484ac75bc6be84da",
+        "head_sha": "121f4c3ec7472b8a6c0f6e3054fd788f939dd028",
+        "merged": true,
+        "number": 589,
+        "state": "closed",
+        "updated_at": "2026-10-26T04:00:28Z"
+      },
+      {
+        "base_sha": "3588ca5f578387928e6593e3808bf15f6192b094",
+        "head_sha": "e100f4c29a1571a7181d06967ed8133612d99074",
+        "merged": false,
+        "number": 596,
+        "state": "open",
+        "updated_at": "2026-10-25T15:27:59Z"
+      }
+    ]
+  },
+  "limits": [
+    "Prepared real-Player/headless session/inventory/Path fixtures and synthetic ItemInfo/PathReward rows; this does not qualify the actual Path catalog or spatial/native gameplay.",
+    "This closes item add/stack quantity and related deletion publication for the existing supported unflagged grants. Full-inventory/overflow delivery, reward/count/flag policy, missing rows and broader mission/scientist/Path semantics remain open.",
+    "Wider inventory movement/property/effect notification settlement is outside this quantity/removal slice. No claim of whole-inventory or retail presentation parity.",
+    "No production schema/migration or entitlement changes. Existing15:1/17:1 defaults are preserved; no44 or seven-baseline grants.",
+    "Fresh configured-provider, physical restart/outbox, socket/broker/deployment and native/retail qualification remain separate; no provider engine was started for this milestone.",
+    "Computer Use/native client remain stopped. Foreign dirty work and full foreign Player hunks stay excluded from the isolated candidate and commit."
+  ],
+  "evidenceDirectory": "artifacts/continuation-20261106/path-item-publication",
+  "retainedEvidenceSha256": {
+    "baseline.trx": "8579dffc058cc722ae581187c82bbb0cba9feae3dff708c76049f62a16ad91b5",
+    "review-negative.trx": "928cf883f001656ed70b09228a22ebed32f8a69e6b301cda376c00fbf2f3eedf",
+    "final-fixed-scoped.trx": "97419ce9c520f99ca0d7453a74fbc550e062f3ff525b24a344e5dff33de803e9",
+    "review-fixed-focused.trx": "08505faae6052d4f59e246f8ba1d779260a3d2321749c6c3fffb71855e3b8134",
+    "review-source.diff": "4ea2483cbfaf53f5094b46fbf258c56ac8fe12dd4fb139f6f506e4bd473cf3a6",
+    "review-fix.diff": "b22c3346a75ba5f5d67f072fc289c291d9fe3b50888ce0bb28cfcbe582bbdf2d",
+    "review-source-manifest.json": "6f158cecb61228c9d2a33623c55d328af5a5b8ca59489f73d734af01d8477dcd",
+    "final-binaries.json": "e0ebdd6ca99d0ab57c2a9c127773419d28f33f816f717b18e30f358665024e94",
+    "source-boundary.json": "9a56fa6547acb2d14f0b546d89968672ba064fdaae5f345eac42cae544785073",
+    "review-spec-final.md": "0e0aebe42460724754cf106530b802d38641cbb432809abbf2a41ffe3db87721",
+    "review-standards-final.md": "c390c1dd6276599a1b4ad313ada948cf7baa54b19830c2b6076421af87c7ef5d"
+  },
+  "foreignConcurrency": {
+    "changedDuringMilestone": [
+      "Source/NexusForever.Game.Tests/Guild/GuildAchievementAtomicityTests.cs",
+      "Source/NexusForever.Game.Tests/Guild/GuildAchievementFeedbackRecoveryTests.cs"
+    ],
+    "candidateAndCommitExcludeThesePaths": true,
+    "foreignPlayerBodyPreserved": true,
+    "sharedTrackerBodiesPreserved": true
+  },
+  "isolatedCandidate": "artifacts/continuation-20261105/incoming-chat-ownership/candidate",
+  "postExecutionIdentityVerification": {
+    "sourceHashesExact": true,
+    "all138DependencyHashesExact": true,
+    "owningGameEqualsTestCopy": true,
+    "stagedSourceBlobIdentitiesExact": true
+  }
+}

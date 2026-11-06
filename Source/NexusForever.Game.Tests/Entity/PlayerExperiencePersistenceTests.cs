@@ -31,7 +31,7 @@ using GamePath = NexusForever.Game.Static.PlayerPath.Path;
 
 namespace NexusForever.Game.Tests.Entity;
 
-public sealed class PlayerExperiencePersistenceTests
+public sealed partial class PlayerExperiencePersistenceTests
 {
     private readonly DbContextOptions<CharacterContext> options;
     public PlayerExperiencePersistenceTests() { }

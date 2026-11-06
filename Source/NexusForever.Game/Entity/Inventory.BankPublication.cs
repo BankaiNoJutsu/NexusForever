@@ -33,7 +33,7 @@ namespace NexusForever.Game.Entity
         private void EnqueueItemMessage(IWritable message)
         {
             if (realmBankNotifications != null) realmBankNotifications.Add(message);
-            else if (!BufferCommodityMessage(message))
+            else if (!BufferCommodityMessage(message) && !BufferPathItemMessage(message))
             {
                 IGameSession session = player.Session;
                 if (CanPublishToInventorySession(session))

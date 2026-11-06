@@ -1,5 +1,13 @@
 # Client Binary Decompile Continuation Guide
 
+[Path item quantity publication](PATH_ITEM_QUANTITY_PUBLICATION.md) now waits
+for the complete original Player save, freezes current Item membership/counts
+and retains ordered quantity/removal retries. All17 new/355 scoped cases and
+both final reviews pass with clean builds. Reuse this Source/SQLite proof;
+overflow, wider inventory movement/properties and provider/native remain open.
+The overall Goal remains active; client/CUA stay stopped.
+
+
 [Contract actual-catalog MySQL recovery](CONTRACT_ACTUAL_MYSQL_RECOVERY.md)
 now passes eight representative windows, seven producer kills and seven spent
 original-claim replays with configured retries and exact 42/49 migrations.

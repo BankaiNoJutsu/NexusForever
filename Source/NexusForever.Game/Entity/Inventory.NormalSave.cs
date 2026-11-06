@@ -6,11 +6,12 @@ namespace NexusForever.Game.Entity
 {
     public partial class Inventory
     {
-        internal Action<CharacterContext> CaptureNormalSave(string database)
+        internal Action<CharacterContext> CaptureNormalSave(string database, bool includePathRewards = false)
         {
             lock (MutationGate)
             {
                 RequireNormalSaveAllowed();
+                PathItemCapture[] pathItems = includePathRewards ? pathItemPublication?.Capture() ?? [] : [];
                 IItem[] tombstones = deletedItems.ToArray();
                 IItem[] captured = bags.Values.Where(bag => bag.Location != InventoryLocation.Ability && bag.Location != InventoryLocation.RealmBank)
                     .SelectMany(bag => bag).Concat(tombstones).Distinct().ToArray();
@@ -35,6 +36,7 @@ namespace NexusForever.Game.Entity
                             CharacterDatabaseIdentity.Require(context, database); RequireNormalSaveAllowed();
                             using var mutation = new InventoryMutationOperation(this);
                             foreach (var stage in stages) stage(context);
+                            StagePathItemNotices(context, pathItems);
                             context.OnSaveCompleted(committed =>
                             {
                                 if (!committed) return;

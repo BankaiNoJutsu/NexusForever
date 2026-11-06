@@ -33,7 +33,7 @@ namespace NexusForever.Game.Entity
                 var experienceSnapshot = CaptureExperienceSave(questSnapshot.Token, identity.ExecutionDatabase);
                 // Bid reconciliation owns its specialized escrow/delivery
                 // witnesses. Ordinary saves freeze accepted Item membership here.
-                var inventorySnapshot = AuctionBidSaveAllowed ? null : (Inventory as Inventory)?.CaptureNormalSave(identity.ExecutionDatabase);
+                var inventorySnapshot = AuctionBidSaveAllowed ? null : (Inventory as Inventory)?.CaptureNormalSave(identity.ExecutionDatabase, includePathRewards: true);
                 var satchelSnapshot = (SupplySatchelManager as SupplySatchelManager)?.CaptureNormalSave(questSnapshot.Token, identity.ExecutionDatabase);
                 var keybindingSnapshot = (KeybindingManager as CharacterKeybindingManager)?.CaptureNormalSave(questSnapshot.Token, identity.ExecutionDatabase);
                 var guildAffiliationSnapshot = (GuildManager as Guild.GuildManager)?.CaptureNormalSave(questSnapshot.Token, identity.ExecutionDatabase);

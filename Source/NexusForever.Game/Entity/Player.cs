@@ -1341,7 +1341,12 @@ namespace NexusForever.Game.Entity
             foreach (IStatValue stat in stats.Values)
                 stat.SaveCharacter(CharacterId, context);
 
-            if (snapshot == null) Inventory.Save(context); else snapshot.SaveInventory(context);
+            if (snapshot == null)
+            {
+                Inventory.Save(context);
+                (Inventory as Inventory)?.StageUnfrozenPathItemNotices(context);
+            }
+            else snapshot.SaveInventory(context);
             if (snapshot == null) CurrencyManager.Save(context); else snapshot.SaveCurrencies(context);
             if (snapshot == null) SaveExperience(context); else snapshot.SaveExperience(context);
             if (snapshot == null) TitleManager.Save(context); else snapshot.SaveTitles(context);
