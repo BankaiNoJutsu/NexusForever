@@ -1,5 +1,59 @@
 # Normal auction bid transaction
 
+## Synchronous fallback rejection replies
+
+6 November 2026, parent 8240e77735cdeb85c9f41553071ceade21045505.
+The five public auction bid/post/cancel and commodity post/cancel handlers now
+retain rejected results on real-Player synchronous fallback paths. After the
+durable route declines, they capture the existing Game-owned publication
+lifetime before invoking the legacy operation. Both branches use the same typed
+callback. Two concrete factory methods are exposed across the existing
+World/Game helper boundary; the generic retry implementation is unchanged.
+
+Failed result enqueue waits one second on the original actor queue. Each attempt
+uses a fresh captured DTO. Existing Player, Character/account identity, session,
+queue, current registry, logout/disconnect and publication guards stay in force.
+Auction countdowns are rebuilt from their captured deadline; commodity FILETIME
+values retain their existing snapshot behavior. Reply retry invokes no financial
+operation, save, debit, item removal or settlement. Successful callbacks keep
+their immediate single-send behavior and existing wire shape.
+
+The clean unchanged-production baseline fails seven of nine new parsed-handler
+cases: all five result sends lose their rejection, plus the Player/queue
+replacement cases propagate the failed send. Ordinary rejection and a real
+Player transient bid are passing controls. Final evidence passes all nine new
+cases within 234 affected cases, plus 58 disjoint durable purchase controls:
+292 unique cases, zero failures/skips. Failed DTO mutation cannot change the
+retry's serialized bytes. All five negative routes have zero currency/inventory
+mutations; the successful transient bid debits 100 once and publishes immediately.
+Original Player/queue replacement suppresses later retry.
+
+Owning WorldServer/test-only builds are clean in 18.58s/14.14s. The two scoped
+executions report 69s/64s; no full solution or full suite ran. Both Source review
+axes have zero findings. The Game, WorldServer and test DLLs change; the test
+assembly was rebuilt after public factory/helper API changes and is not claimed
+byte-identical to baseline. All three reviewed Source files and owning/test
+copies match the retained manifests. The 6290-file tracked Source comparison
+contains two owned changes and eight retained historical candidate variants,
+plus the new test; foreign root Source was excluded.
+
+Initial fixture RBAC omissions, a helper-name compile failure and an avoidable
+stale-DLL attempt are retained separately and excluded from the clean baseline
+and final qualification. No production fault is inferred from those diagnostics.
+
+The [portable record](coverage/marketplace-fallback-replies-20261106.json) binds
+the three Source paths, baseline/final binaries, scoped TRX files, reviews and
+unchanged 20-PR upstream refresh. Raw evidence is under
+artifacts/continuation-20261106/marketplace-fallback-replies/.
+
+The new fixture uses a real Player type with prepared session/account/registry
+and proxy inventory/currency collaborators, real parsed public handlers,
+transient book and EventQueue. It does not prove full initialized gameplay,
+durable transient finance, physical socket failure, cross-process recovery,
+fresh provider behavior, deployment or retail. Existing SQLite coordinator
+results keep their separate supported settlement scope. Broader financial and
+request/reply work remains; client launch and Computer Use remain stopped.
+
 ## Posting and cancellation rejection replies
 
 5 November2026. The real Player-backed public auction posting/cancellation and

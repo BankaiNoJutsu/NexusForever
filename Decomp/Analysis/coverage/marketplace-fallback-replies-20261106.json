@@ -1,0 +1,227 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-06T04:57:25.676666+00:00",
+  "baseCommit": "8240e77735cdeb85c9f41553071ceade21045505",
+  "milestone": "Public synchronous marketplace fallback rejection publication",
+  "classification": "Implemented Source public-flow correction; existing durable settlement boundaries preserved; broader financial/provider/socket/native/retail and overall Goal remain open",
+  "behavior": [
+    "All five parsed real-Player synchronous fallback routes capture Game-owned rejected reply retention after durable refusal and before invoking legacy settlement.",
+    "Original typed callbacks serve durable and fallback routes. Auction countdown and commodity FILETIME snapshot semantics stay in existing concrete adapters.",
+    "Failed result enqueue waits on the original actor queue and retries a fresh payload; Player/session/account/queue/registry/logout guards remain the existing ones. Financial operations are not re-executed.",
+    "Successful fallback replies keep their immediate single send; nonreal Player/nonconcrete manager compatibility keeps its direct path."
+  ],
+  "sources": [
+    {
+      "path": "Source/NexusForever.Game/Marketplace/GlobalMarketplaceManager.RejectedReplies.cs",
+      "sha256": "4d5ed87f6eaf004a2174d729c020e5df568da34684f107e2a40388ae25dec6ff",
+      "gitBlob": "990782e31d1f96bed4b538b8521b97b210165e22"
+    },
+    {
+      "path": "Source/NexusForever.WorldServer/Network/Message/Handler/Marketplace/ClientMarketplaceHandlers.cs",
+      "sha256": "f67e716590f52dc1d1f2df6d9fa0489c1bec7cb96998c63a664d5df22bf7d7dd",
+      "gitBlob": "76389cd6c3431bf1dad87ecf3878a2756b93995e"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Marketplace/MarketplaceFallbackReplyTests.cs",
+      "sha256": "7a3b1f7f42dcfcd223e8bfe52bf02469640ba5da942cb896c682477d14c68442",
+      "gitBlob": "2720bd7169e456deeef06b57e315429e0a90e591"
+    }
+  ],
+  "sourceBoundary": {
+    "base": "8240e77735cdeb85c9f41553071ceade21045505",
+    "trackedSourceFiles": 6290,
+    "differences": [
+      {
+        "path": "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+        "head": "9b4e604e08391bf229552fa04081ecf9c74fec4d",
+        "candidate": "7de92fafe0c2474ba8428ca9ceee883d39138b46"
+      },
+      {
+        "path": "Source/NexusForever.ClientConnector/packages.config",
+        "head": "fa4b77dc45783358023c1cd38e6ff9bad122aea4",
+        "candidate": "8ab13a9023dec3cf548ee61ba183013bd098a297"
+      },
+      {
+        "path": "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+        "head": "64769a2266f7feab861fcc61cd2b00a0a05da8c4",
+        "candidate": "74272fd6bf29afac14c5d62cb172e81b4edee19a"
+      },
+      {
+        "path": "Source/NexusForever.Database/NexusForever.Database.csproj",
+        "head": "61f9d5326c59ec7018164eba605a01f4081dfded",
+        "candidate": "163c4f01e198e71066afcd9089a367c78b4c3de6"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+        "head": "1ffaefc3cf8c1eb7c5b0534d4d91f28eb7001347",
+        "candidate": "6c145b847fa7316e7982ab44cfa404f4e1e7fc70"
+      },
+      {
+        "path": "Source/NexusForever.Game/Marketplace/GlobalMarketplaceManager.RejectedReplies.cs",
+        "head": "d9651c7e2f832d93a00778e8b735f91b3c913bcb",
+        "candidate": "990782e31d1f96bed4b538b8521b97b210165e22"
+      },
+      {
+        "path": "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj",
+        "head": "74f0ec9ebbf4894dd7ef64f379a773a9e4ce1295",
+        "candidate": "ecd970da6d0d220f3caaf6780656c1809e18a9af"
+      },
+      {
+        "path": "Source/NexusForever.WorldServer/Network/Message/Handler/Marketplace/ClientMarketplaceHandlers.cs",
+        "head": "a653b4eb4c48c245143d9e8296e677bfb0d17932",
+        "candidate": "76389cd6c3431bf1dad87ecf3878a2756b93995e"
+      }
+    ],
+    "historicalNonTaskDifferencePaths": [
+      "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+      "Source/NexusForever.ClientConnector/packages.config",
+      "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+      "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+      "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+      "Source/NexusForever.Database/NexusForever.Database.csproj",
+      "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+      "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj"
+    ],
+    "newOwned": [
+      "Source/NexusForever.Game.Tests/Marketplace/MarketplaceFallbackReplyTests.cs"
+    ]
+  },
+  "inputs": {
+    "baseline": {
+      "path": "artifacts/continuation-20261106/marketplace-fallback-replies/baseline-inputs.json",
+      "sha256": "bcf69f19e699a87dc6f834c8f36102c71863f6cacf7f47a6b51782ee6b13e778"
+    },
+    "final": {
+      "path": "artifacts/continuation-20261106/marketplace-fallback-replies/final-inputs.json",
+      "sha256": "db7237de90f53f7c1475038795bdcc5f02ad2bfdd5802e811f310ae1b2e58431"
+    },
+    "testOutputDlls": 138,
+    "changedDlls": [
+      "NexusForever.Game.dll",
+      "NexusForever.Game.Tests.dll",
+      "NexusForever.WorldServer.dll"
+    ],
+    "reviewedTestSourceUnchangedDuringGenuineBaselineAndFinal": true,
+    "sameTestDllBeforeAfter": false,
+    "testDllNote": "Test assembly rebuilt after public Game/World helper API changes; it is not claimed byte-identical to baseline.",
+    "owningAndTestCopiesExact": true,
+    "foreignRootSourceExcluded": true
+  },
+  "baseline": {
+    "path": "artifacts/continuation-20261106/marketplace-fallback-replies/baseline.trx",
+    "sha256": "9252c5075279bb9e9ffc0adb6161616fe3a825b2d0dedb396572d5514c11b42d",
+    "passed": 2,
+    "failed": 7,
+    "skipped": 0
+  },
+  "final": {
+    "newFocusedCases": 9,
+    "scoped": {
+      "path": "artifacts/continuation-20261106/marketplace-fallback-replies/final-scoped.trx",
+      "sha256": "49c8768c4e76927161fe2e0444b2a0f85987920f1207b8b0fc1338b215cfc386",
+      "passed": 234,
+      "failed": 0,
+      "skipped": 0,
+      "reportedSeconds": 69,
+      "filter": "FullyQualifiedName~MarketplaceFallbackReplyTests|FullyQualifiedName~MarketplaceAuctionHandlerTests|FullyQualifiedName~AuctionPostingCoordinatorTests|FullyQualifiedName~AuctionCancellationCoordinatorTests|FullyQualifiedName~CommodityPostingCoordinatorTests|FullyQualifiedName~CommodityReturnCoordinatorTests|FullyQualifiedName~AuctionBidActorTests"
+    },
+    "durablePurchase": {
+      "path": "artifacts/continuation-20261106/marketplace-fallback-replies/final-purchase.trx",
+      "sha256": "3caf353b8ae4c9d8c72c8e9671c21853a1d657d197685eba3643881ff90abe56",
+      "passed": 58,
+      "failed": 0,
+      "skipped": 0,
+      "reportedSeconds": 64,
+      "filter": "FullyQualifiedName~NormalBidCoordinatorTests"
+    },
+    "uniquePassed": 292,
+    "failed": 0,
+    "skipped": 0
+  },
+  "builds": {
+    "baselineTest": {
+      "path": "artifacts/continuation-20261106/marketplace-fallback-replies/baseline-test-build.log",
+      "sha256": "1764956c85ffdf1520d2eaa3934aa978f73fc4a5b55ffc2fed685b27ace8d69d",
+      "project": "NexusForever.Game.Tests",
+      "seconds": 13.63,
+      "warnings": 0,
+      "errors": 0,
+      "buildProjectReferences": false
+    },
+    "owning": {
+      "path": "artifacts/continuation-20261106/marketplace-fallback-replies/final-owning-build.log",
+      "sha256": "d2d3c6151554b0f1d1a9f4aaa2c4db5011ce82a2fda51e8aedfdb22fc2f96ca8",
+      "project": "NexusForever.WorldServer",
+      "seconds": 18.58,
+      "warnings": 0,
+      "errors": 0
+    },
+    "test": {
+      "path": "artifacts/continuation-20261106/marketplace-fallback-replies/final-test-build.log",
+      "sha256": "3e73f8afcc587b78b44d51c915f34b9da196d438c81e7068deab38680721e1d8",
+      "project": "NexusForever.Game.Tests",
+      "seconds": 14.14,
+      "warnings": 0,
+      "errors": 0,
+      "buildProjectReferences": false
+    }
+  },
+  "excludedFixtureEvidence": [
+    {
+      "record": {
+        "path": "artifacts/continuation-20261106/marketplace-fallback-replies/fixture-preparation-baseline.trx",
+        "sha256": "c84f8493c00a02566930f304d761042bcb28b50d90944c94d385b830f0535b13"
+      },
+      "meaning": "Initial fixture lacked account RBAC; commodity posting/positive bid setup failures are not production defects. Four other rejection routes and two ownership cases also observed lost replies; clean full baseline replaces this mixed run."
+    },
+    {
+      "build": {
+        "path": "artifacts/continuation-20261106/marketplace-fallback-replies/helper-name-stale-baseline-test-build.log",
+        "sha256": "8ec4538b8fda96052673c95294c60d1ace015099a1f0ea8ded043a545e2f632f"
+      },
+      "run": {
+        "path": "artifacts/continuation-20261106/marketplace-fallback-replies/helper-name-stale-baseline.trx",
+        "sha256": "d5f48de7b72644bcd9a6d9c1940e85f88a5bd67f2284d746f7ba5c16e326dabd"
+      },
+      "meaning": "Helper interface-name compile failure followed by an avoidable stale DLL attempt. Excluded from genuine baseline and final qualification; corrected before clean baseline."
+    }
+  ],
+  "reviews": {
+    "path": "artifacts/continuation-20261106/marketplace-fallback-replies/reviews.json",
+    "sha256": "9dba851d75e872c213e0589dbaac93c9eba6c2c6fb20dd5c06ce82c0a9a22fb8",
+    "specFindings": 0,
+    "standardsFindings": 0
+  },
+  "upstream": {
+    "path": "artifacts/continuation-20261106/marketplace-fallback-replies/upstream-refresh.json",
+    "sha256": "72f92dcc256c70ffd648b5d45cb061d5a9ea307b2eb09edd5b7d8e7eb8bc4216",
+    "latestPrs": 20,
+    "headsBasesStatesUnchanged": true,
+    "pr608": "open",
+    "pr609": "closed/unmerged"
+  },
+  "preserved": {
+    "fullSolutionOrFullSuiteRun": false,
+    "newSchemaOrSettlementLogic": false,
+    "configuredProviderRun": false,
+    "actualCatalogQualification": false,
+    "nativeClientAndComputerUseStopped": true,
+    "entitlements": "15:1/17:1; no automatic44/seven grants"
+  },
+  "limits": [
+    "New tests use a real Player type with prepared identity, session, account, player registry and proxy inventory/currency collaborators. Production parsed packets, public handlers, transient order book, Game snapshot/retry code and EventQueue are exercised. This is not full initialized gameplay or a deployment claim.",
+    "Five rejection cases verify no inventory removal/addition or currency debit/credit. The positive transient bid control verifies one100-credit debit and immediate result, not durable financial atomicity.",
+    "Existing scoped SQLite coordinators qualify their original supported durable paths; they do not turn the new no-CharacterDatabase fallback into a durable transaction.",
+    "Physical failed sockets, process loss, broker/deployment, other request/reply producers and native/retail behavior remain separate."
+  ]
+}

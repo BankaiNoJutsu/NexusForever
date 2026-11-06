@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[Marketplace fallback replies](Decomp/Analysis/NORMAL_AUCTION_BID_TRANSACTION.md#synchronous-fallback-rejection-replies)
+now retain all five real-Player fallback rejections on the original actor queue.
+Seven baseline failures are fixed; nine new/292 unique scoped cases, clean builds
+and both reviews pass. Fresh captured replies never rerun finance; immediate
+success remains. Transient financial atomicity, physical socket/process/provider/
+deployment/native/retail remain open. Client/CUA remain stopped.
+
 [Arcterra Zone catalog](Decomp/Analysis/ZONE_REWARD_TRACK_35_EVIDENCE.md#actual-map-world-and-reward-inputs-qualified)
 now binds MapZone 476 to track 35/type 4 and World 3335; Item 86274 is Icebound
 Pouch through real ItemInfo. All 385 payload identities and 22 loaded tables,

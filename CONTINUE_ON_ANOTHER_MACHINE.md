@@ -1,5 +1,13 @@
 # Continue on another machine
 
+Latest marketplace Source result:
+[fallback rejection replies](Decomp/Analysis/NORMAL_AUCTION_BID_TRANSACTION.md#synchronous-fallback-rejection-replies)
+retain all five real-Player public fallback errors through enqueue refusal,
+using existing Game ownership/snapshot/retry code before legacy finance.
+Seven baseline failures are fixed; nine new/292 unique scoped cases, clean
+builds and both reviews pass. Transient financial atomicity and physical socket/
+process/provider/deployment/native/retail remain open; client/CUA stopped.
+
 Latest Zone input qualification:
 [Arcterra actual catalog](Decomp/Analysis/ZONE_REWARD_TRACK_35_EVIDENCE.md#actual-map-world-and-reward-inputs-qualified)
 binds MapZone 476 to track 35/type 4 and World 3335, and resolves Icebound Pouch

@@ -5,6 +5,7 @@ using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Marketplace;
 using NexusForever.Game.Marketplace;
+using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Marketplace;
 using NexusForever.GameTable;
 using NexusForever.Network;
@@ -170,22 +171,20 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
             uint definition = buyOrderSubmit.Item2Id;
             IPlayer buyer = session.Player;
             var logger = log;
-            if (marketplaceRequestHelper.TryQueueAuctionPurchase(buyer, auctionId, definition, amount, (error, view) =>
+            Action<GenericError, AuctionInfo> reply = (error, view) =>
             {
                 if (!ReferenceEquals(session.Player, buyer)) return;
                 logger.LogDebug("Processed auction bid from player {PlayerGuid}: auction {AuctionId}, item {Item2Id}, amount {AmountOffered}, result {Result}.",
                     buyer.Guid, auctionId, definition, amount, error);
                 session.EnqueueMessageEncrypted(new ServerAuctionBidResult { Result = error, Auction = view });
-            }, () => ReferenceEquals(session.Player, buyer))) return;
+            };
+            if (marketplaceRequestHelper.TryQueueAuctionPurchase(buyer, auctionId, definition, amount, reply,
+                () => ReferenceEquals(session.Player, buyer))) return;
+
+            reply = marketplaceRequestHelper.RetainRejectedReply(buyer, reply, () => ReferenceEquals(session.Player, buyer));
 
             GenericError result = marketplaceRequestHelper.BuyAuction(session, buyOrderSubmit, out AuctionInfo auction);
-            log.LogDebug("Processed auction buy request from player {PlayerGuid}: auction {AuctionId}, item {Item2Id}, amount {AmountOffered}, result {Result}.",
-                session.Player?.Guid, buyOrderSubmit.AuctionId, buyOrderSubmit.Item2Id, buyOrderSubmit.AmountOffered, result);
-            session.EnqueueMessageEncrypted(new ServerAuctionBidResult
-            {
-                Result  = result,
-                Auction = auction
-            });
+            reply(result, auction);
         }
     }
 
@@ -213,22 +212,20 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
             var owner = session.Player;
             ulong guid = sellOrderSubmit.ItemGuid, minimum = sellOrderSubmit.MinimumBid, buyout = sellOrderSubmit.BuyoutPrice;
             var logger = log;
-            if (marketplaceRequestHelper.TryQueueAuctionPosting(owner, guid, minimum, buyout, (error, view) =>
+            Action<GenericError, AuctionInfo> reply = (error, view) =>
             {
                 if (!ReferenceEquals(session.Player, owner)) return;
                 logger.LogDebug("Processed auction sell from player {PlayerGuid}: item {ItemGuid}, minimum {MinimumBid}, buyout {BuyoutPrice}, result {Result}.",
                     owner.Guid, guid, minimum, buyout, error);
                 session.EnqueueMessageEncrypted(new ServerAuctionPostResult { Result = error, Auction = view });
-            }, () => ReferenceEquals(session.Player, owner))) return;
+            };
+            if (marketplaceRequestHelper.TryQueueAuctionPosting(owner, guid, minimum, buyout, reply,
+                () => ReferenceEquals(session.Player, owner))) return;
+
+            reply = marketplaceRequestHelper.RetainRejectedReply(owner, reply, () => ReferenceEquals(session.Player, owner));
 
             GenericError result = marketplaceRequestHelper.PostAuction(session, item, sellOrderSubmit.MinimumBid, sellOrderSubmit.BuyoutPrice, out AuctionInfo auction);
-            log.LogDebug("Processed auction sell request from player {PlayerGuid}: item {ItemGuid}, minimum bid {MinimumBid}, buyout {BuyoutPrice}, result {Result}.",
-                session.Player?.Guid, sellOrderSubmit.ItemGuid, sellOrderSubmit.MinimumBid, sellOrderSubmit.BuyoutPrice, result);
-            session.EnqueueMessageEncrypted(new ServerAuctionPostResult
-            {
-                Result  = result,
-                Auction = auction
-            });
+            reply(result, auction);
         }
     }
 
@@ -260,22 +257,20 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
             uint definition = auctionCancel.Item2Id;
             IPlayer owner = session.Player;
             var logger = log;
-            if (marketplaceRequestHelper.TryQueueAuctionCancellation(owner, auctionId, definition, (error, view) =>
+            Action<GenericError, AuctionInfo> reply = (error, view) =>
             {
                 if (!ReferenceEquals(session.Player, owner)) return;
                 logger.LogDebug("Processed auction cancel from player {PlayerGuid}: auction {AuctionId}, item {Item2Id}, result {Result}.",
                     owner.Guid, auctionId, definition, error);
                 session.EnqueueMessageEncrypted(new ServerAuctionCancelResult { Result = error, Auction = view });
-            }, () => ReferenceEquals(session.Player, owner))) return;
+            };
+            if (marketplaceRequestHelper.TryQueueAuctionCancellation(owner, auctionId, definition, reply,
+                () => ReferenceEquals(session.Player, owner))) return;
+
+            reply = marketplaceRequestHelper.RetainRejectedReply(owner, reply, () => ReferenceEquals(session.Player, owner));
 
             GenericError result = marketplaceRequestHelper.CancelAuction(session, auctionCancel.AuctionId, auctionCancel.Item2Id, out AuctionInfo auction);
-            log.LogDebug("Processed auction cancel request from player {PlayerGuid}: auction {AuctionId}, item {Item2Id}, result {Result}.",
-                session.Player?.Guid, auctionCancel.AuctionId, auctionCancel.Item2Id, result);
-            session.EnqueueMessageEncrypted(new ServerAuctionCancelResult
-            {
-                Result  = result,
-                Auction = auction
-            });
+            reply(result, auction);
         }
     }
 
@@ -308,22 +303,20 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
             uint definition = sellOrderSubmit.Order.Item2Id, quantity = sellOrderSubmit.Order.Quantity;
             bool buy = sellOrderSubmit.Order.IsBuyOrder;
             var logger = log;
-            if (marketplaceRequestHelper.TryQueueCommodityPosting(owner, sellOrderSubmit.Order, (error, order) =>
+            Action<GenericError, CommodityOrder> reply = (error, order) =>
             {
                 if (!ReferenceEquals(session.Player, owner)) return;
                 logger.LogDebug("Processed commodity order request from player {PlayerGuid}: item {Item2Id}, quantity {Quantity}, buy order {IsBuyOrder}, result {Result}.",
                     owner.Guid, definition, quantity, buy, error);
                 session.EnqueueMessageEncrypted(new ServerCommodityOrderResult { Result = error, OrderPosted = order });
-            }, () => ReferenceEquals(session.Player, owner))) return;
+            };
+            if (marketplaceRequestHelper.TryQueueCommodityPosting(owner, sellOrderSubmit.Order, reply,
+                () => ReferenceEquals(session.Player, owner))) return;
+
+            reply = marketplaceRequestHelper.RetainRejectedReply(owner, reply, () => ReferenceEquals(session.Player, owner));
 
             GenericError result = marketplaceRequestHelper.PostCommodityOrder(session, sellOrderSubmit.Order, itemManager, out CommodityOrder postedOrder);
-            log.LogDebug("Processed commodity order request from player {PlayerGuid}: item {Item2Id}, quantity {Quantity}, buy order {IsBuyOrder}, result {Result}.",
-                session.Player?.Guid, sellOrderSubmit.Order.Item2Id, sellOrderSubmit.Order.Quantity, sellOrderSubmit.Order.IsBuyOrder, result);
-            session.EnqueueMessageEncrypted(new ServerCommodityOrderResult
-            {
-                Result      = result,
-                OrderPosted = postedOrder
-            });
+            reply(result, postedOrder);
         }
     }
 
@@ -356,35 +349,21 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
             bool buy = orderCancel.IsBuyOrder;
             IPlayer owner = session.Player;
             var logger = log;
-            if (marketplaceRequestHelper.TryQueueCommodityCancellation(owner, orderId, definition, buy, (error, order) =>
+            Action<GenericError, CommodityOrder> reply = (error, order) =>
             {
                 if (!ReferenceEquals(session.Player, owner)) return;
                 logger.LogDebug("Processed commodity cancel from player {PlayerGuid}: order {OrderId}, item {Item2Id}, buy order {IsBuyOrder}, result {Result}.",
                     owner.Guid, orderId, definition, buy, error);
                 if (error == GenericError.Ok) session.EnqueueMessageEncrypted(new ServerCommodityAuctionRemoved { OrderRemoved = order, Type = AuctionEventType.Cancel });
                 else session.EnqueueMessageEncrypted(new ServerCommodityOrderResult { Result = error, OrderPosted = order });
-            }, () => ReferenceEquals(session.Player, owner))) return;
+            };
+            if (marketplaceRequestHelper.TryQueueCommodityCancellation(owner, orderId, definition, buy, reply,
+                () => ReferenceEquals(session.Player, owner))) return;
+
+            reply = marketplaceRequestHelper.RetainRejectedReply(owner, reply, () => ReferenceEquals(session.Player, owner));
 
             GenericError result = marketplaceRequestHelper.CancelCommodityOrder(session, orderCancel.CommodityOrderId, orderCancel.Item2Id, orderCancel.IsBuyOrder, itemManager, out CommodityOrder cancelledOrder);
-            log.LogDebug("Processed commodity order cancel request from player {PlayerGuid}: order {CommodityOrderId}, item {Item2Id}, buy order {IsBuyOrder}, result {Result}.",
-                session.Player?.Guid, orderCancel.CommodityOrderId, orderCancel.Item2Id, orderCancel.IsBuyOrder, result);
-
-            if (result == GenericError.Ok)
-            {
-                session.EnqueueMessageEncrypted(new ServerCommodityAuctionRemoved
-                {
-                    OrderRemoved = cancelledOrder,
-                    Type         = AuctionEventType.Cancel
-                });
-            }
-            else
-            {
-                session.EnqueueMessageEncrypted(new ServerCommodityOrderResult
-                {
-                    Result      = result,
-                    OrderPosted = cancelledOrder
-                });
-            }
+            reply(result, cancelledOrder);
         }
     }
 
@@ -409,6 +388,18 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Marketplace
 
         public ServerAuctionSearchResults SearchAuctions(IItemManager itemManager, ClientAuctionsByFilterRequest request) =>
             marketplace.SearchAuctions(itemManager, request);
+
+        // Synchronous fallback operations capture the same original-actor reply
+        // before invoking legacy settlement, after the durable route declines.
+        public Action<GenericError, AuctionInfo> RetainRejectedReply(IPlayer owner,
+            Action<GenericError, AuctionInfo> reply, Func<bool> publicationAllowed) =>
+            owner is Player actor && marketplace is GlobalMarketplaceManager global
+                ? global.RetainRejectedAuctionReply(actor, reply, publicationAllowed) : reply;
+
+        public Action<GenericError, CommodityOrder> RetainRejectedReply(IPlayer owner,
+            Action<GenericError, CommodityOrder> reply, Func<bool> publicationAllowed) =>
+            owner is Player actor && marketplace is GlobalMarketplaceManager global
+                ? global.RetainRejectedCommodityReply(actor, reply, publicationAllowed) : reply;
 
         public GenericError PostAuction(IWorldSession session, IItem item, ulong minimumBid, ulong buyoutPrice, out AuctionInfo auction) =>
             marketplace.PostAuction(session.Player, item, minimumBid, buyoutPrice, out auction);

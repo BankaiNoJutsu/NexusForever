@@ -1,5 +1,14 @@
 # Assessment follow-through goal
 
+[Synchronous marketplace fallback replies](NORMAL_AUCTION_BID_TRANSACTION.md#synchronous-fallback-rejection-replies)
+complete original-actor rejected-result retention for the five public real-Player
+fallback routes after durable admission declines. Seven clean baseline failures
+are fixed; nine new/292 unique affected cases, clean owning/test builds and both
+reviews pass. Existing Game snapshot/retry code is reused before legacy finance,
+with success and durable paths preserved. Fixture/stale-DLL diagnostics remain
+separate; transient financial atomicity and physical socket/process/provider/
+deployment/native/retail stay open. Continue independent actionable work.
+
 [Zone track 35 actual catalog](ZONE_REWARD_TRACK_35_EVIDENCE.md#actual-map-world-and-reward-inputs-qualified)
 resolves the old map-to-track and pouch-name input gaps: MapZone 476 → track 35,
 join 450 → World 3335, Item 86274 → Icebound Pouch. All 385 payload identities,

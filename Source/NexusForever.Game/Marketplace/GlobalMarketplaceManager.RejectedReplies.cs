@@ -10,7 +10,7 @@ namespace NexusForever.Game.Marketplace
 {
     public sealed partial class GlobalMarketplaceManager
     {
-        private Action<GenericError, AuctionInfo> RetainRejectedAuctionReply(Player owner,
+        public Action<GenericError, AuctionInfo> RetainRejectedAuctionReply(Player owner,
             Action<GenericError, AuctionInfo> reply, Func<bool> publicationAllowed)
             => RetainRejectedReply(owner, reply, view =>
             {
@@ -19,7 +19,7 @@ namespace NexusForever.Game.Marketplace
                 return () => CloneAuction(snapshot, deadline);
             }, publicationAllowed);
 
-        private Action<GenericError, CommodityOrder> RetainRejectedCommodityReply(Player owner,
+        public Action<GenericError, CommodityOrder> RetainRejectedCommodityReply(Player owner,
             Action<GenericError, CommodityOrder> reply, Func<bool> publicationAllowed)
             => RetainRejectedReply(owner, reply, view =>
             {

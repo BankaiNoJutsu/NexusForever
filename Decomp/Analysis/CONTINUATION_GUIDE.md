@@ -1,5 +1,12 @@
 # Client Binary Decompile Continuation Guide
 
+[Marketplace fallback rejection publication](NORMAL_AUCTION_BID_TRANSACTION.md#synchronous-fallback-rejection-replies)
+now uses original-actor retained snapshots for all five real-Player fallback
+routes. Seven baseline failures are fixed; nine new/292 unique scoped cases,
+clean builds and both reviews pass. Success remains immediate; finance is not
+replayed. Existing durable paths remain qualified separately. Transient finance,
+socket/process/provider/deployment/native/retail remain open; client/CUA stopped.
+
 [Actual Arcterra catalog](ZONE_REWARD_TRACK_35_EVIDENCE.md#actual-map-world-and-reward-inputs-qualified)
 qualifies MapZone 476 → Zone track 35 and join 450 → World 3335, plus Icebound
 Pouch 86274 through ItemInfo. Track 36 remains Challenge-owned. All 385 payload
