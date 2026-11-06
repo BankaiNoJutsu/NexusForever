@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\NexusForever.API.Character\NexusForever.API.Character.csproj" />
     <ProjectReference Include="..\NexusForever.Database.Auth\NexusForever.Database.Auth.csproj" />
     <ProjectReference Include="..\NexusForever.Database.Character\NexusForever.Database.Character.csproj" />
     <ProjectReference Include="..\NexusForever.Database.Chat\NexusForever.Database.Chat.csproj" />

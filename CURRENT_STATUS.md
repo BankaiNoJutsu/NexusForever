@@ -1,5 +1,13 @@
 # NexusForever Feature Restoration - Current Status
 
+[Friendship setting ownership](Decomp/Analysis/FRIENDSHIP_SETTING_OWNERSHIP.md)
+now separates the character friend lock from the account stranger-invite setting,
+using exact native field/binding evidence. Character flags retain failed-save
+intent; new friend requests read the committed Character API flag. Both invite
+routes and durable account readback are exercised: 26 new/29 focused and 195
+related Source/SQLite cases pass. Broker ordering, provider/native qualification,
+auto-response durability and full F-012 remain open; the broader Goal continues.
+
 [Q3963 delayed departure](Decomp/Analysis/Q3963_DELAYED_DEPARTURE.md) now retains
 the original quest/actor/account/queue/map admission and consumes delayed transport
 once. Eleven baseline failures and an unload review negative are fixed;22 new/

@@ -145,5 +145,16 @@ namespace NexusForever.Server.Friendship.Game.Character
             _characterNameCache.Add(character.IdentityName, character);
             return character;
         }
+
+        public async Task<bool?> GetCommittedFriendBlockAsync(Character character)
+        {
+            // This preference belongs to Character, not this service's cached identity metadata.
+            // Read the owning API for every new request; an older/missing response is not "unlocked".
+            var current = await _apiClient.GetCharacterAsync(character.Identity.ToAPIdentity());
+            if (current?.Identity?.Id != character.Identity.Id || current.Identity.RealmId != character.Identity.RealmId
+                || current.AccountId != character.AccountId)
+                return null;
+            return current.BlocksFriendRequests;
+        }
     }
 }

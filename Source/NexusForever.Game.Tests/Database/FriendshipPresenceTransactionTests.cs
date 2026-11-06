@@ -254,7 +254,8 @@ public sealed class FriendshipPresenceTransactionTests
         }
     }
 
-    internal static ServiceProvider Services(FriendshipContext context, HttpMessageHandler accountApi = null, HttpMessageHandler characterApi = null)
+    internal static ServiceProvider Services(FriendshipContext context, HttpMessageHandler accountApi = null, HttpMessageHandler characterApi = null,
+        Action<IServiceCollection> configure = null)
     {
         var services = new ServiceCollection();
         services.AddSingleton(context);
@@ -266,6 +267,7 @@ public sealed class FriendshipPresenceTransactionTests
             sp.GetRequiredService<OutboxMessagePublisher>(), sp.GetRequiredService<AccountManager>()));
         services.AddSingleton(new AccountAPIClient(new HttpClient(accountApi ?? new NoApi(), false) { BaseAddress = new("http://unused-account.test") }));
         services.AddSingleton(new CharacterAPIClient(new HttpClient(characterApi ?? new NoApi(), false) { BaseAddress = new("http://unused-character.test") }));
+        configure?.Invoke(services);
         return services.BuildServiceProvider();
     }
     private sealed class NoApi : HttpMessageHandler

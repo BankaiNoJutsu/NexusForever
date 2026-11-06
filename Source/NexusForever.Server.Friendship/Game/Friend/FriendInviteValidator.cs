@@ -13,18 +13,32 @@ namespace NexusForever.Server.Friendship.Game.Friend
         private readonly LimitOptions _limitOptions;
         private readonly ITextFilterManager _textFilterManager;
         private readonly FriendAccountInviteValidator _accountInviteValidator;
+        private readonly Character.CharacterManager _characters;
 
         public FriendInviteValidator(
             IOptions<LimitOptions> limitOptions,
             ITextFilterManager textFilterManager,
-            FriendAccountInviteValidator accountInviteValidator)
+            FriendAccountInviteValidator accountInviteValidator,
+            Character.CharacterManager characters)
         {
             _limitOptions           = limitOptions.Value;
             _textFilterManager      = textFilterManager;
             _accountInviteValidator = accountInviteValidator;
+            _characters = characters;
         }
 
         #endregion
+
+        public async Task<FriendshipResult?> ValidateRequestAsync(Character.Character inviter, Character.Character invitee, FriendshipType type, string note)
+        {
+            if (type == FriendshipType.Friend)
+            {
+                bool? blocked = await _characters.GetCommittedFriendBlockAsync(invitee);
+                if (!blocked.HasValue) return FriendshipResult.UnableToProcess;
+                if (blocked.Value) return FriendshipResult.FriendsBlocked;
+            }
+            return await ValidatorAsync(inviter, invitee, type, note);
+        }
 
         /// <summary>
         /// Validates a friend invite request.
@@ -119,7 +133,6 @@ namespace NexusForever.Server.Friendship.Game.Friend
             }
 
             // PlayerOffline - do we care?
-            // FriendsBlocked
 
             return null;
         }

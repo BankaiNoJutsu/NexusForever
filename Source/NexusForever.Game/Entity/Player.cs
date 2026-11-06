@@ -232,11 +232,15 @@ namespace NexusForever.Game.Entity
 
         public CharacterFlag Flags
         {
-            get => flags;
+            get { lock (mapAdmission.SyncRoot) return flags; }
             set
             {
-                flags = value;
-                MarkPlayerSave(PlayerSaveMask.Flags);
+                lock (mapAdmission.SyncRoot)
+                {
+                    flags = value;
+                    characterFlagsVersion++;
+                    MarkPlayerSave(PlayerSaveMask.Flags);
+                }
             }
         }
         private CharacterFlag flags;
@@ -1278,8 +1282,7 @@ namespace NexusForever.Game.Entity
 
                 if ((saveMask & PlayerSaveMask.Flags) != 0)
                 {
-                    model.Flags = (uint)Flags;
-                    entity.Property(p => p.Flags).IsModified = true;
+                    StageCharacterFlagsSave(context, entity);
                 }
 
                 if ((saveMask & PlayerSaveMask.Level) != 0 && experienceXpOwner == null)
@@ -1325,7 +1328,7 @@ namespace NexusForever.Game.Entity
                     StagePvPCooldownSave(context, entity);
 
                 // Staging is not a commit. These owners acknowledge their own flushed settlement.
-                ClearPlayerSave(~(PlayerSaveMask.Location | PlayerSaveMask.PvP));
+                ClearPlayerSave(~(PlayerSaveMask.Location | PlayerSaveMask.PvP | PlayerSaveMask.Flags));
             }
 
             model.TimePlayedLevel = (uint)TimePlayedLevel;

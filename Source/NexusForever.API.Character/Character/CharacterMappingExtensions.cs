@@ -14,6 +14,7 @@ namespace NexusForever.API.Character.Character
             return new Model.Character.Character()
             {
                 AccountId = model.AccountId,
+                BlocksFriendRequests = ((CharacterFlag)model.Flags & CharacterFlag.FriendBlock) != 0,
                 Identity  = new Identity()
                 {
                     RealmId = realmId,

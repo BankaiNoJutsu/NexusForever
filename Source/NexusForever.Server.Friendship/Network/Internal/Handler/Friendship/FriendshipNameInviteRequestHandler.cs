@@ -77,7 +77,7 @@ namespace NexusForever.Server.Friendship.Network.Internal.Handler.Friendship
             if (invitee == null)
                 return FriendshipResult.PlayerNotFound;
 
-            FriendshipResult? result = await _inviteValidator.ValidatorAsync(inviter, invitee, message.Type, message.Note);
+            FriendshipResult? result = await _inviteValidator.ValidateRequestAsync(inviter, invitee, message.Type, message.Note);
             if (result != null)
                 return result.Value;
 

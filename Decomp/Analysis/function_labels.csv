@@ -427,7 +427,7 @@ WildStar64.exe,1405cd070,QueuedStateReplay_FlushPendingRecords,Flushes queued re
 WildStar64.exe,1405cd200,QueuedStateReplay_DispatchRecord,Jump-dispatches a single queued replay record into specialized worker helpers inside the UnitCreated-linked state replay cluster.
 WildStar64.exe,1405de2e0,Friendship_SetAutoResponseMessagesAndSend,Validates away and busy auto-response strings and sends opcode 0x03B7 ClientFriendshipSetAutoResponseMessage when the friendship service is loaded.
 WildStar64.exe,1405e3190,Friendship_SendClientFriendshipRemoveByNameOrTarget,Resolves an explicit name/realm or selected target and sends opcode 0x03C2 ClientFriendshipRemoveByName or the target remove request.
-WildStar64.exe,1405e39e0,Friendship_SendClientFriendshipBlock,Builds and sends opcode 0x00B8 ClientFriendshipBlock with the requested or toggled account friend-request block bit.
+WildStar64.exe,1405e39e0,Friendship_SendClientFriendshipBlock,Builds and sends opcode 0x00B8 ClientFriendshipBlock with the requested or toggled character friend-request block bit at global player +0x6328 bit 1; distinct from account stranger-invite opcode 0x039E.
 WildStar64.exe,1405e7fd0,Lua_GameSpell_Equals,Game.Spell __eq metamethod.
 WildStar64.exe,1405e8070,Lua_GameSpell_CreateOrWrap,Creates or wraps a Game.Spell Lua userdata value.
 WildStar64.exe,1405e81b0,Lua_GameSpell_Gc,Game.Spell __gc metamethod.

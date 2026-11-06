@@ -1,8 +1,13 @@
 using Microsoft.Extensions.Logging.Abstractions;
+using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Account;
+using NexusForever.Game.Entity;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Network;
 using NexusForever.Network.Session;
+using NexusForever.Network.Internal;
+using NexusForever.Network.Internal.Message.Friendship;
 using NexusForever.Network.World.Message.Model.Friendship;
 using NexusForever.WorldServer.Network;
 using NexusForever.WorldServer.Network.Message.Handler.Friendship;
@@ -26,21 +31,22 @@ public class FriendshipSocialOptionTests
     }
 
     [Theory]
-    [InlineData(true, 2u)]
-    [InlineData(false, 0u)]
-    public void IgnoreStrangersStateHandler_EchoesTransientClientFlag(bool ignoreStrangers, uint expectedFlags)
+    [InlineData(true)]
+    [InlineData(false)]
+    public void IgnoreStrangersStateHandler_UsesTheDurableAccountOwner(bool ignoreStrangers)
     {
         IWorldSession session = CreateSession(out _, out RecordingDispatchProxy<IWorldSession> sessionProxy);
         ClientFriendshipIgnoreStrangersState message = ReadIgnoreStrangersPacket(ignoreStrangers);
+        var publisher = RecordingDispatchProxy<IInternalMessagePublisher>.Create(out var messages);
+        messages.SetMethodReturn(nameof(IInternalMessagePublisher.PublishAsync), Task.CompletedTask);
         var handler = new ClientFriendshipIgnoreStrangersStateHandler(
-            NullLogger<ClientFriendshipIgnoreStrangersStateHandler>.Instance);
+            NullLogger<ClientFriendshipIgnoreStrangersStateHandler>.Instance, publisher);
 
         handler.HandleMessage(session, message);
 
-        ServerFriendshipIgnoreStrangersState state = GetEncryptedMessages(sessionProxy)
-            .OfType<ServerFriendshipIgnoreStrangersState>()
-            .Single();
-        Assert.Equal(expectedFlags, state.Flags);
+        var setting = Assert.IsType<FriendshipAccountBlockUpdateMessage>(Assert.Single(messages.GetInvocations(nameof(IInternalMessagePublisher.PublishAsync))).Arguments[0]);
+        Assert.Equal(ignoreStrangers, setting.BlockFriendRequests);
+        Assert.Empty(GetEncryptedMessages(sessionProxy));
     }
 
     private static IWorldSession CreateSession(
@@ -51,6 +57,12 @@ public class FriendshipSocialOptionTests
         player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
 
         playerProxy.SetProperty(nameof(IPlayer.Guid), 4242u);
+        playerProxy.SetProperty(nameof(IPlayer.Identity), new Identity { Id = 42, RealmId = 1 });
+        playerProxy.SetProperty(nameof(IPlayer.Session), session);
+        var account = RecordingDispatchProxy<IAccount>.Create(out var ap);
+        ap.SetProperty(nameof(IAccount.Id), 7u); ap.SetProperty(nameof(IAccount.Session), session);
+        playerProxy.SetProperty(nameof(IPlayer.Account), account);
+        sessionProxy.SetProperty(nameof(IWorldSession.Account), account);
         sessionProxy.SetProperty(nameof(IWorldSession.Player), player);
         return session;
     }

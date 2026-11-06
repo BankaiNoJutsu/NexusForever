@@ -9,6 +9,8 @@ namespace NexusForever.API.Model.Character
         public Identity Identity { get; set; }
         public IdentityName IdentityName { get; set; }
         public uint AccountId { get; set; }
+        // Null identifies an older API that cannot authoritatively answer invitation admission.
+        public bool? BlocksFriendRequests { get; set; }
         public Sex Sex { get; set; }
         public Race Race { get; set; }
         public Class Class { get; set; }

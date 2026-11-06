@@ -1,5 +1,17 @@
 # Assessment follow-through goal
 
+[Friendship setting ownership](FRIENDSHIP_SETTING_OWNERSHIP.md) corrects the
+00B8 character lock/039E account stranger-setting split using exact native
+registration/field/dispatcher evidence and corroborating authored UI. Seven
+original failures are fixed;26 new/29 focused and 195 related Source/SQLite
+cases pass. Parsed settings reach real Player saves, fresh Character API
+admission, both real invite handlers and durable pending rows, and account
+outbox refusal/retry/queued original-actor readback. No schema change; deploy
+Character API and Friendship together. Broker/source revision ordering,
+provider/restart/socket/native/retail and auto-response durability remain open.
+F-012/full Goal unfinished; continue independent integrated gameplay with
+native/CUA stopped.
+
 [Q3963 delayed departure](Q3963_DELAYED_DEPARTURE.md) extends the existing CSI
 boundary into owned cinematic preparation and one-shot transport. Eleven original
 failures plus a later unload negative are fixed;22 new/145 related cases pass.

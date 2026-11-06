@@ -1,0 +1,547 @@
+{
+  "Date": "2026-11-06",
+  "BaseHEAD": "bde33217be480debc08142389b56bfb4ad0c03db",
+  "Outcome": "Native-backed character/account friendship setting ownership and Source/SQLite request/save/readback implemented; F-012 and unified restoration unfinished",
+  "Native": {
+    "ClientSHA256": "231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5",
+    "ClientBytes": 13927576,
+    "REAIdentityEvidence": "ev_3a002aa3d25d9d846a80c84d9d2d23eb73db439235129acc4a5501029628a320",
+    "Provenance": "Portable REA identity/import parse; fresh PE byte/pointer inspection and LLVM disassembly; retained same-digest Ghidra exports. No native execution.",
+    "ByteRanges": [
+      {
+        "Name": "IsLocked",
+        "Start": "0x14070dfe0",
+        "EndExclusive": "0x14070e00c",
+        "Bytes": 44,
+        "SHA256": "8864ec627d222b30ee4e98e4aa9d69fe70ea6fa694634b95e1abf1099f27c851"
+      },
+      {
+        "Name": "CharacterFlagsApply",
+        "Start": "0x1403ef871",
+        "EndExclusive": "0x1403ef89a",
+        "Bytes": 41,
+        "SHA256": "5c7e2d211b4f0d9e6537cb628f4c932fc71dfd04adc4d2cc047a20548c76f472"
+      },
+      {
+        "Name": "AccountStatusApply",
+        "Start": "0x1403f0aaf",
+        "EndExclusive": "0x1403f0af8",
+        "Bytes": 73,
+        "SHA256": "f9b99ef7d98f4c40dca910d1eaa67b767e25c28cd8e04c045f67eebce22fa8ec"
+      }
+    ],
+    "Dispatcher": [
+      {
+        "Opcode": "0xfe",
+        "Slot": "0x1403f15b8",
+        "Target": "0x1403ef871",
+        "BytesHex": "71f83e00"
+      },
+      {
+        "Opcode": "0x3a5",
+        "Slot": "0x1403f2054",
+        "Target": "0x1403f0ac5",
+        "BytesHex": "c50a3f00"
+      },
+      {
+        "Opcode": "0x3a6",
+        "Slot": "0x1403f2058",
+        "Target": "0x1403f0aaf",
+        "BytesHex": "af0a3f00"
+      }
+    ],
+    "LuaRegistrations": [
+      {
+        "Name": "SetLock",
+        "Slot": "0x140b736e0",
+        "NameVA": "0x140b44e20",
+        "Callback": "0x14070e010",
+        "SHA256": "5c39c4d6b897c746239eaf4e9f419e1bd6d7b4c7ced75bd9682006f8335b2696"
+      },
+      {
+        "Name": "IsLocked",
+        "Slot": "0x140b736d0",
+        "NameVA": "0x140b44e28",
+        "Callback": "0x14070dfe0",
+        "SHA256": "0ed669c2cf5194a73fddb16d5c2b9524fe116a12f291641427f517b1c649b63e"
+      },
+      {
+        "Name": "GetPersonalStatus",
+        "Slot": "0x140b73730",
+        "NameVA": "0x140b44da8",
+        "Callback": "0x14070e2a0",
+        "SHA256": "5b990a96cf282e5e3caec9664b04760beca6e48445586f716958866874526fee"
+      },
+      {
+        "Name": "SetPersonalIgnoreStrangersState",
+        "Slot": "0x140b73750",
+        "NameVA": "0x140b44d68",
+        "Callback": "0x14070e5d0",
+        "SHA256": "612d51697bab22ece9540a7c0a6c486a6c9b27364354a73823b1a5fb7ac8e2ad"
+      }
+    ],
+    "RetainedDecompiledExports": [
+      {
+        "Name": "14070e010.fragment.c",
+        "Bytes": 463,
+        "SHA256": "fceb743a572ce563d911aadef927dfe2584d05a1ca2a7353bd696e5947104a6f"
+      },
+      {
+        "Name": "1405e39e0.fragment.c",
+        "Bytes": 766,
+        "SHA256": "6f1788c1a9ebff1eaef745dd5cb59f9d19ba9ab1bbe69fc1c1667cdfdc937827"
+      },
+      {
+        "Name": "14070e5d0.fragment.c",
+        "Bytes": 1108,
+        "SHA256": "a37d863e93f091badbe280a724cd4ccce4ebeec44512bf8377519589b17413a4"
+      },
+      {
+        "Name": "14070e2a0.fragment.c",
+        "Bytes": 1150,
+        "SHA256": "1d1fe1e6dd57c9ac9d0c607afcb011834dc72387ff1c116350bbda221336c355"
+      },
+      {
+        "Name": "1405e2d90.fragment.c",
+        "Bytes": 4895,
+        "SHA256": "b42f83af31c397c29684f0162f7541cdd21560c0659fc15310213c35ce1ad0e9"
+      },
+      {
+        "Name": "1405e16c0.fragment.c",
+        "Bytes": 2335,
+        "SHA256": "8e1886b7a7fc6a77a87f087731f617d75f80e0882a95870875e535310d68e480"
+      }
+    ],
+    "RawArtifacts": [
+      {
+        "Path": "artifacts/friendship-social-routing/FriendsList.lua",
+        "Bytes": 95899,
+        "SHA256": "946ffcfcf7001e9b3bbf9c33cd7fa1b9c0691d952a2c952aed1240b1ba6be9de"
+      },
+      {
+        "Path": "artifacts/friendship-social-routing/rea-identity.json",
+        "Bytes": 154984,
+        "SHA256": "1cbafdc7506cd06ddf7d7f5e0acc423087adf2e12b5286ecdbf2b09272d137c0"
+      },
+      {
+        "Path": "artifacts/friendship-social-routing/anchors.json",
+        "Bytes": 1831,
+        "SHA256": "4e1963148fb970402c79338e793f6513c1e771ee8ccfd3143686fd50271a2075"
+      },
+      {
+        "Path": "artifacts/friendship-social-routing/islocked.asm",
+        "Bytes": 942,
+        "SHA256": "f8b6c5685a4cc95883254262e1a2efc79b5b744be7a26e368b23e5db1ac3221e"
+      },
+      {
+        "Path": "artifacts/friendship-social-routing/account-receive.asm",
+        "Bytes": 1185,
+        "SHA256": "80153b9a888ba2545f320b7d2efdfcbdee4fee70902665068f055dad14525145"
+      },
+      {
+        "Path": "artifacts/friendship-social-routing/character-receive.asm",
+        "Bytes": 991,
+        "SHA256": "ecd7e241d8900e017724fbd39720cd90c8bf614a5a4b1bd41f653b15d001d6ed"
+      },
+      {
+        "Path": "artifacts/friendship-social-routing/upstream608.json",
+        "Bytes": 4685,
+        "SHA256": "aa4a3f9ecebe288b942cd5590a5a58b54737514615a9a5b627399a1f238f56a1"
+      },
+      {
+        "Path": "artifacts/friendship-social-routing/upstream609.json",
+        "Bytes": 11053,
+        "SHA256": "6e86d7f4a87b0b18741bd7371d50439755b7893b99cc01864fd8916cf5bbfc27"
+      },
+      {
+        "Path": "artifacts/friendship-social-routing/newest-prs.json",
+        "Bytes": 14218,
+        "SHA256": "c3683924ce95636aca6654b07861940fee1f5ff7adff4998687f04c5cca41e74"
+      }
+    ]
+  },
+  "AuthoredUI": {
+    "URL": "https://github.com/Zod-/Wildstar-Carbine-Addons/blob/0827880c8a820b5cbb3f1dff3e3888c9ab9f0263/Live/FriendsList/FriendsList.lua",
+    "Boundary": "NCsoft authored UI from third-party mirror API16/version15736; corroboration, not exact build16042 Lua identity"
+  },
+  "Source": [
+    {
+      "Path": "Source/NexusForever.API.Character/Character/CharacterMappingExtensions.cs",
+      "Bytes": 2007,
+      "SHA256": "398d8b518046ab470ae4c2eee8a7ebfe98df5287928f1dec8b57b55d1e957e42"
+    },
+    {
+      "Path": "Source/NexusForever.API/Model/Character/Character.cs",
+      "Bytes": 1080,
+      "SHA256": "9f848bd8628e1424939f1a4e02c777de077eaa1dbf72a7d3040712f22b92a4ea"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Entity/Player.cs",
+      "Bytes": 176925,
+      "SHA256": "6ecaa035edfe2c5d5d866070b7dae5f50f9e7cbbd3c83bb3e51ff032af5b9dbe"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Entity/Player.FlagsPersistence.cs",
+      "Bytes": 2216,
+      "SHA256": "25a1151a8aa4851bfe9ee771b68a8aa7b567194913c8c957338910efa99af3fe"
+    },
+    {
+      "Path": "Source/NexusForever.Server.Friendship/Game/Character/CharacterManager.cs",
+      "Bytes": 7668,
+      "SHA256": "d30f04dd23323caa5b6839ef7ee2f066306d23982848de06bb635a5f10ecd775"
+    },
+    {
+      "Path": "Source/NexusForever.Server.Friendship/Game/Friend/FriendInviteValidator.cs",
+      "Bytes": 6130,
+      "SHA256": "d928dc5f94ec64356b0f57bcf1b4fdd5fad0ea682d9354ad02d278ab48ebba3f"
+    },
+    {
+      "Path": "Source/NexusForever.Server.Friendship/Network/Internal/Handler/Friendship/FriendshipIdentityInviteRequestHandler.cs",
+      "Bytes": 3550,
+      "SHA256": "095820a80e210ebac407da2e8a03266430bd9eac096f9c9a6d5e15fd5e444340"
+    },
+    {
+      "Path": "Source/NexusForever.Server.Friendship/Network/Internal/Handler/Friendship/FriendshipNameInviteRequestHandler.cs",
+      "Bytes": 3965,
+      "SHA256": "a39d50a06199479ff451549fa1d2c61cf1ec3365b3dbf4a06fd1965cfdcc8e0d"
+    },
+    {
+      "Path": "Source/NexusForever.WorldServer/Network/Internal/Handler/Friendship/FriendshipAccountPersonalStatusUpdatedHandler.cs",
+      "Bytes": 2591,
+      "SHA256": "df53d55c0e4a308d784eb6e5b9303b098a62a3fa0b45471f44c9fb3939124d51"
+    },
+    {
+      "Path": "Source/NexusForever.WorldServer/Network/Message/Handler/Friendship/ClientFriendshipAdditionalHandlers.cs",
+      "Bytes": 5651,
+      "SHA256": "a02cb1c7ad5392bc745ee5fbc70ab5696a15a13ee14eaa609b4d1f023e2c995a"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Friendship/FriendshipSettingOwnershipTests.cs",
+      "Bytes": 8228,
+      "SHA256": "b0c6d786ff79e036637b56780a545be1276ffe72c93b5584e88688403c1591f3"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Friendship/FriendshipSettingOwnershipTests.Admission.cs",
+      "Bytes": 14154,
+      "SHA256": "92392a532bcd511247adf6d61caa1b46acac27e1ed0cf2eb59e5c613fcbb2920"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Friendship/FriendshipSocialOptionTests.cs",
+      "Bytes": 4971,
+      "SHA256": "8b37700e3e1966e9380cf243d4c4de7955f934db958364b16a8732420747829f"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Database/FriendshipPresenceTransactionTests.cs",
+      "Bytes": 20536,
+      "SHA256": "cf19d3c05b05c5f7ae9a20813b90b34510d580f4165e1663b56373f205d0e6ae"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/NexusForever.Game.Tests.csproj",
+      "Bytes": 3067,
+      "SHA256": "b5b51fda59b8dc912b0840bd4f8d68210abb62896b786ec0964dcaf5c3cadc18"
+    }
+  ],
+  "Assemblies": [
+    {
+      "Project": "NexusForever.Game",
+      "Tested": {
+        "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.dll",
+        "Bytes": 4934144,
+        "SHA256": "193e712846321099c7124f309780ff20c629754763a4861ba2229eb18e736edb"
+      },
+      "Owning": {
+        "Path": "Source/NexusForever.Game/bin/Debug/net10.0/NexusForever.Game.dll",
+        "Bytes": 4934144,
+        "SHA256": "193e712846321099c7124f309780ff20c629754763a4861ba2229eb18e736edb"
+      }
+    },
+    {
+      "Project": "NexusForever.API",
+      "Tested": {
+        "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.API.dll",
+        "Bytes": 15872,
+        "SHA256": "c2b352b971cbe38d216eb0f13779e69e74f40078730948648e8110416cf09c9b"
+      },
+      "Owning": {
+        "Path": "Source/NexusForever.API/bin/Debug/net10.0/NexusForever.API.dll",
+        "Bytes": 15872,
+        "SHA256": "c2b352b971cbe38d216eb0f13779e69e74f40078730948648e8110416cf09c9b"
+      }
+    },
+    {
+      "Project": "NexusForever.API.Character",
+      "Tested": {
+        "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.API.Character.dll",
+        "Bytes": 20992,
+        "SHA256": "0f3e8d4dd0e91ecc9481c903aa46fb181eff2fc8ae0da377ac3cc618dce7bc57"
+      },
+      "Owning": {
+        "Path": "Source/NexusForever.API.Character/bin/Debug/net10.0/NexusForever.API.Character.dll",
+        "Bytes": 20992,
+        "SHA256": "0f3e8d4dd0e91ecc9481c903aa46fb181eff2fc8ae0da377ac3cc618dce7bc57"
+      }
+    },
+    {
+      "Project": "NexusForever.Server.Friendship",
+      "Tested": {
+        "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Server.Friendship.dll",
+        "Bytes": 229376,
+        "SHA256": "155a3e4ce5785a25a58648540d97a28cd7edfd2d9beca69760739ef33e7f8522"
+      },
+      "Owning": {
+        "Path": "Source/NexusForever.Server.Friendship/bin/Debug/net10.0/NexusForever.Server.Friendship.dll",
+        "Bytes": 229376,
+        "SHA256": "155a3e4ce5785a25a58648540d97a28cd7edfd2d9beca69760739ef33e7f8522"
+      }
+    },
+    {
+      "Project": "NexusForever.WorldServer",
+      "Tested": {
+        "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+        "Bytes": 881664,
+        "SHA256": "6f8ee88c0507f4b9b8a17ac79fd2e9e680ab5575ad0cc0133eaf0ec76ece5c42"
+      },
+      "Owning": {
+        "Path": "Source/NexusForever.WorldServer/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+        "Bytes": 881664,
+        "SHA256": "6f8ee88c0507f4b9b8a17ac79fd2e9e680ab5575ad0cc0133eaf0ec76ece5c42"
+      }
+    },
+    {
+      "Project": "NexusForever.Game.Tests",
+      "Tested": {
+        "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+        "Bytes": 10081280,
+        "SHA256": "d60c70cc392959e73c5e4ee5b792a07f8073c5de98ceca79eb0447d686a3f5f1"
+      },
+      "Owning": {
+        "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+        "Bytes": 10081280,
+        "SHA256": "d60c70cc392959e73c5e4ee5b792a07f8073c5de98ceca79eb0447d686a3f5f1"
+      }
+    }
+  ],
+  "Runs": [
+    {
+      "Name": "Original failure",
+      "Artifact": {
+        "Path": "artifacts/friendship-social-routing/baseline-fixed/baseline.trx",
+        "Bytes": 23786,
+        "SHA256": "15ae387d6aa38510469a088e203a7ef1be86f244e0c538afbb4603578aa931fe"
+      },
+      "Counters": {
+        "total": "7",
+        "executed": "7",
+        "passed": "0",
+        "failed": "7",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "Failures": [
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipSettingOwnershipTests.CharacterLockChangesOnlyTheCharacterFlagAndSurvivesReload(blocked: False)",
+          "Message": "Assert.Equal() Failure: Values differ\r\nExpected: HolomarkHideLeft\r\nActual:   FriendBlock | HolomarkHideLeft"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipSettingOwnershipTests.CharacterFlagIntentSurvivesUnconfirmedSave(outcome: \"unflushed\")",
+          "Message": "Assert.Equal() Failure: Values differ\r\nExpected: 10\r\nActual:   0"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipSettingOwnershipTests.IgnoreStrangersRoutesToAccountSettingWithoutCharacterFlagEcho(blocked: True)",
+          "Message": "Assert.Single() Failure: The collection was empty"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipSettingOwnershipTests.CharacterFlagIntentSurvivesUnconfirmedSave(outcome: \"reject\")",
+          "Message": "Assert.Equal() Failure: Values differ\r\nExpected: 10\r\nActual:   0"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipSettingOwnershipTests.IgnoreStrangersRoutesToAccountSettingWithoutCharacterFlagEcho(blocked: False)",
+          "Message": "Assert.Single() Failure: The collection was empty"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipSettingOwnershipTests.CharacterLockChangesOnlyTheCharacterFlagAndSurvivesReload(blocked: True)",
+          "Message": "Assert.Equal() Failure: Values differ\r\nExpected: FriendBlock | HolomarkHideLeft\r\nActual:   HolomarkHideLeft"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipSettingOwnershipTests.CharacterFlagIntentSurvivesUnconfirmedSave(outcome: \"rollback\")",
+          "Message": "Assert.Equal() Failure: Values differ\r\nExpected: 10\r\nActual:   0"
+        }
+      ]
+    },
+    {
+      "Name": "Intermediate failure",
+      "Artifact": {
+        "Path": "artifacts/friendship-social-routing/admission-final/admission-final.trx",
+        "Bytes": 73275,
+        "SHA256": "f2c2fcb7d07b96ac0979ac0af4ce4b22c516a138f8898ce14e45a73d2d21f28b"
+      },
+      "Counters": {
+        "total": "29",
+        "executed": "29",
+        "passed": "27",
+        "failed": "2",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "Failures": [
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipSettingOwnershipTests.SuppressedCharacterFlagWriteRemainsDirtyAndSuccessfulRetryAcknowledgesIt",
+          "Message": "Assert.Equal() Failure: Values differ\r\nExpected: 2\r\nActual:   0"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipSettingOwnershipTests.CharacterFlagIntentSurvivesUnconfirmedSave(outcome: \"savepoint\")",
+          "Message": "System.OutOfMemoryException : Exception of type 'System.OutOfMemoryException' was thrown."
+        }
+      ]
+    },
+    {
+      "Name": "Final focused",
+      "Artifact": {
+        "Path": "artifacts/friendship-social-routing/ownership/ownership.trx",
+        "Bytes": 47325,
+        "SHA256": "a2e7e8c1ad76a6dabb35af7c901da0a876a70a74edfac8c794ac60af0406aeb7"
+      },
+      "Counters": {
+        "total": "29",
+        "executed": "29",
+        "passed": "29",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "Failures": []
+    },
+    {
+      "Name": "Final related",
+      "Artifact": {
+        "Path": "artifacts/friendship-social-routing/related/related.trx",
+        "Bytes": 296753,
+        "SHA256": "adfaf4b673b247bbb923c3d08921a313bfd7786074e00ce3ce2ea0b04f41e86e"
+      },
+      "Counters": {
+        "total": "195",
+        "executed": "195",
+        "passed": "195",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "Failures": []
+    }
+  ],
+  "OwningBuilds": [
+    {
+      "Project": "NexusForever.Game",
+      "Result": "Passed; zero warnings/errors",
+      "Artifact": {
+        "Path": "artifacts/friendship-social-routing/build-NexusForever.Game.log",
+        "Bytes": 2432,
+        "SHA256": "f6ade86df7377744b047005f4b643ccb3e0099b7c7f84f4cf74ecb773bdaedc6"
+      }
+    },
+    {
+      "Project": "NexusForever.API.Character",
+      "Result": "Passed; zero warnings/errors",
+      "Artifact": {
+        "Path": "artifacts/friendship-social-routing/build-NexusForever.API.Character.log",
+        "Bytes": 1096,
+        "SHA256": "c80c44e5bcbbcc445a1c165df2b0aa5dbe42883a7e7d0c2eed3ccfb8ed6f40a8"
+      }
+    },
+    {
+      "Project": "NexusForever.Server.Friendship",
+      "Result": "Passed; zero warnings/errors",
+      "Artifact": {
+        "Path": "artifacts/friendship-social-routing/build-NexusForever.Server.Friendship.log",
+        "Bytes": 1603,
+        "SHA256": "550776f0a555408991ae67b84d143fba15a183e5da6856e03f15c456ec37a035"
+      }
+    },
+    {
+      "Project": "NexusForever.WorldServer",
+      "Result": "Passed; zero warnings/errors",
+      "Artifact": {
+        "Path": "artifacts/friendship-social-routing/build-NexusForever.WorldServer.log",
+        "Bytes": 3407,
+        "SHA256": "495e82ca67df25ee77687e9006d8d701e723cbba325fd6634bd93e35a4588cee"
+      }
+    }
+  ],
+  "RelatedFilter": "FullyQualifiedName~NexusForever.Game.Tests.Friendship.|FullyQualifiedName~NexusForever.Game.Tests.Database.FriendshipPresence|FullyQualifiedName~NexusForever.Game.Tests.Database.FriendshipAccountBootstrap|FullyQualifiedName~PvpFlagCooldownTests|FullyQualifiedName~DuelManagerTests|FullyQualifiedName~PlayerTaxiDiscoveryTests|FullyQualifiedName~IncomingChatOwnershipTests",
+  "Review": [
+    {
+      "Axis": "Behavior/specification",
+      "Reviewer": "Primary agent; no delegation",
+      "FinalFindings": 0,
+      "Scope": "Exact client owner split; parsed requests, full Player SQL refusal/retry/later intent; real API mapper; both actual invitation handlers/durable pending rows; account outbox refusal/readback and original queued actor."
+    },
+    {
+      "Axis": "Repository/standards",
+      "Reviewer": "Primary agent; no delegation",
+      "FinalFindings": 0,
+      "Scope": "Existing Character/Friendship owners and transaction/outbox/atomic mask conventions; explicit nullable old-API handling; no authoring queries/schema/config changes; selective owning builds/scoped tests; raw assets excluded."
+    }
+  ],
+  "Upstream": {
+    "PR608": {
+      "State": "open",
+      "Head": "7db12d9a7c694bc5e66d9e0f4cdbc1b82155e69b"
+    },
+    "PR609": {
+      "State": "closed/unmerged",
+      "Head": "f9b6f7356798a41beea0768ff1f6b5a758ffeca3"
+    },
+    "NewerSearch": "created>=2026-10-30 returns only608/609; reviewed unchanged diffs reused"
+  },
+  "Limits": [
+    "No configured-provider or hosted/broker/socket/restart qualification",
+    "No source command/reply revisions; ordering/replay remains open",
+    "Character API and Friendship deploy together; older missing preference fails closed",
+    "Committed API read is point-in-time, not a cross-service lock",
+    "00FE remains immediate intent feedback, not SQL receipt",
+    "Native client and Computer Use remain stopped",
+    "Auto-response durable owner remains unresolved",
+    "No full solution build or full test suite",
+    "Not retail complete"
+  ]
+}

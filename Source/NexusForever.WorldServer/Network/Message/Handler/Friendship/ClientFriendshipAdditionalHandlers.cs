@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using NexusForever.Game;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Network.Internal;
 using NexusForever.Network.Internal.Message.Friendship;
 using NexusForever.Network.Internal.Message.Shared;
@@ -12,26 +13,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Friendship
 {
     public class ClientFriendshipBlockHandler : IMessageHandler<IWorldSession, ClientFriendshipBlock>
     {
-        #region Dependency Injection
-
-        private readonly IInternalMessagePublisher messagePublisher;
-
-        public ClientFriendshipBlockHandler(
-            IInternalMessagePublisher messagePublisher)
-        {
-            this.messagePublisher = messagePublisher;
-        }
-
-        #endregion
-
         public void HandleMessage(IWorldSession session, ClientFriendshipBlock message)
         {
-            messagePublisher.PublishAsync(new FriendshipAccountBlockUpdateMessage
-            {
-                Identity            = session.Player.Identity.ToInternalIdentity(),
-                AccountId           = session.Account.Id,
-                BlockFriendRequests = message.BlockFriendRequests
-            }).FireAndForgetAsync();
+            var player = session?.Player;
+            if (player == null || !ReferenceEquals(player.Session, session)) return;
+            if (message.BlockFriendRequests) player.SetFlag(CharacterFlag.FriendBlock);
+            else player.RemoveFlag(CharacterFlag.FriendBlock);
         }
     }
 
@@ -40,24 +27,32 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Friendship
         #region Dependency Injection
 
         private readonly ILogger<ClientFriendshipIgnoreStrangersStateHandler> log;
+        private readonly IInternalMessagePublisher messagePublisher;
 
         public ClientFriendshipIgnoreStrangersStateHandler(
-            ILogger<ClientFriendshipIgnoreStrangersStateHandler> log)
+            ILogger<ClientFriendshipIgnoreStrangersStateHandler> log,
+            IInternalMessagePublisher messagePublisher)
         {
             this.log = log;
+            this.messagePublisher = messagePublisher;
         }
 
         #endregion
 
         public void HandleMessage(IWorldSession session, ClientFriendshipIgnoreStrangersState message)
         {
-            log.LogDebug("Updated transient ignore-strangers state for player {PlayerGuid}: ignore {IgnoreStrangerInvites}.",
+            var player = session?.Player;
+            var account = session?.Account;
+            if (player == null || account == null || !ReferenceEquals(player.Session, session)
+                || !ReferenceEquals(player.Account, account) || !ReferenceEquals(account.Session, session)) return;
+            log.LogDebug("Updating account ignore-strangers state for player {PlayerGuid}: ignore {IgnoreStrangerInvites}.",
                 session.Player?.Guid, message.IgnoreStrangerInvites);
 
-            session.EnqueueMessageEncrypted(new ServerFriendshipIgnoreStrangersState
+            messagePublisher.PublishAsync(new FriendshipAccountBlockUpdateMessage
             {
-                Flags = message.IgnoreStrangerInvites ? 2u : 0u
-            });
+                Identity = player.Identity.ToInternalIdentity(), AccountId = account.Id,
+                BlockFriendRequests = message.IgnoreStrangerInvites
+            }).FireAndForgetAsync();
         }
     }
 
