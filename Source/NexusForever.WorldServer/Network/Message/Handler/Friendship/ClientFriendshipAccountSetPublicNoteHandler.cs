@@ -23,10 +23,11 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Friendship
 
         public void HandleMessage(IWorldSession session, ClientFriendshipAccountSetPublicNote message)
         {
+            if (!FriendshipAccountCommandSource.TryCapture(session, out var player, out var account, out var owner)) return;
             messagePublisher.PublishAsync(new FriendshipAccountStatusUpdateMessage
             {
-                Identity  = session.Player.Identity.ToInternalIdentity(),
-                AccountId = session.Account.Id,
+                Identity  = player.Identity.ToInternalIdentity(),
+                AccountId = account.Id, PresenceOwner = owner,
                 Status    = message.PublicNote != string.Empty ? message.PublicNote : null
             }).FireAndForgetAsync();
         }

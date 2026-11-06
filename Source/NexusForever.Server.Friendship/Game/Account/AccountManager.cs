@@ -17,6 +17,9 @@ namespace NexusForever.Server.Friendship.Game.Account
             _accountCache.Clear(); _accountEmailCache.Clear(); _accountNicknameCache.Clear();
         }
 
+        internal void ResetPresenceCommandCaches()
+            => _serviceProvider.GetRequiredService<Game.Character.CharacterManager>().ResetPresenceCaches();
+
         #region Dependency Injection
 
         private readonly AccountRepository _repository;

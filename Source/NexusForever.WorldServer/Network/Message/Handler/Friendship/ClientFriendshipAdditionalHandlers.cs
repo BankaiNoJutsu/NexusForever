@@ -41,16 +41,13 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Friendship
 
         public void HandleMessage(IWorldSession session, ClientFriendshipIgnoreStrangersState message)
         {
-            var player = session?.Player;
-            var account = session?.Account;
-            if (player == null || account == null || !ReferenceEquals(player.Session, session)
-                || !ReferenceEquals(player.Account, account) || !ReferenceEquals(account.Session, session)) return;
+            if (!FriendshipAccountCommandSource.TryCapture(session, out var player, out var account, out var owner)) return;
             log.LogDebug("Updating account ignore-strangers state for player {PlayerGuid}: ignore {IgnoreStrangerInvites}.",
                 session.Player?.Guid, message.IgnoreStrangerInvites);
 
             messagePublisher.PublishAsync(new FriendshipAccountBlockUpdateMessage
             {
-                Identity = player.Identity.ToInternalIdentity(), AccountId = account.Id,
+                Identity = player.Identity.ToInternalIdentity(), AccountId = account.Id, PresenceOwner = owner,
                 BlockFriendRequests = message.IgnoreStrangerInvites
             }).FireAndForgetAsync();
         }

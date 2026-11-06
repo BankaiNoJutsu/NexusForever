@@ -140,6 +140,10 @@ public partial class FriendshipSettingOwnershipTests
             sessionProxy.SetProperty(nameof(IWorldSession.Player), Actor.Player);
             sessionProxy.SetProperty(nameof(IWorldSession.Account), Actor.Player.Account);
             ((RecordingDispatchProxy<IAccount>)(object)Actor.Player.Account).SetProperty(nameof(IAccount.Session), Session);
+            ((RecordingDispatchProxy<IAccount>)(object)Actor.Player.Account).SetProperty(nameof(IAccount.Id), 7u);
+            ((RecordingDispatchProxy<IAccount>)(object)Actor.Player.Account).SetProperty(nameof(IAccount.WorldSessionEpoch), 1ul);
+            typeof(Player).GetField("presenceSessionEpoch", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.SetValue(Actor.Player, 1ul);
+            typeof(Player).GetField("presenceAdmission", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.SetValue(Actor.Player, 1ul);
         }
         internal IEnumerable<T> Packets<T>() => sessionProxy.GetInvocations("EnqueueMessageEncrypted").Select(i => i.Arguments[0]).OfType<T>();
         internal Task Persist() => CharacterAtomicSave.Execute(() => Store.Context(), 42, Actor.Player.Save);

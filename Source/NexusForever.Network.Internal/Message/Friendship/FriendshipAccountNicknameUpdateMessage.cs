@@ -6,6 +6,7 @@ namespace NexusForever.Network.Internal.Message.Friendship
     {
         public Identity Source { get; set; }
         public uint AccountId { get; set; }
+        public Shared.FriendshipAccountCommandOwner PresenceOwner { get; set; }
         public string AccountNickname { get; set; }
     }
 }

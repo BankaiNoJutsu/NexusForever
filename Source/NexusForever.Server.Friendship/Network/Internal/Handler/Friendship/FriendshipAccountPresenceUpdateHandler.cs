@@ -22,15 +22,11 @@ namespace NexusForever.Server.Friendship.Network.Internal.Handler.Friendship
 
         #endregion
 
-        public async Task Handle(FriendshipAccountPresenceUpdateMessage message)
+        public Task Handle(FriendshipAccountPresenceUpdateMessage message)
         {
-            Account account = await _accountManager.GetAccountAsync(message.AccountId);
-            if (account == null)
-                return;
-
-            await account.SetPresenceAsync(message.Presence);
-
-            await _context.SaveChangesAsync();
+            var presence = message.Presence;
+            return FriendshipAccountCommand.ExecuteAsync(_context, _accountManager, message.AccountId, message.PresenceOwner,
+                async account => { if (account != null) await account.SetPresenceAsync(presence); });
         }
     }
 }

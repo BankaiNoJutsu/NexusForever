@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[Friendship account commands](Decomp/Analysis/FRIENDSHIP_ACCOUNT_COMMAND_OWNERSHIP.md)
+now retain their recorded open presence owner through World requests, internal
+serialization and Friendship SQL/outbox settlement. Four baseline overwrites
+are fixed;74 new/188 related cases pass, including real Player and post-flush
+rollback/retry controls. Deploy World/Friendship/shared messages together; no DDL.
+Broker/readback ordering, providers/restart/native and full F-012 remain open.
+
 [Ordinary quest account currency](Decomp/Analysis/QUEST_ACCOUNT_CURRENCY_SETTLEMENT.md)
 now pairs concrete direct completion and starter-tutorial recovery as well as
 public turn-in. Four further baseline payout failures are fixed;22 new/27 focused,

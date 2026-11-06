@@ -37,30 +37,32 @@ namespace NexusForever.Server.Friendship.Network.Internal.Handler.Friendship
 
         #endregion
 
-        public async Task Handle(FriendshipAccountStatusUpdateMessage message)
+        public Task Handle(FriendshipAccountStatusUpdateMessage message)
         {
-            Task<FriendshipResult?> task = SetAccountStatus(message);
-            await _friendshipResultPublisher.PublishResultAsync(_messagePublisher, message.Identity, task);
-
-            await _context.SaveChangesAsync();
+            string status = message.Status;
+            var identity = message.PresenceOwner?.Identity ?? message.Identity;
+            return FriendshipAccountCommand.ExecuteAsync(_context, _accountManager, message.AccountId, message.PresenceOwner, async account =>
+            {
+                Task<FriendshipResult?> task = SetAccountStatus(account, status);
+                await _friendshipResultPublisher.PublishResultAsync(_messagePublisher, identity, task);
+            });
         }
 
-        private async Task<FriendshipResult?> SetAccountStatus(FriendshipAccountStatusUpdateMessage message)
+        private async Task<FriendshipResult?> SetAccountStatus(Account account, string status)
         {
-            Account account = await _accountManager.GetAccountAsync(message.AccountId);
             if (account == null)
                 return FriendshipResult.FriendshipNotFound;
 
-            if (message.Status != null)
+            if (status != null)
             {
-                if (!_textFilterManager.IsTextValid(message.Status))
+                if (!_textFilterManager.IsTextValid(status))
                     return FriendshipResult.ContainsProfanity;
 
-                if (!_textFilterManager.IsTextValid(message.Status, UserText.FriendshipAccountPublicNote))
+                if (!_textFilterManager.IsTextValid(status, UserText.FriendshipAccountPublicNote))
                     return FriendshipResult.InvalidPublicNote;
             }
 
-            await account.SetStatusAsync(message.Status);
+            await account.SetStatusAsync(status);
 
             return null;
         }

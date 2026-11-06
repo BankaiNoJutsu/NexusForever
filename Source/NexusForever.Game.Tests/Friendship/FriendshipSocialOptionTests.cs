@@ -58,9 +58,13 @@ public class FriendshipSocialOptionTests
 
         playerProxy.SetProperty(nameof(IPlayer.Guid), 4242u);
         playerProxy.SetProperty(nameof(IPlayer.Identity), new Identity { Id = 42, RealmId = 1 });
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), 42ul);
+        playerProxy.SetProperty(nameof(IPlayer.PresenceSessionEpoch), 1ul);
+        playerProxy.SetProperty(nameof(IPlayer.PresenceAdmission), 1ul);
         playerProxy.SetProperty(nameof(IPlayer.Session), session);
         var account = RecordingDispatchProxy<IAccount>.Create(out var ap);
         ap.SetProperty(nameof(IAccount.Id), 7u); ap.SetProperty(nameof(IAccount.Session), session);
+        ap.SetProperty(nameof(IAccount.WorldSessionEpoch), 1ul);
         playerProxy.SetProperty(nameof(IPlayer.Account), account);
         sessionProxy.SetProperty(nameof(IWorldSession.Account), account);
         sessionProxy.SetProperty(nameof(IWorldSession.Player), player);

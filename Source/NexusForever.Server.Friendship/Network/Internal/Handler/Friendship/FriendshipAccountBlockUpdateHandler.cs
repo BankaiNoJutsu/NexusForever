@@ -32,21 +32,23 @@ namespace NexusForever.Server.Friendship.Network.Internal.Handler.Friendship
 
         #endregion
 
-        public async Task Handle(FriendshipAccountBlockUpdateMessage message)
+        public Task Handle(FriendshipAccountBlockUpdateMessage message)
         {
-            Task<FriendshipResult?> task = UpdateBlockStateAsync(message);
-            await _friendshipResultPublisher.PublishResultAsync(_messagePublisher, message.Identity, task);
-
-            await _context.SaveChangesAsync();
+            bool blocked = message.BlockFriendRequests;
+            var identity = message.PresenceOwner?.Identity ?? message.Identity;
+            return FriendshipAccountCommand.ExecuteAsync(_context, _accountManager, message.AccountId, message.PresenceOwner, async account =>
+            {
+                Task<FriendshipResult?> task = UpdateBlockStateAsync(account, blocked);
+                await _friendshipResultPublisher.PublishResultAsync(_messagePublisher, identity, task);
+            });
         }
 
-        private async Task<FriendshipResult?> UpdateBlockStateAsync(FriendshipAccountBlockUpdateMessage message)
+        private async Task<FriendshipResult?> UpdateBlockStateAsync(Account account, bool blocked)
         {
-            Account account = await _accountManager.GetAccountAsync(message.AccountId);
             if (account == null)
                 return FriendshipResult.FriendshipNotFound;
 
-            await account.SetBlockAccountFriendRequestsAsync(message.BlockFriendRequests);
+            await account.SetBlockAccountFriendRequestsAsync(blocked);
 
             return null;
         }

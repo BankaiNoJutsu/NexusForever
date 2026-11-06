@@ -12,6 +12,12 @@ namespace NexusForever.Server.Friendship.Network.Internal.Handler.Player
     internal static class FriendshipPresenceTransaction
     {
         internal static async Task ExecuteAsync(FriendshipContext context, CharacterManager characters, Func<Task<bool>> operation)
+            => await ExecuteAsync(context, characters.ResetPresenceCaches, operation);
+
+        internal static async Task ExecuteAsync(FriendshipContext context, Game.Account.AccountManager accounts, Func<Task<bool>> operation)
+            => await ExecuteAsync(context, accounts.ResetPresenceCommandCaches, operation);
+
+        private static async Task ExecuteAsync(FriendshipContext context, Action resetCaches, Func<Task<bool>> operation)
         {
             context.ChangeTracker.DetectChanges();
             if (context.Database.CurrentTransaction != null || context.ChangeTracker.HasChanges())
@@ -27,7 +33,7 @@ namespace NexusForever.Server.Friendship.Network.Internal.Handler.Player
                     // A rolled-back tracker and scoped wrappers cannot become
                     // the baseline of a whole-unit provider retry.
                     context.ChangeTracker.Clear();
-                    characters.ResetPresenceCaches();
+                    resetCaches();
                 }
                 await using var transaction = await context.Database.BeginTransactionAsync(sqlite
                     ? IsolationLevel.Serializable : IsolationLevel.ReadCommitted);

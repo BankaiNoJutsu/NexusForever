@@ -1,5 +1,17 @@
 # Assessment follow-through goal
 
+[Friendship account command ownership](FRIENDSHIP_ACCOUNT_COMMAND_OWNERSHIP.md)
+binds parsed presence/block/status/nickname requests to the recorded open
+Character/realm/session epoch/admission. Four closed-owner baseline overwrites
+are fixed;74 new/188 related Source/SQLite cases pass, including real Player
+requests and serialization, stale cached rows, pre-login retry, post-flush rollback
+and whole-unit retry with one outbox. Modern errors retain their admitted target.
+No DDL; deploy World/Friendship/shared message assembly together. Same-admission
+ordering, old committed readback revisions, distributed Auth/broker/provider/
+restart/socket/native/retail remain open. Auto-response persistence still lacks
+its specific restore/owner witness and remains unchanged. F-012/full Goal active;
+native/CUA stay stopped.
+
 [Ordinary quest account currency](QUEST_ACCOUNT_CURRENCY_SETTLEMENT.md) now
 extends paired settlement to concrete direct completion and starter-tutorial
 recovery. Four further baseline payout failures are fixed;22 new/27 focused,

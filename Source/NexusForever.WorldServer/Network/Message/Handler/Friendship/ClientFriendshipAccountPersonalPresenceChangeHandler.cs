@@ -22,11 +22,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Friendship
 
         public void HandleMessage(IWorldSession session, ClientFriendshipAccountPersonalPresenceChange message)
         {
-            session.Player.PresenceState = message.Presence;
+            if (!FriendshipAccountCommandSource.TryCapture(session, out var player, out var account, out var owner)) return;
+            player.PresenceState = message.Presence;
 
             messagePublisher.PublishAsync(new FriendshipAccountPresenceUpdateMessage
             {
-                AccountId = session.Account.Id,
+                AccountId = account.Id, PresenceOwner = owner,
                 Presence  = message.Presence,
             }).FireAndForgetAsync();
         }

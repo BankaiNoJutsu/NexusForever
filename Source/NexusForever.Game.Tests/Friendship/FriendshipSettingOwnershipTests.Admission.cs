@@ -188,6 +188,10 @@ public partial class FriendshipSettingOwnershipTests
             context.Account.Add(new() { AccountId = 8, Email = "inviter@example.test", Nickname = "Inviter" });
             context.Character.Add(new() { CharacterId = 42, RealmId = 1, Name = "Receiver", RealmName = "Synthetic", AccountId = 7 });
             context.Character.Add(new() { CharacterId = 102, RealmId = 1, Name = "Inviter", RealmName = "Synthetic", AccountId = 8 });
+            var source = await context.Account.SingleAsync(row => row.AccountId == 7);
+            source.PresenceSessionEpoch = 1; source.PresenceAdmission = 1; source.PresenceCharacterId = 42; source.PresenceRealmId = 1;
+            source.PresenceClosed = false;
+            source.ActiveCharacterId = 42; source.ActiveRealmId = 1;
             await context.SaveChangesAsync();
         }
         internal async Task<FriendshipResult?> ValidateCharacter()
@@ -202,7 +206,8 @@ public partial class FriendshipSettingOwnershipTests
         }
         internal FriendInviteValidator CreateValidator(CharacterManager characters) => new(limits, text, AccountValidator, characters);
         internal Task SetAccount(FriendshipContext context, bool blocked) => SetAccount(context,
-            new FriendshipAccountBlockUpdateMessage { AccountId = 7, Identity = new() { Id = 42, RealmId = 1 }, BlockFriendRequests = blocked });
+            new FriendshipAccountBlockUpdateMessage { AccountId = 7, Identity = new() { Id = 42, RealmId = 1 }, BlockFriendRequests = blocked,
+                PresenceOwner = new() { Identity = new() { Id = 42, RealmId = 1 }, SessionEpoch = 1, Admission = 1 } });
         internal async Task SetAccount(FriendshipContext context, FriendshipAccountBlockUpdateMessage command)
         {
             using var services = FriendshipPresenceTransactionTests.Services(context);

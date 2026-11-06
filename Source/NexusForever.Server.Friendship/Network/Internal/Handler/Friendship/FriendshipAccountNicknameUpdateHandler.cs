@@ -37,33 +37,35 @@ namespace NexusForever.Server.Friendship.Network.Internal.Handler.Friendship
 
         #endregion
 
-        public async Task Handle(FriendshipAccountNicknameUpdateMessage message)
+        public Task Handle(FriendshipAccountNicknameUpdateMessage message)
         {
-            Task<FriendshipResult?> task = AccountSetNicknameAsync(message);
-            await _friendshipResultPublisher.PublishResultAsync(_messagePublisher, message.Source, task);
-
-            await _context.SaveChangesAsync();
+            string nickname = message.AccountNickname;
+            var identity = message.PresenceOwner?.Identity ?? message.Source;
+            return FriendshipAccountCommand.ExecuteAsync(_context, _accountManager, message.AccountId, message.PresenceOwner, async account =>
+            {
+                Task<FriendshipResult?> task = AccountSetNicknameAsync(account, nickname);
+                await _friendshipResultPublisher.PublishResultAsync(_messagePublisher, identity, task);
+            });
         }
 
-        private async Task<FriendshipResult?> AccountSetNicknameAsync(FriendshipAccountNicknameUpdateMessage message)
+        private async Task<FriendshipResult?> AccountSetNicknameAsync(Account account, string nickname)
         {
-            Account account = await _accountManager.GetAccountAsync(message.AccountId);
             if (account == null)
                 return FriendshipResult.PlayerNotFound;
 
-            if (message.AccountNickname != null)
+            if (nickname != null)
             {
-                if (!_textFilterManager.IsTextValid(message.AccountNickname, UserText.FriendshipAccountName))
+                if (!_textFilterManager.IsTextValid(nickname, UserText.FriendshipAccountName))
                     return FriendshipResult.InvalidDisplayName;
 
-                if (!_textFilterManager.IsTextValid(message.AccountNickname))
+                if (!_textFilterManager.IsTextValid(nickname))
                     return FriendshipResult.ContainsProfanity;
 
-                if (await _accountManager.GetAccountByNickname(message.AccountNickname) != null)
+                if (await _accountManager.GetAccountByNickname(nickname) != null)
                     return FriendshipResult.NameUnavailable;
             }
 
-            await account.SetNicknameAsync(message.AccountNickname);
+            await account.SetNicknameAsync(nickname);
 
             return null;
         }

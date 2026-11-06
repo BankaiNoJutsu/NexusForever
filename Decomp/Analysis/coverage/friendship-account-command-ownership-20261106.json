@@ -1,0 +1,587 @@
+{
+  "Date": "2026-11-06",
+  "BaseHEAD": "ec2782947a2b4b82454c640f3e23ad26cee3317b",
+  "Outcome": "Public personal account setting commands now preserve the recorded open presence owner through World/serialization/Friendship SQL and outbox; F-012/full Goal unfinished",
+  "Source": [
+    {
+      "Path": "Source/NexusForever.Game.Abstract/Entity/IPlayer.cs",
+      "Bytes": 13754,
+      "SHA256": "f92f7450c5444d398b1b90321f63f00fecf241a9a88353f18b692479d57358a1"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Friendship/FriendshipAccountCommandOwnershipTests.Public.cs",
+      "Bytes": 6206,
+      "SHA256": "4331b621c8e3ce42ba9d23282e689cc213924619f09b614b6854004ba0f83556"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Friendship/FriendshipAccountCommandOwnershipTests.cs",
+      "Bytes": 13823,
+      "SHA256": "937df8ba88a583284735a39e9a61394bbf50e229d2751c764cd81d3349fc9ef5"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Friendship/FriendshipSettingOwnershipTests.Admission.cs",
+      "Bytes": 14607,
+      "SHA256": "845e4d1a3f64a1b90e49ed94dfe9e8e938b6838ce4a5dae788e49fb3c855818c"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Friendship/FriendshipSettingOwnershipTests.cs",
+      "Bytes": 8819,
+      "SHA256": "b67e9201e86b0785ad24757d320e0ddad7f8a307bf45f6a5bdaf9f4705db2f4c"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Friendship/FriendshipSocialOptionTests.cs",
+      "Bytes": 5257,
+      "SHA256": "285f008c2db1bd1b929d6dcc05d3c8023f01f82080bb6a288a7b18a05c29cee3"
+    },
+    {
+      "Path": "Source/NexusForever.Game/Entity/Player.cs",
+      "Bytes": 177586,
+      "SHA256": "f6a10ddb99762c0c684d88b635cd1631c687bd888f6462a263801a30c679f7fd"
+    },
+    {
+      "Path": "Source/NexusForever.Network.Internal/Message/Friendship/FriendshipAccountBlockUpdateMessage.cs",
+      "Bytes": 418,
+      "SHA256": "1815841b38edb7d1d52a3dbe6e251ef7e03b06b9a416ca7c39401d6b15f4bd50"
+    },
+    {
+      "Path": "Source/NexusForever.Network.Internal/Message/Friendship/FriendshipAccountNicknameUpdateMessage.cs",
+      "Bytes": 420,
+      "SHA256": "bf6c481b2fb55c858586049f2e9a041f66fc45b61354b857a342bf0b2fe48a60"
+    },
+    {
+      "Path": "Source/NexusForever.Network.Internal/Message/Friendship/FriendshipAccountPresenceUpdateMessage.cs",
+      "Bytes": 366,
+      "SHA256": "267bd468b442e67fefe57d802df2921b875340df50e609540945c35b4a0dd096"
+    },
+    {
+      "Path": "Source/NexusForever.Network.Internal/Message/Friendship/FriendshipAccountStatusUpdateMessage.cs",
+      "Bytes": 411,
+      "SHA256": "7ff7fd369b6248f32cd449f122be47c2d0329849f1333172fbedb72b267f693d"
+    },
+    {
+      "Path": "Source/NexusForever.Network.Internal/Message/Friendship/Shared/FriendshipAccountCommandOwner.cs",
+      "Bytes": 322,
+      "SHA256": "917a8601d839a7ee4a9bfe73ff114fae5d668db841b1d6dd7936b92cbc13f82b"
+    },
+    {
+      "Path": "Source/NexusForever.Server.Friendship/Game/Account/AccountManager.cs",
+      "Bytes": 6243,
+      "SHA256": "ff7a3628bf9e1afdb724e4f048941a88e36e89f4c3eed836e182d6fef3dbbf7e"
+    },
+    {
+      "Path": "Source/NexusForever.Server.Friendship/Network/Internal/Handler/Friendship/FriendshipAccountBlockUpdateHandler.cs",
+      "Bytes": 2287,
+      "SHA256": "fde521319e182599a751938d2eda18457f53ecd6b6fe24c651e57cb7197cbba6"
+    },
+    {
+      "Path": "Source/NexusForever.Server.Friendship/Network/Internal/Handler/Friendship/FriendshipAccountCommand.cs",
+      "Bytes": 2695,
+      "SHA256": "174454f0c99d9d7527e1fe5ebdfaf971ef28008fcaefc9e310465055a22556bd"
+    },
+    {
+      "Path": "Source/NexusForever.Server.Friendship/Network/Internal/Handler/Friendship/FriendshipAccountNicknameUpdateHandler.cs",
+      "Bytes": 3054,
+      "SHA256": "e88991c419ad56553764c4604917081b379c970109a6b71ebec9a73d7cb0ee1a"
+    },
+    {
+      "Path": "Source/NexusForever.Server.Friendship/Network/Internal/Handler/Friendship/FriendshipAccountPresenceUpdateHandler.cs",
+      "Bytes": 1192,
+      "SHA256": "df03bc491919b8a21aad78b03a26b0b98ef17798713cbdc7939d4772596d562d"
+    },
+    {
+      "Path": "Source/NexusForever.Server.Friendship/Network/Internal/Handler/Friendship/FriendshipAccountStatusUpdateHandler.cs",
+      "Bytes": 2871,
+      "SHA256": "d071ea5a347413e6002bb750d247a9d9c0734bcda9035931cc3eee253edf7d15"
+    },
+    {
+      "Path": "Source/NexusForever.Server.Friendship/Network/Internal/Handler/Player/FriendshipPresenceTransaction.cs",
+      "Bytes": 4346,
+      "SHA256": "1ac8a4796c1309477439e5c9b71e25ad93e786e83159f2ebfdc809b1c2c8cfe8"
+    },
+    {
+      "Path": "Source/NexusForever.WorldServer/Network/Message/Handler/Friendship/ClientFriendshipAccountPersonalPresenceChangeHandler.cs",
+      "Bytes": 1374,
+      "SHA256": "fd809f9a7ed6fed0dab6928054b8d9a361809e2f8d6ccef77038b4bb4f34a319"
+    },
+    {
+      "Path": "Source/NexusForever.WorldServer/Network/Message/Handler/Friendship/ClientFriendshipAccountSetPublicDisplayNameHandler.cs",
+      "Bytes": 1429,
+      "SHA256": "96e832a3cfd1dcbfc7ab473a514f6cc8e537a300ae2cacbc9db962296cb2ce80"
+    },
+    {
+      "Path": "Source/NexusForever.WorldServer/Network/Message/Handler/Friendship/ClientFriendshipAccountSetPublicNoteHandler.cs",
+      "Bytes": 1418,
+      "SHA256": "e103c72381ccd4efd86a60a80f0f358e8c6de0af3652049b1253631bdb1b19fd"
+    },
+    {
+      "Path": "Source/NexusForever.WorldServer/Network/Message/Handler/Friendship/ClientFriendshipAdditionalHandlers.cs",
+      "Bytes": 5499,
+      "SHA256": "bb37366b92af8b513b250747fdee54031527601cc2f448e9c65680c5b160054b"
+    },
+    {
+      "Path": "Source/NexusForever.WorldServer/Network/Message/Handler/Friendship/FriendshipAccountCommandSource.cs",
+      "Bytes": 1407,
+      "SHA256": "cc78bc08e81c10e65e6a29a963224e0101c0a8791e95257165e7e4031103c58b"
+    }
+  ],
+  "Assemblies": [
+    {
+      "Project": "NexusForever.Game.Abstract",
+      "Tested": {
+        "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Abstract.dll",
+        "Bytes": 233472,
+        "SHA256": "463d3a7b116b97ecb5873acd023b7bd83e91f1c131566760a4e0ff21f3cc9b93"
+      },
+      "Owning": {
+        "Path": "Source/NexusForever.Game.Abstract/bin/Debug/net10.0/NexusForever.Game.Abstract.dll",
+        "Bytes": 233472,
+        "SHA256": "463d3a7b116b97ecb5873acd023b7bd83e91f1c131566760a4e0ff21f3cc9b93"
+      }
+    },
+    {
+      "Project": "NexusForever.Game",
+      "Tested": {
+        "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.dll",
+        "Bytes": 4943360,
+        "SHA256": "cc8a2fef683f80d3c73d241335b3ab661a351ccb9099086fd52f0b62089915d1"
+      },
+      "Owning": {
+        "Path": "Source/NexusForever.Game/bin/Debug/net10.0/NexusForever.Game.dll",
+        "Bytes": 4943360,
+        "SHA256": "cc8a2fef683f80d3c73d241335b3ab661a351ccb9099086fd52f0b62089915d1"
+      }
+    },
+    {
+      "Project": "NexusForever.Network.Internal",
+      "Tested": {
+        "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Network.Internal.dll",
+        "Bytes": 97792,
+        "SHA256": "d013d06705584290b6de687dcb8a6edcc6564c5f1c9accb76be3a8809f6eafb6"
+      },
+      "Owning": {
+        "Path": "Source/NexusForever.Network.Internal/bin/Debug/net10.0/NexusForever.Network.Internal.dll",
+        "Bytes": 97792,
+        "SHA256": "d013d06705584290b6de687dcb8a6edcc6564c5f1c9accb76be3a8809f6eafb6"
+      }
+    },
+    {
+      "Project": "NexusForever.Server.Friendship",
+      "Tested": {
+        "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Server.Friendship.dll",
+        "Bytes": 233472,
+        "SHA256": "5e56a75d957e4488b12302c18902a9cc38e4d9df58eef1ec39ec953a19819e65"
+      },
+      "Owning": {
+        "Path": "Source/NexusForever.Server.Friendship/bin/Debug/net10.0/NexusForever.Server.Friendship.dll",
+        "Bytes": 233472,
+        "SHA256": "5e56a75d957e4488b12302c18902a9cc38e4d9df58eef1ec39ec953a19819e65"
+      }
+    },
+    {
+      "Project": "NexusForever.WorldServer",
+      "Tested": {
+        "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+        "Bytes": 882688,
+        "SHA256": "311f2f254bc73c8f889ac6c39d0ece8643ce347b2bc9561f55e178b3f9b07c55"
+      },
+      "Owning": {
+        "Path": "Source/NexusForever.WorldServer/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+        "Bytes": 882688,
+        "SHA256": "311f2f254bc73c8f889ac6c39d0ece8643ce347b2bc9561f55e178b3f9b07c55"
+      }
+    },
+    {
+      "Project": "NexusForever.Game.Tests",
+      "Tested": {
+        "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+        "Bytes": 10165760,
+        "SHA256": "b3d8d062ba92efd337ec5be5252a379ea0e694fd53a2efe73d3df97f2d68e504"
+      }
+    }
+  ],
+  "Runs": [
+    {
+      "Name": "Four closed-modern-owner overwrite failures, plus four old-handler positives; optional metadata contract added, setting behavior still parent",
+      "Artifact": {
+        "Path": "artifacts/friendship-command-owner/baseline/baseline.trx",
+        "Bytes": 20421,
+        "SHA256": "602fe3d60f3f04f4359057faa9a150dba6eff7d38b512c6861aa802a8c55146d"
+      },
+      "Total": 8,
+      "Passed": 4,
+      "Failed": 4,
+      "NewFocused": 8,
+      "Failures": [
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.LegacyCommandsCannotOverwriteTheRecordedModernOwner(kind: \"status\")",
+          "Message": "Assert.Equal() Failure: Strings differ"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.LegacyCommandsCannotOverwriteTheRecordedModernOwner(kind: \"presence\")",
+          "Message": "Assert.Equal() Failure: Values differ"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.LegacyCommandsCannotOverwriteTheRecordedModernOwner(kind: \"block\")",
+          "Message": "Assert.True() Failure"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.LegacyCommandsCannotOverwriteTheRecordedModernOwner(kind: \"nickname\")",
+          "Message": "Assert.Equal() Failure: Strings differ"
+        }
+      ]
+    },
+    {
+      "Name": "Intermediate old fixtures lack recorded open generation",
+      "Artifact": {
+        "Path": "artifacts/friendship-command-owner/owner-fixed/owner.trx",
+        "Bytes": 86688,
+        "SHA256": "273bcec4938193c58e0134ca69ecd39846deae8749a85d1f02e424dfb2d8c948"
+      },
+      "Total": 42,
+      "Passed": 36,
+      "Failed": 6,
+      "NewFocused": 8,
+      "Failures": [
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.CurrentCommandsKeepTheirExistingMutationAndDurableOutbox(kind: \"nickname\")",
+          "Message": "Assert.Equal() Failure: Strings differ"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipSettingOwnershipTests.AccountIgnorePersistsPublishesAndControlsAccountInvites(blocked: False)",
+          "Message": "System.InvalidOperationException : Account command awaits its presence admission."
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.CurrentCommandsKeepTheirExistingMutationAndDurableOutbox(kind: \"block\")",
+          "Message": "Assert.Equal() Failure: Values differ"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipSettingOwnershipTests.AccountIgnorePersistsPublishesAndControlsAccountInvites(blocked: True)",
+          "Message": "System.InvalidOperationException : Account command awaits its presence admission."
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.CurrentCommandsKeepTheirExistingMutationAndDurableOutbox(kind: \"presence\")",
+          "Message": "Assert.Equal() Failure: Values differ"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.CurrentCommandsKeepTheirExistingMutationAndDurableOutbox(kind: \"status\")",
+          "Message": "Assert.Equal() Failure: Strings differ"
+        }
+      ]
+    },
+    {
+      "Name": "Intermediate fixtures omit actor queue and explicit open flag",
+      "Artifact": {
+        "Path": "artifacts/friendship-command-owner/expanded/expanded.trx",
+        "Bytes": 223269,
+        "SHA256": "e21f5d387e4d785f569dbdb908179eb530eec24974ce75cbc78138c81d9d018c"
+      },
+      "Total": 90,
+      "Passed": 59,
+      "Failed": 31,
+      "NewFocused": 56,
+      "Failures": [
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.ParsedRealPlayerCommandsCarryTheirOriginalOwnerThroughSerializationAndSettlement(kind: \"block\", outcome: \"foreign-session\")",
+          "Message": "System.InvalidOperationException : Test actor must own its supplied queue."
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.ParsedRealPlayerCommandsCarryTheirOriginalOwnerThroughSerializationAndSettlement(kind: \"block\", outcome: \"uninitialized\")",
+          "Message": "System.InvalidOperationException : Test actor must own its supplied queue."
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.CurrentCommandsKeepTheirExistingMutationAndDurableOutbox(kind: \"block\")",
+          "Message": "Assert.Equal() Failure: Values differ"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.RefusedCommitRollsBackSettingAndOutboxAndFreshRetryCanSucceed(kind: \"block\")",
+          "Message": "Assert.True() Failure"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.ParsedRealPlayerCommandsCarryTheirOriginalOwnerThroughSerializationAndSettlement(kind: \"status\", outcome: \"foreign-session\")",
+          "Message": "System.InvalidOperationException : Test actor must own its supplied queue."
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.ParsedRealPlayerCommandsCarryTheirOriginalOwnerThroughSerializationAndSettlement(kind: \"nickname\", outcome: \"newer-login\")",
+          "Message": "System.InvalidOperationException : Test actor must own its supplied queue."
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.ParsedRealPlayerCommandsCarryTheirOriginalOwnerThroughSerializationAndSettlement(kind: \"block\", outcome: \"epoch-rebound\")",
+          "Message": "System.InvalidOperationException : Test actor must own its supplied queue."
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.ParsedRealPlayerCommandsCarryTheirOriginalOwnerThroughSerializationAndSettlement(kind: \"presence\", outcome: \"uninitialized\")",
+          "Message": "System.InvalidOperationException : Test actor must own its supplied queue."
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipSettingOwnershipTests.AccountIgnorePersistsPublishesAndControlsAccountInvites(blocked: True)",
+          "Message": "System.InvalidOperationException : Sequence contains no elements."
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.ParsedRealPlayerCommandsCarryTheirOriginalOwnerThroughSerializationAndSettlement(kind: \"nickname\", outcome: \"current\")",
+          "Message": "System.InvalidOperationException : Test actor must own its supplied queue."
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.CurrentCommandsKeepTheirExistingMutationAndDurableOutbox(kind: \"nickname\")",
+          "Message": "Assert.Equal() Failure: Strings differ"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.ParsedRealPlayerCommandsCarryTheirOriginalOwnerThroughSerializationAndSettlement(kind: \"status\", outcome: \"current\")",
+          "Message": "System.InvalidOperationException : Test actor must own its supplied queue."
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.ParsedRealPlayerCommandsCarryTheirOriginalOwnerThroughSerializationAndSettlement(kind: \"nickname\", outcome: \"uninitialized\")",
+          "Message": "System.InvalidOperationException : Test actor must own its supplied queue."
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.ParsedRealPlayerCommandsCarryTheirOriginalOwnerThroughSerializationAndSettlement(kind: \"status\", outcome: \"epoch-rebound\")",
+          "Message": "System.InvalidOperationException : Test actor must own its supplied queue."
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.RefusedCommitRollsBackSettingAndOutboxAndFreshRetryCanSucceed(kind: \"presence\")",
+          "Message": "Assert.True() Failure"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.ParsedRealPlayerCommandsCarryTheirOriginalOwnerThroughSerializationAndSettlement(kind: \"block\", outcome: \"current\")",
+          "Message": "System.InvalidOperationException : Test actor must own its supplied queue."
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.ParsedRealPlayerCommandsCarryTheirOriginalOwnerThroughSerializationAndSettlement(kind: \"nickname\", outcome: \"epoch-rebound\")",
+          "Message": "System.InvalidOperationException : Test actor must own its supplied queue."
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.ParsedRealPlayerCommandsCarryTheirOriginalOwnerThroughSerializationAndSettlement(kind: \"presence\", outcome: \"current\")",
+          "Message": "System.InvalidOperationException : Test actor must own its supplied queue."
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipSettingOwnershipTests.AccountSaveRefusalRollsBackItsStateAndReadbackTogetherAndCanRetry",
+          "Message": "Assert.Throws() Failure: No exception was thrown"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.ParsedRealPlayerCommandsCarryTheirOriginalOwnerThroughSerializationAndSettlement(kind: \"status\", outcome: \"uninitialized\")",
+          "Message": "System.InvalidOperationException : Test actor must own its supplied queue."
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.CurrentCommandsKeepTheirExistingMutationAndDurableOutbox(kind: \"status\")",
+          "Message": "Assert.Equal() Failure: Strings differ"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.CurrentCommandsKeepTheirExistingMutationAndDurableOutbox(kind: \"presence\")",
+          "Message": "Assert.Equal() Failure: Values differ"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.ParsedRealPlayerCommandsCarryTheirOriginalOwnerThroughSerializationAndSettlement(kind: \"nickname\", outcome: \"foreign-session\")",
+          "Message": "System.InvalidOperationException : Test actor must own its supplied queue."
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.RefusedCommitRollsBackSettingAndOutboxAndFreshRetryCanSucceed(kind: \"status\")",
+          "Message": "Assert.True() Failure"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.ParsedRealPlayerCommandsCarryTheirOriginalOwnerThroughSerializationAndSettlement(kind: \"status\", outcome: \"newer-login\")",
+          "Message": "System.InvalidOperationException : Test actor must own its supplied queue."
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipSettingOwnershipTests.AccountIgnorePersistsPublishesAndControlsAccountInvites(blocked: False)",
+          "Message": "Assert.Equal() Failure: Values differ"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.ParsedRealPlayerCommandsCarryTheirOriginalOwnerThroughSerializationAndSettlement(kind: \"presence\", outcome: \"newer-login\")",
+          "Message": "System.InvalidOperationException : Test actor must own its supplied queue."
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.ParsedRealPlayerCommandsCarryTheirOriginalOwnerThroughSerializationAndSettlement(kind: \"presence\", outcome: \"epoch-rebound\")",
+          "Message": "System.InvalidOperationException : Test actor must own its supplied queue."
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.RefusedCommitRollsBackSettingAndOutboxAndFreshRetryCanSucceed(kind: \"nickname\")",
+          "Message": "Assert.True() Failure"
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.ParsedRealPlayerCommandsCarryTheirOriginalOwnerThroughSerializationAndSettlement(kind: \"block\", outcome: \"newer-login\")",
+          "Message": "System.InvalidOperationException : Test actor must own its supplied queue."
+        },
+        {
+          "Test": "NexusForever.Game.Tests.Friendship.FriendshipAccountCommandOwnershipTests.ParsedRealPlayerCommandsCarryTheirOriginalOwnerThroughSerializationAndSettlement(kind: \"presence\", outcome: \"foreign-session\")",
+          "Message": "System.InvalidOperationException : Test actor must own its supplied queue."
+        }
+      ]
+    },
+    {
+      "Name": "Corrected fixtures: 56 new within 90 related",
+      "Artifact": {
+        "Path": "artifacts/friendship-command-owner/expanded-ready/expanded.trx",
+        "Bytes": 147346,
+        "SHA256": "1c20f02498642d310cc28307d76569e34060477094790eef3decd733af404d11"
+      },
+      "Total": 90,
+      "Passed": 90,
+      "Failed": 0,
+      "NewFocused": 56,
+      "Failures": []
+    },
+    {
+      "Name": "72 new within 186 related, before modern error-target review correction",
+      "Artifact": {
+        "Path": "artifacts/friendship-command-owner/related/related.trx",
+        "Bytes": 300812,
+        "SHA256": "d831b96f9a48998d91c08d0455990a00c240d8d22e8102a7e5cfedf19464b7a5"
+      },
+      "Total": 186,
+      "Passed": 186,
+      "Failed": 0,
+      "NewFocused": 72,
+      "Failures": []
+    },
+    {
+      "Name": "Final 74 new within 188 related after review correction",
+      "Artifact": {
+        "Path": "artifacts/friendship-command-owner/final-related/related.trx",
+        "Bytes": 304004,
+        "SHA256": "bb973dd290a4cf7a54dbd331cd7aed57e34e4c78e7faa730d3ce6761393ce584"
+      },
+      "Total": 188,
+      "Passed": 188,
+      "Failed": 0,
+      "NewFocused": 74,
+      "Failures": []
+    }
+  ],
+  "Filter": "FullyQualifiedName~FriendshipAccountCommandOwnershipTests|FullyQualifiedName~FriendshipSettingOwnershipTests|FullyQualifiedName~FriendshipSocialOptionTests|FullyQualifiedName~FriendshipPresence|FullyQualifiedName~PresenceGeneration|FullyQualifiedName~IncomingChatOwnershipTests|FullyQualifiedName~PlayerBootstrap",
+  "Commands": [
+    "dotnet test Source/NexusForever.Game.Tests/NexusForever.Game.Tests.csproj --no-restore --filter \"<Filter above>\" --logger \"trx;LogFileName=related.trx\" --results-directory artifacts/friendship-command-owner/final-related -v minimal --nologo",
+    "dotnet build Source/<project>/<project>.csproj --no-restore -v minimal --nologo; projects: NexusForever.Game, NexusForever.Server.Friendship, NexusForever.WorldServer, serialized"
+  ],
+  "OwningBuilds": [
+    {
+      "Project": "NexusForever.Game",
+      "Result": "Passed; zero warnings/errors",
+      "Artifact": {
+        "Path": "artifacts/friendship-command-owner/build-NexusForever.Game.log",
+        "Bytes": 2432,
+        "SHA256": "8a791d292e9923ffb11ccd5b9a15b75faef9fd5aec03b20889e69e5cc2e86d73"
+      }
+    },
+    {
+      "Project": "NexusForever.Server.Friendship",
+      "Result": "Passed; zero warnings/errors",
+      "Artifact": {
+        "Path": "artifacts/friendship-command-owner/build-NexusForever.Server.Friendship.log",
+        "Bytes": 1603,
+        "SHA256": "ddb09605d9fbc8fd055fdcd6f7b2b794d2bb1775a95dcb818e1c6ffd95aed23e"
+      }
+    },
+    {
+      "Project": "NexusForever.WorldServer",
+      "Result": "Passed; zero warnings/errors",
+      "Artifact": {
+        "Path": "artifacts/friendship-command-owner/build-NexusForever.WorldServer.log",
+        "Bytes": 3407,
+        "SHA256": "cfb3630d8a4f0f66f63f9d83ae902e10e7d550fa359e626c7bc12a27d60beaa2"
+      }
+    }
+  ],
+  "OtherArtifacts": [
+    {
+      "Path": "artifacts/friendship-command-owner/baseline.log",
+      "Bytes": 10638,
+      "SHA256": "14926aab5f6f9ff535208872ddb41581d66fcffef01e351b545b6279c36d3ef8"
+    },
+    {
+      "Path": "artifacts/friendship-command-owner/owner.log",
+      "Bytes": 6932,
+      "SHA256": "d50621bfc8e3ea9d32b6e6d51525f24865c1f4f3822f0e4643ae76e5865761a3"
+    },
+    {
+      "Path": "artifacts/friendship-command-owner/expanded.log",
+      "Bytes": 48157,
+      "SHA256": "d1bab3a404f8198e452ca6f0843b07a1d2fcac9d302d5446bed485528754d57a"
+    },
+    {
+      "Path": "artifacts/friendship-command-owner/final-related.log",
+      "Bytes": 7405,
+      "SHA256": "9fbfa58762f5337d6c7ca86728da709a2b77555b462340387a9fa2728f8f31da"
+    }
+  ],
+  "Review": [
+    {
+      "Axis": "Behavior/specification",
+      "Reviewer": "Primary agent; no delegation",
+      "FinalFindings": 0,
+      "Scope": "Four parsed setting requests, nonzero original Player/account/generation, immutable message values, SQL refresh/lock against latest recorded open presence, stale/closed rejection, future admission retry, compatible legacy owner, atomic setting/outbox, original validation target; no invented distributed Auth or per-command revision."
+    },
+    {
+      "Axis": "Repository/standards",
+      "Reviewer": "Primary agent; no delegation",
+      "FinalFindings": 0,
+      "Scope": "Existing presence transaction and generation fields reused without DDL/client-wire changes; scoped Account/Character cache reset on execution-strategy retry; final owning/test DLL parity; explicit fixture fixes and targeted tests/builds; assets/private configs excluded."
+    }
+  ],
+  "ReviewCorrection": "Modern text validation results now address PresenceOwner.Identity rather than the independent legacy target; two cases qualify the final correction.",
+  "Upstream": [
+    {
+      "Number": 608,
+      "Head": "7db12d9a7c694bc5e66d9e0f4cdbc1b82155e69b",
+      "Base": "3588ca5f578387928e6593e3808bf15f6192b094",
+      "State": "open",
+      "Merged": false,
+      "Artifact": {
+        "Path": "artifacts/friendship-command-owner/pr-608.json",
+        "Bytes": 4344,
+        "SHA256": "e41fbbae49a4e6b2f40ef8455990d0833da04f15ff498e90175e36073ee98f3a"
+      }
+    },
+    {
+      "Number": 609,
+      "Head": "f9b6f7356798a41beea0768ff1f6b5a758ffeca3",
+      "Base": "d8e43d2c3cc5a05f03e56dfc388288a4126c7ed9",
+      "State": "closed",
+      "Merged": false,
+      "Artifact": {
+        "Path": "artifacts/friendship-command-owner/pr-609.json",
+        "Bytes": 10712,
+        "SHA256": "7644778d0c20ade69d3a8b6e96f7ac756f731d5c0b90ed3ad88a39013303f47c"
+      }
+    }
+  ],
+  "AutoResponseInvestigation": {
+    "ClientSHA256": "231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5",
+    "Provenance": "Fresh full PE digest matches retained REA identity ev_3a002aa3d25d9d846a80c84d9d2d23eb73db439235129acc4a5501029628a320; retained same-digest native exports, no new native execution/provider call.",
+    "Exports": [
+      {
+        "Name": "1405de2e0.fragment.c",
+        "Bytes": 2598,
+        "SHA256": "6daf8fd11b19143f948140edcaee911a21622fd98efeb56bf1e1a3e9e0bdfafc"
+      },
+      {
+        "Name": "1405df560.fragment.c",
+        "Bytes": 2091,
+        "SHA256": "2dc2ea9243bbdb0d78c22fea6bb866c8f597ea98068280beaecd1df5afda68cd"
+      },
+      {
+        "Name": "14070e4a0.fragment.c",
+        "Bytes": 1549,
+        "SHA256": "585d47577538917b3beb01916fc90a36e1fceddfc628972985c65d819c2bd6b9"
+      }
+    ],
+    "AddonRevision": "0827880c8a820b5cbb3f1dff3e3888c9ab9f0263",
+    "AddonFiles": [
+      "Live/FriendsList/FriendsList.lua",
+      "Live/ChatLog/ChatLog.lua",
+      "Live/OptionsInterface/OptionsInterface.lua",
+      "Live/ProtectedAddons/Options/Options.lua"
+    ],
+    "Repository": "https://github.com/Zod-/Wildstar-Carbine-Addons",
+    "Boundary": "Reviewed setters/presence callback supply strings/defaults and pending sends. Bounded authored-addon files have no SetAutoResponseMessages restore call; exact web queries empty. No verified durable owner/restore contract; storage unchanged. Not proof of global absence."
+  },
+  "Limits": [
+    "Latest recorded Friendship presence only; no distributed Auth lock or knowledge of a replacement not yet recorded",
+    "No per-command within-admission ordering/revision/nonce or old committed-readback revision fence",
+    "Immediate local presence remains intent; publication acceptance is not a database receipt",
+    "SQLite disposable Source/transaction fault proof only; no current configured MySQL, copied upgrade, physical process loss, ambiguous post-commit or live broker/socket/native/retail qualification",
+    "Normal message retry after actual login is tested in-process, not a broker redelivery timing claim",
+    "Deploy World/Friendship/shared internal message assembly together; old unversioned World commands are rejected on modern owners",
+    "Auto-response persistence/restore owner remains unverified; no speculative storage change",
+    "Baseline retains closed-generation default; final fixtures explicitly set open ownership, and early actor-queue/alias failures are not production defect counts",
+    "No full solution/full suite; existing ASPIRE010 warning in test graph; entitlement defaults unchanged; native/CUA remain stopped"
+  ]
+}

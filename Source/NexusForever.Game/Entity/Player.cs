@@ -195,6 +195,8 @@ namespace NexusForever.Game.Entity
 
         public ulong CharacterId { get => Identity.Id; }
         private ulong presenceSessionEpoch, presenceAdmission;
+        public ulong PresenceSessionEpoch => presenceSessionEpoch;
+        public ulong PresenceAdmission => presenceAdmission;
 
         public string Name { get; private set; }
 

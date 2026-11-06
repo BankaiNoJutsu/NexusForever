@@ -112,7 +112,13 @@ reused; no upstream merge or PR publication follows.
 
 ## Remaining gates
 
-Configured MySQL, live broker delivery/reordering, source command epochs,
+The later [account-command ownership follow-through](FRIENDSHIP_ACCOUNT_COMMAND_OWNERSHIP.md)
+adds the recorded presence-generation fence to the four supported account
+setting commands, with 74 new/188 related cases. It supersedes the missing
+source-epoch/admission command guard below; it does not supply an ordered
+within-admission command/readback revision or auto-response storage owner.
+
+Configured MySQL, live broker delivery/reordering, within-admission command order,
 correlation/replay policy, deployment/old-service transitions, process restart,
 physical/native UI timing, two-client smoke and retail qualification remain
 open. The account command/readback protocol has no new revision field, so an
