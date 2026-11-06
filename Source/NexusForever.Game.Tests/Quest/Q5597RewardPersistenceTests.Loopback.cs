@@ -45,6 +45,7 @@ using NexusForever.Network.Session;
 using NexusForever.Network.Message.Model;
 using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Message;
+using NexusForever.Network.World.Message.Static;
 using NexusForever.Network.World.Message.Model;
 using NexusForever.Network.World.Message.Model.Shared;
 using NexusForever.Script;
@@ -141,7 +142,7 @@ public sealed partial class Q5597RewardPersistenceTests
     private async Task RunQuestLoopback(bool rejectFirstSave, bool tutorialRecovery = false, bool levelReward = false,
         bool replaceMapAdmission = false, bool autoAccept = false, bool acceptOnly = false, bool itemStarter = false,
         bool share = false, bool replaceSharer = false, string itemConversion = null, uint conversionType = 0,
-        GameMessageOpcode? questLifecycle = null, string satchelWithdrawal = null)
+        GameMessageOpcode? questLifecycle = null, string satchelWithdrawal = null, ActualCatalog actualCatalog = null)
     {
         const uint accountId = 12;
         const uint sharerGuid = 99;
@@ -185,6 +186,7 @@ public sealed partial class Q5597RewardPersistenceTests
                 ConnectionString = seed.Database.GetDbConnection().ConnectionString
             });
             seed.Character.Single().AccountId = accountId;
+            actualCatalog?.Seed(seed);
             if (levelReward)
             {
                 seed.Character.Single().Level = 1;
@@ -203,7 +205,8 @@ public sealed partial class Q5597RewardPersistenceTests
                 seed.CharacterTradeskillMaterial.Add(new() { Id = 42, MaterialId = materialId, Amount = 20 });
             await seed.SaveChangesAsync();
         }
-        ConfigureQuest(f, reclaim: autoAccept || acceptOnly || retryQuest, questId);
+        if (actualCatalog == null) ConfigureQuest(f, reclaim: autoAccept || acceptOnly || retryQuest, questId);
+        else actualCatalog.Bind(f);
         if (share) f.Info.Entry.QuestShareEnum = 1;
         if (autoAccept || acceptOnly || retryQuest)
         {
@@ -230,7 +233,7 @@ public sealed partial class Q5597RewardPersistenceTests
                 _ => null
             });
         }
-        var items = CreateItems();
+        var items = CreateItems(actualCatalog?.Tables);
         if (itemStarter)
         {
             var starter = items.GetItemInfo(starterDefinition).Entry;
@@ -586,7 +589,8 @@ public sealed partial class Q5597RewardPersistenceTests
             if (autoAccept) Assert.Empty(rolledBack.Quest);
             else Assert.Equal(QuestState.Achieved, (QuestState)Assert.Single(rolledBack.Quest).State);
             Assert.Empty(rolledBack.Item);
-            Assert.Empty(rolledBack.Achievement);
+            if (actualCatalog == null) Assert.Empty(rolledBack.Achievement);
+            else actualCatalog.AssertPersisted(rolledBack, completed: false);
             if (levelReward) Assert.Equal((1, 0u), ((int)rolledBack.Level, rolledBack.TotalXp));
             if (levelReward)
             {
@@ -608,7 +612,7 @@ public sealed partial class Q5597RewardPersistenceTests
                 if (tutorialRecovery)
                     Assert.Equal(QuestState.Accepted, (QuestState)read.CharacterQuest.Single(row => row.QuestId == nextQuestId).State);
                 Assert.Equal(2, read.Item.Count());
-                Assert.Equal(2u, read.CharacterAchievement.Single().ProgressState);
+                Assert.Equal(actualCatalog == null ? 2u : 3u, read.CharacterAchievement.Single().ProgressState);
                 if (levelReward)
                 {
                     var character = read.Character.Single();
@@ -647,6 +651,16 @@ public sealed partial class Q5597RewardPersistenceTests
             using var first = await ReadPacket(client, GameMessageOpcode.ServerItemAdd);
             using var second = await ReadPacket(client, GameMessageOpcode.ServerItemAdd);
             delivered = new[] { ReadFixtureInventoryItem(first), ReadFixtureInventoryItem(second) }.OrderBy(item => item.ItemId).ToArray();
+            if (actualCatalog != null)
+            {
+                using var experience = await ReadPacket(client, GameMessageOpcode.ServerExperienceGained);
+                Assert.Equal(actualCatalog.Quest.GetRewardExperience(), experience.ReadUInt());
+                Assert.Equal(0u, experience.ReadUInt()); Assert.Equal(0u, experience.ReadUInt());
+                Assert.Equal(ExpReason.Quest, experience.ReadEnum<ExpReason>(32));
+                using var credits = await ReadPacket(client, GameMessageOpcode.ServerCombatReward);
+                Assert.Equal(0u, credits.ReadUInt(5));
+                Assert.Equal((ulong)actualCatalog.Quest.GetRewardMoney(), credits.ReadULong());
+            }
             using var state = await ReadPacket(client, GameMessageOpcode.ServerQuestStateChange);
             Assert.Equal(questId, state.ReadUShort(15));
             Assert.Equal(QuestState.Completed, state.ReadEnum<QuestState>(32));
@@ -678,13 +692,15 @@ public sealed partial class Q5597RewardPersistenceTests
         Assert.Equal(QuestState.Completed, (QuestState)saved.Quest.Single(row => row.QuestId == questId).State);
         var completed = Assert.Single(saved.Achievement);
         Assert.Equal(AchievementId, completed.AchievementId);
-        Assert.Equal(2u, completed.ProgressState);
-        Assert.NotNull(completed.DateCompleted);
-        ulong completionTime = (ulong)DateTime.SpecifyKind(completed.DateCompleted!.Value, DateTimeKind.Utc).ToFileTimeUtc();
+        Assert.Equal(actualCatalog == null ? 2u : 3u, completed.ProgressState);
+        if (actualCatalog == null) Assert.NotNull(completed.DateCompleted);
+        else { Assert.Null(completed.DateCompleted); actualCatalog.AssertPersisted(saved, completed: true); }
+        ulong completionTime = completed.DateCompleted.HasValue
+            ? (ulong)DateTime.SpecifyKind(completed.DateCompleted.Value, DateTimeKind.Utc).ToFileTimeUtc() : 0;
 
         await RunSession(async (world, client, actor) =>
         {
-            PublishFixtureBootstrap(f, actor);
+            PublishFixtureBootstrap(f, actor, actualCatalog != null);
             world.FlushPackets();
             using (var inventory = await ReadPacket(client, GameMessageOpcode.ServerPlayerCreate))
             {
@@ -696,7 +712,7 @@ public sealed partial class Q5597RewardPersistenceTests
             {
                 Assert.Equal(1u, achievement.ReadUInt());
                 Assert.Equal(AchievementId, achievement.ReadUShort(15));
-                Assert.Equal(2u, achievement.ReadUInt());
+                Assert.Equal(actualCatalog == null ? 2u : 3u, achievement.ReadUInt());
                 Assert.Equal(0u, achievement.ReadUInt());
                 Assert.Equal(completionTime, achievement.ReadULong());
             }
@@ -723,6 +739,12 @@ public sealed partial class Q5597RewardPersistenceTests
         var final = Assert.Single(await database.GetCharacters(accountId));
         Assert.Equal(savedItems, final.Item.OrderBy(item => item.ItemId).Select(item => (item.Id, item.ItemId, item.StackCount)).ToArray());
         Assert.Equal(completed.DateCompleted, Assert.Single(final.Achievement).DateCompleted);
+        if (actualCatalog != null)
+        {
+            actualCatalog.AssertPersisted(final, completed: true);
+            actualCatalog.Results.Add(new { RejectFirstSave = rejectFirstSave, Items = savedItems.Select(item => new { item.Id, item.ItemId, item.StackCount }),
+                final.TotalXp, Currency = final.Currency.Select(row => new { row.CurrencyId, row.Amount }), completed.ProgressState, completed.DateCompleted });
+        }
         if (levelReward) Assert.Equal((2, 120u), ((int)final.Level, final.TotalXp));
 
         async Task SendWithSaveHeld(WorldSession world, GameProtocolClient client, Actor actor)
@@ -748,7 +770,8 @@ public sealed partial class Q5597RewardPersistenceTests
             if (autoAccept) Assert.Empty(read.CharacterQuest);
             else Assert.Equal(QuestState.Achieved, (QuestState)read.CharacterQuest.Single().State);
             Assert.Empty(read.Item);
-            Assert.Empty(read.CharacterAchievement);
+            if (actualCatalog == null) Assert.Empty(read.CharacterAchievement);
+            else actualCatalog.AssertPersisted(read.Character.AsNoTracking().Include(row => row.Achievement).Include(row => row.Currency).Single(), false);
             if (levelReward)
             {
                 Assert.Equal(2u, actor.Player.Level);
@@ -826,7 +849,8 @@ public sealed partial class Q5597RewardPersistenceTests
             accountProxy.SetProperty(nameof(IAccount.Session), world);
             typeof(WorldSession).GetProperty(nameof(WorldSession.Account))!.SetValue(world, account);
             var model = Assert.Single(await database.GetCharacters(accountId));
-            using var actor = LoadActor(f, items, 2, model, world, account, auth, questId, conversionDatabase);
+            using var actor = LoadActor(f, items, 2, model, world, account, auth, questId, conversionDatabase, actualCatalog?.Achievement);
+            actualCatalog?.PrepareActor(actor, model);
             if (satchelWithdrawal != null)
                 actor.Set(nameof(Player.SupplySatchelManager), new SupplySatchelManager(actor.Player, model, f.Source.Tables));
             if (reputationConversion)
@@ -1108,19 +1132,22 @@ public sealed partial class Q5597RewardPersistenceTests
         return (id, itemId, count);
     }
 
-    private static void PublishFixtureBootstrap(Fixture f, Actor actor)
+    private static void PublishFixtureBootstrap(Fixture f, Actor actor, bool actualCatalog = false)
     {
         var tables = (RecordingDispatchProxy<IGameTableManager>)(object)f.Source.Tables;
         tables.SetProperty(nameof(IGameTableManager.Class), PlayerBindPointTests.Table(new ClassEntry { Id = (uint)actor.Player.Class }));
-        tables.SetProperty(nameof(IGameTableManager.XpPerLevel), PlayerBindPointTests.Table(new XpPerLevelEntry { Id = 1 }));
+        if (!actualCatalog) tables.SetProperty(nameof(IGameTableManager.XpPerLevel), PlayerBindPointTests.Table(new XpPerLevelEntry { Id = 1 }));
         typeof(Player).GetField("gameTableManager", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(actor.Player, f.Source.Tables);
         typeof(Player).GetField("attributePointAllocations", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(actor.Player, new uint[6]);
         var account = (RecordingDispatchProxy<IAccount>)(object)actor.Player.Account;
         foreach (var property in typeof(IAccount).GetProperties().Where(p => p.PropertyType.IsInterface && p.Name.EndsWith("Manager", StringComparison.Ordinal)))
             account.SetProperty(property.Name, typeof(RecordingDispatchProxy<>).MakeGenericType(property.PropertyType)
                 .GetMethod("Create")!.Invoke(null, new object[] { null }));
-        var currencies = (RecordingDispatchProxy<ICurrencyManager>)(object)actor.Player.CurrencyManager;
-        currencies.SetMethodReturnFactory("GetEnumerator", () => Enumerable.Empty<ICurrency>().GetEnumerator());
+        if (!actualCatalog)
+        {
+            var currencies = (RecordingDispatchProxy<ICurrencyManager>)(object)actor.Player.CurrencyManager;
+            currencies.SetMethodReturnFactory("GetEnumerator", () => Enumerable.Empty<ICurrency>().GetEnumerator());
+        }
         var entitlements = (RecordingDispatchProxy<ICharacterEntitlementManager>)(object)actor.Player.EntitlementManager;
         entitlements.SetMethodReturnFactory("GetEnumerator", () => Enumerable.Empty<ICharacterEntitlement>().GetEnumerator());
         var satchel = (RecordingDispatchProxy<ISupplySatchelManager>)(object)actor.Player.SupplySatchelManager;

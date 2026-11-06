@@ -1,5 +1,13 @@
 # Assessment follow-through goal
 
+[Q5597 actual-catalog public turn-in](evidence_reviews/20261029-q5597-achievement-checklist-5495/README.md#actual-catalog-public-turn-in-and-partial-checklist)
+now qualifies real QuestInfo/ItemInfo/full AchievementInfo,152 XP/145 credits,
+one-slot refusal, rollback, fresh World recovery and duplicate turn-in. The full
+checklist moves prior mask1 to3 with no completion date. Both actual socket cases,
+all12 default controls, clean test/runner builds and final reviews pass. Achieved
+objective, prior bit, receiver/prerequisite/bootstrap remain prepared; physical
+earning/chain, Auth selection, provider/deployment/native/retail remain open.
+
 [Cinematic completion ownership](CINEMATIC_COMPLETION_OWNERSHIP.md) closes the
 parsed Source completion slice of F-022: original-frame retirement, owned queue
 advance, frozen started ID, guarded concrete emitters and per-script continuation.

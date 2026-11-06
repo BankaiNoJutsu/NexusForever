@@ -1,5 +1,13 @@
 # Continue on another machine
 
+Latest Q5597 qualification:
+[actual-catalog public turn-in](Decomp/Analysis/evidence_reviews/20261029-q5597-achievement-checklist-5495/README.md#actual-catalog-public-turn-in-and-partial-checklist)
+passes one-slot refusal and both encrypted World/recovery/reload cases using
+actual item/quest/full-checklist metadata and real XP/credit managers. Mask1→3
+stays incomplete.12 default controls, clean builds and final reviews pass.
+Production behavior is unchanged; physical chain/Auth selection/provider/native
+and retail remain open. Client/CUA remain stopped.
+
 Latest cinematic Source result:
 [completion ownership](Decomp/Analysis/CINEMATIC_COMPLETION_OWNERSHIP.md) covers
 original-frame retirement, valid queued follow-up, frozen IDs, guarded provided

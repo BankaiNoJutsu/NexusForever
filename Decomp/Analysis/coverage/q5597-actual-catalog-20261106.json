@@ -1,0 +1,301 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-06T03:02:01.434703+00:00",
+  "baseCommit": "36dc58ecbcde4afea5e5036dd4e45cb87675305a",
+  "milestone": "Actual-catalog Q5597 public turn-in, partial achievement and committed recovery",
+  "classification": "Actual-table/Source/SQLite/local encrypted World qualification; production behavior unchanged; full quest chain/Auth selection/deployment/native/retail and overall Goal remain open",
+  "sources": [
+    {
+      "path": "Source/NexusForever.Game.Tests/Quest/Q5597RewardPersistenceTests.cs",
+      "sha256": "1c0e0f9f8e409dc8d45ada132191adc6d8cea4468385c8ff5b954a806f698ece",
+      "gitBlob": "e45974d59d493f928a6d52321487e305009644bf"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Quest/Q5597RewardPersistenceTests.Loopback.cs",
+      "sha256": "4c92dbed6bfe358bbbbff0b5f50d670c7ad95552459d5a57654940ccda281a16",
+      "gitBlob": "2e0cfa9081bba1a8c498c15fb26cfc3ddfe460c4"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Quest/Q5597RewardPersistenceTests.ActualCatalog.cs",
+      "sha256": "774736835950f167c73476794f8071d623b9016b02c2be20fe2a991dda4fe649",
+      "gitBlob": "751846a40500a125cc219f4a5e7c3c575bcae865"
+    }
+  ],
+  "sourceBoundary": {
+    "base": "36dc58ecbcde4afea5e5036dd4e45cb87675305a",
+    "trackedSourceFiles": 6285,
+    "missing": [],
+    "differences": [
+      {
+        "path": "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+        "head": "9b4e604e08391bf229552fa04081ecf9c74fec4d",
+        "candidate": "7de92fafe0c2474ba8428ca9ceee883d39138b46"
+      },
+      {
+        "path": "Source/NexusForever.ClientConnector/packages.config",
+        "head": "fa4b77dc45783358023c1cd38e6ff9bad122aea4",
+        "candidate": "8ab13a9023dec3cf548ee61ba183013bd098a297"
+      },
+      {
+        "path": "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+        "head": "64769a2266f7feab861fcc61cd2b00a0a05da8c4",
+        "candidate": "74272fd6bf29afac14c5d62cb172e81b4edee19a"
+      },
+      {
+        "path": "Source/NexusForever.Database/NexusForever.Database.csproj",
+        "head": "61f9d5326c59ec7018164eba605a01f4081dfded",
+        "candidate": "163c4f01e198e71066afcd9089a367c78b4c3de6"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Quest/Q5597RewardPersistenceTests.Loopback.cs",
+        "head": "b534bb24ed2b1b7dacebe27b21e55241fb6af249",
+        "candidate": "2e0cfa9081bba1a8c498c15fb26cfc3ddfe460c4"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Quest/Q5597RewardPersistenceTests.cs",
+        "head": "22be1f200bbf204b86175f1c21e07952af2959c8",
+        "candidate": "e45974d59d493f928a6d52321487e305009644bf"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+        "head": "1ffaefc3cf8c1eb7c5b0534d4d91f28eb7001347",
+        "candidate": "6c145b847fa7316e7982ab44cfa404f4e1e7fc70"
+      },
+      {
+        "path": "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj",
+        "head": "74f0ec9ebbf4894dd7ef64f379a773a9e4ce1295",
+        "candidate": "ecd970da6d0d220f3caaf6780656c1809e18a9af"
+      }
+    ],
+    "newOwned": [
+      "Source/NexusForever.Game.Tests/Quest/Q5597RewardPersistenceTests.ActualCatalog.cs"
+    ],
+    "historicalNonTaskDifferencePaths": [
+      "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+      "Source/NexusForever.ClientConnector/packages.config",
+      "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+      "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+      "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+      "Source/NexusForever.Database/NexusForever.Database.csproj",
+      "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+      "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj"
+    ]
+  },
+  "finalInputs": {
+    "path": "artifacts/continuation-20261106/q5597-actual-catalog/final-inputs.json",
+    "sha256": "6206709be15a094e92e5284347c6c655d3cdefaf64d8304c511ebcf9764c90b9"
+  },
+  "finalDlls": 138,
+  "runnerCopiesExact": true,
+  "productionAndOtherDependenciesUnchangedFrom": "36dc58ecbcde4afea5e5036dd4e45cb87675305a",
+  "changedDlls": [
+    "NexusForever.Game.Tests.dll"
+  ],
+  "inputCorpus": {
+    "path": "artifacts/continuation-20261106/q5597-actual-catalog/cases-06-final/inputs.json",
+    "sha256": "e72145b23154e35c2713da07beb9596b372f6818e3a99393fafdb5e66e2d3d5d",
+    "verifiedPayloads": 385,
+    "recoveredManifestSha256": "bfb15d7824bb7ed4f4b03cc26411b3adb07317744ff2939b9fd1101c476902ad",
+    "loadedTables": 24,
+    "loader": "Existing ContractActualCatalogQualification.LoadTablesAsync plus8Quest/Achievement/XP tables; loaded does not mean every row has gameplay qualification.",
+    "selectedMetadata": {
+      "quest": 5597,
+      "objective": 8256,
+      "fixedRewardRows": [
+        3000,
+        5236
+      ],
+      "items": [
+        81917,
+        29664
+      ],
+      "actualMaxStacks": [
+        50,
+        4
+      ],
+      "achievement": 4134,
+      "checklist": [
+        {
+          "id": 5494,
+          "quest": 5596,
+          "bit": 0
+        },
+        {
+          "id": 5495,
+          "quest": 5597,
+          "bit": 1
+        },
+        {
+          "id": 5496,
+          "quest": 5604,
+          "bit": 2
+        }
+      ]
+    }
+  },
+  "actualResult": {
+    "path": "artifacts/continuation-20261106/q5597-actual-catalog/cases-06-final/result.json",
+    "sha256": "7995e4224e8c5e2d8652caea742adfc71d768f54ae598d9a57fdaee2a4430a4e",
+    "elapsedSeconds": 8.5298531,
+    "capacityRefusalPassed": true,
+    "socketCasesPassed": 2,
+    "tcpConnections": 5,
+    "cases": [
+      {
+        "RejectFirstSave": false,
+        "Items": [
+          {
+            "Id": 101,
+            "ItemId": 29664,
+            "StackCount": 1
+          },
+          {
+            "Id": 100,
+            "ItemId": 81917,
+            "StackCount": 1
+          }
+        ],
+        "TotalXp": 3012,
+        "Currency": [
+          {
+            "CurrencyId": 1,
+            "Amount": 145
+          }
+        ],
+        "ProgressState": 3,
+        "DateCompleted": null
+      },
+      {
+        "RejectFirstSave": true,
+        "Items": [
+          {
+            "Id": 103,
+            "ItemId": 29664,
+            "StackCount": 1
+          },
+          {
+            "Id": 102,
+            "ItemId": 81917,
+            "StackCount": 1
+          }
+        ],
+        "TotalXp": 3012,
+        "Currency": [
+          {
+            "CurrencyId": 1,
+            "Amount": 145
+          }
+        ],
+        "ProgressState": 3,
+        "DateCompleted": null
+      }
+    ],
+    "wireXpGain": 152,
+    "wireCredits": 145,
+    "achievementWireProgress": 3,
+    "achievementWireTimestamp": 0
+  },
+  "defaultControls": {
+    "path": "artifacts/continuation-20261106/q5597-actual-catalog/default-controls.trx",
+    "sha256": "9e64c2c2e3e5a9991a569b4c0b8357b6d31a7219eb490f599591fde401751ccc",
+    "filter": "FullyQualifiedName~LoopbackTurnInPublishesSavedRewardsOnce|FullyQualifiedName~TurnInAndReloadPreserveBothFixedItemsAndChecklistOrLeaveQuestAchieved",
+    "passed": 12,
+    "failed": 0,
+    "skipped": 0,
+    "reportedDurationSeconds": 19
+  },
+  "builds": {
+    "test": {
+      "path": "artifacts/continuation-20261106/q5597-actual-catalog/final-test-build.log",
+      "sha256": "fe34374a2a778104c7e4f4b759c342db20abf53cb75a4d9012c87f5726607ce7",
+      "seconds": 15.1,
+      "warnings": 0,
+      "errors": 0,
+      "buildProjectReferences": false
+    },
+    "runner": {
+      "path": "artifacts/continuation-20261106/q5597-actual-catalog/final-runner-build.log",
+      "sha256": "aa9d234086fa7fc7cbcfa367e7cd657d07cc3c4afa04c85eac13a7157c400d9f",
+      "seconds": 2.68,
+      "warnings": 0,
+      "errors": 0
+    }
+  },
+  "fixtureDiagnostics": [
+    {
+      "artifact": {
+        "path": "artifacts/continuation-20261106/q5597-actual-catalog/cases-01/failure.json",
+        "sha256": "2df4a92c0b046ef3684c938827afb1487f9b9432cbd2b6c26bb0d0eb32807e21"
+      },
+      "meaning": "Relative recovery root passed to an absolute containment verifier; entry now normalizes it."
+    },
+    {
+      "artifact": {
+        "path": "artifacts/continuation-20261106/q5597-actual-catalog/cases-02/failure.json",
+        "sha256": "447ee280c131e948de609df9e17d94f61f2f9f02a956f43c5b443fc635f28a0e"
+      },
+      "meaning": "Held SQL assertion assumed empty achievement table despite deliberately seeded prior progress; now checks original complete state."
+    },
+    {
+      "artifact": {
+        "path": "artifacts/continuation-20261106/q5597-actual-catalog/cases-04-diagnostic.log",
+        "sha256": "f06fac1a3dced5442105834a73b16feb7218745da563e6c9ba4de1040fb4e8b9"
+      },
+      "meaning": "Loaded level stat lacked corresponding SQL row; atomic graph correctly refused it. Seed and canonical achieved objective are now complete."
+    },
+    {
+      "artifact": {
+        "path": "artifacts/continuation-20261106/q5597-actual-catalog/test-build-01.log",
+        "sha256": "fd77210e968613981dc87c7e7488bae4eda740fac7b7c876e214749e24918789"
+      },
+      "meaning": "xUnit public entrypoint analyzer warning; moved public dispatch to a non-test static class."
+    },
+    {
+      "artifact": {
+        "path": "artifacts/continuation-20261106/q5597-actual-catalog/wire-assert-import-failure.log",
+        "sha256": "fe1f41a9b72f91bc7d88b22f307dea63a0c0656d33fe45a16dba1f65198c5e7e"
+      },
+      "meaning": "Missing ExpReason namespace during wire assertion addition; fixed import."
+    }
+  ],
+  "reviews": {
+    "path": "artifacts/continuation-20261106/q5597-actual-catalog/reviews.json",
+    "sha256": "65d7d3439e737539d263a2ff6e426f919796c80b50624e86fd8aa7bc8618121e",
+    "specFindings": 0,
+    "standardsFindings": 0
+  },
+  "upstream": {
+    "path": "artifacts/continuation-20261106/q5597-actual-catalog/upstream-refresh.json",
+    "sha256": "c0b884623029acc9cdefede895d34b0c699122a907b1e74cf9f4131fc7a1691b",
+    "reviewedPrs": 20,
+    "allReviewedHeadsBasesStatesUnchanged": true,
+    "pr608": "open",
+    "pr609": "closed/unmerged"
+  },
+  "preserved": {
+    "productionSourceUnchanged": true,
+    "foreignRootSourceExcluded": true,
+    "historicalCandidateDifferences": 8,
+    "fullSolutionOrFullSuiteRun": false,
+    "noConfiguredProviderOrDeploymentQualification": true,
+    "nativeClientAndComputerUseStopped": true,
+    "entitlements": "15:1/17:1 preserved; no automatic44/seven grants"
+  },
+  "limitations": [
+    "Achieved objective and prior checklist bit are seeded; prerequisite18 is a satisfied collaborator and visible receiver is prepared.",
+    "Registry supplies one full actual AchievementInfo, not qualification of every global achievement.",
+    "Actor/bootstrap, empty bag, level4 and no signature/rest modifiers are fixture boundaries.",
+    "Fresh World packets assert items, quest and partial achievement; XP/credits are checked after committed grant and in SQL/fresh reconstructed managers.",
+    "Actual physical earning/chain, full-stack Auth selection, nonempty inventory, level crossing, MySQL/copied-upgrade/deployment/native/retail remain open."
+  ]
+}

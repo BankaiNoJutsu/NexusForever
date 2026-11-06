@@ -1,5 +1,11 @@
 # NexusForever Feature Restoration - Current Status
 
+[Q5597 actual-catalog turn-in](Decomp/Analysis/evidence_reviews/20261029-q5597-achievement-checklist-5495/README.md#actual-catalog-public-turn-in-and-partial-checklist)
+qualifies both fixed items,152 XP,145 credits and the full achievement checklist
+through committed encrypted World turn-in/recovery/reload. Progress moves1→3
+without completing achievement4134. Capacity refusal, both actual socket cases,
+12 default controls and final reviews pass; physical chain/native gates remain.
+
 [Cinematic completion ownership](Decomp/Analysis/CINEMATIC_COMPLETION_OWNERSHIP.md)
 retires the original playback before event continuation and keeps queued movies,
 concrete packet streams and each script callback bound to their admitted context.

@@ -315,3 +315,60 @@ behavior or deployed providers.
 
 All 279 scoped checks passed. Results and binary hashes are under
 `artifacts/continuation-20261104/quest-auto-accept-publication/`.
+
+## Actual-catalog public turn-in and partial checklist
+
+6 November 2026, published parent `36dc58ecbcde4afea5e5036dd4e45cb87675305a`.
+The existing public encrypted-loopback turn-in now has explicit qualification
+against recovered build16042 tables. Production Source and public behavior are
+unchanged. Three test Source paths add a nondiscovered qualification entry and
+optional actual metadata; their default fixture branches remain covered.
+
+The reused corpus verifier checks all385 recovered payload identities. Twenty-four
+tables are loaded through the owning readers. Concrete QuestInfo uses Q5597,
+its objective, difficulty and reward rows; concrete ItemInfo uses actual item
+dependencies. Fixed rows3000/5236 deliver one each of Item2 81917 and29664,
+whose actual stack limits are50 and4. A real one-slot bag refuses the complete
+batch and leaves the achieved quest, inventory and prior achievement unchanged.
+
+The full achievement4134 catalog contains checklist5494/Q5596/bit0,
+5495/Q5597/bit1 and5496/Q5604/bit2. With prior mask1 seeded, Q5597 moves progress
+to3 and leaves DateCompleted null. Earlier one-entry fixture results exercise
+terminal-achievement persistence; this run qualifies partial progression with
+all three real entries present.
+
+Two actual-catalog cases exercise ordinary success and a rejected Character save
+followed by fresh-session retry. Real XP and Currency managers apply the
+table-derived152 XP and145 credits: stored XP moves2860 to3012 at level4. While
+the original save is held, SQL retains the achieved quest, original XP/mask and
+no awards, and the encrypted socket withholds item/quest/achievement/XP/credit
+notices. After commit, both item grants and the exact XP/credit wire values arrive.
+Rejected writes roll back those outcomes. Fresh World sessions retain the original
+committed item identities, partial checklist and balances; duplicate turn-in
+leaves them unchanged. Fresh inventory and achievement packets carry the saved
+items and mask3 with timestamp0. The cases use five local TCP connections.
+
+Both final reviews have zero findings. The owning test build and explicit runner
+build are clean in15.10s/2.68s. Final actual-catalog execution passes in8.53s;
+all12 selected default capacity/turn-in controls pass in19s. The same production
+DLLs and all other dependencies from the preceding published cinematic candidate
+are retained; only the test assembly changes. No full solution build or full suite
+ran. Earlier fixture diagnostics are retained: relative-root normalization, a
+held-state assertion that omitted the seeded achievement, and a loaded level stat
+without its corresponding SQL row. Initial analyzer/import diagnostics are also
+retained. These are qualification-fixture corrections, not production defects.
+
+The [portable record](../../coverage/q5597-actual-catalog-20261106.json) binds the
+three owned Source files, all-source isolation check, final DLL manifest, corpus
+inputs, actual/default results and reviews. Raw evidence is under
+`artifacts/continuation-20261106/q5597-actual-catalog/`.
+
+Achieved objective progress, prior checklist bit, visible Mondo receiver and
+prerequisite18 are prepared fixture inputs. The registry supplies the actual
+achievement metadata; eligibility is a satisfied collaborator. Actor bootstrap,
+nonempty inventory, modifiers and level-crossing variations are not qualified by
+this gate. This is SQLite and local encrypted World sockets, not full-stack Auth
+selection, actual physical world entry/earning, Q5596→Q5597→Q5604 gameplay or
+native UI. Configured MySQL/copied-upgrade, deployed services and native/retail
+remain open. Manual validation stays pending and content is not retail-complete.
+Client launch and Computer Use remain stopped; continue independent roadmap work.

@@ -18,6 +18,7 @@ using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable.Model;
+using NexusForever.GameTable;
 using NexusForever.Game.Abstract.Account;
 using NexusForever.Network.Session;
 using Actor = NexusForever.Game.Tests.Challenges.RewardNormalSaveSnapshotTests.Actor;
@@ -115,11 +116,13 @@ public sealed partial class Q5597RewardPersistenceTests
         };
     }
 
-    private static IItemManager CreateItems()
+    private static IItemManager CreateItems(IGameTableManager actualTables = null)
     {
         var items = RecordingDispatchProxy<IItemManager>.Create(out var itemManager);
-        var definitions = RewardIds.Append(PushedItem).ToDictionary(id => id, id =>
+        var definitions = (actualTables == null ? RewardIds.Append(PushedItem) : RewardIds).ToDictionary(id => id, id =>
         {
+            if (actualTables != null)
+                return (IItemInfo)new ItemInfo(actualTables.Item.GetEntry(id), actualTables);
             var info = RecordingDispatchProxy<IItemInfo>.Create(out var proxy);
             proxy.SetProperty(nameof(IItemInfo.Id), id);
             proxy.SetProperty(nameof(IItemInfo.Entry), new Item2Entry { Id = id, MaxStackCount = 1 });
@@ -133,7 +136,7 @@ public sealed partial class Q5597RewardPersistenceTests
 
     private static Actor LoadActor(Fixture f, IItemManager items, uint slots,
         CharacterModel model = null, IGameSession session = null, IAccount account = null, AuthDatabase auth = null,
-        ushort questId = QuestId, CharacterDatabase characterDatabase = null)
+        ushort questId = QuestId, CharacterDatabase characterDatabase = null, IAchievementInfo actualAchievement = null)
     {
         if (model == null)
         {
@@ -162,13 +165,14 @@ public sealed partial class Q5597RewardPersistenceTests
         typeof(GridEntity).GetField("visibleEntities", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(actor.Player, new Dictionary<uint, IGridEntity> { [1] = mondo });
 
-        var bloodstone = new AchievementInfo(new AchievementEntry
+        var bloodstone = actualAchievement ?? new AchievementInfo(new AchievementEntry
         {
             Id = AchievementId, AchievementTypeId = (uint)AchievementType.QuestCompleteChecklist,
             PrerequisiteId = 18, PrerequisiteIdServer = 18
         });
-        bloodstone.ChecklistEntries.Add(new AchievementChecklistEntry
-            { Id = 5495, AchievementId = AchievementId, Bit = 1, ObjectId = questId });
+        if (actualAchievement == null)
+            bloodstone.ChecklistEntries.Add(new AchievementChecklistEntry
+                { Id = 5495, AchievementId = AchievementId, Bit = 1, ObjectId = questId });
         var registry = RecordingDispatchProxy<IGlobalAchievementManager>.Create(out var achievementManager);
         achievementManager.SetMethodReturn(nameof(IGlobalAchievementManager.GetAchievement), bloodstone);
         achievementManager.SetMethodHandler(nameof(IGlobalAchievementManager.GetCharacterAchievements),

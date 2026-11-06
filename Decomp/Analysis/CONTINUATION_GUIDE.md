@@ -1,5 +1,11 @@
 # Client Binary Decompile Continuation Guide
 
+[Q5597 actual-catalog turn-in](evidence_reviews/20261029-q5597-achievement-checklist-5495/README.md#actual-catalog-public-turn-in-and-partial-checklist)
+passes capacity refusal and two committed encrypted World/recovery/reload cases
+with actual item/quest/achievement data and XP/credits. Full checklist progress
+is partial mask3, not a completed achievement.12 default controls and reviews
+pass. Physical chain, Auth selection, provider/native/retail remain; client/CUA stopped.
+
 [Cinematic completion ownership](CINEMATIC_COMPLETION_OWNERSHIP.md) binds parsed
 completion and provided concrete cinematic packets to the original playback and
 rechecks every event script. See its portable result before further F-022 work.
