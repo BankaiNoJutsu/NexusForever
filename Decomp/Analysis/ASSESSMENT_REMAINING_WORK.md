@@ -1,5 +1,13 @@
 # Assessment follow-through goal
 
+[Zone track 35 actual catalog](ZONE_REWARD_TRACK_35_EVIDENCE.md#actual-map-world-and-reward-inputs-qualified)
+resolves the old map-to-track and pouch-name input gaps: MapZone 476 → track 35,
+join 450 → World 3335, Item 86274 → Icebound Pouch. All 385 payload identities,
+22 loaded tables, real ItemInfo/Challenge catalog and both reviews qualify these
+inputs against unchanged binaries. No producer or reward is enabled. Specific
+Challenge/PublicEvent before/after credit, amount/ownership and payout/claim/
+reset/excess behavior remain required; continue independent implementation.
+
 [Challenge Ability target identity](CHARACTER_CHALLENGE_LIVE_PRODUCERS.md#ability-spell-targets-do-not-earn-creature-activation-credit)
 now rejects creature activation as spell earning. Actual 182 Target 28780 is
 Spell4, pane group 5913; all 45 nonzero Ability targets resolve Spell4 and none of

@@ -1,0 +1,433 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-06T04:36:53.232882+00:00",
+  "baseCommit": "d878d4c0bb0256cd55b446c1e33b91c58d8018c9",
+  "milestone": "Arcterra Zone track35 actual map, world and pouch catalog qualification",
+  "classification": "Qualified recovered input/catalog joins only; Zone earning, scale, payout/reset and overall Goal remain open",
+  "inputs": {
+    "path": "artifacts/continuation-20261106/zone-track-catalog/qualification-01/inputs.json",
+    "sha256": "a44d79bcfa949071993eee60a010044369f737ae2b41b6f13f79b69c910b06d1",
+    "manifestSha256": "bfb15d7824bb7ed4f4b03cc26411b3adb07317744ff2939b9fd1101c476902ad",
+    "verifiedRecoveredPayloads": 385,
+    "loadedTypedTables": 22,
+    "loadedPayloads": [
+      {
+        "File": "recovered-tables\\Challenge.tbl",
+        "Sha256": "b54561d016d94b507119a5604f55adafe2072af4e34a7cbdf1463c75d1785d95",
+        "Bytes": 62816
+      },
+      {
+        "File": "recovered-tables\\CurrencyType.tbl",
+        "Sha256": "2d2a28abc4d9054c9f12008d8ae59618feed5306ee3f335a225ea527bac7b692",
+        "Bytes": 2512
+      },
+      {
+        "File": "recovered-tables\\GameFormula.tbl",
+        "Sha256": "541e1781b8ed5e890cd194e0ad8bf1ceae63cbbb5308026679bc8459e2c1c007",
+        "Bytes": 63872
+      },
+      {
+        "File": "recovered-tables\\Item2.tbl",
+        "Sha256": "f51673fdbf5e97678cf67f62d0a1975fbb60be98bfe79a9c354f7fc5498b0ce2",
+        "Bytes": 15659408
+      },
+      {
+        "File": "recovered-tables\\Item2Category.tbl",
+        "Sha256": "9e7a454f51b5158a3f3d92b5b190ed31b298485058112268dfa46ae20e698ee7",
+        "Bytes": 9760
+      },
+      {
+        "File": "recovered-tables\\Item2Family.tbl",
+        "Sha256": "791eb8c61ed6e2f1ea0a9919afeaeb5fbf3f444269c1fc164cb7336e16a25e1b",
+        "Bytes": 1520
+      },
+      {
+        "File": "recovered-tables\\Item2Type.tbl",
+        "Sha256": "4349684d6bc7a0f3819e8d8eef698e23603af48a06c18a3800aa61bf8aa9c3fb",
+        "Bytes": 29168
+      },
+      {
+        "File": "recovered-tables\\ItemBudget.tbl",
+        "Sha256": "a9f2e6e09e9d982b48764bd555288d802561de74fc9ced7d9285e706ee6f971e",
+        "Bytes": 2384
+      },
+      {
+        "File": "recovered-tables\\ItemQuality.tbl",
+        "Sha256": "0f90558d988e1d88a9e9b61b440cc32af9d8005d02e7d09abdde34ceb7383134",
+        "Bytes": 2160
+      },
+      {
+        "File": "recovered-tables\\ItemRandomStat.tbl",
+        "Sha256": "806137ef8a907e126fc864b9958101e95a3e34ac3c29f42da1fdbc230893c396",
+        "Bytes": 1680
+      },
+      {
+        "File": "recovered-tables\\ItemSlot.tbl",
+        "Sha256": "17fe0ecc810be365b8218b79f8ed7d5ff27dcc37989754fc2d354ffdbcbe93bd",
+        "Bytes": 3968
+      },
+      {
+        "File": "recovered-tables\\ItemStat.tbl",
+        "Sha256": "f5ad85408bffa6a9e600c1c377db2b140cf18f173d00111db527d0f50da5a5c2",
+        "Bytes": 22640
+      },
+      {
+        "File": "recovered-tables\\MapZone.tbl",
+        "Sha256": "eccc63c13461c133d53331929d59cde4ebfee79b3e26d27016dc6afd5604b54d",
+        "Bytes": 57376
+      },
+      {
+        "File": "recovered-tables\\MapZoneWorldJoin.tbl",
+        "Sha256": "25c0dfbbe21c6b6b75d020b88be220f834258d6bbb77cca48cf2b1c0586ca797",
+        "Bytes": 8320
+      },
+      {
+        "File": "recovered-tables\\PublicEvent.tbl",
+        "Sha256": "c1968cd17f869b2383c93f67fd2a409e68f64de214827e5e67fb08157a0595fd",
+        "Bytes": 38080
+      },
+      {
+        "File": "recovered-tables\\PublicEventRewardModifier.tbl",
+        "Sha256": "fb1fe28796bfa0252eb0b28871ebd2a0c7ce99f422f84f3e51e1c4ea6294d7d9",
+        "Bytes": 576
+      },
+      {
+        "File": "recovered-tables\\RewardTrack.tbl",
+        "Sha256": "aa2d04411e1db7b22eaa0d73ffd0b8d298bb3d62d9a24ac5fa0c4caa6b000d4f",
+        "Bytes": 5376
+      },
+      {
+        "File": "recovered-tables\\RewardTrackRewards.tbl",
+        "Sha256": "81f726003fb85ec5506fc9cdfc2550cc62c82d90a7379666715f19f8f1c1c1d6",
+        "Bytes": 32000
+      },
+      {
+        "File": "recovered-tables\\UnitProperty2.tbl",
+        "Sha256": "6edfb62a0235018b8fdde42c417fdc8a0ae2284eb938cccaeb7a849e5e481d2d",
+        "Bytes": 25840
+      },
+      {
+        "File": "recovered-tables\\World.tbl",
+        "Sha256": "55d6a26501e8da8adcbb7cf250206d97875f507e2fa5dc33a0f26c7bede27b7b",
+        "Bytes": 314096
+      },
+      {
+        "File": "recovered-tables\\WorldLocation2.tbl",
+        "Sha256": "791e6397008a8c930066e86c763be2ba7c1d11b8b85a13efe3097bf296b56e74",
+        "Bytes": 1950464
+      },
+      {
+        "File": "recovered-tables\\WorldZone.tbl",
+        "Sha256": "5fd9dd26245ef9bd3a431e5185f80d754cb59b796859716e252d10a715f3691c",
+        "Bytes": 162272
+      },
+      {
+        "File": "recovered-tables\\en-US.bin",
+        "Sha256": "588e385a0e8dee8b92dc79018070a17e78d3efd535b948224702effecafa5cf7",
+        "Bytes": 41690224
+      }
+    ],
+    "readerSha256": "2c2cb95e91cacdf0fc9ca931d1da8eb3b99d4419e76d6e6f56a35f5d9aa4940a",
+    "gameSha256": "f78aee6d6643564c4f94ebe0e942df595d2657de5a8a1fd038761878e4d6be6b",
+    "probeSha256": "5ed4cfc536c4c4cd258de499a0b62b2908439d3a3a2e1e40e2966654affdf888"
+  },
+  "sources": [
+    {
+      "path": "Source/NexusForever.Game/Challenges/Reward/CharacterChallengeRewardCatalog.cs",
+      "sha256": "2bcca86af31a738adc544a5d852b29381a3ab0ddbd7e852e076e1530e6e295bb"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/ItemInfo.cs",
+      "sha256": "d785c0feb54f9a71d392ef68ffca0b09f8691b33030767cae8767e98f259aaf9"
+    },
+    {
+      "path": "Source/NexusForever.Game/Entity/ItemInfoPropertyBuilder.cs",
+      "sha256": "f3bb10808bad60e68f3f4a05969722893f1dd9d957671d9c48d209b101f42f75"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/GameTable.cs",
+      "sha256": "d9822c69a9427f44d8a5cdfce2638cff38793287d8bac866727f1adf501ecefc"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/GameTableLoader.cs",
+      "sha256": "2cb2ba94dc12ce8bf48f14b873a5b3e4f3abd7cca1b68e80b92b7df60b5cbb62"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/GameTableManager.cs",
+      "sha256": "84a5d5ddb28248ca605bccebeb59e45f66e63efecdb5fad9a5e2335c6b7a36ff"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/ChallengeEntry.cs",
+      "sha256": "7e271d12cbe57a9d7fdd38adb5670af75a081f2b84a6fdeb58de709c3aeea06e"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/CurrencyTypeEntry.cs",
+      "sha256": "ae403f8fb4a6ebdc3f465b34c1cef7904e02e0594f9f0ea95e9235ce69003118"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/GameFormulaEntry.cs",
+      "sha256": "42c6a05654a479b5b5d362df1e268976ef8adc205cb169ca08904836c7197683"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/Item2CategoryEntry.cs",
+      "sha256": "415a9d113cbeed232ecb141c8787b3eafc0921de9481fc09693ca322973477a0"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/Item2Entry.cs",
+      "sha256": "1c1bc1b9d76d6af4049a227deab7d053e4c1180ac52f7ac20411c1b4c7bee93f"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/Item2FamilyEntry.cs",
+      "sha256": "30c64ea75c4e0db5c03dbfb1b3c93274e11676245de6ab42a8d3911db16d9069"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/Item2TypeEntry.cs",
+      "sha256": "989940ad794930db7e48b1cb43643b0b90fe96af3d70ede05aa00c7639beaefa"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/ItemBudgetEntry.cs",
+      "sha256": "21747d02b78c6afe5c75599d5c68baf6eae08ae881e746ef84e5ef1fa5e4f585"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/ItemQualityEntry.cs",
+      "sha256": "1bbf7f5ce02e935236f344787d38feefa9e120213723e449508452c7390c1b20"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/ItemRandomStatEntry.cs",
+      "sha256": "226c23c6aa827002c4ccd96348d72678229668cfcd68dbac48cfcad8a51b0952"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/ItemSlotEntry.cs",
+      "sha256": "c330bca07b31ef2855d21847aa5cdd432c32feda1d774f604249513042355058"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/ItemStatEntry.cs",
+      "sha256": "ccc71bc917d8714f47019e5d1dba55fcc726906e57352d3114cc51875b9389f5"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/MapZoneEntry.cs",
+      "sha256": "9d2aad0d7cf45d2f339723c8b12973e65862aab8ae3b00d72555012ba416ea54"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/MapZoneWorldJoinEntry.cs",
+      "sha256": "c61631feae2c2a505d8b43a9f48c54e4f643117a671ebd1cd6928abe67be79b7"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/PublicEventEntry.cs",
+      "sha256": "4b1138b48f80363ea036ad2e071c8161e56c4f9bc3d1f03210ef8d258a22358d"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/PublicEventRewardModifierEntry.cs",
+      "sha256": "860f8c4ab49597c26b12521202528bc81295c2a170a33d4ebe2aaffe6081498c"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/RewardTrackEntry.cs",
+      "sha256": "e335d77744d491054e4dfffef45fc934e76797193e013d413cd01ec44c94291f"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/RewardTrackRewardsEntry.cs",
+      "sha256": "880ad58220ff7edf8e88e974d9736d0de1ffa6349c8d76b0839be42243d82b2a"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/UnitProperty2Entry.cs",
+      "sha256": "47bdfa6d65339ff0209d01f549a4e0ef0aaaf3cb4c0b5275e329df986fd06cf8"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/WorldEntry.cs",
+      "sha256": "2dfe4803640fb2d07d1f3b282f2beef2963b6fa02ccc4fe50ec0c963bf80e0a3"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/WorldLocation2Entry.cs",
+      "sha256": "f0da4d7bfc17c30214d697c79711e4c2f985e198b8df36eaff4c15df1e0d692b"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/Model/WorldZoneEntry.cs",
+      "sha256": "d0968af0d7934376431c4044008567dba6809bec14450660574a9925231eb5b6"
+    },
+    {
+      "path": "Source/NexusForever.GameTable/TextTable.cs",
+      "sha256": "6d748c200fb733415b191cd743a1b2a4352c27ce7b30d20cf37242eef7622a2a"
+    }
+  ],
+  "sourceBoundary": {
+    "base": "d878d4c0bb0256cd55b446c1e33b91c58d8018c9",
+    "trackedSourceFiles": 6290,
+    "differences": [
+      {
+        "path": "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+        "head": "9b4e604e08391bf229552fa04081ecf9c74fec4d",
+        "candidate": "7de92fafe0c2474ba8428ca9ceee883d39138b46"
+      },
+      {
+        "path": "Source/NexusForever.ClientConnector/packages.config",
+        "head": "fa4b77dc45783358023c1cd38e6ff9bad122aea4",
+        "candidate": "8ab13a9023dec3cf548ee61ba183013bd098a297"
+      },
+      {
+        "path": "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+        "head": "64769a2266f7feab861fcc61cd2b00a0a05da8c4",
+        "candidate": "74272fd6bf29afac14c5d62cb172e81b4edee19a"
+      },
+      {
+        "path": "Source/NexusForever.Database/NexusForever.Database.csproj",
+        "head": "61f9d5326c59ec7018164eba605a01f4081dfded",
+        "candidate": "163c4f01e198e71066afcd9089a367c78b4c3de6"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+        "head": "1ffaefc3cf8c1eb7c5b0534d4d91f28eb7001347",
+        "candidate": "6c145b847fa7316e7982ab44cfa404f4e1e7fc70"
+      },
+      {
+        "path": "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj",
+        "head": "74f0ec9ebbf4894dd7ef64f379a773a9e4ce1295",
+        "candidate": "ecd970da6d0d220f3caaf6780656c1809e18a9af"
+      }
+    ],
+    "newSourceChanges": []
+  },
+  "result": {
+    "path": "artifacts/continuation-20261106/zone-track-catalog/qualification-01/result.json",
+    "sha256": "4a07f07ccb35c39ab169c3ca9b34ecb82620c5ca39439323368af5edc209dd5a",
+    "mapZoneRows": 490,
+    "worldJoinRows": 489,
+    "onlyMapZoneWithNonzeroTrack": {
+      "id": 476,
+      "name": "Arcterra",
+      "rewardTrackId": 35,
+      "worldZoneId": 0
+    },
+    "join": {
+      "Id": 450,
+      "MapZoneId": 476,
+      "WorldId": 3335
+    },
+    "worldId": 3335,
+    "worldAssetPath": "Map\\Arcterra",
+    "zoneTrack": {
+      "Id": 35,
+      "RewardTrackTypeEnum": 4,
+      "PrerequisiteId": 0,
+      "LocalizedTextId": 744816,
+      "LocalizedTextIdSummary": 744817,
+      "AssetPathImage": "",
+      "AssetPathButtonImage": "",
+      "RewardPointCost00": 6000000,
+      "RewardPointCost01": 0,
+      "RewardPointCost02": 0,
+      "RewardPointCost03": 0,
+      "RewardPointCost04": 0,
+      "RewardPointCost05": 0,
+      "RewardPointCost06": 0,
+      "RewardPointCost07": 0,
+      "RewardPointCost08": 0,
+      "RewardPointCost09": 0,
+      "RewardTrackIdParent": 0,
+      "Flags": 0
+    },
+    "zoneReward": {
+      "Id": 535,
+      "RewardTrackId": 35,
+      "RewardPointFlags": 1,
+      "PrerequisiteId": 0,
+      "Flags": 3,
+      "CurrencyTypeId": 1,
+      "CurrencyAmount": 250000,
+      "RewardTrackRewardTypeEnum00": 0,
+      "RewardTrackRewardTypeEnum01": 0,
+      "RewardTrackRewardTypeEnum02": 0,
+      "RewardChoiceId00": 86274,
+      "RewardChoiceId01": 0,
+      "RewardChoiceId02": 0,
+      "RewardChoiceCount00": 1,
+      "RewardChoiceCount01": 1,
+      "RewardChoiceCount02": 1
+    },
+    "item": {
+      "Id": 86274,
+      "Name": "Icebound Pouch",
+      "MaxStackCount": 1,
+      "BindFlags": 8,
+      "Family": 25,
+      "Category": 138,
+      "Type": 449,
+      "Quality": 5,
+      "ItemPower": 25
+    },
+    "challengeTrack36Costs": [
+      300,
+      600,
+      900,
+      1200
+    ],
+    "challengeTrack36RewardRows": [
+      536,
+      538,
+      539,
+      537
+    ],
+    "challengeDefinitions": [
+      1126,
+      1127,
+      1128,
+      1129,
+      1130,
+      1134
+    ],
+    "worldPublicEvents": 49,
+    "worldPublicEventsWithRewardModifierRows": 0,
+    "zoneTrackExcludedFromChallengeCatalog": true,
+    "challengeTrack36Included": true
+  },
+  "validation": {
+    "helperBuild": {
+      "path": "artifacts/continuation-20261106/zone-track-catalog/qualification-build.log",
+      "sha256": "fb98cacc1b433a3568d26fa55aac2bba89159abc777f3e088b41aa0011cd1510",
+      "seconds": 2.62,
+      "warnings": 0,
+      "errors": 0
+    },
+    "execution": {
+      "path": "artifacts/continuation-20261106/zone-track-catalog/qualification-01.log",
+      "sha256": "8e1db0beb30777e65ef6513aada286891d384293111887c1774190c38fd63f03",
+      "seconds": 1.6507882
+    },
+    "rawInitialAudit": {
+      "path": "artifacts/continuation-20261106/zone-track-catalog/catalog-audit.json",
+      "sha256": "07afef21c89f6a1a0b4b5933708afc647f1fd435d35df8e737417d4e951815d2"
+    },
+    "helperDeclarationDiagnostic": {
+      "path": "artifacts/continuation-20261106/zone-track-catalog/helper-declaration-diagnostics.log",
+      "sha256": "86184a07268fa7853110cadbc4b6610850eb178cd68836fd24bd3b59b9f92618"
+    },
+    "unchangedTestOutputDlls": 138,
+    "runnerCopiesExact": true,
+    "newOwningBuildOrXunitRun": false,
+    "fullSolutionOrFullSuiteRun": false,
+    "sourceEdits": false
+  },
+  "reviews": {
+    "path": "artifacts/continuation-20261106/zone-track-catalog/reviews.json",
+    "sha256": "b580889de96d194734ea58cfa33ec86ae82cf3019255764e845950ed15f9ba0e",
+    "specFindings": 0,
+    "standardsFindings": 0
+  },
+  "limits": [
+    "Actual MapZone476 has WorldZoneId0; do not equate MapZone476 with WorldZone476 or guess a world-zone root. Join450 supplies World3335 explicitly.",
+    "All49 World3335 PublicEvent rows have no matching PublicEventRewardModifier rows in this corpus; this is not evidence that events award no Zone points.",
+    "Challenge definitions1126/1127/1128/1129/1130/1134 refer to Challenge track36, not an explicit Zone base-point award.",
+    "Raw item BindFlags8 is retained without assigning unsupported binding semantics. Real ItemInfo construction is metadata qualification, not inventory or reward delivery.",
+    "Reward535 currency250000, flags and pouch choice do not prove an automatic payout, claim or reset policy.",
+    "No Zone earning producer, point amount, multiplier composition, persistence/reward delivery, provider/socket/deployment/native/retail qualification is claimed. Native client and Computer Use remain stopped."
+  ]
+}

@@ -1,5 +1,12 @@
 # Client Binary Decompile Continuation Guide
 
+[Actual Arcterra catalog](ZONE_REWARD_TRACK_35_EVIDENCE.md#actual-map-world-and-reward-inputs-qualified)
+qualifies MapZone 476 → Zone track 35 and join 450 → World 3335, plus Icebound
+Pouch 86274 through ItemInfo. Track 36 remains Challenge-owned. All 385 payload
+identities, 22 typed tables and both reviews pass; Source/binaries are unchanged.
+Base earning/ownership and payout/reset need specific event evidence; keep Zone
+earning/claims disabled and client/CUA stopped.
+
 [Challenge Ability spell targets](CHARACTER_CHALLENGE_LIVE_PRODUCERS.md#ability-spell-targets-do-not-earn-creature-activation-credit)
 now stay outside creature-activation scoring. Actual 182 alias earning is fixed;
 144 scoped/four actual cases, clean builds and both reviews pass. The old

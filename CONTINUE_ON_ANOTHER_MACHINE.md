@@ -1,5 +1,13 @@
 # Continue on another machine
 
+Latest Zone input qualification:
+[Arcterra actual catalog](Decomp/Analysis/ZONE_REWARD_TRACK_35_EVIDENCE.md#actual-map-world-and-reward-inputs-qualified)
+binds MapZone 476 to track 35/type 4 and World 3335, and resolves Icebound Pouch
+86274 through ItemInfo. All 385 payloads/22 typed tables and both reviews pass
+against unchanged binaries. Track 36 remains separate; Zone earning amount/
+ownership and payout/reset remain unqualified. No public route was enabled;
+client/CUA remain stopped. Continue independent actionable work.
+
 Latest Challenge Source correction:
 [Ability spell targets](Decomp/Analysis/CHARACTER_CHALLENGE_LIVE_PRODUCERS.md#ability-spell-targets-do-not-earn-creature-activation-credit)
 cannot earn creature-activation credit. Three baseline failures and actual 182

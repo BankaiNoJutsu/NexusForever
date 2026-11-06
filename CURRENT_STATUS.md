@@ -1,5 +1,12 @@
 # NexusForever Feature Restoration - Current Status
 
+[Arcterra Zone catalog](Decomp/Analysis/ZONE_REWARD_TRACK_35_EVIDENCE.md#actual-map-world-and-reward-inputs-qualified)
+now binds MapZone 476 to track 35/type 4 and World 3335; Item 86274 is Icebound
+Pouch through real ItemInfo. All 385 payload identities and 22 loaded tables,
+unchanged binaries and both reviews qualify inputs only. Challenge track 36
+stays separate. Earning scale and payout/reset remain missing; Zone earning/
+claims and native/client/CUA remain stopped.
+
 [Challenge Ability target correction](Decomp/Analysis/CHARACTER_CHALLENGE_LIVE_PRODUCERS.md#ability-spell-targets-do-not-earn-creature-activation-credit)
 removes false creature/group activation credit for spell-target Ability rows.
 Three focused baseline failures and actual 182 false count/tier are fixed;

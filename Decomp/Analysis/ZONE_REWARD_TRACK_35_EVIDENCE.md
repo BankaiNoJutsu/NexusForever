@@ -1,5 +1,52 @@
 # Arcterra Zone reward track 35
 
+## Actual map, world and reward inputs qualified
+
+6 November 2026, parent d878d4c0bb0256cd55b446c1e33b91c58d8018c9.
+The recovered build 16042 catalog resolves the previously missing map-to-Zone-track
+association. Among all 490 MapZone rows, only 476 (Arcterra) has a nonzero
+RewardTrackId: 35, whose type is 4. MapZoneWorldJoin 450 connects MapZone 476 to
+World 3335, with asset path Map\Arcterra. The MapZone's WorldZoneId is 0; no
+WorldZone identity is inferred from the map number. This is an actual static
+join, not a physical map-entry or earning observation.
+
+Track 35 retains a single 6000000 threshold and reward row 535: point mask 1,
+flags 3, CurrencyType 1/amount 250000 and first choice Item 86274/count 1.
+The complete ItemInfo constructor resolves that item as Icebound Pouch,
+family 25/category 138/type 449/quality 5, maximum stack 1 and finite ItemPower 25.
+Raw BindFlags 8 remains uninterpreted. These metadata do not decide whether
+the pouch/currency is automatic, claimed, repeatable or reset with excess.
+
+The separate type 3 Challenge track 36 retains thresholds 300/600/900/1200 and
+reward rows 536/538/539/537 in slot order. The real CharacterChallengeRewardCatalog
+admits 36 and excludes 35. Six definitions 1126/1127/1128/1129/1130/1134 reference 36;
+they do not expose a Zone base-point amount. All 49 PublicEvent rows naming
+World 3335 have no joined PublicEventRewardModifier rows in this recovered
+corpus. This is a diagnostic absence, not proof events give no Zone progress.
+
+The qualification verifies all 385 recovered payload identities, loads 22 typed
+tables plus English, and exercises the owning GameTableManager, ItemInfo and
+Challenge catalog against unchanged published candidate binaries. The helper
+build is clean in 2.62 s and execution takes 1.713 s. All 138 dependency DLL copies
+match the preceding published milestone; all 6290 tracked Source inputs match
+the published parent apart from the eight retained historical candidate
+project/config/BOM variants. Both review axes have zero findings. Initial
+helper namespace/table-property declaration errors remain retained separately.
+
+The [portable record](coverage/zone-track-catalog-20261106.json) pins the 23
+loaded payloads, reader/runtime/helper identities, 29 unchanged Source inputs,
+joins, assertions and review record. Raw evidence is under
+artifacts/continuation-20261106/zone-track-catalog/. No production Source,
+schema, handler, entitlement or reward was changed, and no owning build,
+xUnit suite, provider or runtime deployment was repeated for this input audit.
+
+The specific remaining input is a controlled or accepted historical before/after
+credit tied to an identified Challenge/PublicEvent completion, including point
+amount and ownership, plus payout/claim/reset/excess behavior. The old missing
+map row and unknown pouch name are no longer blockers. Keep Zone earning and
+public claims disabled; move independent implementation while those event/policy
+inputs remain missing. Client launch and Computer Use remain stopped.
+
 4 November 2026. The retained build 16042 reward rows and English text
 identify two Arcterra tracks with the same display name.
 
