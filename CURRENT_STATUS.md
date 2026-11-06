@@ -1,5 +1,13 @@
 # NexusForever Feature Restoration - Current Status
 
+[Hosted character-list rows](Decomp/Analysis/CHARACTER_LIST_COSTUME_PREVIEW.md#hosted-wire-row-follow-through--6-november-2026)
+now qualify the changed World DLL before selection: seven sessions per final
+Global/Guild scope, with fourteen raw owned list bodies checked independently.
+Each scope passes55 ICComm frames/18 attempts;82 scoped and four preview tests
+pass. All owned services/broker/copied schemas are cleaned up, original dumps
+match. Native UI/automatic reconnect, positive Group/live scope and retail remain
+open. Overall restoration continues; native/CUA stay stopped.
+
 [Transport location save retry](Decomp/Analysis/TRANSPORT_LOCATION_SAVE_RETRY.md)
 retains admitted location across failed SQL settlement and preserves later
 movement intent. Six baseline failures are fixed;11 new/90 selected transport

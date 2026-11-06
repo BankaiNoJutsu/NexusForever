@@ -188,7 +188,7 @@ internal static class ICCommReconnectCommand
             {
                 try { await Offline(user, false); } catch (Exception error) { passed = false; failure ??= Scrub(error.Message); await File.AppendAllTextAsync(Path.Combine(output, "cleanup-errors.log"), Scrub(error.Message) + Environment.NewLine); }
             }
-            await File.WriteAllTextAsync(Path.Combine(output, "transcripts.json"), JsonSerializer.Serialize(peers.Select(p => new { p.Label, p.Owner, p.Sample.Steps, Frames = p.Frames, p.AbortiveClose }), Json));
+            await File.WriteAllTextAsync(Path.Combine(output, "transcripts.json"), JsonSerializer.Serialize(peers.Select(p => new { p.Label, p.Owner, p.Sample.Steps, p.Sample.CharacterList, Frames = p.Frames, p.AbortiveClose }), Json));
         }
         await Report(passed, failure);
         if (passed) Console.WriteLine($"ICComm {type} socket PASS: explicit join/message/cleanup, normal and abortive reconnect; no automatic membership replay.");

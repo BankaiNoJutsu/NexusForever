@@ -417,7 +417,7 @@ internal static class LoginWorldCommand
                 world.SetCrypt(PacketCrypt.GetKeyFromTicket(ticket.SessionKey));
 
                 await world.SendEncrypted(GameMessageOpcode.ClientCharacterList, _ => { });
-                await world.WaitForInnerOpcode(GameMessageOpcode.ServerCharacterList, TimeSpan.FromSeconds(15));
+                sample.CharacterList = await world.WaitForCharacterList(accountCharacter.CharacterId, TimeSpan.FromSeconds(15));
             });
 
             await Step(sample, "world-character-select", async () =>
@@ -484,7 +484,7 @@ internal static class LoginWorldCommand
             await world.SendEncrypted(GameMessageOpcode.ClientHelloRealm, writer => PacketWriters.WriteClientHelloRealm(writer, ticket.AccountId, ticket.SessionKey, options.User));
             world.SetCrypt(PacketCrypt.GetKeyFromTicket(ticket.SessionKey));
             await world.SendEncrypted(GameMessageOpcode.ClientCharacterList, _ => { });
-            await world.WaitForInnerOpcode(GameMessageOpcode.ServerCharacterList, TimeSpan.FromSeconds(15));
+            sample.CharacterList = await world.WaitForCharacterList(character.CharacterId, TimeSpan.FromSeconds(15));
             await world.SendEncrypted(GameMessageOpcode.ClientCharacterSelect, writer => writer.Write(character.CharacterId));
             await CompleteWorldEntry(world, character.WorldZoneId, options.ClientEnteredWorldDelayMs, sample);
             return (world, character);
@@ -880,6 +880,27 @@ internal sealed class GameProtocolClient : IAsyncDisposable
         catch (OperationCanceledException) when (cts.IsCancellationRequested)
         {
             throw new TimeoutException($"Timed out waiting for world bootstrap (changeWorld={changeWorld}, playerCreate={playerCreate}).");
+        }
+    }
+
+    internal async Task<CharacterListObservation> WaitForCharacterList(ulong selectedCharacter, TimeSpan timeout)
+    {
+        using CancellationTokenSource deadline = new(timeout);
+        try
+        {
+            while (true)
+            {
+                var frame = await ReadInnerFrame(deadline.Token);
+                if (frame.Opcode != GameMessageOpcode.ServerCharacterList) continue;
+                var observation = CharacterListObservation.Read(frame.Body);
+                if (selectedCharacter == 0 || observation.Characters.Count(row => row.Id == selectedCharacter) != 1)
+                    throw new InvalidDataException($"Selected Character {selectedCharacter} is absent from ServerCharacterList wire rows.");
+                return observation;
+            }
+        }
+        catch (OperationCanceledException) when (deadline.IsCancellationRequested)
+        {
+            throw new TimeoutException("Timed out waiting for ServerCharacterList wire rows.");
         }
     }
 
@@ -1305,6 +1326,7 @@ internal sealed class LoginWorldSample
     public string? Error { get; set; }
     public double TotalMs { get; set; }
     public List<LoadTestStep> Steps { get; set; } = new();
+    public CharacterListObservation? CharacterList { get; set; }
 }
 
 internal sealed class LoadTestStep

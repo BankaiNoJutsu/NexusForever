@@ -1,0 +1,347 @@
+{
+  "Date": "2026-11-06",
+  "BaseHEAD": "6cf6871459c39a854617f5abbac92429e46566ac",
+  "Outcome": "Hosted owned Character-list rows and bounded ICComm qualified; broader Goal unfinished",
+  "Source": [
+    {
+      "SHA256": "3A1EBEB189FB9D17D4C6185FD669C1808A5C61C818C9889387B6868D6E80C7D5",
+      "Path": "Tools/NexusForever.LoadTest/Program.cs"
+    },
+    {
+      "SHA256": "4D35DD780CF8482EFD1C7CA894694A47D02CC1D37B08088FD4357C389A07C092",
+      "Path": "Tools/NexusForever.LoadTest/CharacterListObservation.cs"
+    },
+    {
+      "SHA256": "2F99983CE3C584ECF181C34BC6F382E2ECCBF89F68ADC3CAC0BB3CD375B232FD",
+      "Path": "Tools/NexusForever.LoadTest/ICCommReconnectCommand.cs"
+    },
+    {
+      "SHA256": "F4686B754BE20170FF23BA2E154BB7759CA22138D21663048C4B1EE083D8AB2C",
+      "Path": "Source/NexusForever.Game.Tests/Network/LoadHarnessCharacterListTests.cs"
+    },
+    {
+      "SHA256": "0498CDBE3669A845BE8D635B3491BB67D92F22EC561A8292152394B2C6DF3F71",
+      "Path": "Source/NexusForever.WorldServer/Network/Message/Handler/Character/CharacterListManager.cs"
+    },
+    {
+      "SHA256": "D25851E8FD6AFD3F39D4BC4068AE858CBB6E0B12A8DF56B3842CAA250D4CBF4F",
+      "Path": "Source/NexusForever.Network.World/Message/Model/Pregame/ServerCharacterList.cs"
+    }
+  ],
+  "Binaries": [
+    {
+      "SHA256": "F7AADAF02C87ED2F09CF44CA0B71339203AAA9A45D2ABDB7F23103D90948862C",
+      "Path": "Tools/NexusForever.LoadTest/bin/Debug/net10.0/NexusForever.LoadTest.dll"
+    },
+    {
+      "SHA256": "0DCB1B810626F191A63FB7677E008CABAB5581A9457584BCACFC963D320BCEC1",
+      "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll"
+    },
+    {
+      "SHA256": "E178E88B5467EF6FF560CA095B66878DA0B1DB0166F0A66C9CE6479CB9DB1754",
+      "Path": "artifacts/character-list-hosted/hosted/NexusForever.WorldServer/NexusForever.WorldServer.dll"
+    },
+    {
+      "SHA256": "F394217ABD117163D32FFC5CD7E3EFED28FF10E28D986F27D6750B20220438E8",
+      "Path": "artifacts/character-list-hosted/hosted/NexusForever.WorldServer/NexusForever.Game.dll"
+    }
+  ],
+  "Evidence": [
+    {
+      "SHA256": "D69CFB50ED3B56E936BE96A323E083B1A7E5AA264614F3651E82D25F04B96CDC",
+      "Path": "artifacts/character-list-hosted/tests/character-list-wire.trx"
+    },
+    {
+      "SHA256": "8CD0A5350AB26505D7C5344DC1FE88883635930289E2B604D1101F8DC8271C10",
+      "Path": "artifacts/character-list-hosted/preview-tests/character-list-preview.trx"
+    },
+    {
+      "SHA256": "F3BF39310C68061C36181D0DB0E05AFA22E094C81967F629E2CAA16E164DCA6D",
+      "Path": "artifacts/character-list-hosted/retained-tests/character-list-retained-wire.trx"
+    },
+    {
+      "SHA256": "B3D22D53F8D68A87BC879C0D11DDEC808EE9C36690E651B34FC8F1E713099A68",
+      "Path": "artifacts/character-list-hosted/global-final/transcripts.json"
+    },
+    {
+      "SHA256": "E17FB51DDAD5AD670D670A6E0E30594AE177C79E76AC0253AC99CC0963A529B0",
+      "Path": "artifacts/character-list-hosted/global-final/iccomm-reconnect.json"
+    },
+    {
+      "SHA256": "60F4FFA93925C1CCAB4D0FFC3CD6D87D4D3DD06A0B7772C23A043ACA08190D4E",
+      "Path": "artifacts/character-list-hosted/guild-final/transcripts.json"
+    },
+    {
+      "SHA256": "CB27C668193C038AFFB6E2F3C1AA07BFA82D8C0A99A40342DA4957371750FC56",
+      "Path": "artifacts/character-list-hosted/guild-final/iccomm-reconnect.json"
+    },
+    {
+      "SHA256": "A070A304B45C5B129E5DD53A5D9C41B0504B3B9886044658D14DF0857947D80D",
+      "Path": "artifacts/character-list-hosted/wire-row-audit.json"
+    },
+    {
+      "SHA256": "7C9CEA5CDA88F8620939B1281E36676C3B366C443F5F5081B907B7D5F150B176",
+      "Path": "artifacts/character-list-hosted/asset-check.json"
+    },
+    {
+      "SHA256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+      "Path": "artifacts/character-list-hosted/asset-validation.log"
+    },
+    {
+      "SHA256": "E003B34376824E8241A44AE796D2FFC72AF738E5B7111B55375593EA79DBE89D",
+      "Path": "artifacts/character-list-hosted/independent-service-cleanup.json"
+    },
+    {
+      "SHA256": "065FE51C63CD20B0B894502BC6446CF8BCC18BEABC63C4991DFFDEBCBD948DFE",
+      "Path": "artifacts/character-list-hosted/broker-node-generation.json"
+    },
+    {
+      "SHA256": "8FCBA7AEF9A03E5E9D84BEE7FCA0A16D62B02ECED324116558DFA891733D17CF",
+      "Path": "artifacts/character-list-hosted/queues-assessment.log"
+    },
+    {
+      "SHA256": "90A562371AB7A8DB8B02DD756910D6122791AE86E03BAD57ECEF654531100913",
+      "Path": "artifacts/character-list-hosted/queues-after-stop.log"
+    },
+    {
+      "SHA256": "F55DB2F8A4FABDFCB166D5C84AB2713B33329342DB29D2E0CF399672D49EE006",
+      "Path": "artifacts/character-list-hosted/epmd-final-names.log"
+    },
+    {
+      "SHA256": "FF53A52E09125FC51FA203D7183A4DB722C617B0E62131FDCF8FD1A1EF08C079",
+      "Path": "artifacts/character-list-hosted/epmd-final-stop.log"
+    },
+    {
+      "SHA256": "AAFBD45FD123179081C0F4E105C55F771BBA5A28F3E00C738E180A7292F7CB34",
+      "Path": "artifacts/character-list-hosted/hosted-schema-cleanup.json"
+    },
+    {
+      "SHA256": "79F73C93C5DB8CF718945C0569F8EE7664775391261C1F32DC982235E46A1293",
+      "Path": "artifacts/character-list-hosted/original-preservation.json"
+    }
+  ],
+  "Verification": {
+    "OriginalMySqlPids": [
+      2648,
+      6016
+    ],
+    "Scopes": [
+      {
+        "Scope": "global-final",
+        "Sessions": 7,
+        "Frames": 55,
+        "Rows": [
+          {
+            "Session": "alice-1",
+            "Selected": 75,
+            "WireCount": 1,
+            "BodySHA256": "5e0329d7be61574c61cc083fc250701bf1e4462c1fe0e072571df5677ba9e17f"
+          },
+          {
+            "Session": "bob-1",
+            "Selected": 76,
+            "WireCount": 1,
+            "BodySHA256": "2fa70f2644e1d64cc8ce6b39ec9d37323d90737aaaad76419f8a993667912365"
+          },
+          {
+            "Session": "outsider-1",
+            "Selected": 77,
+            "WireCount": 1,
+            "BodySHA256": "570670018bae223364c4f14537a2e1f8ef7eaab07b32f2ad5cb5505a4867515f"
+          },
+          {
+            "Session": "bob-normal-reconnect",
+            "Selected": 76,
+            "WireCount": 1,
+            "BodySHA256": "d4ea172a3acfd67a996d9f03eefc0dde0837f719df32a34af7d9e257a2f9ef56"
+          },
+          {
+            "Session": "bob-abortive-reconnect",
+            "Selected": 76,
+            "WireCount": 1,
+            "BodySHA256": "0b979a4ba1e8d3367b2adcb0082fe66f0392b55195a50b115d04723418630bbf"
+          },
+          {
+            "Session": "alice-fresh",
+            "Selected": 75,
+            "WireCount": 1,
+            "BodySHA256": "59a4070ed82ee1b9c8c46c4c5ec4b23070ac98b36e77e0076a7e45e240346c92"
+          },
+          {
+            "Session": "bob-fresh",
+            "Selected": 76,
+            "WireCount": 1,
+            "BodySHA256": "64fe13bd0ea16b29f54afdd790ea052022ba44dab3c0f9ecfc3bca0c65141240"
+          }
+        ],
+        "StartedUtc": "2026-11-06T16:45:16.6907511Z",
+        "CompletedUtc": "2026-11-06T16:45:34.751288Z"
+      },
+      {
+        "Scope": "guild-final",
+        "Sessions": 7,
+        "Frames": 55,
+        "Rows": [
+          {
+            "Session": "alice-1",
+            "Selected": 75,
+            "WireCount": 1,
+            "BodySHA256": "e02d7814bfb3771f5b41077d98787746468fa710c444e8cdf0cbe786a1a74ece"
+          },
+          {
+            "Session": "bob-1",
+            "Selected": 76,
+            "WireCount": 1,
+            "BodySHA256": "31502b1ac3b369348bbad4a44f06b982e11fa70840d42c87833f139275b31fda"
+          },
+          {
+            "Session": "outsider-1",
+            "Selected": 77,
+            "WireCount": 1,
+            "BodySHA256": "b5366a1ab72680c991761fef79f0be33b78ad10b5a23fc3816d4456e3bcc3a63"
+          },
+          {
+            "Session": "bob-normal-reconnect",
+            "Selected": 76,
+            "WireCount": 1,
+            "BodySHA256": "97801045f70154ee5f3b5a85ee1d15b6da5fbec875e5a313767aaaebdf300406"
+          },
+          {
+            "Session": "bob-abortive-reconnect",
+            "Selected": 76,
+            "WireCount": 1,
+            "BodySHA256": "596923e62875800c2070a3d81c8f6d871bca520500ab42b570d07b1610378005"
+          },
+          {
+            "Session": "alice-fresh",
+            "Selected": 75,
+            "WireCount": 1,
+            "BodySHA256": "8350fbf397accbc4dee78a1e3274a8cc2f2b43df1067455a897fc270f37764c1"
+          },
+          {
+            "Session": "bob-fresh",
+            "Selected": 76,
+            "WireCount": 1,
+            "BodySHA256": "3fe395840ca21beb172f15e18bae9eadac38d6465cbb11b28868885f49cf6355"
+          }
+        ],
+        "StartedUtc": "2026-11-06T16:45:34.9492594Z",
+        "CompletedUtc": "2026-11-06T16:45:53.0087601Z"
+      }
+    ],
+    "Preview": 4,
+    "OriginalSchemasUnchanged": 7,
+    "AssetFiles": 1211,
+    "CopiedSchemas": 7,
+    "InitialScoped": 82,
+    "FinalRetentionTests": 8,
+    "ServiceGenerations": 9
+  },
+  "SourceBuild": "Normal incremental Game.Tests dependency graph; no full solution or full suite",
+  "RuntimeServices": [
+    {
+      "Pid": 25140,
+      "Absent": true,
+      "Project": "NexusForever.Server.Character",
+      "StartedUtc": "2026-11-06T16:41:33.4975756Z"
+    },
+    {
+      "Pid": 30680,
+      "Absent": true,
+      "Project": "NexusForever.Server.ChatServer",
+      "StartedUtc": "2026-11-06T16:41:33.5679255Z"
+    },
+    {
+      "Pid": 30876,
+      "Absent": true,
+      "Project": "NexusForever.Server.Friendship",
+      "StartedUtc": "2026-11-06T16:41:33.6065663Z"
+    },
+    {
+      "Pid": 40040,
+      "Absent": true,
+      "Project": "NexusForever.Server.GroupServer",
+      "StartedUtc": "2026-11-06T16:41:33.6467974Z"
+    },
+    {
+      "Pid": 10260,
+      "Absent": true,
+      "Project": "NexusForever.API.Character",
+      "StartedUtc": "2026-11-06T16:41:33.6922302Z"
+    },
+    {
+      "Pid": 34360,
+      "Absent": true,
+      "Project": "NexusForever.API.Account",
+      "StartedUtc": "2026-11-06T16:41:33.7344925Z"
+    },
+    {
+      "Pid": 29048,
+      "Absent": true,
+      "Project": "NexusForever.WorldServer",
+      "StartedUtc": "2026-11-06T16:41:33.7845795Z"
+    },
+    {
+      "Pid": 32808,
+      "Absent": true,
+      "Project": "NexusForever.AuthServer",
+      "StartedUtc": "2026-11-06T16:41:33.8317742Z"
+    },
+    {
+      "Pid": 7120,
+      "Absent": true,
+      "Project": "NexusForever.StsServer",
+      "StartedUtc": "2026-11-06T16:41:33.8828148Z"
+    }
+  ],
+  "OriginalPreservation": [
+    {
+      "Database": "auth",
+      "SHA256": "e8c80cf3434fddeb5433e34e150f78eec7e46d9e6aeb7afc56afac387a063189",
+      "Unchanged": true
+    },
+    {
+      "Database": "character",
+      "SHA256": "22221d861e38144affd53497b5241bbce2424a38d9d7a0caadfba7d5d86ca1bb",
+      "Unchanged": true
+    },
+    {
+      "Database": "world",
+      "SHA256": "8d1613142648ca08624740939cb62681611202252721382af998af54c99f14c3",
+      "Unchanged": true
+    },
+    {
+      "Database": "group",
+      "SHA256": "3d0de9efe6cb72eb90933b14a3d308d14a62e214ff6dc7b31549914ce9aa5c88",
+      "Unchanged": true
+    },
+    {
+      "Database": "chat",
+      "SHA256": "d22f8116ba1cb4d14af0b07bc74776ac2ba45c8780c3f7d742f4e632545f6b4b",
+      "Unchanged": true
+    },
+    {
+      "Database": "friendship",
+      "SHA256": "4c00fb0834ba9174fed20abc81c84fd76fd3e0f9c5cec8f829e3302c9954fd45",
+      "Unchanged": true
+    },
+    {
+      "Database": "query",
+      "SHA256": "2288f32caef43ba3e35932342dec4109912ca60d65029ccc35bbcb004c91246c",
+      "Unchanged": true
+    }
+  ],
+  "Reviews": {
+    "Standards": "Primary-agent self-review, zero remaining findings",
+    "Spec": "Primary-agent self-review, zero remaining findings"
+  },
+  "Limits": [
+    "prepared fixture membership and Load characters",
+    "requested abortive close not captured TCP RST",
+    "explicit rejoin not automatic reconnect",
+    "native selection/rendering",
+    "positive Group/live scope/retail remain open",
+    "earlier provider/restart/7194 recovery retains separate candidate limits"
+  ],
+  "RawRoot": "artifacts/character-list-hosted/"
+}

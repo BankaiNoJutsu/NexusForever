@@ -1,5 +1,15 @@
 # Assessment follow-through goal
 
+[Character-list hosted wire rows](CHARACTER_LIST_COSTUME_PREVIEW.md#hosted-wire-row-follow-through--6-november-2026)
+close the current changed-World presentation gate: final Global/prepared-Guild
+runs each pass seven sessions/55 ICComm frames/18 attempts, with all14 owned
+raw list bodies independently hash/count/ID checked before selection. Eight new/
+82 scoped and four preview cases pass. All nine services, broker/private EPMD and
+seven copied schemas are absent; all seven original dumps match. Earlier provider/
+restart/7194 proofs remain separate. Native rendering/automatic reconnect,
+positive Group/live scope and retail stay open. Continue independent roadmap
+gameplay; the overall Goal remains active and native/CUA stopped.
+
 [Transport location save retry](TRANSPORT_LOCATION_SAVE_RETRY.md) reconstructs
 the unavailable paused candidate against integrated parent9a31e976. Location
 stays dirty until flushed terminal settlement; later movement/admission retains

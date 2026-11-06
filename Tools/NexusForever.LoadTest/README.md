@@ -39,6 +39,14 @@ fields. A 15-second deadline bounds connection setup and each complete STS
 request/reply transaction, including partial header/body progress. A missing
 response therefore fails the sample instead of hanging the run.
 
+Both ordinary login and scenario login decode the full `ServerCharacterList`
+and require the selected owned SQL Character ID to appear exactly once in its
+wire rows before sending `ClientCharacterSelect`. Empty, omitted, duplicate and
+malformed lists fail admission. Samples retain decoded row identities and the
+list body/hash; ICComm transcripts include the same witness for every session.
+This qualifies protocol visibility of the row, separately from native selection
+UI, costume rendering and gameplay eligibility.
+
 ## Evidence Anchors
 
 The traffic shape is based on mapped local decompilation evidence:
