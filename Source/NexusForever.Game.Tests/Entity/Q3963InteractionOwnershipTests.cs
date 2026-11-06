@@ -28,7 +28,7 @@ using Store = NexusForever.Game.Tests.Quest.QuestPersistenceDurabilityTests.Fixt
 
 namespace NexusForever.Game.Tests.Entity;
 
-public class Q3963InteractionOwnershipTests
+public partial class Q3963InteractionOwnershipTests
 {
     [Theory]
     [InlineData(false)]

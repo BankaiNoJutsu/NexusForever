@@ -1,5 +1,15 @@
 # Assessment follow-through goal
 
+[Q3963 delayed departure](Q3963_DELAYED_DEPARTURE.md) extends the existing CSI
+boundary into owned cinematic preparation and one-shot transport. Eleven original
+failures plus a later unload negative are fixed;22 new/145 related cases pass.
+Both parsed routes reach real Quest/script/Player teleport admission and preserve
+quest progress across full Character flush refusal/retry/fresh reload; same-map
+admission cancels stale departure. Two hashed tables bind precise route fields.
+Actual bootstrap/location settlement, physical/native timing, public acceptance/
+turn-in, restart/provider/socket/retail remain open. Broader Goal active; continue
+independent gameplay/assessment work, native/CUA stopped.
+
 [Deferred CSI ownership](CSI_ACTIVATION_OWNERSHIP.md) completes the supported
 original-actor/concrete-target boundary through parsed requests and both reply
 routes. Eleven original failures and two later review negatives are fixed;

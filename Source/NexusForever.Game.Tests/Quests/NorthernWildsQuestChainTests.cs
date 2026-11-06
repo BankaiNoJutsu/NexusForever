@@ -26,7 +26,7 @@ using NexusForever.Shared.Game.Events;
 
 namespace NexusForever.Game.Tests.Quests;
 
-public class NorthernWildsQuestChainTests
+public partial class NorthernWildsQuestChainTests
 {
     [Theory]
     [InlineData(3479, 3667)]
@@ -252,7 +252,7 @@ public class NorthernWildsQuestChainTests
     public void Q3963_OnAchieved_WhenPlayerLeavesNorthernWildsBeforeDelay_DoesNotTeleport()
     {
         IGameSession session = CreateSessionWithEvents();
-        IBaseMap map = CreateMap(51u);
+        IBaseMap map = CreateMap(426u);
         IQuest owner = CreateQuest(
             3963,
             new Dictionary<ushort, QuestState?>(),
@@ -270,6 +270,7 @@ public class NorthernWildsQuestChainTests
 
         script.OnLoad(owner);
         script.OnQuestStateChange(QuestState.Achieved, QuestState.Accepted);
+        playerProxy.SetProperty(nameof(IPlayer.Map), CreateMap(51u));
         GetQueuedEvent(session.Events).Execute();
 
         Assert.Empty(playerProxy.GetInvocations("set_" + nameof(IWorldEntity.Rotation)));

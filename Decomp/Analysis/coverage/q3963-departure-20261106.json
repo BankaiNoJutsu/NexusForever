@@ -1,0 +1,177 @@
+{
+  "Date": "2026-11-06",
+  "BaseHEAD": "387b783003760f9db4a6e33415e3a2095536bf09",
+  "Outcome": "Q3963 original delayed departure ownership implemented; full restoration unfinished",
+  "Source": [
+    {
+      "Path": "Source/NexusForever.Script.Main/Quests/NorthernWilds/Q3963MoreImportantThanRevenge.cs",
+      "SHA256": "DDDEFC60EACCBDA9A864553F5CF044878C680EDF43B6F30F450D98C739AB2FCC"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Quests/NorthernWildsQuestChainTests.cs",
+      "SHA256": "7A9ECD359CA22C96A986DCC76CF96766C635E168B6198E3A8551D886CFEC3A89"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Quests/NorthernWildsQuestChainTests.Departure.cs",
+      "SHA256": "02AC5BBB5420D01F8C6AA82D816EAAA2A946CC4F3736E2F62E6BA55E727E7CDE"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Entity/Q3963InteractionOwnershipTests.cs",
+      "SHA256": "EB01A9155A4EACB35F1FCAB4FA240D877DF3DD185C3C5DBDCAA636A96DBB4E42"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/Entity/Q3963InteractionOwnershipTests.Departure.cs",
+      "SHA256": "0A127A0BD7557E1149CDAE4F2E7E54D29BF8B02B39887DA9E07D021D7B3792F6"
+    }
+  ],
+  "Binaries": [
+    {
+      "Path": "Source/NexusForever.WorldServer/bin/Debug/net10.0/NexusForever.Script.Main.dll",
+      "SHA256": "70517C9650BEA1ECD7E54454FDEE1239B597585CA70BC1CF71D24AD9EE9565D0"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Script.Main.dll",
+      "SHA256": "70517C9650BEA1ECD7E54454FDEE1239B597585CA70BC1CF71D24AD9EE9565D0"
+    },
+    {
+      "Path": "Source/NexusForever.Game/bin/Debug/net10.0/NexusForever.Game.dll",
+      "SHA256": "09875ED303BB384EDE3E94749961B825600FE71A221369DCA2F10683228E3FBD"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.dll",
+      "SHA256": "09875ED303BB384EDE3E94749961B825600FE71A221369DCA2F10683228E3FBD"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.Game.Tests.dll",
+      "SHA256": "F63C4EE1C8F6B91A7B518EE5CD046DC794A297CE751067E05BDA21D01FB9285B"
+    },
+    {
+      "Path": "Source/NexusForever.Game.Tests/bin/Debug/net10.0/NexusForever.WorldServer.dll",
+      "SHA256": "27C290BEFE458773473E9A208A336DBA3BA2ED9E70C639A439B5B65E4E319D0B"
+    }
+  ],
+  "Baseline": {
+    "Counters": {
+      "total": "12",
+      "executed": "12",
+      "passed": "1",
+      "failed": "11",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "Raw": "artifacts/q3963-departure/baseline/baseline.trx"
+  },
+  "ReviewNegative": {
+    "Counters": {
+      "total": "1",
+      "executed": "1",
+      "passed": "0",
+      "failed": "1",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "Meaning": "Unloading script did not cancel queued departure on the first guarded candidate",
+    "Raw": "artifacts/q3963-departure/unload-negative/unload-negative.trx"
+  },
+  "FinalTests": {
+    "Counters": {
+      "total": "145",
+      "executed": "145",
+      "passed": "145",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "NewCases": 22,
+    "Raw": "artifacts/q3963-departure/sealed/sealed.trx"
+  },
+  "Build": {
+    "Project": "NexusForever.Script.Main",
+    "Warnings": 0,
+    "Errors": 0,
+    "ElapsedSeconds": 3.58
+  },
+  "Warnings": [
+    "Existing ASPIRE010 in selected test dependency graph",
+    "Initial fixture xUnit2031 fixed before final candidate"
+  ],
+  "RouteInputs": [
+    {
+      "File": "WorldLocation2.tbl",
+      "SHA256": "791E6397008A8C930066E86C763BE2BA7C1D11B8B85A13EFE3097BF296B56E74",
+      "Bytes": 1950464
+    },
+    {
+      "File": "World.tbl",
+      "SHA256": "55D6A26501E8DA8ADCBB7CF250206D97875F507E2FA5DC33A0F26C7BEDE27B7B",
+      "Bytes": 314096
+    }
+  ],
+  "CheckedDestination": {
+    "Id": 9801,
+    "Radius": 1.0000002,
+    "MaxVerticalDistance": 0,
+    "Position0": 3832.376,
+    "Position1": -1001.4483,
+    "Position2": -4497.1353,
+    "Facing0": -1.0037917e-12,
+    "Facing1": -0.22710016,
+    "Facing2": 4.3046105e-12,
+    "Facing3": 0.9738714,
+    "WorldId": 51,
+    "WorldZoneId": 23,
+    "Phases": 1
+  },
+  "CheckedTargetWorld": 51,
+  "Qualification": {
+    "NewUnitCases": 18,
+    "NewIntegratedCases": 4,
+    "PublicFlow": "Both parsed CSI completion routes -> real Player/QuestManager/Quest -> production quest script -> delayed callback -> real Player.TeleportTo -> observed IMapManager.AddToMap",
+    "MapAdmission": "Original concrete Player, map generation, pending transfer; gate held for rotation; same-map change blocks old departure",
+    "Persistence": "Full Character flush refusal then retry/fresh Quest reload preserves achieved progress; not destination bootstrap/SQL location settlement",
+    "Timer": "Callbacks explicitly executed; unchanged 26500ms policy is not real-time/native timer qualification",
+    "Fixture": "Prepared accepted quest, proxy WorldSession/entity/cinematic collaborators/map manager; owning Quest and Player transport code are real"
+  },
+  "Reviews": {
+    "Spec": "Primary-agent consolidated self-review; unload finding executed and fixed; no remaining actionable finding in this boundary",
+    "Standards": "Primary-agent consolidated self-review; no remaining actionable finding in this boundary"
+  },
+  "Limits": [
+    "Physical map bootstrap/arrival/location settlement and actual cinematic playback remain open",
+    "Public quest acceptance/turnin, automatic relog/restart departure recovery and arbitrary partially applied script/queue failures remain open",
+    "No configured provider/socket/native/retail qualification; generated completion gates unchanged",
+    "No full solution/full suite, service/client/CUA launch or schema/configuration mutation",
+    "Earlier hosted qualification retains its frozen Script.Main DLL boundary"
+  ],
+  "RawRoot": "artifacts/q3963-departure/"
+}

@@ -1,15 +1,16 @@
 using System;
-using System.Collections.Generic;
 using System.Numerics;
 using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract.Cinematic;
 using NexusForever.Game.Abstract.Cinematic.Cinematics;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Quest;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
+using NexusForever.Network.Session;
 using NexusForever.Script.Template;
 using NexusForever.Script.Template.Filter;
 using NexusForever.Shared.Game.Events;
@@ -31,7 +32,13 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
         private readonly ILogger<Q3963MoreImportantThanRevengeQuestScript> log;
         private readonly ICinematicFactory cinematicFactory;
         private readonly IGameTableManager gameTableManager;
-        private readonly HashSet<ulong> pendingDeparturePlayers = [];
+        private sealed class Departure
+        {
+            public Func<bool> Current { get; init; }
+            public bool Executed { get; set; }
+        }
+
+        private Departure pendingDeparture;
         private IQuest owner;
 
         public Q3963MoreImportantThanRevengeQuestScript(
@@ -47,12 +54,24 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
         public void OnLoad(IQuest owner)
         {
             this.owner = owner;
+            pendingDeparture = null;
             log.LogDebug("Loaded quest {QuestId} for character {CharacterId}.", owner.Id, owner.Player.CharacterId);
+        }
+
+        public void OnUnload()
+        {
+            pendingDeparture = null;
+            owner = null;
         }
 
         public void OnQuestStateChange(QuestState newState, QuestState oldState)
         {
+            if (owner == null)
+                return;
             log.LogDebug("Quest {QuestId} state: {OldState} -> {NewState}.", owner.Id, oldState, newState);
+
+            if (newState is not (QuestState.Achieved or QuestState.Completed))
+                pendingDeparture = null;
 
             if (newState != QuestState.Achieved || oldState is QuestState.Achieved or QuestState.Completed)
                 return;
@@ -62,66 +81,114 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
 
         private void TryDepartToAlgoroc()
         {
-            IPlayer player = owner.Player;
+            if (pendingDeparture?.Current() == true)
+                return;
+
+            pendingDeparture = null;
+            IQuest quest = owner;
+            IPlayer player = quest.Player;
+            var session = player.Session;
+            var events = session?.Events;
+            var map = player.Map;
+            var account = player.Account;
+            var epoch = account?.WorldSessionEpoch;
+            var character = player.CharacterId;
+            var realm = player.Identity?.RealmId;
+            var cinematics = player.CinematicManager;
+            var admission = (player as IPlayerMapAdmission)?.MapAdmissionGeneration;
+            bool OwnsDeparture() => ReferenceEquals(owner, quest) && !quest.PendingDelete
+                && ReferenceEquals(quest.Player, player) && player.CharacterId == character && player.Identity?.RealmId == realm
+                && ReferenceEquals(player.Session, session) && ReferenceEquals(session?.Events, events)
+                && (session is not IPlayerSession bound || ReferenceEquals(bound.Player, player))
+                && session is not NetworkSession { IsDisconnecting: true }
+                && ReferenceEquals(player.Account, account) && account?.WorldSessionEpoch == epoch
+                && (account == null || ReferenceEquals(account.Session, session))
+                && ReferenceEquals(player.Map, map) && map?.Entry?.Id == NorthernWildsWorldId
+                && ReferenceEquals(player.CinematicManager, cinematics)
+                && (admission == null || ((IPlayerMapAdmission)player).IsMapAdmissionCurrent(admission.Value));
+
+            if (events == null || !OwnsDeparture())
+                return;
+
             WorldLocation2Entry destination = gameTableManager.WorldLocation2.GetEntry(AlgorocDepartureWorldLocationId);
             if (destination == null)
             {
                 log.LogWarning("Quest {QuestId} achieved but Algoroc departure world location {WorldLocationId} is missing.",
-                    owner.Id,
+                    quest.Id,
                     AlgorocDepartureWorldLocationId);
                 return;
             }
 
-            if (!player.CanTeleport())
+            if (!player.CanTeleport() || !OwnsDeparture())
             {
                 log.LogWarning("Quest {QuestId} achieved but player {CharacterId} cannot depart to Algoroc - CanTeleport returned false.",
-                    owner.Id,
+                    quest.Id,
                     player.CharacterId);
                 return;
             }
 
-            if (!pendingDeparturePlayers.Add(player.CharacterId))
+            var departure = new Departure { Current = OwnsDeparture };
+            pendingDeparture = departure;
+            bool Current() => ReferenceEquals(pendingDeparture, departure) && OwnsDeparture();
+            void Retire()
             {
-                log.LogDebug("Quest {QuestId} ignored duplicate Algoroc departure request for player {CharacterId}.",
-                    owner.Id,
-                    player.CharacterId);
-                return;
+                if (ReferenceEquals(pendingDeparture, departure))
+                    pendingDeparture = null;
             }
 
-            player.CinematicManager.QueueCinematic(cinematicFactory.CreateCinematic<IQ3963MoreImportantThanRevengeDepartureCinematic>());
-            log.LogInformation("Quest {QuestId} achieved - queued Northern Wilds departure cinematic for player {CharacterId}; delayed Algoroc transport to world location {WorldLocationId}.",
-                owner.Id,
-                player.CharacterId,
-                AlgorocDepartureWorldLocationId);
-
-            player.Session.Events.EnqueueEvent(new DelayEvent(AlgorocDepartureTeleportDelay, () =>
+            try
             {
-                pendingDeparturePlayers.Remove(player.CharacterId);
-
-                if (player.Map?.Entry?.Id != NorthernWildsWorldId)
+                var cinematic = cinematicFactory.CreateCinematic<IQ3963MoreImportantThanRevengeDepartureCinematic>();
+                if (!Current())
                 {
-                    log.LogDebug("Quest {QuestId} skipped delayed Algoroc transport for player {CharacterId}: map={MapId}.",
-                        owner.Id,
-                        player.CharacterId,
-                        player.Map?.Entry?.Id ?? 0u);
+                    Retire();
+                    return;
+                }
+                cinematics.QueueCinematic(cinematic);
+                if (!Current())
+                {
+                    Retire();
                     return;
                 }
 
-                if (!player.CanTeleport())
-                {
-                    log.LogDebug("Quest {QuestId} skipped delayed Algoroc transport for player {CharacterId}: teleport currently unavailable.",
-                        owner.Id,
-                        player.CharacterId);
-                    return;
-                }
+                log.LogInformation("Quest {QuestId} achieved - queued Northern Wilds departure cinematic for player {CharacterId}; delayed Algoroc transport to world location {WorldLocationId}.",
+                    quest.Id, character, AlgorocDepartureWorldLocationId);
 
-                TeleportToAlgoroc(player, destination);
-            }));
+                events.EnqueueEvent(new DelayEvent(AlgorocDepartureTeleportDelay, () =>
+                {
+                    if (departure.Executed)
+                        return;
+                    departure.Executed = true;
+                    try
+                    {
+                        void Depart()
+                        {
+                            if (Current() && player.CanTeleport() && Current())
+                                TeleportToAlgoroc(player, destination, Current);
+                        }
+                        if (player is IPlayerMapAdmission admitted)
+                        {
+                            lock (admitted.MapAdmissionSyncRoot)
+                                Depart();
+                        }
+                        else
+                            Depart();
+                    }
+                    finally { Retire(); }
+                }));
+            }
+            catch
+            {
+                Retire();
+                throw;
+            }
         }
 
-        private void TeleportToAlgoroc(IPlayer player, WorldLocation2Entry destination)
+        private void TeleportToAlgoroc(IPlayer player, WorldLocation2Entry destination, Func<bool> current)
         {
             player.Rotation = ToEulerDegrees(new Quaternion(destination.Facing0, destination.Facing1, destination.Facing2, destination.Facing3));
+            if (!current())
+                return;
             player.TeleportTo(
                 (ushort)destination.WorldId,
                 destination.Position0,
@@ -130,7 +197,7 @@ namespace NexusForever.Script.Main.Quests.NorthernWilds
                 reason: TeleportReason.Relocate);
 
             log.LogInformation("Quest {QuestId} achieved - teleported player {CharacterId} to Algoroc departure world location {WorldLocationId}: world={WorldId}, position=({X}, {Y}, {Z}).",
-                owner.Id,
+                3963u,
                 player.CharacterId,
                 AlgorocDepartureWorldLocationId,
                 destination.WorldId,

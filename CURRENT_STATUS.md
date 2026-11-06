@@ -1,5 +1,13 @@
 # NexusForever Feature Restoration - Current Status
 
+[Q3963 delayed departure](Decomp/Analysis/Q3963_DELAYED_DEPARTURE.md) now retains
+the original quest/actor/account/queue/map admission and consumes delayed transport
+once. Eleven baseline failures and an unload review negative are fixed;22 new/
+145 related cases pass, including parsed CSI -> real Quest/script -> Player
+teleport admission and full Character save refusal/retry/fresh Quest reload.
+The owning Script.Main build is clean. Physical journey, native timing, restart
+and retail gates remain open; the broader restoration Goal continues.
+
 [Deferred CSI ownership](Decomp/Analysis/CSI_ACTIVATION_OWNERSHIP.md) now retains
 the original actor/account/queue/map admission and concrete target through both
 completion routes. Superseded cast finishes and canceled waiting spells cannot
