@@ -1,5 +1,14 @@
 # Client Binary Decompile Continuation Guide
 
+[Q3777 physical fragment pickup](Q3777_CANONICAL_FRAGMENT_PICKUP.md) now owns
+the real item before activation feedback and syncs collection from inventory.
+All13 new/all141 scoped and13 recovered-table cases, clean builds and both
+reviews pass against concurrent published parent b3fd74ab. Raw payloads remain
+ignored; the portable record pins sources/inputs/DLLs. Native flight/world/
+turnin/provider/socket/retail remain open. User requested stop after this
+milestone; the incomplete Goal is paused and client/CUA remain stopped.
+
+
 The in-flight [Guild/Character achievement boundary](GUILD_CHARACTER_ACHIEVEMENT_ATOMICITY.md)
 now passes MySQL51, SQLite240 achievement/Guild and104 experience-owner cases,
 including actual partial/full controls and a stored-date regression correction.

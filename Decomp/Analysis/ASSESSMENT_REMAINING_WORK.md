@@ -1,5 +1,17 @@
 # Assessment follow-through goal
 
+[Q3777 canonical fragment pickup](Q3777_CANONICAL_FRAGMENT_PICKUP.md) completes
+the existing range producer's physical item6998 grant and owned-count progress.
+Seven baseline failures and three executed review negatives are fixed;
+13 new/all141 scoped cases and13 actual-catalog cases pass, with clean builds
+and both final reviews. Eight pickups achieve and survive full Player SQLite
+save failure/retry/reload. Public acceptance/turnin, existing native jump/range
+interpretation, world content and provider/socket/retail qualification remain.
+Primal debit/synchronization stays unresolved and diagnostic. The user asked
+to finish the current task and stop: pause the incomplete Goal after push,
+then resume only on instruction; do not automatically select another task.
+
+
 Resume [Guild/Character achievement atomicity](GUILD_CHARACTER_ACHIEVEMENT_ATOMICITY.md).
 The durable ordered Guild-chain intent/Character delivery passes51 MySQL and
 240+104 scoped SQLite cases, actual7194 controls, six forced producer-loss windows/

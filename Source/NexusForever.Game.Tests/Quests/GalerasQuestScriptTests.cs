@@ -2,6 +2,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.Game.Tests.Quest;
 using NexusForever.Script.Main.Quests.Galeras;
 using NexusForever.Script.Main.Quests.NorthernWilds;
 
@@ -76,28 +77,16 @@ public class GalerasQuestScriptTests
     [InlineData(ByLeapsAndBoundsLoftiteCrystal)]
     public void Q3777LoftiteCrystal_OnEnterRange_WhenQuestAccepted_CreditsFirstFragmentAndCollectItem(uint creatureId)
     {
+        using var f = new Q3777CrystalPickupTests.PickupFixture();
         var script = new Q3777LoftiteCrystalEntityScript();
         ICreatureEntity owner = CreateCreature(creatureId, out RecordingDispatchProxy<ICreatureEntity> ownerProxy);
-        IPlayer player = CreatePlayerWithQuestState(
-            QuestByLeapsAndBounds,
-            QuestState.Accepted,
-            out RecordingDispatchProxy<IQuestManager> questManagerProxy);
-
         script.OnLoad(owner);
-        script.OnEnterRange(player);
-
-        IReadOnlyList<RecordingDispatchProxy<IQuestManager>.Invocation> objectiveUpdates =
-            questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate));
-        Assert.Equal(2, objectiveUpdates.Count);
-
-        Assert.Equal(QuestObjectiveType.ActivateEntity, objectiveUpdates[0].Arguments[0]);
-        Assert.Equal(ByLeapsAndBoundsFirstFragmentActivateEntity, objectiveUpdates[0].Arguments[1]);
-        Assert.Equal(1u, objectiveUpdates[0].Arguments[2]);
-
-        Assert.Equal(QuestObjectiveType.CollectItem, objectiveUpdates[1].Arguments[0]);
-        Assert.Equal(PureLoftiteFragmentItem, objectiveUpdates[1].Arguments[1]);
-        Assert.Equal(1u, objectiveUpdates[1].Arguments[2]);
-
+        script.OnEnterRange(f.Actor.Player);
+        Assert.Equal(1u, f.Objective(5076).Progress);
+        Assert.Equal(ByLeapsAndBoundsFirstFragmentActivateEntity, f.Objective(5076).ObjectiveInfo.Entry.Data);
+        Assert.Equal(1u, f.Objective(4859).Progress);
+        Assert.Equal(PureLoftiteFragmentItem, f.Objective(4859).ObjectiveInfo.Entry.Data);
+        Assert.Equal(1u, f.Actor.Player.Inventory.GetItemCount(PureLoftiteFragmentItem));
         Assert.Single(ownerProxy.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
     }
 
@@ -106,28 +95,16 @@ public class GalerasQuestScriptTests
     [InlineData(ByLeapsAndBoundsLoftiteCrystal)]
     public void Q3777LoftiteCrystalCollectable_OnEnterRange_WhenQuestAccepted_CreditsFirstFragmentAndCollectItem(uint creatureId)
     {
+        using var f = new Q3777CrystalPickupTests.PickupFixture();
         var script = new Q3777LoftiteCrystalCollectableEntityScript();
         ICollectableUnitEntity owner = CreateCollectableUnit(creatureId, out RecordingDispatchProxy<ICollectableUnitEntity> ownerProxy);
-        IPlayer player = CreatePlayerWithQuestState(
-            QuestByLeapsAndBounds,
-            QuestState.Accepted,
-            out RecordingDispatchProxy<IQuestManager> questManagerProxy);
-
         script.OnLoad(owner);
-        script.OnEnterRange(player);
-
-        IReadOnlyList<RecordingDispatchProxy<IQuestManager>.Invocation> objectiveUpdates =
-            questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate));
-        Assert.Equal(2, objectiveUpdates.Count);
-
-        Assert.Equal(QuestObjectiveType.ActivateEntity, objectiveUpdates[0].Arguments[0]);
-        Assert.Equal(ByLeapsAndBoundsFirstFragmentActivateEntity, objectiveUpdates[0].Arguments[1]);
-        Assert.Equal(1u, objectiveUpdates[0].Arguments[2]);
-
-        Assert.Equal(QuestObjectiveType.CollectItem, objectiveUpdates[1].Arguments[0]);
-        Assert.Equal(PureLoftiteFragmentItem, objectiveUpdates[1].Arguments[1]);
-        Assert.Equal(1u, objectiveUpdates[1].Arguments[2]);
-
+        script.OnEnterRange(f.Actor.Player);
+        Assert.Equal(1u, f.Objective(5076).Progress);
+        Assert.Equal(ByLeapsAndBoundsFirstFragmentActivateEntity, f.Objective(5076).ObjectiveInfo.Entry.Data);
+        Assert.Equal(1u, f.Objective(4859).Progress);
+        Assert.Equal(PureLoftiteFragmentItem, f.Objective(4859).ObjectiveInfo.Entry.Data);
+        Assert.Equal(1u, f.Actor.Player.Inventory.GetItemCount(PureLoftiteFragmentItem));
         Assert.Single(ownerProxy.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
     }
 
@@ -151,19 +128,13 @@ public class GalerasQuestScriptTests
     [Fact]
     public void Q3777LoftiteCrystal_OnEnterRange_AfterCollected_DoesNotGrantAgain()
     {
-        var script = new Q3777LoftiteCrystalEntityScript();
-        ICreatureEntity owner = CreateCreature(ByLeapsAndBoundsLoftiteCrystal, out RecordingDispatchProxy<ICreatureEntity> ownerProxy);
-        IPlayer player = CreatePlayerWithQuestState(
-            QuestByLeapsAndBounds,
-            QuestState.Accepted,
-            out RecordingDispatchProxy<IQuestManager> questManagerProxy);
-
-        script.OnLoad(owner);
-        script.OnEnterRange(player);
-        script.OnEnterRange(player);
-
-        Assert.Equal(2, questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)).Count);
-        Assert.Single(ownerProxy.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
+        using var f = new Q3777CrystalPickupTests.PickupFixture();
+        var crystal = f.Crystal();
+        crystal.Script.OnEnterRange(f.Actor.Player);
+        crystal.Script.OnEnterRange(f.Actor.Player);
+        Assert.Equal(1u, f.Actor.Player.Inventory.GetItemCount(PureLoftiteFragmentItem));
+        Assert.Equal(1u, f.Objective(4859).Progress);
+        Assert.Single(crystal.Proxy.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
     }
 
     [Theory]

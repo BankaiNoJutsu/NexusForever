@@ -1,3 +1,4 @@
+using NexusForever.Game.Tests.Quest;
 using Microsoft.Extensions.Logging.Abstractions;
 using NexusForever.Game.Abstract.Cinematic;
 using NexusForever.Game.Abstract.Cinematic.Cinematics;
@@ -195,23 +196,17 @@ public class EarlyZoneEntityObjectiveCreditTests
     [Fact]
     public void Q3777LoftiteCrystal_OnEnterRange_WhenQuestAccepted_CreditsFragmentObjectives()
     {
-        ICreatureEntity owner = CreateCreature(6987u, checklistIndex: 0, health: 100u, out RecordingDispatchProxy<ICreatureEntity> ownerProxy);
-        IPlayer player = CreatePlayerWithQuestState(3777, QuestState.Accepted, out RecordingDispatchProxy<IQuestManager> questManagerProxy);
-        var script = new Q3777LoftiteCrystalEntityScript();
+        using var f = new Q3777CrystalPickupTests.PickupFixture();
+        var crystal = f.Crystal();
+        crystal.Proxy.SetProperty(nameof(ICreatureEntity.CreatureId), 6987u);
+        crystal.Script.OnEnterRange(f.Actor.Player);
 
-        script.OnLoad(owner);
-        script.OnEnterRange(player);
-
-        List<RecordingDispatchProxy<IQuestManager>.Invocation> updates = questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)).ToList();
-        Assert.Equal(2, updates.Count);
-        Assert.Equal(QuestObjectiveType.ActivateEntity, updates[0].Arguments[0]);
-        Assert.Equal(6952u, updates[0].Arguments[1]);
-        Assert.Equal(1u, updates[0].Arguments[2]);
-        Assert.Equal(QuestObjectiveType.CollectItem, updates[1].Arguments[0]);
-        Assert.Equal(6998u, updates[1].Arguments[1]);
-        Assert.Equal(1u, updates[1].Arguments[2]);
-
-        Assert.Single(ownerProxy.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
+        Assert.Equal(1u, f.Objective(5076).Progress);
+        Assert.Equal(6952u, f.Objective(5076).ObjectiveInfo.Entry.Data);
+        Assert.Equal(1u, f.Objective(4859).Progress);
+        Assert.Equal(6998u, f.Objective(4859).ObjectiveInfo.Entry.Data);
+        Assert.Equal(1u, f.Actor.Player.Inventory.GetItemCount(6998));
+        Assert.Single(crystal.Proxy.GetInvocations(nameof(IGridEntity.RemoveFromMap)));
     }
 
     [Theory]

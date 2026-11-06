@@ -1,5 +1,16 @@
 # Continue on another machine
 
+Latest [Q3777 physical fragment pickup](Decomp/Analysis/Q3777_CANONICAL_FRAGMENT_PICKUP.md)
+creates actual item6998 before activation feedback, preserves refused pickups
+and prevents repeated grants through callbacks/removal failures. All13 new/
+141 scoped and the same13 actual recovered-catalog cases pass; clean builds
+and both reviews pass after adopting published Guild parent b3fd74ab.
+Public acceptance/turnin, native flight/world/provider/socket/retail remain.
+The user requested finishing the current task and stopping: this milestone is
+complete, the broader Goal is incomplete/paused, and no next task starts
+automatically. Preserve the other machine-transfer handoff below.
+
+
 6 November user-requested pause: resume [provider packet timestamps and hosted
 World/Auth restart](Decomp/Analysis/PROVIDER_PACKET_HOSTED_RESTART_HANDOFF.md)
 on the machine with verified build16042 runtime assets. The private test MySQL

@@ -1,5 +1,14 @@
 # NexusForever Feature Restoration - Current Status
 
+[Q3777 physical fragments](Decomp/Analysis/Q3777_CANONICAL_FRAGMENT_PICKUP.md)
+now create real item6998 before activation and derive collection from owned
+quantity. Refused/duplicate/reentrant pickups preserve item/crystal ownership.
+All13 new/all141 scoped cases and the same13 recovered-catalog cases pass;
+clean builds and both reviews pass against published parent b3fd74ab.
+Native flight/world/turnin/provider/retail remain open. The user requested
+finishing this milestone and stopping; the broader Goal is incomplete/paused.
+
+
 [Guild/Character achievement atomicity](Decomp/Analysis/GUILD_CHARACTER_ACHIEVEMENT_ATOMICITY.md)
 now commits one durable intent per related Guild completion chain and one delivery
 marker with the full Character save. MySQL51, SQLite240 achievement/Guild and104
