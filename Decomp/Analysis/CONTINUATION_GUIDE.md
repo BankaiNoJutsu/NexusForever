@@ -1,5 +1,13 @@
 # Client Binary Decompile Continuation Guide
 
+[Achievement packet timestamps](PROVIDER_PACKET_HOSTED_RESTART_HANDOFF.md)
+are qualified for12 configured Character/MySQL/166 scoped SQLite cases through
+committed updates,fresh initial packets and legacy serialization. Stored dates
+are authoritative,including provider rounding; no production conversion change.
+All12 schemas and the owned server/listener are absent; clean builds and both
+reviews pass. The Goal resumed; hosted/native/retail gates remain separate.
+
+
 [Q3777 physical fragment pickup](Q3777_CANONICAL_FRAGMENT_PICKUP.md) now owns
 the real item before activation feedback and syncs collection from inventory.
 All13 new/all141 scoped and13 recovered-table cases, clean builds and both

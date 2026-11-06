@@ -1,5 +1,47 @@
 # Provider packet timestamps and hosted restart — paused for machine transfer
 
+## Completed timestamp qualification — 6 November2026
+
+The user resumed the broader Goal. The timestamp prerequisite now passes all12
+configured Character/MySQL cases and166 scoped SQLite cases. Guild and Character
+committed updates,fresh real-owner initial packets and legacy row Build agree
+with the stored SQL date. Actual packet serialization/decoding checks15/32/32/64
+bits,progress/mask and null=0 across winter,summer,both clock-change dates and
+fractional completion.
+
+The missing Guild packet was a fixture omission: GuildBase.Broadcast resolves
+online members through IPlayerManager,which the finance fixture does not supply.
+The new timestamp file supplies that registry for the existing real broadcast.
+Production timestamp conversion is unchanged. On MySQL8.4.13 the fractional
+03:04:05.8 input stores03:04:06 under the default profile; all three packet paths
+publish that stored second with no seasonal offset. Loaded Kind is Unspecified.
+
+The new [12-case test](../../Source/NexusForever.Game.Tests/Guild/GuildAchievementPacketTimestampTests.cs)
+reuses the real Player/Guild/Character save and fresh reload paths. The
+[portable result](coverage/achievement-packet-timestamps-20261106.json) pins its
+Source,6310 published parent Source inputs,138 DLLs,12 provider observations,
+49 exact migration identities and cleanup. Only Game.Tests differs from the
+published Q3777 baseline; foreign Source is excluded. Owning test/adapter builds
+are clean in16.33/2.88s; scoped SQLite execution reports2m29s and MySQL191.09s.
+Both final reviews have zero findings. No full solution/full suite ran.
+
+All12 synthetic schemas were dropped and independently confirmed absent. The
+sole owned MySQL generation48028 and its listener are absent after normal
+shutdown. Cold startup took about146s; the premature connection attempt, null
+InlineData adapter discovery failure, initial generic/analyzer failure and
+Character proxy-observation failure remain retained under
+artifacts/continuation-20261106/achievement-packet-timestamps/.
+These are corrected qualification/setup failures,not timestamp regressions.
+
+This qualifies the current prepared Source/SQLite/Character-provider paths,
+not hosted Auth,actual raid earning/all-member fanout,copied upgrades,other SQL
+profiles,socket/native or retail behavior. The separate hosted World/Auth gate
+still requires verified runtime assets and configuration. Native client/CUA stay
+stopped. The paused draft and instructions below retain historical provenance;
+do not rerun or restore the obsolete draft.
+
+
+
 6 November2026. The user explicitly stopped this continuation so it can resume
 on the machine holding the runtime assets. This supersedes older active-goal
 and historical runtime-process descriptions for this chat. The overall retail

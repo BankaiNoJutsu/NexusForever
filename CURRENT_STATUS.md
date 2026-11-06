@@ -1,5 +1,14 @@
 # NexusForever Feature Restoration - Current Status
 
+[Achievement packet timestamps](Decomp/Analysis/PROVIDER_PACKET_HOSTED_RESTART_HANDOFF.md)
+now pass12 configured Character/MySQL cases and166 scoped SQLite cases.
+Committed Guild/Character updates, fresh initial packets and legacy Build bytes
+match stored SQL dates, including null and fractional rounding. Production
+conversion is unchanged; the missing Guild registry was a fixture omission.
+All12 schemas and the owned engine are absent; clean builds/both reviews pass.
+The user resumed the incomplete Goal; hosted restart remains asset-dependent.
+
+
 [Q3777 physical fragments](Decomp/Analysis/Q3777_CANONICAL_FRAGMENT_PICKUP.md)
 now create real item6998 before activation and derive collection from owned
 quantity. Refused/duplicate/reentrant pickups preserve item/crystal ownership.

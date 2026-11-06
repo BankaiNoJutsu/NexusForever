@@ -1,5 +1,15 @@
 # Continue on another machine
 
+The user resumed the Goal on6 November. [Achievement packet timestamp
+qualification](Decomp/Analysis/PROVIDER_PACKET_HOSTED_RESTART_HANDOFF.md) is now
+complete:12 configured Character/MySQL and166 scoped SQLite cases, clean builds
+and both final reviews pass. The Guild draft omitted its broadcast registry;
+production conversion agrees with stored dates and remains unchanged.
+All12 schemas and the owned engine/listener are absent. Resume hosted World/Auth
+qualification with verified runtime assets; keep unavailable gates explicit and
+continue independent gameplay. Older pause/draft instructions below are history.
+
+
 Latest [Q3777 physical fragment pickup](Decomp/Analysis/Q3777_CANONICAL_FRAGMENT_PICKUP.md)
 creates actual item6998 before activation feedback, preserves refused pickups
 and prevents repeated grants through callbacks/removal failures. All13 new/
