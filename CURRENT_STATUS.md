@@ -6,8 +6,8 @@ frames and 18 message attempts per scope; 66 scoped tests pass. Normal and
 requested abortive closes require saved offline/closed presence and fresh epochs;
 old membership requires explicit rejoin. All nine services, isolated broker/EPMD
 and seven copied schemas are cleaned up; original data and Q3777 work are preserved.
-The separate null-Player costume presentation exception is recorded for the next
-fix. F-012/retail remain partial: native callbacks, automatic reconnect, positive
+[The character-list costume preview fix](Decomp/Analysis/CHARACTER_LIST_COSTUME_PREVIEW.md) passes 93 scoped cases;
+its changed World DLL still needs hosted wire-row qualification. F-012/retail remain partial: native callbacks, automatic reconnect, positive
 Group, live scope changes and policy gates remain open. Native/CUA stay stopped.
 
 6 November resumed continuation: [provider packet and hosted World/Auth qualification](Decomp/Analysis/PROVIDER_PACKET_HOSTED_RESTART_HANDOFF.md)

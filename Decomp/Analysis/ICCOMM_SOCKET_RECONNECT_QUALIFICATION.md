@@ -57,10 +57,13 @@ ordering and disposes a connection if post-login ownership observation fails.
 One separate startup-path defect is visible: CharacterListManager constructs a
 presentation CostumeManager with a null Player, while its ownership guard
 dereferences Player.CharacterId. Each selected fixture logs that exception in
-character-list gear mapping; the list packet, selection and world entry still
-complete. Do not describe these runs as an error-free character-list presentation
+character-list gear mapping; the catch path omits the character row, while the
+list packet, SQL-ID selection and world entry still complete. Do not describe
+these runs as an error-free character-list presentation
 or use this issue to weaken the ICComm checks. Fix and qualify this separate
-presentation/ownership boundary next.
+presentation/ownership boundary next. The subsequent
+[Source-qualified fix](CHARACTER_LIST_COSTUME_PREVIEW.md) preserves the live
+wardrobe guards; its changed World DLL needs separate hosted qualification.
 
 The [portable record](coverage/iccomm-socket-reconnect-20261106.json) binds exact
 source, frozen DLL/PDB, TRX, assets, reports, audit and cleanup identities.

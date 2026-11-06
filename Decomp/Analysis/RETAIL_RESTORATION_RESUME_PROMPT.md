@@ -41,11 +41,15 @@ seven original schemas match their before dumps. Native/automatic reconnect,
 positive Group/live scope changes and policy semantics remain open. Abortive
 Linger(0) was requested; no captured TCP RST is claimed.
 
-Continue with the separately reproduced CharacterListManager -> CostumeManager
-null-Player presentation exception. Preserve loaded-owner persistence guards;
-qualify presentation without weakening save or publication authority. This did
-not prevent the bounded ICComm peers from reaching ClientEnteredWorld, but means
-those runs do not qualify error-free character-list gear presentation.
+The character-list costume preview fix now passes 93 scoped cases. Read
+CHARACTER_LIST_COSTUME_PREVIEW.md and its portable record. Its three final cases
+fail on the frozen pre-fix DLL at the null-Player wardrobe guard, then pass using
+the loaded costume view. Live save/ownership guards remain unchanged. Those
+original socket runs omitted the character row but could select its SQL ID;
+they do not qualify native character selection. Next qualify this changed World
+DLL on new private copies: decode ServerCharacterList wire rows and require the
+owned selected Character to be present before selection, then rerun ICComm.
+No new service/broker/database was launched for the Source-only follow-through.
 
 Continue the next actionable restoration outcome from current evidence.
 Unknown290 already has an aliased native dispatch body and a Source ServerControl
