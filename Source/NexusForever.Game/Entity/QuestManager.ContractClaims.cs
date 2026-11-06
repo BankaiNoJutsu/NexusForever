@@ -130,11 +130,16 @@ namespace NexusForever.Game.Entity
                         || stage.Claim.AccountId != accountId || stage.Claim.QuoteJson != quote.Json)
                         throw new InvalidOperationException("Contract claim has no matching terminal aggregate proof.");
                     stage.Claim.Validate(catalog, quote.CharacterId, quote.Award.TrackId, quote.CycleId, quote.Award.Ordinal, quote.Award.RewardRowId, quote.SelectionJson);
-                    var expected = before.Select(track => track.TrackId == quote.Award.TrackId ? track with
-                    {
-                        Revision = checked(track.Revision + 1), Slots = Array.AsReadOnly(track.Slots.Select(slot => slot.Ordinal == quote.Award.Ordinal
-                            ? slot with { Claim = stage.Claim } : slot).ToArray())
-                    } : track).ToArray();
+                    var expected = before.Select(track => track.TrackId != quote.Award.TrackId ? track
+                        : quote.Award.Ordinal == track.Slots.Count - 1
+                            // Final-reward claim: the cycle resets in the same transaction (new unselected cycle, no points).
+                            ? track with { Revision = checked(track.Revision + 1), CycleId = checked(track.CycleId + 1), Points = 0,
+                                SelectionInitialized = false, Slots = Array.Empty<ContractRewardSlotState>() }
+                            : track with
+                            {
+                                Revision = checked(track.Revision + 1), Slots = Array.AsReadOnly(track.Slots.Select(slot => slot.Ordinal == quote.Award.Ordinal
+                                    ? slot with { Claim = stage.Claim } : slot).ToArray())
+                            }).ToArray();
                     var actual = ContractRewardSnapshot.Validate(result.State.ContractTracks, quote.CharacterId, catalog.Catalog);
                     if (actual.Count != expected.Length || !actual.Zip(expected).All(pair => ContractRewardSnapshot.Same(pair.First, pair.Second))
                         || credit != null && !credit.Adopt(result)) throw new InvalidOperationException("Contract claim result changed its complete frozen aggregate or currency.");

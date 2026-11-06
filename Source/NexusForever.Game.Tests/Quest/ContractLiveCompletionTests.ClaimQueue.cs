@@ -169,8 +169,18 @@ public sealed partial class ContractLiveCompletionTests
         Assert.True(f.Actor.Quests.QueueContractRewardClaim(reward, choice)); Assert.True(f.Actor.Quests.HasPendingRewardOperation);
         Assert.Same(before, Assert.Single(f.Actor.Quests.CommittedContractTracks)); Assert.Equal(reloads, Reloads(f).Length);
         await f.Actor.Drain(); Assert.False(f.Actor.Quests.HasPendingRewardOperation);
-        var after = Assert.Single(f.Actor.Quests.CommittedContractTracks); Assert.True(after.Slots[award.Ordinal].Claimed);
-        Assert.Equal(before.Revision + 1, after.Revision); Assert.Equal(before.Points, after.Points); Assert.Equal(before.CycleId, after.CycleId);
+        var after = Assert.Single(f.Actor.Quests.CommittedContractTracks);
+        Assert.Equal(before.Revision + 1, after.Revision);
+        if (final)
+        {
+            // Claiming the final reward resets the cycle in the same transaction: new unselected cycle, no points, no slots.
+            Assert.Equal(before.CycleId + 1, after.CycleId); Assert.Equal(0u, after.Points);
+            Assert.False(after.SelectionInitialized); Assert.Empty(after.Slots); Assert.True(after.Active);
+        }
+        else
+        {
+            Assert.True(after.Slots[award.Ordinal].Claimed); Assert.Equal(before.Points, after.Points); Assert.Equal(before.CycleId, after.CycleId);
+        }
         Assert.False(f.Actor.Quests.QueueContractRewardClaim(reward, choice));
         using var verify = f.Inner.Context(); var receipt = Assert.Single(verify.CharacterContractRewardClaim); Assert.Equal(27u, receipt.AccountId);
         Assert.Empty(verify.CharacterChallengeRewardClaim); Assert.Empty(verify.CharacterContractCompletion);

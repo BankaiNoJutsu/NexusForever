@@ -42,7 +42,8 @@ public sealed partial class ContractClaimTransactionTests
         Assert.True(presentation.PublishAccountTracks([])); Assert.True(presentation.PublishCharacterTracks([], new object()));
         quests.ExpectContractRewardTracks(true); quests.AdoptContractRewards(result.State.ContractTracks); Assert.True(quests.PublishContractRewards());
         var messages = f.Inventory.SessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Select(call => call.Arguments[0]).OfType<ServerRewardTracksReload>().ToArray();
-        var row = Assert.Single(messages.Last().RewardsTracks); Assert.NotEqual(0, row.ClaimedRewards.GetBuffer()[f.Quote.Award.Ordinal / 8] & (1 << (f.Quote.Award.Ordinal % 8)));
+        var row = Assert.Single(messages.Last().RewardsTracks); var claimedBit = row.ClaimedRewards.GetBuffer()[f.Quote.Award.Ordinal / 8] & (1 << (f.Quote.Award.Ordinal % 8));
+        if (f.Quote.Award.Ordinal == f.Before.Slots.Count - 1) Assert.Equal(0, claimedBit); else Assert.NotEqual(0, claimedBit);
         Assert.True(presentation.IsPublishedContractSnapshot(quests.CommittedContractTracks));
     }
 
@@ -142,8 +143,18 @@ public sealed partial class ContractClaimTransactionTests
         using var f = new Fixture(characterOptions, authOptions, reward, choice);
         using var delivery = f.Reserve(); var result = await f.Execute(delivery);
         Assert.Equal(CharacterChallengeRewardExecutionOutcome.Committed, result.Outcome); var stage = Assert.IsType<ContractClaimStage>(result.Operation); Assert.True(stage.Applied);
-        var track = result.State.ContractTracks.Single(row => row.TrackId == f.Quote.Award.TrackId); var slot = track.Slots[f.Quote.Award.Ordinal];
-        Assert.True(slot.Claimed); Assert.Equal(f.Command.Identity, slot.Claim.ClaimId); Assert.Equal(f.Before.Points, track.Points); Assert.Equal(7ul, track.CycleId); Assert.Equal(2ul, track.Revision);
+        var track = result.State.ContractTracks.Single(row => row.TrackId == f.Quote.Award.TrackId);
+        if (f.Quote.Award.Ordinal == f.Before.Slots.Count - 1)
+        {
+            // Final-reward claim resets the cycle in the same transaction.
+            Assert.Equal(8ul, track.CycleId); Assert.Equal(0u, track.Points); Assert.False(track.SelectionInitialized); Assert.Empty(track.Slots);
+        }
+        else
+        {
+            var slot = track.Slots[f.Quote.Award.Ordinal];
+            Assert.True(slot.Claimed); Assert.Equal(f.Command.Identity, slot.Claim.ClaimId); Assert.Equal(f.Before.Points, track.Points); Assert.Equal(7ul, track.CycleId);
+        }
+        Assert.Equal(2ul, track.Revision);
         await using var read = f.Character(); Assert.Empty(read.CharacterChallengeRewardClaim); Assert.Empty(read.CharacterChallengeMedalReceipt);
         var receipt = Assert.Single(read.CharacterContractRewardClaim); Assert.Equal(f.Quote.Json, receipt.QuoteJson); Assert.Equal(27u, receipt.AccountId);
         if (f.Quote.Award.Item != null)
@@ -156,7 +167,14 @@ public sealed partial class ContractClaimTransactionTests
             Assert.Null(delivery); Assert.Single(read.CharacterContractAccountOutbox); Assert.Equal(13ul, read.Item.AsEnumerable().Aggregate(0ul, (sum, row) => sum + row.StackCount));
         }
         Assert.Equal(f.Quote.Award.CharacterCurrency == null ? 1234ul : 2501234ul, read.CharacterCurrency.Single().Amount);
-        var reload = await f.Load(); Assert.True(reload.ContractTracks.Single(row => row.TrackId == f.Quote.Award.TrackId).Slots[f.Quote.Award.Ordinal].Claimed);
+        var reload = await f.Load(); var reloaded = reload.ContractTracks.Single(row => row.TrackId == f.Quote.Award.TrackId);
+        if (f.Quote.Award.Ordinal == f.Before.Slots.Count - 1)
+        {
+            // Reset survives a fresh reload: new unselected cycle; the old cycle's slot and receipt stay as history.
+            Assert.Equal(8ul, reloaded.CycleId); Assert.Equal(0u, reloaded.Points); Assert.False(reloaded.SelectionInitialized); Assert.Empty(reloaded.Slots);
+            Assert.True(read.CharacterContractRewardSlot.Single(row => row.CycleId == 7 && row.Ordinal == f.Quote.Award.Ordinal).Claimed);
+        }
+        else Assert.True(reloaded.Slots[f.Quote.Award.Ordinal].Claimed);
     }
 
     [Theory]

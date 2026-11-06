@@ -1,5 +1,16 @@
 # Assessment follow-through goal
 
+[Contract final-claim cycle reset](CONTRACT_RETAIL_RESET_EVIDENCE.md#decision-and-remaining-evidence)
+is now connected in the Character claim transaction. Claiming a track's final slot
+advances its cycle, zeroes points and leaves the next cycle unselected (initialized
+by the next acceptance) in the same serializable unit as the receipt, wallet and
+outbox; the old cycle's claimed slots and receipts stay as history. Earlier unclaimed
+milestones are forfeited and excess points discarded: this is the recorded working
+inference, not a recovered retail routine. 3,473 Contract/Reward Source/SQLite cases
+pass, including final-slot claims for tracks 4/5, actual-catalog rewards 69/270 and
+fresh reload. Public 07CE stays unwired pending full-table delivery; provider,
+physical, native and retail gates remain open. Goal unfinished.
+
 [Friendship account command ownership](FRIENDSHIP_ACCOUNT_COMMAND_OWNERSHIP.md)
 binds parsed presence/block/status/nickname requests to the recorded open
 Character/realm/session epoch/admission. Four closed-owner baseline overwrites

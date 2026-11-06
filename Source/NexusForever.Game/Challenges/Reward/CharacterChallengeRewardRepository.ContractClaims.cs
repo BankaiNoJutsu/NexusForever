@@ -92,6 +92,14 @@ namespace NexusForever.Game.Challenges.Reward
                 Own(receipt, () => context.CharacterContractRewardClaim.AsNoTracking().SingleOrDefault(row => row.Id == characterId && row.TrackId == award.TrackId
                     && row.CycleId == quote.CycleId && row.Ordinal == award.Ordinal));
                 var after = trackState with { Revision = track.Revision, Slots = Array.AsReadOnly(trackState.Slots.Select(value => value.Ordinal == award.Ordinal ? value with { Claim = claimProof } : value).ToArray()) };
+                // Working retail direction (CONTRACT_RETAIL_RESET_EVIDENCE.md): the cycle resets only after the final
+                // reward's claim commits, in the same transaction. Earlier unclaimed milestones are forfeited and excess
+                // points are discarded; the next cycle starts unselected and is initialized by the next acceptance.
+                if (award.Ordinal == after.Slots.Count - 1)
+                {
+                    track.CycleId = checked(track.CycleId + 1); track.Points = 0; track.SelectionInitialized = false;
+                    after = after with { CycleId = track.CycleId, Points = 0, SelectionInitialized = false, Slots = Array.Empty<ContractRewardSlotState>() };
+                }
                 var expected = current.Select(value => value.TrackId == award.TrackId ? after : value).ToArray();
                 context.OnSaveValidation(phase =>
                 {

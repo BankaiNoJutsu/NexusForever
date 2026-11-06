@@ -329,7 +329,7 @@ public sealed partial class ContractClaimTransactionTests
         var track = f.Actor.Quests.CommittedContractTracks.Single(); Assert.True(f.Actor.Quests.QueueContractRewardClaim(track.Slots[1].RewardRowId, 2)); await f.Actor.Drain();
         track = f.Actor.Quests.CommittedContractTracks.Single(); Assert.Equal(7ul, track.Revision);
         Assert.True(f.Actor.Quests.QueueContractRewardClaim(track.Slots[^1].RewardRowId, 2)); await f.Actor.Drain();
-        track = f.Actor.Quests.CommittedContractTracks.Single(); Assert.Equal(8ul, track.Revision); Assert.Equal(7ul, track.CycleId);
+        track = f.Actor.Quests.CommittedContractTracks.Single(); Assert.Equal(8ul, track.Revision); Assert.Equal(8ul, track.CycleId); Assert.Equal(0u, track.Points); Assert.Empty(track.Slots);
         using var source = f.Live.Inner.Context(); Assert.Equal(2, source.CharacterContractAccountOutbox.Count()); Assert.Equal(3, source.CharacterContractRewardClaim.Count());
         Assert.NotEmpty(source.Item); Assert.Equal(2500100ul, source.CharacterCurrency.Single().Amount);
         using var auth = f.Auth(); Assert.Equal(110ul, auth.AccountCurrency.Single().Amount); Assert.Equal(2, auth.AccountCurrencyOperation.Count());
