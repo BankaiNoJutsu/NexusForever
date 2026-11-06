@@ -1,5 +1,11 @@
 # NexusForever Feature Restoration - Current Status
 
+[Communicator zero reputation bounds](Decomp/Analysis/NATIVE_STATIC_CONTRACT_COMMUNICATOR_CROSSCHECK.md#finite-reputation-bounds-implemented-with-actual-tables)
+now admit finite negative standing when the row has no lower bound, preserving
+existing nonfinite policy. The actual4105-row index,178 reputation checks,
+six parsed public-report cases and121 scoped tests pass; final reviews are clear.
+Full-row delivery, other native semantics, timing/provider/retail remain open.
+
 [Q5597 actual-catalog turn-in](Decomp/Analysis/evidence_reviews/20261029-q5597-achievement-checklist-5495/README.md#actual-catalog-public-turn-in-and-partial-checklist)
 qualifies both fixed items,152 XP,145 credits and the full achievement checklist
 through committed encrypted World turn-in/recovery/reload. Progress moves1→3

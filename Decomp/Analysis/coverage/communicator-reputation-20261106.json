@@ -1,0 +1,349 @@
+{
+  "schemaVersion": 1,
+  "recordedAtUtc": "2026-11-06T03:22:17.061282+00:00",
+  "baseCommit": "4e4733b3b3614ef05fb08bf480f7f80e258a4659",
+  "milestone": "Communicator finite zero reputation bounds and actual table classification",
+  "classification": "Implemented Source finite-bound correction, actual-table/parsed report/SQLite qualification; full delivery, other gate semantics, deployment/native/retail and overall Goal remain open",
+  "sources": [
+    {
+      "path": "Source/NexusForever.Game/Quest/CommunicatorMessage.cs",
+      "sha256": "5474b8b6540e6142dacf726143f3272f3447b9c12285549f80503dabae8e43da",
+      "gitBlob": "749b06ea533d3799699f7dc0ff69f6747e049e34"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Quest/CommunicatorSchedulingTests.cs",
+      "sha256": "95040c1ac7186d3838b3e4528e1e2ff339aff656639c310cf16ae59397e252df",
+      "gitBlob": "247e86d706f9124f2b838c818aa68a7c310822bf"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Quest/CommunicatorLifecycleTests.cs",
+      "sha256": "41050b881a25216a4f220d94b41eccca0f4055680fc21f6e5f98e973eade806c",
+      "gitBlob": "b944b7698e1edfe5e36900a5dce719dfa2bdc210"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Quest/CommunicatorReputationBoundaryTests.cs",
+      "sha256": "d68975faf5c6c26a1a641d3e2cad6051a77db42b983eaf5c48b866ba1172a548",
+      "gitBlob": "7df1c36a70154f15484440552279e0cb70e4e927"
+    },
+    {
+      "path": "Source/NexusForever.Game.Tests/Quest/CommunicatorActualCatalogQualification.cs",
+      "sha256": "73d6928f8c98c38984689ccfbb4eb85cd501006982c55756ab653836338a7509",
+      "gitBlob": "246883c8e413f09b50a7c65bd7dffe3fa8c9e216"
+    }
+  ],
+  "sourceBoundary": {
+    "base": "4e4733b3b3614ef05fb08bf480f7f80e258a4659",
+    "trackedSourceFiles": 6286,
+    "missing": [],
+    "differences": [
+      {
+        "path": "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+        "head": "9b4e604e08391bf229552fa04081ecf9c74fec4d",
+        "candidate": "7de92fafe0c2474ba8428ca9ceee883d39138b46"
+      },
+      {
+        "path": "Source/NexusForever.ClientConnector/packages.config",
+        "head": "fa4b77dc45783358023c1cd38e6ff9bad122aea4",
+        "candidate": "8ab13a9023dec3cf548ee61ba183013bd098a297"
+      },
+      {
+        "path": "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+        "head": "5b0678f4137d5430872dfb78fe133c19c6fadcb8",
+        "candidate": "822019e403ed9793f698f1ec7569be810c7a4a03"
+      },
+      {
+        "path": "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+        "head": "64769a2266f7feab861fcc61cd2b00a0a05da8c4",
+        "candidate": "74272fd6bf29afac14c5d62cb172e81b4edee19a"
+      },
+      {
+        "path": "Source/NexusForever.Database/NexusForever.Database.csproj",
+        "head": "61f9d5326c59ec7018164eba605a01f4081dfded",
+        "candidate": "163c4f01e198e71066afcd9089a367c78b4c3de6"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Quest/CommunicatorLifecycleTests.cs",
+        "head": "39ce76dba34d22c91b2e0289a515b8e42372d90c",
+        "candidate": "b944b7698e1edfe5e36900a5dce719dfa2bdc210"
+      },
+      {
+        "path": "Source/NexusForever.Game.Tests/Quest/CommunicatorSchedulingTests.cs",
+        "head": "59958c07d304dfdf5559a3e40f6c31d3738b3e05",
+        "candidate": "247e86d706f9124f2b838c818aa68a7c310822bf"
+      },
+      {
+        "path": "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+        "head": "1ffaefc3cf8c1eb7c5b0534d4d91f28eb7001347",
+        "candidate": "6c145b847fa7316e7982ab44cfa404f4e1e7fc70"
+      },
+      {
+        "path": "Source/NexusForever.Game/Quest/CommunicatorMessage.cs",
+        "head": "ba257d3c678e125eda4b9ecb5927b6fc44dbebe6",
+        "candidate": "749b06ea533d3799699f7dc0ff69f6747e049e34"
+      },
+      {
+        "path": "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj",
+        "head": "74f0ec9ebbf4894dd7ef64f379a773a9e4ce1295",
+        "candidate": "ecd970da6d0d220f3caaf6780656c1809e18a9af"
+      }
+    ],
+    "newOwned": [
+      "Source/NexusForever.Game.Tests/Quest/CommunicatorActualCatalogQualification.cs",
+      "Source/NexusForever.Game.Tests/Quest/CommunicatorReputationBoundaryTests.cs"
+    ],
+    "historicalNonTaskDifferencePaths": [
+      "Source/NexusForever.ClientConnector/NexusForever.ClientConnector.csproj",
+      "Source/NexusForever.ClientConnector/packages.config",
+      "Source/NexusForever.Database.Auth/NexusForever.Database.Auth.csproj",
+      "Source/NexusForever.Database.Character/NexusForever.Database.Character.csproj",
+      "Source/NexusForever.Database.World/NexusForever.Database.World.csproj",
+      "Source/NexusForever.Database/NexusForever.Database.csproj",
+      "Source/NexusForever.Game/Entity/ItemRuneSocketMaskBuilder.cs",
+      "Source/NexusForever.MapGenerator/NexusForever.MapGenerator.csproj"
+    ]
+  },
+  "inputs": {
+    "baseline": {
+      "path": "artifacts/continuation-20261106/communicator-reputation/baseline-inputs.json",
+      "sha256": "85e668310e331172a4aefab7450d3d23c75630e8e378868a89390a5945c0e691"
+    },
+    "final": {
+      "path": "artifacts/continuation-20261106/communicator-reputation/final-inputs.json",
+      "sha256": "25b9bbfd01f99bac24a815851ebf1ba53414693e9b64f7c9c33c6c5e88294f73"
+    },
+    "baselineActual": {
+      "path": "artifacts/continuation-20261106/communicator-reputation/baseline-catalog-01/inputs.json",
+      "sha256": "fd62389358d9c86ef15c96852ccd48ad817443e654f40005be68a7087bf7ad13"
+    },
+    "finalActual": {
+      "path": "artifacts/continuation-20261106/communicator-reputation/final-catalog-01/inputs.json",
+      "sha256": "42da5f5ffd95a82bb839b960a2010e59a9891f93d1777450bc8a28de7586b2a7"
+    },
+    "verifiedRecoveredPayloads": 385,
+    "manifestSha256": "bfb15d7824bb7ed4f4b03cc26411b3adb07317744ff2939b9fd1101c476902ad",
+    "loadedTables": 8,
+    "communicatorTbl": {
+      "bytes": 494256,
+      "sha256": "086346547b6e5f457ff25d121b5c555bf708a69a40b49db34c6870b18d137a75",
+      "rows": 4105
+    },
+    "historicalSqlDumpRecoveredOrByteEquivalent": false
+  },
+  "nativeCorroboration": {
+    "path": "artifacts/continuation-20261106/communicator-reputation/retained-native-binding.json",
+    "sha256": "c3492d204aa7cf4ca6e2f7592b87b55dc92651af4a04b90e161ced8af02b7ad6",
+    "meaning": "Retained static branch/layout mapping, REA input identity and actual table sentinels; no fresh native tool/client/runtime/retail proof."
+  },
+  "productionChange": "Skip zero minimum; retain inclusive nonzero bounds and previous NaN/negative-infinity/positive-infinity policy.",
+  "baseline": {
+    "boundaries": {
+      "path": "artifacts/continuation-20261106/communicator-reputation/baseline-boundaries.trx",
+      "sha256": "a9ddf35d3b076425481a9bdd1759b2993ed49c03868a49b28975fd0e35f4dedb",
+      "passed": 19,
+      "failed": 3,
+      "skipped": 0
+    },
+    "actual": {
+      "path": "artifacts/continuation-20261106/communicator-reputation/baseline-catalog-01/result.json",
+      "sha256": "003c8976e2d7df290cd7e536c1e6ba48bae8be898b9231cc53590b89c4313c10",
+      "checks": 178,
+      "predicateCounterexamples": 8,
+      "publicReports": 6,
+      "publicCounterexamples": 1,
+      "meaning": "One underlying finite zero-minimum floor discrepancy, not twelve independent defects."
+    },
+    "proposalPromotedByteIdenticallySha256": "d68975faf5c6c26a1a641d3e2cad6051a77db42b983eaf5c48b866ba1172a548"
+  },
+  "final": {
+    "scoped": {
+      "path": "artifacts/continuation-20261106/communicator-reputation/final-scoped.trx",
+      "sha256": "5e27b8687dd8e56e3f15457c44a8890cb258829a2175c68be25ffca88e9df06b",
+      "passed": 121,
+      "failed": 0,
+      "skipped": 0,
+      "filter": "FullyQualifiedName~Communicator",
+      "newCases": 22,
+      "existingSelectedCases": 99,
+      "reportedDurationSeconds": 3
+    },
+    "actual": {
+      "path": "artifacts/continuation-20261106/communicator-reputation/final-catalog-01/result.json",
+      "sha256": "3c9125a7c10920a74524fe2b2eb67411c797f8787eaf75c736600da23f08733b",
+      "checks": 178,
+      "predicateFailures": 0,
+      "publicReports": 6,
+      "publicFailures": 0,
+      "successfulMentionReloads": 3,
+      "elapsedSeconds": 4.1751374,
+      "selectedRow": 5346,
+      "selectedQuest": 9159
+    }
+  },
+  "indexClassification": {
+    "path": "artifacts/continuation-20261106/communicator-reputation/final-catalog-01/classification.json",
+    "sha256": "91a63bbcac928f4e978feb1e1c32e6e97c2e30b73de4b941c4397a1923b0b049",
+    "rows": 4105,
+    "kinds": [
+      {
+        "Kind": "PushedScheduled",
+        "Count": 75
+      },
+      {
+        "Kind": "WorldArmed",
+        "Count": 112
+      },
+      {
+        "Kind": "PushedUnconditioned",
+        "Count": 126
+      },
+      {
+        "Kind": "PushedScript",
+        "Count": 1552
+      },
+      {
+        "Kind": "ChainTarget",
+        "Count": 166
+      },
+      {
+        "Kind": "ClientScheduled",
+        "Count": 704
+      },
+      {
+        "Kind": "ClientUnscheduled",
+        "Count": 246
+      },
+      {
+        "Kind": "ClientOnly",
+        "Count": 1124
+      }
+    ],
+    "referencedChainTargets": 240,
+    "triggerArms": 873,
+    "missingQuestReferences": [
+      1,
+      18,
+      22,
+      638,
+      639,
+      651,
+      827,
+      903,
+      906,
+      943,
+      1007,
+      1096,
+      3726,
+      3727,
+      3733,
+      3734,
+      3847,
+      4188,
+      4189,
+      4632,
+      4659,
+      4672,
+      4736,
+      5217,
+      5249,
+      5273,
+      5299,
+      5301,
+      5473,
+      5503,
+      6003,
+      7360,
+      7364,
+      7365,
+      7366,
+      7951
+    ],
+    "missingChainTargets": [
+      2764
+    ],
+    "fullRowDeliveryQualified": false
+  },
+  "builds": {
+    "owning": {
+      "path": "artifacts/continuation-20261106/communicator-reputation/final-owning-build.log",
+      "sha256": "0020eadbb0bf213e63f21cc0d7225056d8d4216b11b4dc3376cb5515981469f9",
+      "project": "NexusForever.WorldServer",
+      "seconds": 11.93,
+      "warnings": 0,
+      "errors": 0
+    },
+    "test": {
+      "path": "artifacts/continuation-20261106/communicator-reputation/final-test-build.log",
+      "sha256": "885168ef3d845b516dc5aacf39e41f7f00825d852eb19a64617a220e96f529be",
+      "seconds": 15.68,
+      "warnings": 0,
+      "errors": 0,
+      "buildProjectReferences": false
+    },
+    "runner": {
+      "path": "artifacts/continuation-20261106/communicator-reputation/final-runner-build.log",
+      "sha256": "f220b9924e4b49b3ee150eec6217308f044fbcd0a2ab04e6afe8a8d637e387f2",
+      "seconds": 3.17,
+      "warnings": 0,
+      "errors": 0
+    }
+  },
+  "finalBinaries": {
+    "manifestDlls": 138,
+    "changedFromBaseline": [
+      "NexusForever.Game.dll",
+      "NexusForever.Game.Tests.dll"
+    ],
+    "owningTestAndRunnerCopiesExact": true
+  },
+  "helperDiagnostics": [
+    {
+      "artifact": {
+        "path": "artifacts/continuation-20261106/communicator-reputation/table-audit-missing-assets.log",
+        "sha256": "4a56e19487cff0831f3cccce19bbfc92a293ae45649ee8667f38be643aa17d51"
+      },
+      "meaning": "New scratch project needed its initial restore; normal build then passed."
+    },
+    {
+      "artifact": {
+        "path": "artifacts/continuation-20261106/communicator-reputation/helper-declaration-diagnostics.log",
+        "sha256": "db97de47440eac35af3dc0f06232f4f2fe6071e354c49d4aa80ffd2df5ec6f03"
+      },
+      "meaning": "Initial tuple/accessibility/type/import and analyzer diagnostics; corrected test helper before genuine runtime baseline."
+    }
+  ],
+  "reviews": {
+    "path": "artifacts/continuation-20261106/communicator-reputation/reviews.json",
+    "sha256": "275b828b6a37687806b25842eb3c2470fca1eb6a5ae0b6333ebe60ef78c41d90",
+    "specFindings": 0,
+    "standardsFindings": 0
+  },
+  "upstream": {
+    "path": "artifacts/continuation-20261106/communicator-reputation/upstream-refresh.json",
+    "sha256": "c0b884623029acc9cdefede895d34b0c699122a907b1e74cf9f4131fc7a1691b",
+    "latestPrs": 20,
+    "headsBasesStatesUnchanged": true,
+    "pr608": "open",
+    "pr609": "closed/unmerged"
+  },
+  "preserved": {
+    "foreignRootSourceExcluded": true,
+    "historicalCandidateDifferences": 8,
+    "fullSolutionOrFullSuiteRun": false,
+    "freshProviderOrDeploymentQualification": false,
+    "nativeClientAndComputerUseStopped": true,
+    "entitlements": "15:1/17:1 preserved; no automatic44/seven grants"
+  },
+  "limitations": [
+    "178 checks isolate the reputation gate; passing it does not imply the row is otherwise eligible.",
+    "Full4105-row Source index classification is not full delivery or native classification qualification.",
+    "Selected parsed report uses prepared proxy Player/map/registry/services and model-loaded reputation; no physical/live earning/socket/retail proof.",
+    "Nonfinite cases preserve existing server policy, without claiming native NaN or infinity behavior.",
+    "SQLite mention reload/duplicate is not configured provider/deployed Auth/World qualification.",
+    "Native map/objective/callback equivalence, full row lifecycle/timing, missing references, provider/copied-upgrade/deployment/native/retail remain open."
+  ]
+}

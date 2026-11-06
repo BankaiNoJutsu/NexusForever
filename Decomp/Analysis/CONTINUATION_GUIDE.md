@@ -1,5 +1,12 @@
 # Client Binary Decompile Continuation Guide
 
+[Communicator finite reputation bounds](NATIVE_STATIC_CONTRACT_COMMUNICATOR_CROSSCHECK.md#finite-reputation-bounds-implemented-with-actual-tables)
+now use zero as no bound, with unchanged nonfinite policy. Actual-table/native
+corroboration,178 reputation checks, six parsed report cases and121 scoped tests
+qualify this slice.4105-row Source classification retains missing references
+as diagnostics; full delivery/other native semantics/timing/provider/retail remain.
+Client/CUA remain stopped; do not repeat the closed finite-bound proposal.
+
 [Q5597 actual-catalog turn-in](evidence_reviews/20261029-q5597-achievement-checklist-5495/README.md#actual-catalog-public-turn-in-and-partial-checklist)
 passes capacity refusal and two committed encrypted World/recovery/reload cases
 with actual item/quest/achievement data and XP/credits. Full checklist progress

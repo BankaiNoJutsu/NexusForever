@@ -1,5 +1,15 @@
 # Assessment follow-through goal
 
+[#609 finite communicator reputation bounds](NATIVE_STATIC_CONTRACT_COMMUNICATOR_CROSSCHECK.md#finite-reputation-bounds-implemented-with-actual-tables)
+are implemented after recovered TBL data corroborates the retained native branch.
+One zero-minimum floor discrepancy is fixed through the parsed Q9159 report and
+SQLite mention reload.22 new/all121 scoped cases,178 actual-row reputation checks
+and six public reports pass; builds and final reviews are clear. All4105 rows are
+Source-classified.36 absent Quest2 references and chain target2764 remain explicit;
+full delivery, other native-map/callback semantics, timing, providers and retail
+remain open. The old missing SQL dump is superseded as this finite slice's input
+gate by independently qualified TBL data, without a byte-equivalence claim.
+
 [Q5597 actual-catalog public turn-in](evidence_reviews/20261029-q5597-achievement-checklist-5495/README.md#actual-catalog-public-turn-in-and-partial-checklist)
 now qualifies real QuestInfo/ItemInfo/full AchievementInfo,152 XP/145 credits,
 one-slot refusal, rollback, fresh World recovery and duplicate turn-in. The full

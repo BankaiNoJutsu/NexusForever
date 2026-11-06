@@ -1,5 +1,10 @@
 # Build16042 static Contract and communicator cross-check
 
+6 November 2026 update: [finite reputation bounds are implemented with actual
+table corroboration](#finite-reputation-bounds-implemented-with-actual-tables).
+That result supersedes the finite-bound implementation/input blocker below;
+the remaining static, lifecycle, delivery and retail limits still apply.
+
 31 October 2026 destination continuation. This is fresh static shipped-artifact
 evidence, not client execution, a recovered server implementation or retail
 qualification. Computer Use/native client launch remain stopped.
@@ -101,3 +106,74 @@ and Computer Use have not been resumed.
 Raw4105-row classification, actual table delivery, complete native lifecycle/
 presentation, provider/copied-upgrade/deployment/socket gates and retail
 completeness remain open. No entitlement defaults or grants changed.
+
+## Finite reputation bounds implemented with actual tables
+
+6 November 2026, parent `4e4733b3b3614ef05fb08bf480f7f80e258a4659`.
+Recovered build16042 `CommunicatorMessages.tbl` is494256 bytes, SHA256
+`086346547b6e5f457ff25d121b5c555bf708a69a40b49db34c6870b18d137a75`.
+Its owning C# reader parses all4105 rows. The historical481759-byte
+`CommunicatorMessages.tbl.sql` was a different representation; its old bytes and
+checksum were not recovered or equated with this TBL. The independently recovered
+client table supplies the missing corroboration.
+
+There are23 reputation-gated rows:15 use nonzero lower bounds and8 have both
+bounds zero. The retained native minimum/maximum branch spans still match their
+recorded hashes, and the recovered PE matches the original REA-bound input hash.
+The actual sentinels and native field/branch mapping meet the continuation guide's
+Verified table-data gate for this finite-bound correction. No native provider,
+client, attach or Computer Use operation was repeated.
+
+Before the fix, the unchanged production predicate failed3 of22 promoted boundary
+cases and8 of178 checks over the actual reputation rows. The parsed public
+`ClientCommunicatorAction` route for row5346/Q9159 also refused its otherwise
+eligible report at finite reputation−1. These are manifestations of the same
+zero-minimum floor discrepancy. The other19 boundary cases and five public
+report controls passed.
+
+`CommunicatorMessage.Evaluate` now skips a zero minimum, matching the existing
+zero-maximum bypass. Nonzero bounds remain inclusive. Explicit guards preserve
+the fork's NaN and negative-infinity refusal, and positive infinity retains its
+existing bounded/unbounded result. Those nonfinite checks preserve server policy;
+they are not new native/runtime or retail qualification.
+
+All22 boundary cases, all121 selected communicator tests, all178 actual-row
+reputation checks and all six public-report cases pass. The selected route uses
+actual QuestInfo, the full index, real ReputationManager/Reputation/FactionNode
+objects and the parsed public handler. Successful mentions persist in disposable
+SQLite, reload into a fresh QuestManager and suppress duplicate reports. Player,
+map, registry and other services are collaborators; this does not prove physical
+world entry, a live reputation producer, native UI or deployed sockets.
+
+The owning/test/runner builds are clean in11.93s/15.68s/3.17s. Actual-data execution
+takes4.18s; the selected tests report3s. Both final review axes have zero findings.
+The isolated candidate excludes foreign Source; only the Game and test DLLs
+change. The earlier helper restore/declaration diagnostics are retained separately
+from the genuine baseline failures. No full solution build or full suite ran.
+
+The full table is classified through the existing Source index:
+
+| Kind | Rows |
+| --- | ---: |
+| PushedScheduled |75|
+| WorldArmed |112|
+| PushedUnconditioned |126|
+| PushedScript |1552|
+| ChainTarget |166|
+| ClientScheduled |704|
+| ClientUnscheduled |246|
+| ClientOnly |1124|
+
+The index records240 referenced chain targets and873 trigger arms. Thirty-six
+referenced Quest2 IDs and chain target2764 are absent from the recovered tables;
+they remain diagnostics with no invented replacement or fallback.
+
+The [portable record](coverage/communicator-reputation-20261106.json) binds five
+Source paths, the baseline/final runtime identities, actual corpus, full index
+classification, public reports, scoped checks, retained native evidence and
+reviews. Raw evidence is under
+`artifacts/continuation-20261106/communicator-reputation/`.
+This completes the finite reputation predicate and4105-row Source classification
+slices. Full-row delivery, native-map/objective/callback semantics, timing,
+provider/copied-upgrade/deployment and native/retail remain open. Client/CUA
+remain stopped; entitlement defaults15:1/17:1 and grant policy are unchanged.

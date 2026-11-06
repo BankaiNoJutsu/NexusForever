@@ -1,5 +1,13 @@
 # Continue on another machine
 
+Latest communicator Source result:
+[finite reputation bounds](Decomp/Analysis/NATIVE_STATIC_CONTRACT_COMMUNICATOR_CROSSCHECK.md#finite-reputation-bounds-implemented-with-actual-tables)
+fixes the actual Q9159 negative-standing report with zero bounds.22 new/all121
+scoped tests,178 actual-row reputation checks and six parsed report cases pass;
+clean builds and both reviews pass. All4105 rows are Source-classified, with
+36 missing Quest2 references/chain target2764 retained. Full delivery, other
+native semantics/timing/provider/retail remain open; client/CUA remain stopped.
+
 Latest Q5597 qualification:
 [actual-catalog public turn-in](Decomp/Analysis/evidence_reviews/20261029-q5597-achievement-checklist-5495/README.md#actual-catalog-public-turn-in-and-partial-checklist)
 passes one-slot refusal and both encrypted World/recovery/reload cases using

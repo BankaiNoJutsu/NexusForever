@@ -10,8 +10,8 @@ namespace NexusForever.Game.Tests.Quest;
 public class CommunicatorSchedulingTests
 {
     [Theory]
-    [InlineData(-1f, false)] [InlineData(0f, true)] [InlineData(10f, true)] [InlineData(float.NaN, false)]
-    public void ReputationRetainsTheForkMinimumZeroAndUnboundedMaximum(float amount, bool eligible)
+    [InlineData(-1f, true)] [InlineData(0f, true)] [InlineData(10f, true)] [InlineData(float.NaN, false)]
+    public void ReputationZeroBoundsDoNotImposeAFiniteFloor(float amount, bool eligible)
     {
         var row = Row(1, 0); row.Quests = []; row.States = []; row.FactionIdReputation = 1;
         var view = new View { Reputation = amount };

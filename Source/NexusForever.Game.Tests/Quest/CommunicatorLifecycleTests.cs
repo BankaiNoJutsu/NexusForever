@@ -30,7 +30,7 @@ using NexusForever.WorldServer.Network.Message.Handler.Quest;
 
 namespace NexusForever.Game.Tests.Quest;
 
-public class CommunicatorLifecycleTests
+public partial class CommunicatorLifecycleTests
 {
     [Theory]
     [InlineData(false)] [InlineData(true)]
@@ -226,15 +226,26 @@ public class CommunicatorLifecycleTests
         private IDisableManager disables;
         private IPrerequisiteManager prerequisites;
         internal Fixture(params CommunicatorMessagesEntry[] rows)
+            : this(null, null, rows) { }
+        internal Fixture(IGameTableManager actualTables, CommunicatorIndex actualIndex, params CommunicatorMessagesEntry[] rows)
         {
             global = RecordingDispatchProxy<IGlobalQuestManager>.Create(out var gp);
-            tables = RecordingDispatchProxy<IGameTableManager>.Create(out var tp);
-            var objectives = new[] { new QuestObjectiveEntry { Id = 101, Count = 1, Type = (uint)QuestObjectiveType.KillCreature, Data = 77 },
-                new QuestObjectiveEntry { Id = 102, Count = 1, Type = (uint)QuestObjectiveType.KillCreature, Data = 78 } };
-            tp.SetProperty(nameof(IGameTableManager.QuestObjective), PlayerBindPointTests.Table(objectives));
-            foreach (ushort id in new ushort[] { 1, 200 })
-                Infos[id] = new QuestInfo(new Quest2Entry { Id = id, Flags = 4, QuestPlayerFactionEnum = 0, Objectives = [101, 102], PushedItemIds = [], PushedItemCounts = [] }, global, tables);
-            var index = CommunicatorIndex.Build(rows, id => Infos.TryGetValue(id, out var info) ? new CommunicatorQuestInfo((byte)info.Objectives.Count, false, info.Entry.Flags) : null);
+            if (actualTables == null)
+            {
+                tables = RecordingDispatchProxy<IGameTableManager>.Create(out var tp);
+                var objectives = new[] { new QuestObjectiveEntry { Id = 101, Count = 1, Type = (uint)QuestObjectiveType.KillCreature, Data = 77 },
+                    new QuestObjectiveEntry { Id = 102, Count = 1, Type = (uint)QuestObjectiveType.KillCreature, Data = 78 } };
+                tp.SetProperty(nameof(IGameTableManager.QuestObjective), PlayerBindPointTests.Table(objectives));
+                foreach (ushort id in new ushort[] { 1, 200 })
+                    Infos[id] = new QuestInfo(new Quest2Entry { Id = id, Flags = 4, QuestPlayerFactionEnum = 0, Objectives = [101, 102], PushedItemIds = [], PushedItemCounts = [] }, global, tables);
+            }
+            else
+            {
+                tables = actualTables;
+                foreach (ushort id in rows.SelectMany(row => (row.Quests ?? []).Append(row.QuestIdDelivered)).Where(id => id != 0).Select(id => checked((ushort)id)).Distinct())
+                    Infos[id] = new QuestInfo(actualTables.Quest2.GetEntry(id), global, tables);
+            }
+            var index = actualIndex ?? CommunicatorIndex.Build(rows, id => Infos.TryGetValue(id, out var info) ? new CommunicatorQuestInfo((byte)info.Objectives.Count, false, info.Entry.Flags) : null);
             gp.SetProperty(nameof(IGlobalQuestManager.CommunicatorIndex), index);
             gp.SetMethodHandler(nameof(IGlobalQuestManager.GetQuestInfo), a => Infos.GetValueOrDefault((ushort)a[0]));
             gp.SetMethodHandler(nameof(IGlobalQuestManager.GetQuestCommunicatorMessages), a => index.Messages.Values.Where(m => m.QuestId == (ushort)a[0]).ToArray());

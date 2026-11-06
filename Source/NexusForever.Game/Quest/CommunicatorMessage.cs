@@ -76,9 +76,10 @@ namespace NexusForever.Game.Quest
 
             if (Entry.FactionIdReputation != 0u)
             {
-                // The client's inequality here is unverified.
+                // Build16042 bypasses zero bounds. Keep the existing nonfinite policy.
                 float amount = player.GetReputation((Faction)Entry.FactionIdReputation);
-                if (!(amount >= Entry.ReputationMin)
+                if (float.IsNaN(amount) || float.IsNegativeInfinity(amount)
+                    || Entry.ReputationMin != 0u && !(amount >= Entry.ReputationMin)
                     || Entry.ReputationMax != 0u && !(amount <= Entry.ReputationMax))
                     return CommunicatorResult.Reputation;
             }
