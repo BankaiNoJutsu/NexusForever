@@ -343,3 +343,17 @@ Evidence tier: body **read**, array identity **inferred**. Implemented, inferred
   (player's `Equipped` inventory location, index at or beyond 28 is unassigned). `PrerequisiteCheckEquipmentSlotAssignedTests` (15 cases) pass; 1,128 Prerequisite cases pass in the same scope (the 15 are included).
 - **116 (Stealth, 32 slots)**: case 0x74 returns `*(int*)(unit+0x54) > 1` through the same tail (Equal: true, NotEqual: false), `Value` and `ObjectId` unused. The field's meaning is known only from the
   failure text ("Stealth property requirement not met"); why the test is `> 1` (not a flag) is unexplained, so it is not mapped to `IsStealthed`. Gated on the unit field `+0x54`.
+
+
+## Types 9 and 118: attempts and exact missing inputs (same day)
+
+- **9 EpisodeState (34 slots, slot +0x420, `FUN_14049f700`)**: looks up an object by `ObjectId` in a global id-keyed hash table (`DAT_140c665d8`, via `FUN_1407242b0`), compares its virtual `+0xc0` with `Value`
+  (Equal: equal, NotEqual: not equal; an absent object has state 0 for the compare). The 28 distinct retail `ObjectId`s all exist in `Episode.tbl` (300 rows, the smallest table containing all 28), `Value` is 3 in 33 of 34
+  slots, comparisons Equal 32 and NotEqual 2. The server has no quest-episode runtime state, and the meaning of state 3 (completed?) and of which quests it counts is the body of the episode class's virtual `+0xc0`,
+  not yet identified (the runtime class behind `DAT_140c665d8` was not located). Gated on that virtual and on a server episode model; `EpisodeQuest.tbl` (quest to episode rows) is the likely input.
+- **118 (2,422 slots), second attempt**: the public event manager is `DAT_140c65980`; its methods at vtable `+0x30` (objective by id, then virtual `+0x38`) and `+0x40` could not be tied to a vtable. The vtables found by
+  scanning references to `FUN_140498a40` (`0x140b67438`/`0x140b67508`, with slots `+0x68`, `+0xa0`, `+0x70`) belong to a different table-driven manager and do not match the 118 call shape. Next experiment:
+  find the writer of `DAT_140c65980` (the reference list has a write at `0x140689523` outside a function; create the function and read the constructor to get the vtable) and decompile its slots `+0x30`/`+0x40`
+  and the objective class's virtual `+0x38`. Until then the status-versus-count reading of 118 stays inferred (see the 117/118 section).
+- **115 Unit (18 slots)** and **114 Vital (10 slots)** were read at case level only: 115 calls `FUN_1404a2010(unit, comparison)` (unit-dependent compare, `Value` unused by the call), 114 compares two unit property
+  reads (`FUN_140466520(unit, ObjectId)` and `(unit, Value)`) through `FUN_1404a2010`; their helpers were not read.
