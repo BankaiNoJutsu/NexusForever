@@ -2,7 +2,7 @@
 
 Evidence tier: classification generated from `Prerequisite.tbl` (slot counts), the registered handler classes and the client evaluator (`decomp_evaluator.txt` plus the evaluator vtable at `140b67740`: a slot whose function is `FUN_140001ba0` is the shared client stub). Source/SQLite only; no retail parity claim.
 
-After types 5, 20, 42, 50, 53, 54, 59, 60, 74, 110, 111, 113, 114, 130, 162, 231 and 280 were handled this stretch: **2920 slots over 64 types** have no handler (2281 slots on client stubs, 3 on types with no evaluator case, 636 on real client bodies).
+After types 5, 20, 42, 50, 53, 54, 59, 60, 74, 110, 111, 113, 114, 115, 130, 162, 231 and 280 were handled this stretch: **2902 slots over 63 types** have no handler (2281 slots on client stubs, 3 on types with no evaluator case, 618 on real client bodies).
 
 Gate classes: **stub** = the client evaluator slot is the shared return-0 stub, so the meaning is server-side only and needs a server or retail witness; **real body** = the client body exists; the table says what is read and what is missing; **no case** = the client never evaluates it.
 
@@ -25,7 +25,6 @@ Gate classes: **stub** = the client evaluator slot is the shared return-0 stub, 
 | 253 | Personal5V5ArenaRating253 | 21 | vtable 14049dcb0 | Body read: true only for the local player; the value is `FUN_1405bffe0(PvP object DAT_140c65b98, its rating type (5v5), 0xffffffff)` compared with Value by the integer helper. The PvP object is filled from the player-create packet and later PvP packets; the server has no rating producer or storage, and the client default for a character that never played is unknown, so no value can be reported honestly. |
 | 254 | Battlegrounds254 | 21 | vtable 14049dd10 | Body read: true only for the local player; the value is `FUN_1405bffe0(PvP object DAT_140c65b98, rating type 3 (battlegrounds), 0xffffffff)` compared with Value by the integer helper. The PvP object is filled from the player-create packet and later PvP packets; the server has no rating producer or storage, and the client default for a character that never played is unknown, so no value can be reported honestly. |
 | 255 | Warplots255 | 21 | vtable 14049dd70 | Body read: true only for the local player; the value is `FUN_1405bffe0(PvP object DAT_140c65b98, rating type 4 (warplots), 0xffffffff)` compared with Value by the integer helper. The PvP object is filled from the player-create packet and later PvP packets; the server has no rating producer or storage, and the client default for a character that never played is unknown, so no value can be reported honestly. |
-| 115 | Unit | 18 | inline/helper FUN_1404a2010 | Unit-dependent float compare `FUN_1404a2010(unit, comparison)` with Value unused; the unit property it reads is unidentified. |
 | 18 | ScheduledEvent | 17 | vtable 14049ef00 | Hash set at global `+0x72a0` holds the ids; its contents (active scheduled events?) are unidentified. |
 | 199 | PublicEvent199 | 14 | vtable 1404a0b70 | Body read (`FUN_1404a0b70`): the public event `ObjectId` exists and its field `+0x1d0 == 1` (event state); Equal true/NotEqual false. The mapping of `+0x1d0` to the server`s event state is unverified (14 slots). |
 | 193 | Unknown193 | 12 | stub | Client stub: server-only concept, needs a server or retail witness for its meaning. |
@@ -76,3 +75,5 @@ Gate classes: **stub** = the client evaluator slot is the shared return-0 stub, 
 Update: 111 and 113 are implemented ([PREREQUISITE_HAZARD_20261107.md](PREREQUISITE_HAZARD_20261107.md)); 112 (4 slots) remains and shares the hazard manager gate.
 
 Update: 114 is implemented ([PREREQUISITE_VITAL_COMPARE_20261107.md](PREREQUISITE_VITAL_COMPARE_20261107.md)).
+
+Update: 115 is implemented ([PREREQUISITE_UNIT_PROPERTY_COMPARE_20261107.md](PREREQUISITE_UNIT_PROPERTY_COMPARE_20261107.md)).
