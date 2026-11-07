@@ -301,3 +301,30 @@ Slots affected (join of Prerequisite.tbl, Quest2.tbl `Objectives[index]` and Que
 Change: `QuestObjectivePrerequisiteHelper.GetObjectiveProgress` implements Completed (required count, 100 rule), active (`IQuestObjective.Progress`) and zero otherwise; the six checks now take `IGameTableManager`. The percent rescale of the active kill-type path is **not** applied: the unit of the client's runtime value behind virtual `+0x40` (objective class not identified) is unknown, so the server's own progress is compared unscaled for those 30 slots, as before. Next experiment: identify the runtime objective class vtable (referenced by `FUN_1406113b0`'s array at `param_1[idx+2]`) and read virtual `+0x40`.
 
 Tests: `PrerequisiteCheckQuestObjectiveIndexTests` rewritten (30 cases, adding not-started, missing-index and Completed-quest cases). The previous test `AQuestThatIsNotActiveOrAnObjectiveThatDoesNotExistStaysFalse` encoded the superseded behaviour and was replaced; the red run was a compile failure (the checks had no table argument), not a behavioural failure. 4,128 Prerequisite/Quest Source/SQLite cases pass (separate scope from the 30).
+
+
+## Bounds, entitlement count and PvP flag (same day)
+
+Evidence tier: **native body read** (Ghidra, bodies at the vtable `0x140b67740` slots below); implementation checked by Source/SQLite tests written from that reading. No retail witness. The tests
+for these three were written before the classes but the first build was already green, so no red run was observed.
+
+- **141 IsOutOfBounds (36 slots, slot +0x280, `FUN_14049e540`)**: looks up the WorldLocation2 row `ObjectId` through `FUN_14024b980` (the function loads the table named `WorldLocation2`);
+  a missing row, or a row whose world (`+0x28`) differs from the current world, returns false for every comparison. Otherwise `distance(unit position, row +0xc..+0x14) < row.+4 (Radius)`;
+  Equal returns it, NotEqual its negation, other comparisons false. Retail: 35 Equal, 1 NotEqual. Implemented as `PrerequisiteCheckIsOutOfBounds` (same table access as type 16).
+- **273 EntitlementCount (17 slots, +0x678, `FUN_1404a1670`)**: player-type units only (`unit+0x80` is 0x14 or 0x17); the count is `FUN_1403d2140(ObjectId)`: the Entitlement row's `MaxCount`
+  (`+4`, 0 or no row means 0xffffffff) capped sum of the character list (`global+0x7f58`) and the account list amounts; the compare helper receives (comparison, count, Value) (register setup read
+  from the tail jump). Retail: `ObjectId` is an Entitlement id (2 to 75) in all 17, mostly LessThan caps. Implemented as `PrerequisiteCheckEntitlementCount` (character plus account amount, capped).
+- **217 PvpFlag (9 slots, +0x1f8, `FUN_14049db90`)**: compares `FUN_1403b48b0(unit)` (1 when bit 0 of `unit+0x15a8` is set, else, for unit types 3 and 7 with an owner, the owner's value) with Value;
+  Equal and NotEqual only. Implemented as `PrerequisiteCheckPvpFlag` over `IPlayer.PvPFlag != Disabled` for `parameters.Target ?? player`; a unit that is not a player counts as unflagged (the owner
+  rule for pets and summons is not modelled).
+- `BoundsEntitlementPvpPrerequisiteTests` (27 cases) pass; 1,268 Prerequisite/Entitlement/PvP Source/SQLite cases pass in the same run scope (the 27 are included).
+
+Read, not implemented:
+- **126 PathHoldout (72 slots, +0x4c8)** is the shared `return 0` client stub (server-side concept, like 47/153/154/163/164).
+- **111 HazardProperty111 (47 slots, `FUN_1404a03e0`)**: finds the hazard (`ObjectId` key, tree at `DAT_140c659a8+0x38`) and tests that field `+0x28` of its record is non-zero; Equal returns it, NotEqual its negation (true
+  when the hazard manager is absent). The record's field `+0x28` is unidentified and `HazardStateCollection` is internal state of the server, so the mapping is not safe.
+- **113 HazardProperty113 (36 slots, `FUN_1404a04f0`)**: computes a hazard property through `FUN_1404a6070` and compares it with Value; the property read is unidentified.
+- **239 ActionBar (12 slots, `FUN_14049ca10`)**: player units only; `Value` is the bar index (< 4) and the test is bit 0 of the dword at `global+0x1448 + index*4` (Equal) or its negation; the
+  global array is unidentified.
+- **18 ScheduledEvent (17 slots, `FUN_14049ef00`)**: `Value` is looked up in a hash set at `global+0x72a0`; Equal when present, NotEqual when absent. The set (active scheduled events?) is not identified.
+- **146 ItemTradeSkillLevel (34 slots, `FUN_1404a0f90`)**: looks up an item record and a tradeskill-level table (`FUN_1405be150`), scans for the level band that contains the unit's value, then compares; needs the two tables identified.
