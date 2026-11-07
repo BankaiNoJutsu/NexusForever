@@ -39,3 +39,7 @@ the change (the positive cases) and pass now. 1,137 Spell/Telegraph/Combat Sourc
 - Shape 6 (159 rows, parameters like 10/5/5 and 20/10/10) and shape 3 (104 rows, up to six parameters such as 1/15/11/11/0/1) remain unhandled; their meaning is not established (`DamageShape` comments
   call them "Aura related" and "a Cross shape").
 - The cone angle line `Param02 + Param00 / 2` in the existing Cone case adds half the start radius (in degrees) to the angle. It was left as is: nothing here shows it is wrong, but nothing supports it either.
+
+## Client path traced (no shape code reached)
+
+The telegraph is created on the client by `FUN_1405458e0` (cast placement, reads the `TelegraphDamage` row through the accessor `FUN_140241c40`) → `FUN_140545d40` (copies the 0xf8-byte row into an instance) → `FUN_1406008c0` (builds a 0x160-byte instance and calls `FUN_1406007c0`). None of these branch on the shape; the shape-specific geometry lives deeper, in the renderer. Next experiment: decompile `FUN_1406007c0` and follow its shape switch to read what `Param00..05` mean for shapes 1, 3 and 6.

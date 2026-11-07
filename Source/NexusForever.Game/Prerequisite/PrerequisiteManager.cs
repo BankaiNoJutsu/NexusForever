@@ -52,8 +52,10 @@ namespace NexusForever.Game.Prerequisite
             for (int i = 0; i < entry.PrerequisiteTypeId.Length; i++)
             {
                 PrerequisiteType type = entry.PrerequisiteTypeId[i];
+
+                // The client row builder (FUN_1404a5190) stops at the first empty type slot, so slots after it are never evaluated.
                 if (type == PrerequisiteType.None)
-                    continue;
+                    break;
 
                 IPrerequisiteCheck handler = serviceProvider.GetKeyedService<IPrerequisiteCheck>(type);
                 bool result = handler != null && handler.MeetsUnit(subject, entry.PrerequisiteComparisonId[i], entry.Value[i], entry.ObjectId[i], parameters);
@@ -106,7 +108,7 @@ namespace NexusForever.Game.Prerequisite
             {
                 PrerequisiteType type = entry.PrerequisiteTypeId[i];
                 if (type == PrerequisiteType.None)
-                    continue;
+                    break;
 
                 PrerequisiteComparison comparison = entry.PrerequisiteComparisonId[i];
                 if (!Meets(player, type, comparison, entry.Value[i], entry.ObjectId[i], parameters))
@@ -125,7 +127,7 @@ namespace NexusForever.Game.Prerequisite
             {
                 PrerequisiteType type = entry.PrerequisiteTypeId[i];
                 if (type == PrerequisiteType.None)
-                    continue;
+                    break;
 
                 if (Meets(player, type, entry.PrerequisiteComparisonId[i], entry.Value[i], entry.ObjectId[i], parameters))
                     return true;
