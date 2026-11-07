@@ -21,3 +21,10 @@ unit would be new, evidence-bearing slices. They need the MySQL runtime already 
 
 ## Status
 The bulk conversion is a portability task of low evidential yield, not started. The fault-injection tests above are the useful MySQL slice.
+
+## First fault-injection pins (same day)
+`CharacterAtomicSaveRetryingStrategyTests` (2 cases, SQLite with a strategy that really retries once on an injected `TransientTestException`): a transient fault on the owner read inside `CharacterAtomicSave`'s
+strategy scope is retried by the strategy, the production guard refuses the replay ("Actor enrollment cannot be retried"), the enrollment callback runs 0 times, nothing commits, and a later unit enrolls once
+and commits; a fault during the asynchronous commit stage is not a strategy replay, rolls back, the enrollment ran once, and a later unit commits once. Both passed on first run, so they are regression pins
+of existing behaviour (no defect found), not a fix. The SQLite strategy's notion of transience (`ShouldRetryOn`) is the test's own; the production MySQL strategy classifies MySQL errors itself.
+The 22 `CharacterAtomicSave` cases pass (separate scope). Residence association/donation and the guild units remain without this kind of pin.
