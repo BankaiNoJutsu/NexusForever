@@ -944,5 +944,10 @@ namespace NexusForever.Game.Challenges
         {
             return activeChallenges.TryGetValue(challengeId, out ChallengeRuntimeState state) && state.Activated;
         }
+
+        public bool IsChallengeOnCooldown(ushort challengeId)
+        {
+            return activeChallenges.TryGetValue(challengeId, out ChallengeRuntimeState state) && state.OnCooldown;
+        }
     }
 }

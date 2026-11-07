@@ -45,5 +45,10 @@ namespace NexusForever.Game.Abstract.Challenges
         /// Returns whether the supplied challenge is currently activated on this character.
         /// </summary>
         bool IsChallengeActivated(ushort challengeId);
+
+        /// <summary>
+        /// Returns whether the supplied challenge is currently on cooldown for this character; false when the character has no record of it.
+        /// </summary>
+        bool IsChallengeOnCooldown(ushort challengeId);
     }
 }

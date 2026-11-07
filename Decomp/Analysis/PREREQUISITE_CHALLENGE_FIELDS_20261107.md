@@ -1,6 +1,6 @@
 # Challenge prerequisite fields (2026-11-07)
 
-Evidence tier: **native bodies read**; the field identities are **inferred** from the order of `ServerChallengeUpdate`, so 124 and 160 are *Implemented, inferred*. Source/SQLite only. No retail parity claim.
+Evidence tier: **native bodies read, field offsets confirmed by the client's own Lua accessors**. Source/SQLite only. No retail parity claim.
 
 ## Native bodies
 
@@ -11,29 +11,36 @@ as 0, and a missing map returns false.
 |---|---|---|---|---|
 | 74 ChallengeLocked | +0x450, `FUN_14049fa80` → `FUN_14048d5a0` | `+0x2c` | Equal: the field (non-zero is true); NotEqual: field is 0 | 236 slots (NotEqual 185, Equal 51) |
 | 124 ChallengeCompletionCount | +0x460, `FUN_14049fb50` | `+0x28` | (comparison, field, Value) through `FUN_1404a2090` | 7 slots, Values 1 to 45 |
-| 125 Challenge125 | +0x458, `FUN_14049fac0` | `+0x34` | Equal: the field; NotEqual: field is 0 | 153 slots (NotEqual 145, Equal 8) |
+| 125 Challenge125 | +0x458, `FUN_14049fac0` | `+0x34` | Equal: the field; NotEqual: field is 0; other comparisons false | 153 slots (NotEqual 145, Equal 8) |
 | 160 Challenge160 | +0x468, `FUN_14049fbe0` | `+0x14` | (comparison, field, Value) | 33 slots, Values 0 to 20 |
 
-## Record layout reading
+## Field identities
 
-If the record stores the `ServerChallengeUpdate` values in packet order as 4-byte fields (ChallengeId `+0x00`, Type `+0x04`, TargetGroupId `+0x08`, QualifyCount `+0x0c`, QualityTotal `+0x10`, CurrentCount `+0x14`, GoalCount `+0x18`,
-ObjectiveCompletion `+0x1c`, CurrentTier `+0x20`, LastRewardTier `+0x24`, CompletionCount `+0x28`, Unlocked `+0x2c`, Activated `+0x30`, OnCooldown `+0x34`, LeftArea `+0x38`), then:
+The `Game.Challenges` Lua method table (mapped in `INITIAL_FINDINGS.md`, "Eighty-sixth Game.Challenges method-table follow-up") binds accessors that read the same record. Decompiled this session:
 
-- 124 reads CompletionCount. The type's name and failure text ("Invalid challenge completion count") were written independently of this layout and agree, which is the corroboration for the layout up to `+0x28`.
-- 160 reads CurrentCount; its Values (0, 1, 2, 4, 6, 20) look like progress counts.
-- 74 reads Unlocked and 125 reads OnCooldown.
+| Lua method | Function | Record field |
+|---|---|---|
+| `GetCurrentCount` | `FUN_140685210` | `+0x14` |
+| `GetCompletionCount` | `FUN_140685640` | `+0x28` |
+| `IsActivated` | `FUN_1406859e0` | `+0x30` |
+| `IsInCooldown` | `FUN_140685ad0` | `+0x34` (`!= 0`) |
+
+These offsets match a record that stores the `ServerChallengeUpdate` values in packet order as 4-byte fields (ChallengeId `+0x00`, Type `+0x04`, TargetGroupId `+0x08`, QualifyCount `+0x0c`, QualityTotal `+0x10`, CurrentCount `+0x14`,
+GoalCount `+0x18`, ObjectiveCompletion `+0x1c`, CurrentTier `+0x20`, LastRewardTier `+0x24`, CompletionCount `+0x28`, Unlocked `+0x2c`, Activated `+0x30`, OnCooldown `+0x34`, LeftArea `+0x38`). Four anchors (`+0x14`,
+`+0x28`, `+0x30`, `+0x34`) are confirmed; `+0x2c` is the one field between CompletionCount and Activated, which in packet order is `Unlocked`. The type 124 name and failure text ("Invalid challenge completion count") were
+written independently and agree.
 
 ## Implemented
 
-`PrerequisiteCheckChallengeCompletionCount` (124) and `PrerequisiteCheckChallengeCurrentCount` (160), through a new `IChallengeManager.GetCurrentCount` (`ChallengeManager` already had `GetCompletionCount`); a challenge the
-manager has no state for compares 0, as an absent client record does, and an id above 16 bits is absent. `ChallengeCountPrerequisiteTests` (16 cases) pass; the first build failed to compile against the missing `GetCurrentCount`
-(the red run was a compile failure). 1,920 Prerequisite/Challenge Source/SQLite cases pass in the same scope (the 16 are included). 40 previously always-false slots now evaluate.
+`PrerequisiteCheckChallengeCompletionCount` (124), `PrerequisiteCheckChallengeCurrentCount` (160) and `PrerequisiteCheckChallengeOnCooldown` (125), through new `IChallengeManager.GetCurrentCount` and
+`IsChallengeOnCooldown` (`ChallengeManager` already had `GetCompletionCount`). A challenge the manager has no state for compares 0 / not on cooldown, as an absent client record does, and an id above 16 bits is absent.
+`ChallengeCountPrerequisiteTests` (25 cases) pass; the first build of the 124/160 tests failed to compile against the missing `GetCurrentCount` (the red run was a compile failure), the 125 tests were written before the
+check but not run red. 1,928 Prerequisite/Challenge Source/SQLite cases pass in the same scope (the 25 are included). 193 previously always-false slots (7 + 33 + 153) now evaluate.
 
-## Not implemented: 74 and 125 (389 slots)
+## Not implemented: 74 (236 slots)
 
-- 74's failure text is "The specified challenge is locked", but 185 of its 236 slots are NotEqual. Under the layout reading NotEqual means the field at `+0x2c` is 0, i.e. *not unlocked*, which a requirement worded
-  "locked" would fail on when the challenge is unlocked. Either the text belongs to the rarer Equal rows only, or the field is not the packet's `Unlocked` bool.
-- Whether a record exists for every challenge or only for the ones the server sent matters for both: an absent record is 0, so 74 NotEqual and 125 Equal/NotEqual differ for unsent challenges. The server's `activeChallenges`
-  map is built from the challenges the character has touched, and always sends `Unlocked = true`.
-- Next experiment: find the client reader of `ServerChallengeUpdate` (the 14-bit id, 4-bit type, then the fields in packet order) and confirm where it stores `Unlocked` and `OnCooldown` and whether it widens bools to 4 bytes;
-  then decide the unsent-challenge case from the challenge list bootstrap.
+- 74 reads `+0x2c`, the packet's `Unlocked`. Its failure text is "The specified challenge is locked", but 185 of its 236 slots are NotEqual (field is 0, i.e. *not unlocked*).
+- Whether a client record exists for every challenge or only for the ones the server sent decides an untouched challenge's result (absent: 0, so Equal false and NotEqual true; present with `Unlocked`: the reverse). The
+  server's runtime map holds only challenges the character has touched and always sends `Unlocked = true`; what retail did for untouched zone challenges is not known.
+- Next evidence: the client reader of `ServerChallengeUpdate` (opcode 0x00C7: 14-bit id, 4-bit type, then the fields in packet order) to see which challenges the client lists, or a retail capture of a fresh character's first
+  challenge update.
