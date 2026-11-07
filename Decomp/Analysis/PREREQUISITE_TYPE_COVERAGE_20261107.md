@@ -283,3 +283,21 @@ no files on `C:` were deleted.
 - Also read: **49 Schedule** (68 slots) and **30 FacilityWithinDistance** (54 slots) point at the shared `return 0` client stub (`FUN_140001ba0`), so they are server-side concepts like 47/153/154/163/164. **149 State** (46 slots)
   tests `unit+0x1e4`/`+0x2ac` presence (Value 0/1) with unidentified fields; **141 IsOutOfBounds** (36) compares the unit position with a world-location record's radius (`FUN_14024b980(ObjectId)`, record `+0x4` radius, `+0xc` position,
   `+0x28` world id) and the current world; **146 ItemTradeSkillLevel** (34) and **252 Personal3V3ArenaRating** (27, reads a rating through `FUN_1405bffe0(…, 1, -1)`) need further field mapping.
+
+
+## Quest objective family 22/23/33/34/35/36 re-audited against the native body (same day)
+
+Evidence tier: **native body read** (Ghidra, `FUN_14049f4d0`, the vtable slot `+0x408` of `0x140b67740`), implementation checked only by Source/SQLite tests written from that reading. No retail witness.
+
+The earlier implementation (see "Implemented from this evidence" above) compared the active quest's objective progress with `Value` and returned false for anything not active. That reading came from call shapes and table distributions; the body, which had not been read, differs:
+
+- `FUN_1405a8a40(_, ObjectId)` is a hash lookup of the quest **definition** by id. A missing definition gives progress 0.
+- `FUN_1405fbc40` returns the player's quest state. State **3 (Completed)** gives `FUN_140551840(definition, index)`: 0 when the index is at or beyond the definition's objective count or the objective is empty; otherwise the objective's required count `+0x10`, replaced by **100** when the objective type (`+4`) is in the bitset `0x400000018104` (types 2, 8, 15, 16, 46: the kill types), the count is at least 2 and flag `0x200` (`+8`) is clear.
+- Any other state looks the quest up in the active-quest tree and calls `FUN_1406113b0(entry+0x28, index)` for the objective's progress; **not active gives 0**. That function also rescales kill-type progress by `100 * x * DAT_140b79d04` (0.001f) when the raw value is above 1 and flag `0x200` is clear.
+- In every case the result is passed to `FUN_1404a2090(comparison, progress, Value)` (tail jump; the register setup is `EDX=comparison, R8D=progress, R9D=Value`). So a quest the player has not started compares progress **0**; it does not fail outright.
+
+Slots affected (join of Prerequisite.tbl, Quest2.tbl `Objectives[index]` and QuestObjective.tbl): of 1,306 family slots, 225 point at an index whose objective id is 0 or missing and 73 at a quest id not in Quest2; of the 1,008 slots whose objective resolves, 207 have `Value` 0. Under the old rule all of these were false; under the native body they compare 0 (so `Equal 0`, `LessThan n`, `LessThanOrEqual n` and `NotEqual 0` follow the comparison). 30 slots are kill-type objectives of the percent kind, 18 of them `Equal`.
+
+Change: `QuestObjectivePrerequisiteHelper.GetObjectiveProgress` implements Completed (required count, 100 rule), active (`IQuestObjective.Progress`) and zero otherwise; the six checks now take `IGameTableManager`. The percent rescale of the active kill-type path is **not** applied: the unit of the client's runtime value behind virtual `+0x40` (objective class not identified) is unknown, so the server's own progress is compared unscaled for those 30 slots, as before. Next experiment: identify the runtime objective class vtable (referenced by `FUN_1406113b0`'s array at `param_1[idx+2]`) and read virtual `+0x40`.
+
+Tests: `PrerequisiteCheckQuestObjectiveIndexTests` rewritten (30 cases, adding not-started, missing-index and Completed-quest cases). The previous test `AQuestThatIsNotActiveOrAnObjectiveThatDoesNotExistStaysFalse` encoded the superseded behaviour and was replaced; the red run was a compile failure (the checks had no table argument), not a behavioural failure. 4,128 Prerequisite/Quest Source/SQLite cases pass (separate scope from the 30).

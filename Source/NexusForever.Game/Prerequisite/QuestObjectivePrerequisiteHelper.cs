@@ -2,6 +2,8 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Static.Prerequisite;
 using NexusForever.Game.Static.Quest;
+using NexusForever.GameTable;
+using NexusForever.GameTable.Model;
 
 namespace NexusForever.Game.Prerequisite
 {
@@ -67,32 +69,56 @@ namespace NexusForever.Game.Prerequisite
             };
 
         /// <summary>
-        /// Progress of the objective at <paramref name="objectiveIndex"/> of the player's active quest <paramref name="questId"/>.
-        /// Types 22, 23, 33, 34, 35 and 36 (<c>QuestObjective0..5</c>) pass the quest id as <c>ObjectId</c> and the objective index through one shared evaluator
-        /// call. Returns false when the quest is not active or has no objective at that index, which is how these types behaved while they were unhandled.
+        /// Progress compared by prerequisite types 22, 23, 33, 34, 35 and 36 (<c>QuestObjective0..5</c>, native <c>FUN_14049f4d0</c>): the quest definition is looked up by id
+        /// (<c>FUN_1405a8a40</c>); a quest that is not defined has progress 0. A Completed quest reports the objective's required count (<c>FUN_140551840</c>: 0 when
+        /// there is no objective at the index, 100 for a kill-type objective with a count of at least 2 and without flag 0x200). Otherwise the progress is that of the
+        /// player's active quest objective, and 0 when the quest is not active or has no objective at the index. The result is always handed to the compare helper,
+        /// so progress 0 can still satisfy Equal 0 or LessThan.
+        /// Unresolved: for kill-type objectives without flag 0x200 the native active-quest path also rescales the objective's own value by <c>100 * x * 0.001</c>
+        /// (<c>FUN_1406113b0</c>); the unit of the client's runtime value is not known, so the server's own progress is returned unscaled for them.
         /// </summary>
-        public static bool TryGetObjectiveProgress(IPlayer player, uint questId, byte objectiveIndex, out uint progress)
+        public static uint GetObjectiveProgress(IPlayer player, IGameTableManager gameTableManager, uint questId, byte objectiveIndex)
         {
-            progress = 0u;
-            if (questId > ushort.MaxValue)
-                return false;
+            if (questId > ushort.MaxValue || gameTableManager.Quest2?.GetEntry(questId) is not Quest2Entry definition)
+                return 0u;
 
-            foreach (IQuest quest in player.QuestManager.GetActiveQuests())
+            switch (player.QuestManager.GetQuestState((ushort)questId))
             {
-                if (quest.Id != questId)
-                    continue;
+                case QuestState.Completed:
+                    return GetCompletedObjectiveCount(definition, gameTableManager, objectiveIndex);
+                default:
+                    foreach (IQuest quest in player.QuestManager.GetActiveQuests())
+                    {
+                        if (quest.Id != questId)
+                            continue;
 
-                foreach (IQuestObjective objective in quest)
-                {
-                    if (objective.Index != objectiveIndex)
-                        continue;
+                        foreach (IQuestObjective objective in quest)
+                        {
+                            if (objective.Index == objectiveIndex)
+                                return objective.Progress;
+                        }
+                    }
 
-                    progress = objective.Progress;
-                    return true;
-                }
+                    return 0u;
             }
+        }
 
-            return false;
+        private static uint GetCompletedObjectiveCount(Quest2Entry definition, IGameTableManager gameTableManager, byte objectiveIndex)
+        {
+            if (definition.Objectives == null || objectiveIndex >= definition.Objectives.Length)
+                return 0u;
+
+            uint objectiveId = definition.Objectives[objectiveIndex];
+            if (objectiveId == 0u || gameTableManager.QuestObjective?.GetEntry(objectiveId) is not QuestObjectiveEntry objective)
+                return 0u;
+
+            if (objective.Count < 2u)
+                return objective.Count;
+
+            // Native bitset 0x400000018104: objective types 2, 8, 15, 16 and 46 (the kill types) report 100 unless flag 0x200 is set.
+            bool killType = (QuestObjectiveType)objective.Type is QuestObjectiveType.KillCreature or QuestObjectiveType.KillTargetGroups
+                or QuestObjectiveType.KillNamedCreature or QuestObjectiveType.KillTargetGroup or QuestObjectiveType.KillCreature2;
+            return killType && (objective.Flags & 0x200u) == 0u ? 100u : objective.Count;
         }
     }
 }
