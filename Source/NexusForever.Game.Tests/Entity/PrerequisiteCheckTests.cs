@@ -2082,9 +2082,13 @@ public class PrerequisiteCheckTests
         Assert.Equal(expected, result);
     }
 
+    // Native type 84 (FUN_14049ccc0): the Value is the seat type, 0xffffffff meaning any seat. The earlier cases (Equal 1 true, Equal 0 false) encoded "Value is a mounted flag", which retail
+    // never uses (Value is 0xffffffff in 14 of 15 slots); see PrerequisiteCheckVehicleTests for the creature id and seat cases.
     [Theory]
-    [InlineData(PrerequisiteComparison.Equal, 1u, true)]
+    [InlineData(PrerequisiteComparison.Equal, 0xffffffffu, true)]
     [InlineData(PrerequisiteComparison.Equal, 0u, false)]
+    [InlineData(PrerequisiteComparison.NotEqual, 0xffffffffu, false)]
+    [InlineData(PrerequisiteComparison.NotEqual, 0u, true)]
     public void Mount_ComparesPlatformEntityType(PrerequisiteComparison comparison, uint required, bool expected)
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
