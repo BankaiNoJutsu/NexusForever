@@ -23,3 +23,10 @@ Conclusion: every older row was re-checked above and its recorded number or abse
 retail, native or runtime inputs, not completion.
 
 Update (same day, later): the 2,478-row spell-effect recount above was taken before `UnlockInlaidAugment` (281 rows) got a handler; the same recomputation now gives 2,197 rows over 29 types ([PREREQUISITE_231_INLAID_AUGMENTATION_20261107.md](PREREQUISITE_231_INLAID_AUGMENTATION_20261107.md)).
+
+## Prerequisite handler recount (same day, after types 5, 42, 50, 53, 54, 59, 60, 74, 110, 130, 231 and 280)
+`Prerequisite.tbl` has 49,184 type slots; 177 handler classes are registered; **3,029 slots over 69 types** still have no handler (down from 3,841 over 73 at the start of the stretch). Largest remaining: 47 QuestObjective47 (1,788, client stub), 107 (124) and 119 (122) and 162 (8)
+(participation slot `unit+0x35f8`), 154 Holdout (119), 153 HoldoutWave (95), 126 PathHoldout (72), 49 Schedule (68) and 30 FacilityWithinDistance (54) (all client stubs), 111/113/112 hazard property (87), 149 State (46), 146 ItemTradeSkillLevel (34), 9 EpisodeState (34),
+116 Stealth (32), the arena/battleground/warplot ratings 251 to 255 (111) and 230 (8), 115 Unit (18), 18 ScheduledEvent (17), 239 ActionBar (12), 114 Vital (10).
+Dead ends this pass, so they are not repeated: type 116 reads the client unit field `+0x54 > 1`, but 354 instructions write offset `+0x54` across the client and none could be tied to a stealth state without type information (the only stealth string is `CombatLogStealth`);
+type 47 is a client stub whose `Value` is a QuestObjective id (Equal 847, NotEqual 941) with no client body to read, so its server meaning has no witness. Gates for each remaining type are in [LEDGER_GATE_PASS_20261107B.md](LEDGER_GATE_PASS_20261107B.md).
