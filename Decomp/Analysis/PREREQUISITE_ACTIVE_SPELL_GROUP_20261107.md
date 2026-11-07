@@ -27,7 +27,7 @@ is not a spell id, so those slots tested an unrelated spell.
 
 `IUnitEntity.HasActiveSpellInGroup(uint)` (new): a spell belongs to the groups listed by the `Spell4GroupList` its Spell4 row points at (`Spell.Spell4GroupListContainsGroupId`); active spells are the tracked spell states
 plus the unfinished pending spells, the set `HasActiveSpell4` already uses. `HasTrackedSpellState` now shares a `TrackedSpell4Ids()` enumeration with it (same result). The check returns false for a null unit and otherwise Equal /
-NotEqual over the lookup (`parameters.Target ?? player`). `PrerequisiteCheckActiveSpellGroupTests` (17 cases, including a real `UnitEntity` with a tracked spell state) failed to compile before the members existed
+NotEqual over the lookup (`parameters.Target ?? player`). `PrerequisiteCheckActiveSpellGroupTests` (13 cases, including a real `UnitEntity` with a tracked spell state) failed to compile before the members existed
 (the red run was a compile failure) and pass now. `PrerequisiteCheckTests.ActiveSpellEffectOnUnit_UsesTrackedSpellStateFallback` encoded the superseded Value reading and was replaced by a group-membership version;
 `UnitPrerequisiteContextTests` keeps its type 129 case (explicit subject) with the group lookup mocked. 2,770 Prerequisite/Spell/Unit/Combat Source/SQLite cases pass (separate scope).
 

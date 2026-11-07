@@ -26,7 +26,7 @@ So the list at `unit+0x15d0` holds the unit's active spell *effect* instances an
 ## Change
 
 `IUnitEntity.HasActiveSpellEffectId(uint)` (new; `UnitEntity` walks its pending spells' persistent effects through the new `Spell.HasPersistentEffectWithId`, the same lifetime rule the existing
-`HasPersistentEffectOfType` uses) and a rewritten check (null unit false; Equal active; NotEqual not active; other comparisons false; `parameters.Target ?? player`). `PrerequisiteCheckActiveEffectIdTests` (10 cases)
+`HasPersistentEffectOfType` uses) and a rewritten check (null unit false; Equal active; NotEqual not active; other comparisons false; `parameters.Target ?? player`). `PrerequisiteCheckActiveEffectIdTests` (9 cases)
 failed to compile before the interface member existed and pass now (the red run was a compile failure); 2,054 Prerequisite/Spell/Cooldown Source/SQLite cases pass in a separate scope. The cooldown-node helpers used by
 types 103 and 104 are unchanged.
 
