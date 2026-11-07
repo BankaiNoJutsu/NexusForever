@@ -1312,18 +1312,8 @@ public class PrerequisiteCheckTests
         Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 1u, 78u, new PrerequisiteParameters()));
     }
 
-    [Fact]
-    public void IsObjectiveActive_UsesQuestManagerActiveObjectiveId()
-    {
-        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
-        IQuestManager questManager = RecordingDispatchProxy<IQuestManager>.Create(out var questProxy);
-        questProxy.SetMethodReturn(nameof(IQuestManager.IsActiveObjectiveId), true);
-        playerProxy.SetProperty(nameof(IPlayer.QuestManager), questManager);
-
-        var check = new PrerequisiteCheckIsObjectiveActive();
-
-        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 1u, 99u, new PrerequisiteParameters()));
-    }
+    // Type 43 was tested here as "ObjectId is a QuestObjective id and the active flag is compared with Value" (IsActiveObjectiveId). The native body takes ObjectId as a quest id and Value as the
+    // objective index; the cases that replace this one are in PrerequisiteCheckIsObjectiveActiveTests (PREREQUISITE_OBJECTIVE_ACTIVE_20261107.md).
 
     // Native evaluator (FUN_14049f460 / FUN_1405510d0, see Decomp/Analysis/PREREQUISITE_TYPE_COVERAGE_20261107.md): type 68 (and the per-unit variant 94)
     // looks up the quest with id ObjectId and tests whether its objective at index Value is complete; a Completed quest counts every valid index as complete;

@@ -113,6 +113,65 @@ namespace NexusForever.Game.Prerequisite
             }
         }
 
+        /// <summary>
+        /// Native test behind prerequisite type 43 (<c>FUN_14049f3d0</c>): objective <paramref name="objectiveIndex"/> of quest <paramref name="questId"/> is currently workable. The quest must be in the
+        /// player's active quests and defined, the objective must not be complete (<see cref="IsQuestObjectiveIndexComplete"/>) and it must be available (<c>FUN_140553790</c>, see
+        /// <see cref="IsObjectiveAvailable"/>).
+        /// </summary>
+        public static bool IsObjectiveActive(IPlayer player, IGameTableManager gameTableManager, uint questId, uint objectiveIndex)
+        {
+            if (questId > ushort.MaxValue || gameTableManager.Quest2?.GetEntry(questId) is not Quest2Entry definition)
+                return false;
+
+            if (!player.QuestManager.GetActiveQuests().Any(quest => quest.Id == questId))
+                return false;
+
+            if (IsQuestObjectiveIndexComplete(player, questId, objectiveIndex))
+                return false;
+
+            return IsObjectiveAvailable(player, gameTableManager, definition, questId, objectiveIndex);
+        }
+
+        /// <summary>
+        /// Native <c>FUN_140553790</c>: an index at or beyond the quest's objective count is not available and an objective of type 0 always is. With flag 0x2 (sequential) every earlier
+        /// objective without flag 0x20 (optional) must be complete. With flag 0x1 only, walking back from the previous objective, the first one that is neither complete nor itself available
+        /// makes the objective unavailable. An objective with neither flag is available.
+        /// </summary>
+        private static bool IsObjectiveAvailable(IPlayer player, IGameTableManager gameTableManager, Quest2Entry definition, uint questId, uint index)
+        {
+            int count = definition.Objectives?.TakeWhile(id => id != 0u).Count() ?? 0;
+            if (index >= (uint)count)
+                return false;
+
+            QuestObjectiveEntry entry = gameTableManager.QuestObjective?.GetEntry(definition.Objectives[index]);
+            if (entry == null || entry.Type == 0u)
+                return true;
+
+            if ((entry.Flags & 0x2u) != 0u)
+            {
+                for (uint earlier = 0u; earlier < index; earlier++)
+                {
+                    QuestObjectiveEntry earlierEntry = gameTableManager.QuestObjective?.GetEntry(definition.Objectives[earlier]);
+                    if (earlierEntry != null && (earlierEntry.Flags & 0x20u) == 0u && !IsQuestObjectiveIndexComplete(player, questId, earlier))
+                        return false;
+                }
+
+                return true;
+            }
+
+            if ((entry.Flags & 0x1u) != 0u)
+            {
+                for (int previous = (int)index - 1; previous >= 0; previous--)
+                {
+                    if (!IsQuestObjectiveIndexComplete(player, questId, (uint)previous)
+                        && !IsObjectiveAvailable(player, gameTableManager, definition, questId, (uint)previous))
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
         private static QuestObjectiveEntry GetObjectiveEntry(Quest2Entry definition, IGameTableManager gameTableManager, byte objectiveIndex)
         {
             if (definition.Objectives == null || objectiveIndex >= definition.Objectives.Length)
