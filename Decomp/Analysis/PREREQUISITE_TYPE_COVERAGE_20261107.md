@@ -48,3 +48,56 @@ match by numeric coincidence of two dense id ranges, and the check mostly evalua
 slots (objective-index-like), but equals the count in many of the remaining ones (completed-count-like); neither reading fits every slot, so the semantics (index, count, or state, per comparison)
 cannot be chosen from the tables. Not changed: the existing tests encode the objective-id reading, and replacing it needs the native evaluator or a capture that shows which quests or
 interactions a given row gates. This is a probable defect in an implemented check affecting 2,913 slots, recorded as evidence, not as a fix.
+
+
+## Native evaluator located and quest-objective index family implemented (same day)
+
+**Where it is.** A scan of every function of at least 3,000 bytes in the Ghidra project for a `switch` with at least 100 cases containing the labels 0x16, 0x2f and 0x76
+found three candidates; one (`FUN_1404a2100`, 10,054 bytes, 271 cases) is the prerequisite evaluator: `uint FUN_1404a2100(this, unit[2], args[])` switches on `args[0]` (the
+type) and forwards `args[1]` = comparison, `args[2]` = objectId, `args[3]` = value to virtual methods of its owner object (or handles the type inline). The other two hits
+were an `EGenericError` code-to-text switch and a third unrelated switch. The vtable that holds the virtual implementations was not identified (the length-523 run at 0x140b6eb10 is a different class), so
+the *bodies* of the virtual checks, and therefore the exact meaning of each type, are still unread; what is recorded below is **which arguments each type uses**, taken from the switch itself
+(inline cases only; shared-label cases such as 22 to 35 are resolved separately).
+
+Argument usage for the largest unhandled types (comparison, objectId, value, unit/target):
+
+| Type | Enum name | Slots | Evaluator arguments used | Virtual slot |
+|---|---|---|---|---|
+| 118 | PublicEventObjective188 | 2422 | comparison, objectId, value | 0x540 |
+| 47 | QuestObjective47 | 1788 | comparison, unit, value | 0x2f8 |
+| 22 | QuestObjective0 | 597 | value | inline/shared |
+| 117 | PublicEvent117 | 458 | comparison, objectId | 0x538 |
+| 23 | QuestObjective1 | 379 | value | inline/shared |
+| 19 | TradeSkillProfession | 268 | comparison, objectId, unit | 0x3d8 |
+| 54 | PlayerPathMission | 256 | comparison, unit, value | 0x488 |
+| 231 | EldanAugmentation231 | 241 | comparison, objectId, unit | 0x1a0 |
+| 74 | ChallengeLocked | 236 | comparison, objectId, unit | 0x450 |
+| 31 | CreatureWithinDistance | 215 | comparison, objectId, unit, value | 0x368 |
+| 44 | InTargetGroup | 214 | comparison, unit, value | 0x370 |
+| 67 | PathMissionRequirement | 191 | comparison, unit, value | 0x490 |
+| 123 | PublicEventObjective123 | 184 | comparison, objectId, value | 0x568 |
+| 155 | PathMission155 | 174 | comparison, objectId, unit, value | 0x508 |
+| 125 | Challenge125 | 153 | comparison, objectId, unit | 0x458 |
+| 33 | QuestObjective2 | 152 | value | inline/shared |
+| 56 | DifficultyRankSlotAssigned | 124 | unit, value | inline/shared |
+| 107 | QuestObjective7 | 124 | comparison, objectId, target, unit | 0x4b8 |
+| 119 | PublicEventObjectiveObject | 122 | comparison, objectId, target, unit | 0x548 |
+| 154 | Holdout | 119 | comparison, objectId, value | 0x4e0 |
+| 143 | Difficulty | 113 | comparison, value | 0x3a0 |
+| 153 | HoldoutWave | 95 | comparison, objectId, value | 0x4d8 |
+| 201 | AchievementObject | 93 | comparison, objectId, unit, value | 0x430 |
+| 34 | QuestObjective3 | 87 | value | inline/shared |
+| 35 | QuestObjective4 | 74 | value | inline/shared |
+
+Notes: type 47 ignores `ObjectId` (which is why none of its `ObjectId`s match any table); type 117 has no value and no unit; types 118 and 123 are public-event checks with no unit; type 54
+uses only comparison and value (no `ObjectId`). Types 22, 23, 33, 34, 35 jump to one shared call; type 36 makes the same call directly.
+
+**Implemented from this evidence.** Types 22, 23, 33, 34, 35 and 36 (`QuestObjective0..5`) all end in the same virtual call `(unit, comparison, objectId, index, value)` with index 0, 1, 2, 3, 4, 5. The retail rows
+support the reading "progress of the active quest's objective at that index compared with Value": `ObjectId` is a Quest2 id in 555 of 597 (type 22) and similar shares for the others, and `Value` is at or below the
+required count of that quest's objective at the index in 417/445, 291/308, 119/122, 65/66, 56/56 and 11/11 slots (types 22, 23, 33, 34, 35, 36), with all six comparison operators used.
+`PrerequisiteCheckQuestObjective0..5` (new, `PrerequisiteCheckQuestObjectiveIndex.cs`) compare that progress with `Value`; a quest that is not active, or has no objective at the index, stays false, which is
+how these types behaved while unhandled, so no previously true result changes. `PrerequisiteCheckQuestObjectiveIndexTests` (16 cases) failed to compile before the check classes existed and pass now; 919 Prerequisite cases pass
+(Source/SQLite scope). 1,606 prerequisite slots (597+379+152+87+74+17) change from always-false to evaluated.
+
+**Not changed, still open.** What retail does for a completed or abandoned quest (progress treated as the full count, or as unavailable) is unknown, so those cases stay false. The meaning of types 68 and 94 (`ObjectId` is a
+quest id in the tables but the server reads it as an objective id) is not resolved by the argument shapes and remains the recorded discrepancy. The other large unhandled types (118, 47, 117, 19, 54, ...) need the virtual bodies.

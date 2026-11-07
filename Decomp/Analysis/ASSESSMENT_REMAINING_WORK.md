@@ -1,5 +1,10 @@
 # Assessment follow-through goal
 
+[Prerequisite evaluator and quest-objective index family](PREREQUISITE_TYPE_COVERAGE_20261107.md#native-evaluator-located-and-quest-objective-index-family-implemented-same-day) (2026-11-07): the client's prerequisite evaluator was
+located in Ghidra (`FUN_1404a2100`, a 271-case switch) and gives which arguments each type uses. Prerequisite types 22, 23, 33, 34, 35, 36 (`QuestObjective0..5`, 1,606 slots, previously always false) now compare the progress of the active
+quest's objective at that index with Value (conservative: inactive quest or missing objective stays false). 16 new Source/SQLite cases pass (failed to compile before), 919 Prerequisite cases pass. Types 68/94 ObjectId discrepancy and the bodies of
+the other large types (118, 47, 117, ...) remain open; no retail parity claim.
+
 [Prerequisite type coverage](PREREQUISITE_TYPE_COVERAGE_20261107.md) (2026-11-07): 99 of 232 prerequisite types used by the retail table have no server handler, covering 20% of type slots and
 26% of prerequisite rows (8,380 of 32,131), and an unhandled type evaluates false, so gated content is silently unavailable. Largest: public event objective (118), quest objective 47, quest
 objective 22/23, public event 117. Semantics need the native evaluator (not yet located) or retail captures. Census only; nothing implemented.
