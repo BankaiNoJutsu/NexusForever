@@ -50,5 +50,10 @@ namespace NexusForever.Game.Abstract.Challenges
         /// Returns whether the supplied challenge is currently on cooldown for this character; false when the character has no record of it.
         /// </summary>
         bool IsChallengeOnCooldown(ushort challengeId);
+
+        /// <summary>
+        /// Returns whether the supplied challenge is unlocked for this character: the server tracks it (and sends <c>Unlocked = true</c> for it); false when the character has no record of it.
+        /// </summary>
+        bool IsChallengeUnlocked(ushort challengeId);
     }
 }

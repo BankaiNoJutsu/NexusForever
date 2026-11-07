@@ -42,6 +42,22 @@ namespace NexusForever.Game.Prerequisite.Check
     }
 
     /// <summary>
+    /// Prerequisite type 74: native test <c>FUN_14049fa80</c> (-> <c>FUN_14048d5a0</c>) reads the 32-bit field at <c>+0x2c</c> of the client challenge record with id <c>ObjectId</c> (0 when absent) and returns it for Equal,
+    /// "the field is 0" for NotEqual and false for every other comparison. <c>+0x2c</c> is the <c>Unlocked</c> value of <c>ServerChallengeUpdate</c>. The server sends <c>Unlocked = true</c> for every challenge it tracks, so a
+    /// challenge is unlocked exactly when the manager tracks it. Retail: 236 slots, NotEqual 185, Equal 51.
+    /// Status: native body read; which challenges retail listed before they were touched is not known (inferred). See Decomp/Analysis/PREREQUISITE_CHALLENGE_UNLOCKED_20261107.md.
+    /// </summary>
+    [PrerequisiteCheck(PrerequisiteType.ChallengeLocked)]
+    public class PrerequisiteCheckChallengeLocked : IPrerequisiteCheck
+    {
+        public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
+        {
+            bool unlocked = objectId <= ushort.MaxValue && player.ChallengeManager.IsChallengeUnlocked((ushort)objectId);
+            return PrerequisiteCompare.CompareFlag(comparison, unlocked);
+        }
+    }
+
+    /// <summary>
     /// Prerequisite type 160: native test <c>FUN_14049fbe0</c> reads the 32-bit field at <c>+0x14</c> of the client challenge record with id <c>ObjectId</c> (0 when absent) and compares it with <c>Value</c>.
     /// The client's Lua <c>Challenges:GetCurrentCount</c> (<c>FUN_140685210</c>) reads that same offset, so it is the challenge's current progress count. Retail: 33 slots, Equal 26, <c>Value</c> 0 to 20.
     /// Status: Implemented (field offset confirmed by the Lua accessor). See Decomp/Analysis/PREREQUISITE_CHALLENGE_FIELDS_20261107.md.

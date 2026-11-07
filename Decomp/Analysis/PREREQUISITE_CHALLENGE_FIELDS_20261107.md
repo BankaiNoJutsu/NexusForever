@@ -44,3 +44,6 @@ check but not run red. 1,928 Prerequisite/Challenge Source/SQLite cases pass in 
   server's runtime map holds only challenges the character has touched and always sends `Unlocked = true`; what retail did for untouched zone challenges is not known.
 - Next evidence: the client reader of `ServerChallengeUpdate` (opcode 0x00C7: 14-bit id, 4-bit type, then the fields in packet order) to see which challenges the client lists, or a retail capture of a fresh character's first
   challenge update.
+
+## Update (same day)
+74 is now implemented: see [PREREQUISITE_CHALLENGE_UNLOCKED_20261107.md](PREREQUISITE_CHALLENGE_UNLOCKED_20261107.md). The 'Not implemented: 74' section above is superseded.
