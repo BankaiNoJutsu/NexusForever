@@ -1,5 +1,9 @@
 # Assessment follow-through goal
 
+[Prerequisite types 68 and 94 corrected](PREREQUISITE_TYPE_COVERAGE_20261107.md#types-68-and-94-resolved-from-the-native-bodies-same-day) (2026-11-07): the client's native bodies show `ObjectId` is a quest id and `Value` an objective
+index (a Completed quest counts every valid index as complete; Equal/NotEqual only). The server read `ObjectId` as an objective id; fixed for 2,913 retail slots. 8 discriminating tests failed on the old code; 930 Prerequisite and
+4,182 Quest/Communicator/Prerequisite/Challenge cases pass (Source/SQLite). The completed-quest objective count uses the native bound 6; unit-type handling of type 94 not modelled. No retail parity claim.
+
 [Prerequisite evaluator and quest-objective index family](PREREQUISITE_TYPE_COVERAGE_20261107.md#native-evaluator-located-and-quest-objective-index-family-implemented-same-day) (2026-11-07): the client's prerequisite evaluator was
 located in Ghidra (`FUN_1404a2100`, a 271-case switch) and gives which arguments each type uses. Prerequisite types 22, 23, 33, 34, 35, 36 (`QuestObjective0..5`, 1,606 slots, previously always false) now compare the progress of the active
 quest's objective at that index with Value (conservative: inactive quest or missing objective stays false). 16 new Source/SQLite cases pass (failed to compile before), 919 Prerequisite cases pass. Types 68/94 ObjectId discrepancy and the bodies of

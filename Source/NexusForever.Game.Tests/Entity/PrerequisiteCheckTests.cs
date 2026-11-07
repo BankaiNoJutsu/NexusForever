@@ -36,6 +36,7 @@ using NexusForever.Game.Static.Entity.Movement.Command.State;
 using NexusForever.Game.Static.Group;
 using NexusForever.Game.Static.PlayerPath;
 using NexusForever.Game.Static.Prerequisite;
+using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable.Static;
 
@@ -1318,24 +1319,74 @@ public class PrerequisiteCheckTests
         Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 1u, 99u, new PrerequisiteParameters()));
     }
 
+    // Native evaluator (FUN_14049f460 / FUN_1405510d0, see Decomp/Analysis/PREREQUISITE_TYPE_COVERAGE_20261107.md): type 68 (and the per-unit variant 94)
+    // looks up the quest with id ObjectId and tests whether its objective at index Value is complete; a Completed quest counts every valid index as complete;
+    // Equal returns the result, NotEqual its negation, and any other comparison is false. Retail rows carry a quest id in ObjectId and an index in Value.
+    [Theory]
+    [InlineData(PrerequisiteComparison.Equal, 0u, false)]    // objective 0 is not complete
+    [InlineData(PrerequisiteComparison.Equal, 1u, true)]     // objective 1 is complete
+    [InlineData(PrerequisiteComparison.Equal, 2u, true)]     // objective 2 is complete
+    [InlineData(PrerequisiteComparison.NotEqual, 0u, true)]
+    [InlineData(PrerequisiteComparison.NotEqual, 1u, false)]
+    [InlineData(PrerequisiteComparison.NotEqual, 2u, false)]
+    [InlineData(PrerequisiteComparison.Equal, 3u, false)]    // index beyond the quest's objectives is not complete
+    [InlineData(PrerequisiteComparison.NotEqual, 3u, true)]
+    [InlineData(PrerequisiteComparison.GreaterThan, 1u, false)] // only Equal and NotEqual are defined
+    [InlineData(PrerequisiteComparison.LessThanOrEqual, 0u, false)]
+    public void QuestObjective_ComparesTheCompletionOfTheObjectiveAtTheValueIndexOfTheQuestObjectId(PrerequisiteComparison comparison, uint index, bool expected)
+    {
+        IPlayer player = ActiveQuestPlayer(questId: 4321, QuestState.Accepted, completeFlags: [false, true, true]);
+
+        Assert.Equal(expected, new PrerequisiteCheckQuestObjective().Meets(player, comparison, index, 4321u, new PrerequisiteParameters()));
+        Assert.Equal(expected, new PrerequisiteCheckQuestObjective6().Meets(player, comparison, index, 4321u, new PrerequisiteParameters()));
+    }
+
     [Fact]
-    public void QuestObjective_ComparesObjectiveCompletion()
+    public void QuestObjective_ACompletedQuestCountsEveryValidObjectiveIndexAsComplete()
+    {
+        IPlayer player = ActiveQuestPlayer(questId: 4321, QuestState.Completed, completeFlags: null);
+
+        Assert.True(new PrerequisiteCheckQuestObjective().Meets(player, PrerequisiteComparison.Equal, 3u, 4321u, new PrerequisiteParameters()));
+        Assert.False(new PrerequisiteCheckQuestObjective().Meets(player, PrerequisiteComparison.NotEqual, 3u, 4321u, new PrerequisiteParameters()));
+        Assert.False(new PrerequisiteCheckQuestObjective().Meets(player, PrerequisiteComparison.Equal, 6u, 4321u, new PrerequisiteParameters())); // native bound is index < 6
+    }
+
+    [Fact]
+    public void QuestObjective_AnUnknownQuestAndAnObjectiveIdAreNotTheSameThing()
+    {
+        // The earlier implementation matched ObjectId against objective ids of active quests; 55 here is an objective id, not a quest id.
+        IPlayer player = ActiveQuestPlayer(questId: 4321, QuestState.Accepted, completeFlags: [true], objectiveId: 55u);
+
+        Assert.False(new PrerequisiteCheckQuestObjective().Meets(player, PrerequisiteComparison.Equal, 0u, 55u, new PrerequisiteParameters()));
+        Assert.True(new PrerequisiteCheckQuestObjective().Meets(player, PrerequisiteComparison.NotEqual, 0u, 55u, new PrerequisiteParameters()));
+    }
+
+    private static IPlayer ActiveQuestPlayer(ushort questId, QuestState state, bool[] completeFlags, uint objectiveId = 0u)
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
         IQuestManager questManager = RecordingDispatchProxy<IQuestManager>.Create(out var questProxy);
-        IQuest quest = RecordingDispatchProxy<IQuest>.Create(out var questEntityProxy);
-        IQuestObjective objective = RecordingDispatchProxy<IQuestObjective>.Create(out var objectiveProxy);
-        IQuestObjectiveInfo objectiveInfo = RecordingDispatchProxy<IQuestObjectiveInfo>.Create(out var infoProxy);
-        infoProxy.SetProperty(nameof(IQuestObjectiveInfo.Id), 55u);
-        objectiveProxy.SetProperty(nameof(IQuestObjective.ObjectiveInfo), objectiveInfo);
-        objectiveProxy.SetMethodReturn(nameof(IQuestObjective.IsComplete), true);
-        questEntityProxy.SetMethodHandler("GetEnumerator", _ => new List<IQuestObjective> { objective }.GetEnumerator());
-        questProxy.SetMethodReturn(nameof(IQuestManager.GetActiveQuests), new List<IQuest> { quest });
+        questProxy.SetMethodHandler(nameof(IQuestManager.GetQuestState), args => args[0] is ushort id && id == questId ? state : null);
+        var active = new List<IQuest>();
+        if (completeFlags != null)
+        {
+            IQuest quest = RecordingDispatchProxy<IQuest>.Create(out var questEntityProxy);
+            questEntityProxy.SetProperty(nameof(IQuest.Id), questId);
+            var objectives = completeFlags.Select((complete, index) =>
+            {
+                IQuestObjective objective = RecordingDispatchProxy<IQuestObjective>.Create(out var objectiveProxy);
+                IQuestObjectiveInfo info = RecordingDispatchProxy<IQuestObjectiveInfo>.Create(out var infoProxy);
+                infoProxy.SetProperty(nameof(IQuestObjectiveInfo.Id), objectiveId + (uint)index);
+                objectiveProxy.SetProperty(nameof(IQuestObjective.ObjectiveInfo), info);
+                objectiveProxy.SetProperty(nameof(IQuestObjective.Index), (byte)index);
+                objectiveProxy.SetMethodReturn(nameof(IQuestObjective.IsComplete), complete);
+                return objective;
+            }).ToList();
+            questEntityProxy.SetMethodHandler("GetEnumerator", _ => objectives.GetEnumerator());
+            active.Add(quest);
+        }
+        questProxy.SetMethodReturn(nameof(IQuestManager.GetActiveQuests), active);
         playerProxy.SetProperty(nameof(IPlayer.QuestManager), questManager);
-
-        var check = new PrerequisiteCheckQuestObjective();
-
-        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 1u, 55u, new PrerequisiteParameters()));
+        return player;
     }
 
     [Fact]

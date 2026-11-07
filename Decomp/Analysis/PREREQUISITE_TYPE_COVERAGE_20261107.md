@@ -101,3 +101,23 @@ how these types behaved while unhandled, so no previously true result changes. `
 
 **Not changed, still open.** What retail does for a completed or abandoned quest (progress treated as the full count, or as unavailable) is unknown, so those cases stay false. The meaning of types 68 and 94 (`ObjectId` is a
 quest id in the tables but the server reads it as an objective id) is not resolved by the argument shapes and remains the recorded discrepancy. The other large unhandled types (118, 47, 117, 19, 54, ...) need the virtual bodies.
+
+
+## Types 68 and 94 resolved from the native bodies (same day)
+
+The discrepancy recorded above is resolved. In the native evaluator, type 68 reaches `FUN_14049f460` and type 94 reaches `FUN_14049f5b0` (identified by the
+call shapes: case 0x44 passes `(unit, comparison, objectId, value)` and case 0x5e additionally passes `target`; the older comment in the repo that placed type 94 at `14049f700` is
+not supported, since that function is a different check, a state compare `virtual+0xc0 == value`). Both look up the quest with id `ObjectId` in the client's quest table
+(`FUN_1405a8a40`, hash-map find keyed by quest id) and then call `FUN_1405510d0(quest, value)`: if `value` is not below the quest's objective count it returns false; if the quest's state is **3
+(Completed)** it returns true; otherwise it returns bit `value + 2` of the player's per-quest objective mask for `value < 6`. Equal returns that result, NotEqual returns its negation, and any other
+comparison returns false (type 94 additionally selects the unit bit and handles non-player units). So `ObjectId` is a **quest id** and `Value` is an **objective index**, matching the table
+shape (quest ids in about 99% of slots, `Value` 0 to 3, comparisons only 1 and 2).
+
+Fix: `PrerequisiteCheckQuestObjective` (68) and `PrerequisiteCheckQuestObjective6` (94) now use `QuestObjectivePrerequisiteHelper.IsQuestObjectiveIndexComplete` and `CompareCompletion`
+(quest state Completed counts every index below the native bound of 6 as complete; an Accepted or Achieved quest uses that objective's completion; any other state or an index beyond the
+quest's objectives is not complete). The previous behaviour (match `ObjectId` against active objective ids and compare a 0/1 with `Value`) was wrong for the retail rows; 2,913 slots are affected.
+The test `QuestObjective_ComparesObjectiveCompletion`, which encoded the objective-id reading, was replaced by 12 discriminating cases plus two more (Completed quest, objective id is not a quest id); 8 of the
+12 failed against the old code (the others pass either way). 930 Prerequisite cases and 4,182 Quest/Communicator/Prerequisite/Challenge cases pass (Source/SQLite; scopes overlap, not additive).
+
+Limits: for Completed quests the objective count is not available from the quest manager, so the bound is the native 6, not the quest's real count; type 94's unit-type handling (NPC units) and per-unit
+bit are not modelled (one evaluated player); the type 22 to 36 family's completed-quest behaviour is still unknown because its virtual body was not read.
