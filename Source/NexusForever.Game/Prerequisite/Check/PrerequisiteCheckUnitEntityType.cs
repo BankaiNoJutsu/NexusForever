@@ -6,20 +6,20 @@ using NexusForever.Game.Static.Prerequisite;
 namespace NexusForever.Game.Prerequisite.Check
 {
     /// <summary>
-    /// Prerequisite type 82: live vtable <c>+0x48</c> and handler table <c>14049f010</c> compare client
-    /// unit type id at entity <c>+0x80</c> to <c>value0</c>. NF uses <see cref="EntityType"/> until
-    /// client unit-type ids are mapped on entities.
+    /// Prerequisite type 82: native <c>FUN_14049c5b0</c> (vtable <c>+0x48</c>) is false for a null unit; otherwise <c>flag = *(int*)(unit+0x80) == Value</c> through the boolean tail
+    /// (Equal returns the flag, NotEqual its negation, every other comparison is false). The client type id is read as <see cref="EntityType"/> (same numbering: 20 player, 23 ghost).
+    /// Retail: 1 slot. See Decomp/Analysis/PREREQUISITE_UNIT_ENTITY_TYPE_20261107.md.
     /// </summary>
     [PrerequisiteCheck(PrerequisiteType.UnitEntityType)]
     public class PrerequisiteCheckUnitEntityType : IPrerequisiteCheck
     {
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
-        {
-            IWorldEntity entity = parameters.Target as IWorldEntity ?? player;
-            return PrerequisiteCompare.Compare(comparison, (uint)entity.Type, value);
-        }
+            => MeetsEntity(parameters.Target as IWorldEntity ?? player, comparison, value);
 
         public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
-            => subject != null && PrerequisiteCompare.Compare(comparison, (uint)subject.Type, value);
+            => MeetsEntity(subject, comparison, value);
+
+        private static bool MeetsEntity(IWorldEntity entity, PrerequisiteComparison comparison, uint value)
+            => entity != null && PrerequisiteCompare.CompareFlag(comparison, (uint)entity.Type == value);
     }
 }

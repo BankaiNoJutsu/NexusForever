@@ -6,6 +6,8 @@
 > table or native-body evidence, such as prerequisite types 22 to 36, is not retail
 > parity. Do not restate it as such, and do not treat agent-written tests as proof.
 
+[Prerequisite 82 boolean tail, 70 native body](PREREQUISITE_UNIT_ENTITY_TYPE_20261107.md) (2026-11-07): type 82 (1 retail slot) now uses the native Equal/NotEqual-only tail; type 70 (ChallengeTier) was read (`challengeState.+0x20 > Value`) but not changed because the identity of `+0x20` is unconfirmed (server proxy compares completion count). Tier: native bodies read; Source/SQLite only (1,640-case Prerequisite filter; 82's tests written with the change, no red run). No retail parity claim.
+
 [Prerequisite shape and jump-table audit](PREREQUISITE_SHAPE_AUDIT_20261107.md) (2026-11-07): corrected 64, 55, 177, 12 and added 115 this pass; found that InPhase (24) and CanSeePhase (25) are the same native bit test of a client phase mask (`+0x6750`, only zero-initialised in visible code) and are not what the server implements - gated on the source of that mask and a server phase-mask model; lists the proxy-commented types whose bodies are still unread (70, 220, 16, 219, 82, 191). Tier: documentation of native reads; Source/SQLite only. No retail parity claim.
 
 [Prerequisite 12 (DeadState) boolean tail and Ghost](PREREQUISITE_DEAD_STATE_BOOLEAN_20261107.md) (2026-11-07): `FUN_14049c800` is `(unit+0x250 || unit+0x254 || entityType == 0x17) == Value` with Equal/NotEqual only; the server now treats Ghost as dead and rejects ordering comparisons (no retail row uses them). Tier: native body read; Source/SQLite only (4 of 10 new cases failed first; 1,632-case Prerequisite filter). The `+0x250/+0x254` to `!IsAlive` mapping stays inferred. No retail parity claim.
