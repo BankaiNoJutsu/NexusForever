@@ -28,3 +28,11 @@ strategy scope is retried by the strategy, the production guard refuses the repl
 and commits; a fault during the asynchronous commit stage is not a strategy replay, rolls back, the enrollment ran once, and a later unit commits once. Both passed on first run, so they are regression pins
 of existing behaviour (no defect found), not a fix. The SQLite strategy's notion of transience (`ShouldRetryOn`) is the test's own; the production MySQL strategy classifies MySQL errors itself.
 The 22 `CharacterAtomicSave` cases pass (separate scope). Residence association/donation and the guild units remain without this kind of pin.
+
+## Replay-safety read of the production strategy units (sampled, same day)
+About 60 production sites run work through `CreateExecutionStrategy().Execute(Async)`. Read this pass: the synchronous family that mutates in-memory gameplay state carries an explicit `entered` guard that turns a
+strategy replay into a non-retriable `InvalidOperationException` (`CharacterAtomicSave`, `CharacterDatabase.CreateCharacter`, `Residence.Association`, `Residence.Donation`, `ChallengeManager.ContractCompanion`,
+`Currency.BankChange`), so a transient fault cannot apply the same enrollment twice; the asynchronous family sampled (`ContractAccountDelivery.ReadSource`/`ObserveAuth`/`Acknowledge`, the Fortune publication
+verification) begins from a fresh inner context and re-reads its authoritative rows inside the delegate, which is replay-safe by construction. Not read: the Marketplace commands, `CraftingAccountDelivery`,
+`MailManager.Delivery`, `RealmBankManager.Command`, `AuthContext.SaveUnit`, `CharacterChallengeRewardExecutor`, `QuestManager.Rewards`, `VendorAccountPurchase`, `AccountCurrency.Refresh` and the Friendship/Group/Chat
+handlers. Those are the remaining candidates for a replay-safety read or a fault-injection pin; no defect is known.
