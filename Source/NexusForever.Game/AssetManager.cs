@@ -8,6 +8,7 @@ using NexusForever.Game.Abstract;
 using NexusForever.Game.Spell;
 using NexusForever.Game.Static;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Game.Static.Quest;
 using NexusForever.Game.Static.Reward;
 using NexusForever.GameTable;
@@ -113,7 +114,9 @@ namespace NexusForever.Game
 
             // Groups made only of creature id lists are indexed for every group. A group with faction/unit race criteria needs each Creature2 definition evaluated, so only
             // those a quest objective refers to are indexed; the rest were never indexed before either.
-            HashSet<uint> objectiveGroupIds = GetQuestObjectiveTargetGroups(manager).Select(o => o.TargetGroupId).ToHashSet();
+            HashSet<uint> objectiveGroupIds = GetQuestObjectiveTargetGroups(manager).Select(o => o.TargetGroupId)
+                .Concat(GetPublicEventObjectiveTargetGroupIds(manager))
+                .ToHashSet();
             foreach (TargetGroupEntry entry in targetGroupEntries)
             {
                 HashSet<uint> targetIds = TargetGroupCreatureResolver.TryResolveCreatureLists(entry, manager);
@@ -157,6 +160,25 @@ namespace NexusForever.Game
 
                 if (targetGroupId != 0u)
                     yield return (questObjectiveEntry, targetGroupId);
+            }
+        }
+
+        /// <summary>
+        /// The TargetGroup ids public event objectives refer to: the group an objective of a target-group type names in <c>ObjectId</c>, and any reward pane group.
+        /// Kills and activations credit those objectives through the creature-to-group index.
+        /// </summary>
+        private static IEnumerable<uint> GetPublicEventObjectiveTargetGroupIds(IGameTableManager manager)
+        {
+            foreach (PublicEventObjectiveEntry objective in manager.PublicEventObjective?.Entries ?? Enumerable.Empty<PublicEventObjectiveEntry>())
+            {
+                if (objective.TargetGroupIdRewardPane != 0u)
+                    yield return objective.TargetGroupIdRewardPane;
+
+                if (objective.ObjectId != 0u && objective.PublicEventObjectiveTypeEnum is PublicEventObjectiveType.KillTargetGroup
+                        or PublicEventObjectiveType.ActivateTargetGroup
+                        or PublicEventObjectiveType.ActivateTargetGroupChecklist
+                        or PublicEventObjectiveType.KillClusterTargetGroup)
+                    yield return objective.ObjectId;
             }
         }
 

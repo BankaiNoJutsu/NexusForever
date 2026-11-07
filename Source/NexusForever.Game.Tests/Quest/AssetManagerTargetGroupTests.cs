@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using NexusForever.Game.Static.Entity;
+using NexusForever.Game.Static.PublicEvent;
 using NexusForever.Game.Static.Quest;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -688,6 +689,36 @@ public class AssetManagerTargetGroupTests
 
         Assert.Equal([847u], assetManager.GetTargetGroupsForCreatureId(2001u));
         Assert.Null(assetManager.GetTargetGroupsForCreatureId(2003u));
+    }
+
+    // Public event KillTargetGroup objectives (type 0) name their group in ObjectId and credit kills through the creature-to-group index. Five retail objectives
+    // (445, 846, 1665, 2281, 4686) use a unit race or composite group, which is only indexed when something refers to it.
+    [Fact]
+    public void CacheCreatureTargetGroups_IndexesAttributeGroupsReferencedByPublicEventObjectives()
+    {
+        TargetGroupEntry races = CreateTargetGroup(3972u, TargetGroupType.CreatureRaceIdGroup, 184u);
+        TargetGroupEntry unreferenced = CreateTargetGroup(3973u, TargetGroupType.CreatureRaceIdGroup, 184u);
+
+        var publicEventObjective = new PublicEventObjectiveEntry
+        {
+            Id                          = 445u,
+            PublicEventObjectiveTypeEnum = PublicEventObjectiveType.KillTargetGroup,
+            ObjectId                    = 3972u
+        };
+
+        GameTableManager gameTableManager = CreateGameTableManager(
+            targetGroupTable: CreateGameTable(races, unreferenced),
+            creature2Table: CreateGameTable(
+                Creature(2001u, unitRaceId: 184u, factionId: 0u),
+                Creature(2002u, unitRaceId: 5u, factionId: 0u)));
+        SetAutoProperty(gameTableManager, nameof(GameTableManager.PublicEventObjective), CreateGameTable(publicEventObjective));
+
+        AssetManager assetManager = CreateAssetManager(gameTableManager);
+
+        InvokeCache(assetManager, "CacheCreatureTargetGroups");
+
+        Assert.Equal([3972u], assetManager.GetTargetGroupsForCreatureId(2001u));
+        Assert.Null(assetManager.GetTargetGroupsForCreatureId(2002u));
     }
 
     private static Creature2Entry Creature(uint id, uint unitRaceId, uint factionId)

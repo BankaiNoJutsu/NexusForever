@@ -36,17 +36,16 @@ spell AoE group `436` = creature 5865 AND faction 521, `909` = faction list AND 
   evaluated against each Creature2 definition (faction and unit race from the definition; a definition has no player race or class). `IsMember(group, creatureId)` evaluates one creature
   for `ChallengeManager`.
 - `AssetManager`: quest objective targets use the resolver. The creature-to-group index keeps indexing every list-only group and additionally indexes groups with attribute criteria **only
-  when a quest objective refers to them** (bounds startup work; other such groups were never indexed and still are not).
+  when a quest objective or a public event objective refers to them** (bounds startup work; other such groups were never indexed and still are not). Public event KillTargetGroup/ActivateTargetGroup(+Checklist)/KillClusterTargetGroup objectives name their group in `ObjectId`; 5 retail KillTargetGroup objectives (445, 846, 1665, 2281, 4686) use a unit race or composite group and were never credited by the index.
 - `ChallengeManager` uses `IsMember` (the private flattening was removed). A missing Creature2 definition leaves faction and unit race at 0, so list groups still work.
 
 ## Tests (Source/SQLite)
 
-- `AssetManagerTargetGroupTests`: 6 new cases (unit race AND not-faction objective, faction include, creature list AND faction, two lists AND, no creature data, attribute group referenced by an
-  objective is indexed). 5 failed first; the no-creature-data case is a control that passes either way. The existing "mixed nested criteria does not index the parent" case still holds (no
+- `AssetManagerTargetGroupTests`: 7 new cases (unit race AND not-faction objective, faction include, creature list AND faction, two lists AND, no creature data, attribute group referenced by a quest objective or by a public event objective is indexed). 6 failed first; the no-creature-data case is a control that passes either way. The existing "mixed nested criteria does not index the parent" case still holds (no
   Creature2 table, no referencing objective).
 - `ChallengeTargetIdentityTests`: 3 new cases (faction group for combat and checklist, AND group); all 3 failed first.
 - `TargetGroupCriteriaEvaluatorTests.Evaluate_CreatureIdListTypes_ScanPastZeroSlots`: 7 cases, 3 failed against the stop-at-zero loop.
-- Scoped results: 1,081 Challenge/AssetManager/TargetGroup cases and 4,849 Quest/Spell/Prerequisite cases pass. The scopes overlap and are not additive.
+- Scoped results: 1,081 Challenge/AssetManager/TargetGroup cases, 4,849 Quest/Spell/Prerequisite cases and 5,427 AssetManager/PublicEvent/TargetGroup/Quest cases pass. The scopes overlap and are not additive.
 
 ## Not proven / next evidence
 
