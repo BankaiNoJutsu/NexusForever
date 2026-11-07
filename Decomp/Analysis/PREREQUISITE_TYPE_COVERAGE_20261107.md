@@ -204,3 +204,19 @@ no files on `C:` were deleted.
   meets neither comparison. The subject follows the `CreatureDifficulty` precedent (`parameters.Target ?? player`, explicit `MeetsUnit`); a player has no creature id, so type 1 groups only match when a creature target is supplied.
 - `PrerequisiteCheckInTargetGroupTests` (21 cases) and the 1,010 existing Prerequisite/AMP cases pass (1,031 total, Source/SQLite). The test and class were written together, so this slice did not observe a red run first.
   Whether retail evaluates the player or a target as the unit for these slots is not established. No retail parity claim.
+
+
+## Type 143 (Difficulty) implemented; 201 and 124 bodies read (same day)
+
+- **143 (Difficulty, 113 slots)**: `FUN_14049ef70` compares the singleton field `+0x6424` with `Value` (Equal: equal, NotEqual: not equal, others false; `ObjectId` unused). That field sits next to `+0x6428` (prime level) and `+0x642c`
+  (level-scaling flag), the same trio the server sends in `ServerInstanceSettings` (`Difficulty`, `PrimeLevel`, `WorldForcesLevelScaling`), and INITIAL_FINDINGS names `+0x6424` "worldDifficulty". Retail rows are Equal only with
+  `Value` 1 (74) or 0 (39), matching `WorldDifficulty` Veteran/Normal (a path-type reading, 0 to 3, would show larger values). Implemented as `PrerequisiteCheckWorldDifficulty` over `Player.InstanceDifficulty`.
+  `PrerequisiteCheckWorldDifficultyTests` (10 cases) did not compile before the class existed and pass now; 1,041 Prerequisite/AMP cases pass (Source/SQLite). The wire-field-to-singleton mapping is inferred from field adjacency, not
+  traced through the packet handler.
+- **201 (AchievementObject, 93 slots)**, read not implemented: `FUN_14049f810` looks up the achievement with id `ObjectId` in the client's achievement map (`DAT_140c65c28+0x70`), calls `FUN_140642a00(achievement, Value)` and
+  returns it for Equal, its negation for NotEqual. Retail: NotEqual 71, Equal 22, `Value` 0 to 5 (checklist-style index), `ObjectId` an achievement id. `FUN_140642a00` (probably "checklist item `Value` is complete") is not decompiled yet.
+  Next step: decompile it and map to `AchievementManager` checklist state.
+- **124 (ChallengeCompletionCount, 7 slots)**, read not implemented: `FUN_14049fb50` looks up the challenge with id `ObjectId` (`DAT_140c65948+0x30`) and compares its record field `+0x28` (completion count) with `Value`
+  through the shared compare helper. Too small to prioritise.
+- **67, 61, 110, 155 (path missions)**: bodies at `FUN_14049fe10`, `FUN_14049fef0`, `FUN_1404a00e0`, `FUN_1404a0360` read through a path-mission manager (`DAT_140c65970`, lookup `FUN_1403d7bc0`); 67 returns a mission field
+  (virtual +0x38) as a boolean for Equal, 61 uses a helper count (`FUN_1404a1aa0`), 110 and 155 are tail-call shapes whose arguments Ghidra lost. Needs the path-mission manager mapped before implementing.
