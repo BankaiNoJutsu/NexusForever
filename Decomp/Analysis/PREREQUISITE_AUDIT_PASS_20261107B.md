@@ -17,3 +17,9 @@ Evidence tier: **native bodies read** (Ghidra headless decompile/disassembly of 
 | 2 Race / 3 Class | evaluator uses the local player's race/class | subject's race/class | Equivalent on the server where the subject is the player. |
 
 No code or test changes in this pass.
+
+## Path mission class search: negative result (same day)
+To name mission virtuals `+0x28` and `+0x58` (types 54/110/53) the PathMission table consumers were followed: `FUN_14021f160` is the table loader, and `FUN_14056ed20` and `FUN_1406188b0` look rows up through the
+`PathMission` accessor. `FUN_1406188b0` stores the vtable `140b68f20` into a new object right after the row lookup, but that vtable is **not** the mission class: its `+0x28` (`FUN_1404cd230`) computes a level difference between two units,
+with abstract (`_purecall`) slots at `+0x38`, `+0x48` to `+0x70`. The mission runtime class (the one with `IsComplete` at `+0x38` and state at `+0xd0`) was not located, so `+0x28`/`+0x58` stay unnamed and the 54/110/53 gate is unchanged.
+Next experiment: find the allocator that inserts mission objects into the map at `DAT_140c65970 + 0x58` (callers of the map insert) and read the vtable it assigns.
