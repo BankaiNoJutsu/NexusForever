@@ -62,8 +62,7 @@ public sealed class MySqlProviderQualificationTests
             await Execute(server, $"CREATE DATABASE `{authSchema}`");
             await Execute(server, $"CREATE DATABASE `{foreignAuthSchema}`");
             CharacterOptions character = CreateCharacterOptions(server, schema, type);
-            var authOptions = new DbContextOptionsBuilder<AuthContext>()
-                .UseMySql($"{server};database={authSchema};Pooling=False", new MySqlServerVersion(new Version(8, 0, 0))).Options;
+            var authOptions = MySqlBuilder<AuthContext>(server, authSchema).Options;
             await using (var characterContext = new CharacterContext(character.Options)) await characterContext.Database.EnsureCreatedAsync();
             await using (var authContext = new AuthContext(authOptions)) await authContext.Database.EnsureCreatedAsync();
             DatabaseConnectionString Connection(string database) => new()
@@ -133,10 +132,24 @@ public sealed class MySqlProviderQualificationTests
 
     private readonly record struct CharacterOptions(DbContextOptions<CharacterContext> Options);
 
+    // NEXUS_FOREVER_TEST_MYSQL_PRODUCTION_OPTIONS=1 builds every context through the repository's own UseConfiguration (retry strategy
+    // EnableRetryOnFailure(5, 10s) and the string concurrency SQL generator) instead of plain UseMySql.
+    private static bool UseProductionOptions => Environment.GetEnvironmentVariable("NEXUS_FOREVER_TEST_MYSQL_PRODUCTION_OPTIONS") == "1";
+
+    private static DbContextOptionsBuilder<TContext> MySqlBuilder<TContext>(string server, string database) where TContext : DbContext
+    {
+        string connection = $"{server};database={database};Pooling=False";
+        var builder = new DbContextOptionsBuilder<TContext>();
+        if (UseProductionOptions)
+            builder.UseConfiguration(new DatabaseConnectionString { Provider = DatabaseProvider.MySql, ConnectionString = connection });
+        else
+            builder.UseMySql(connection, new MySqlServerVersion(new Version(8, 0, 0)));
+        return builder;
+    }
+
     private static CharacterOptions CreateCharacterOptions(string server, string schema, Type type)
     {
-        var builder = new DbContextOptionsBuilder<CharacterContext>()
-            .UseMySql($"{server};database={schema};Pooling=False", new MySqlServerVersion(new Version(8, 0, 0)));
+        var builder = MySqlBuilder<CharacterContext>(server, schema);
         // These fixtures are documented as synthetic and run SQLite with foreign keys disabled; mirror that per session.
         if (ForeignKeysDisabledFixtures.Contains(type.Name)) builder.AddInterceptors(new DisableForeignKeyChecks());
         return new CharacterOptions(builder.Options);
