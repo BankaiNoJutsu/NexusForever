@@ -220,3 +220,13 @@ no files on `C:` were deleted.
   through the shared compare helper. Too small to prioritise.
 - **67, 61, 110, 155 (path missions)**: bodies at `FUN_14049fe10`, `FUN_14049fef0`, `FUN_1404a00e0`, `FUN_1404a0360` read through a path-mission manager (`DAT_140c65970`, lookup `FUN_1403d7bc0`); 67 returns a mission field
   (virtual +0x38) as a boolean for Equal, 61 uses a helper count (`FUN_1404a1aa0`), 110 and 155 are tail-call shapes whose arguments Ghidra lost. Needs the path-mission manager mapped before implementing.
+
+
+## Type 201 (AchievementObject) implemented as an achievement checklist-bit test (same day)
+
+- **201 (AchievementObject, 93 slots)**: `FUN_14049f810` looks up the player's record of achievement `ObjectId` and returns `FUN_140642a00(record, Value)`: bit `Value` of the record word at `+0x14` for 0 to 31, of the word at
+  `+0x18` for 32 to 63, and 0 beyond (a debug break path). Those two words are the `ProgressState` and `CreditedChecklistMask` the server writes in the `Achievement` network record. A missing record gives 0. Equal returns the bit,
+  NotEqual its negation, other comparisons false. Retail: NotEqual 71, Equal 22, `Value` 0 to 11 (all inside the first word), `ObjectId` an achievement id.
+- Implemented as `PrerequisiteCheckAchievementChecklistBit` plus `IBaseAchievementManager.IsChecklistBitSet` (`BaseAchievementManager`). `AchievementChecklistBitPrerequisiteTests` (16 cases) did not compile before and pass; 1,346
+  Prerequisite/AMP/Achievement cases pass (Source/SQLite; this scope is wider than the 1,041 above and must not be added to it). For checklist achievements the server keeps the completed mask in `ProgressState`; for
+  count-style achievements `ProgressState` is a counter, so a bit test there reads counter bits exactly as the client would. Only the first word is observed in retail data. No retail parity claim.

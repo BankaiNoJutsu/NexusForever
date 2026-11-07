@@ -20,6 +20,12 @@ namespace NexusForever.Game.Abstract.Achievement
         bool HasCompletedAchievement(ushort id);
 
         /// <summary>
+        /// Returns if bit <paramref name="bit"/> is set in the supplied achievement's progress state (bits 0 to 31) or credited checklist word (bits 32 to 63).
+        /// An achievement without a record, or a bit beyond 63, has no bits set.
+        /// </summary>
+        bool IsChecklistBitSet(ushort id, uint bit);
+
+        /// <summary>
         /// Send initial <see cref="IAchievement{T}"/> information to owner on login.
         /// </summary>
         void SendInitialPackets(IPlayer target);

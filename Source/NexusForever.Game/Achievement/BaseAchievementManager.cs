@@ -80,6 +80,18 @@ namespace NexusForever.Game.Achievement
         }
 
         /// <summary>
+        /// Returns if the checklist bit is set for the supplied achievement id, mirroring the client's bit test (<c>FUN_140642a00</c>).
+        /// </summary>
+        public virtual bool IsChecklistBitSet(ushort id, uint bit)
+        {
+            if (bit >= 64u || !achievements.TryGetValue(id, out IAchievement achievement))
+                return false;
+
+            uint word = bit < 32u ? achievement.CompletedChecklistMask : achievement.CreditedChecklistMask;
+            return (word & (1u << (int)(bit & 31u))) != 0u;
+        }
+
+        /// <summary>
         /// Send initial <see cref="IAchievement"/> information to owner on login.
         /// </summary>
         public virtual void SendInitialPackets(IPlayer target)
