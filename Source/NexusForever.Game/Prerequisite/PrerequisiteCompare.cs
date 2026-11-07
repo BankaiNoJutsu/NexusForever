@@ -13,6 +13,18 @@ namespace NexusForever.Game.Prerequisite
                 ? unchecked((uint)(long)value)
                 : 0u;
 
+        /// <summary>
+        /// The evaluator's shared boolean tail (<c>LAB_1404a22ec</c> and the same logic inlined in case 0x1c) used by types 28, 39, 86, 87 and others: comparison 1 returns the flag, comparison 2 its negation
+        /// and every other comparison is false. The slot's Value is not read.
+        /// </summary>
+        public static bool CompareFlag(PrerequisiteComparison comparison, bool flag)
+            => comparison switch
+            {
+                PrerequisiteComparison.Equal    => flag,
+                PrerequisiteComparison.NotEqual => !flag,
+                _                               => false
+            };
+
         public static bool Compare(PrerequisiteComparison comparison, uint current, uint expected)
         {
             return comparison switch

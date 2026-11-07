@@ -20,8 +20,8 @@ namespace NexusForever.Game.Prerequisite.Check
 
         private bool MeetsEntity(IWorldEntity entity, PrerequisiteComparison comparison, uint value, uint objectId)
         {
-            uint jumping = (entity.MovementManager.GetState() & StateFlags.Jump) != 0 ? 1u : 0u;
-            return PrerequisiteCompare.Compare(comparison, jumping, value);
+            // Native (case 0x56): the movement flag word & 0x40 through the shared boolean tail; Value is not read (PREREQUISITE_FLAG_COMPARISON_20261107.md).
+            return PrerequisiteCompare.CompareFlag(comparison, (entity.MovementManager.GetState() & StateFlags.Jump) != 0);
         }
     }
 }

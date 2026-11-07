@@ -25,8 +25,8 @@ namespace NexusForever.Game.Prerequisite.Check
             bool moving = (state & (StateFlags.Move | StateFlags.Velocity)) != 0
                 || entity.MovementManager.GetVelocity().LengthSquared() > 0.01f
                 || entity.MovementManager.GetMove().LengthSquared() > 0.01f;
-            uint movingScalar = moving ? 1u : 0u;
-            return PrerequisiteCompare.Compare(comparison, movingScalar, value);
+            // Native (case 0x57): the movement flag word & 2 through the shared boolean tail; Value is not read (PREREQUISITE_FLAG_COMPARISON_20261107.md).
+            return PrerequisiteCompare.CompareFlag(comparison, moving);
         }
     }
 }

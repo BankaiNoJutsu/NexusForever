@@ -34,7 +34,6 @@ public sealed class UnitPrerequisiteContextTests
     [InlineData(15, 123u)]
     [InlineData(28, 1u)]
     [InlineData(38, 1u)]
-    [InlineData(39, 0u)]
     [InlineData(40, 45u)]
     [InlineData(71, 50u)]
     [InlineData(73, 23u)]
@@ -61,6 +60,22 @@ public sealed class UnitPrerequisiteContextTests
         var parameters = new PrerequisiteParameters { Target = target };
         Assert.True(fixture.Manager.MeetsUnit(subject, 1, parameters));
         Assert.Same(target, parameters.Target);
+    }
+
+    // Type 39 (IsPlayer) returns the flag for Equal and its negation for NotEqual (PREREQUISITE_FLAG_COMPARISON_20261107.md). The NPC subject is not a player while the unrelated target is, so only a
+    // subject-based evaluation makes NotEqual meet and Equal fail.
+    [Theory]
+    [InlineData(PrerequisiteComparison.NotEqual, true)]
+    [InlineData(PrerequisiteComparison.Equal, false)]
+    public void IsPlayerEvaluatesTheNpcSubjectRatherThanTheUnrelatedPlayerTarget(PrerequisiteComparison comparison, bool expected)
+    {
+        PrerequisiteEntry row = Row(1, PrerequisiteType.IsPlayer, 0u);
+        row.PrerequisiteComparisonId = [comparison];
+        using var fixture = new Fixture(row);
+        ICreatureEntity subject = RecordingDispatchProxy<ICreatureEntity>.Create(out _);
+        IPlayer target = RecordingDispatchProxy<IPlayer>.Create(out _);
+
+        Assert.Equal(expected, fixture.Manager.MeetsUnit(subject, 1, new PrerequisiteParameters { Target = target }));
     }
 
     [Theory]

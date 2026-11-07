@@ -1013,9 +1013,13 @@ public class PrerequisiteCheckTests
         Assert.Equal(expected, result);
     }
 
+    // Native type 28 returns the flag for Equal and its negation for NotEqual and never reads Value (PREREQUISITE_FLAG_COMPARISON_20261107.md). The earlier cases (Equal 0 false) encoded
+    // "compare the flag with Value", which made Equal 0 mean "not in combat".
     [Theory]
     [InlineData(PrerequisiteComparison.Equal, 1u, true)]
-    [InlineData(PrerequisiteComparison.Equal, 0u, false)]
+    [InlineData(PrerequisiteComparison.Equal, 0u, true)]
+    [InlineData(PrerequisiteComparison.NotEqual, 0u, false)]
+    [InlineData(PrerequisiteComparison.GreaterThan, 1u, false)]
     public void InCombat_ComparesTargetCombatState(PrerequisiteComparison comparison, uint value, bool expected)
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
@@ -1028,9 +1032,11 @@ public class PrerequisiteCheckTests
         Assert.Equal(expected, check.Meets(player, comparison, value, 0u, parameters));
     }
 
+    // Native type 39: unit type == player through the shared boolean tail, Value not read (PREREQUISITE_FLAG_COMPARISON_20261107.md); Equal 0 used to mean "is not a player".
     [Theory]
     [InlineData(PrerequisiteComparison.Equal, 1u, true)]
-    [InlineData(PrerequisiteComparison.Equal, 0u, false)]
+    [InlineData(PrerequisiteComparison.Equal, 0u, true)]
+    [InlineData(PrerequisiteComparison.NotEqual, 0u, false)]
     public void IsPlayer_ComparesTargetEntityKind(PrerequisiteComparison comparison, uint value, bool expected)
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
@@ -2103,9 +2109,11 @@ public class PrerequisiteCheckTests
         Assert.Equal(expected, result);
     }
 
+    // Native type 86: the jump flag through the shared boolean tail, Value not read (PREREQUISITE_FLAG_COMPARISON_20261107.md); Equal 0 used to mean "is not jumping".
     [Theory]
     [InlineData(PrerequisiteComparison.Equal, 1u, true)]
-    [InlineData(PrerequisiteComparison.Equal, 0u, false)]
+    [InlineData(PrerequisiteComparison.Equal, 0u, true)]
+    [InlineData(PrerequisiteComparison.NotEqual, 0u, false)]
     public void Jump_ComparesJumpStateFlag(PrerequisiteComparison comparison, uint required, bool expected)
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
