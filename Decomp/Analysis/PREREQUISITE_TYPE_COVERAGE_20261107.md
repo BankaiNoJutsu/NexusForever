@@ -247,3 +247,17 @@ no files on `C:` were deleted.
   compare is unknown. Gate: identify the PathMission runtime class vtable (`+0x30/+0x40/+0x48`).
 - `PrerequisiteCheckPathMissionTests` (27 cases) and `GetMissionState_...` (PathManager) did not compile before and pass; 1,429 Prerequisite/AMP/Path cases pass (Source/SQLite; a different filter scope than earlier totals).
   The test classes for 61/67 were written before this slice's red build was run for them (the first run was already green). Completion meaning of `+0x38` is inferred from the count helper and the retail value pattern.
+
+
+## Gates recorded for types 53, 54, 107, 119 and 162 (same day)
+
+- **53 (PathEpisode, 33 slots; not handled)**: `FUN_14049fd80` is true when `Value` equals the id of the player's *current* episode (the client's current-episode object, `DAT_140c65970+0x58`, whose episode entry id is at `+0x48`).
+  Retail rows are Equal only with `Value` a PathEpisode id (32 of 33). The server never stores a single current episode: `ServerPathSetCurrentEpisode` is sent once per newly activated episode (`activatedEpisodes`), and the
+  client's rule for switching the current episode (zone change versus activation) is not read. Gate: the client's current-episode selection rule.
+- **54 (PlayerPathMission, 256 slots; not handled)**: `FUN_1404a1950` looks `Value` up in the *current episode's* mission map (same `+0x58` object, so it needs the same current-episode rule), then returns `mission.+0x28()`; when the
+  global flag at `DAT_140c65970+8` is 0 it first requires `+0x28() != 0` and branches on the mission definition's `PathMissionTypeEnum` (`+0xc`): type 0 tests whether the mission's `ObjectId` is in a map at `+0x68`, types 4 to 7 return
+  bit 0 of virtual `+0x58`, others fall through to `+0x28()`. The meanings of `+0x28`, `+0x58` and the `+0x68` map are not identified. Gate: current-episode rule plus the PathMission runtime class vtable (same gate as type 110).
+- **107 (QuestObjective7, retail uses `target` and `unit`)**: `FUN_14049fff0` reads quest `Value`'s bit mask (`FUN_1403d7bc0` quest lookup, virtual `+0x40`) at the bit index in `unit+0x35f8` (the unit's slot in the
+  event/quest participation); units of type `0x14`/`0x17` short-circuit (NotEqual true). **119 (PublicEventObjectiveObject)** `FUN_1404a0650` and **162 (percentage `+0x98/+0xd0`)** `FUN_1404a0a70` use the same per-player slot
+  `unit+0x35f8` against the public-event manager (`DAT_140c65980`, virtuals `+0x30/+0x40/+0x68/+0x90`). The server has no per-player participation-slot index, so these stay unhandled. Gate: the participation-slot model
+  (what assigns `unit+0x35f8`).
