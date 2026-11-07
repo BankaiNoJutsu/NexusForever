@@ -41,6 +41,11 @@ namespace NexusForever.Game.Abstract.Entity
         bool IsAggroImmune { get; }
         bool IsShieldOverloaded { get; }
         bool HasTrackedSpellState(uint spell4Id);
+
+        /// <summary>
+        /// Returns whether a persistent spell effect with the supplied <c>Spell4Effects</c> id is currently active on this unit.
+        /// </summary>
+        bool HasActiveSpellEffectId(uint spell4EffectsId);
         uint CurrentAbsorption { get; }
         uint MaxAbsorption { get; }
         uint CurrentHealingAbsorption { get; }

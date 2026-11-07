@@ -2325,6 +2325,25 @@ namespace NexusForever.Game.Entity
             return pendingSpells.FirstOrDefault(func);
         }
 
+        /// <summary>
+        /// Returns whether a persistent spell effect with the supplied <c>Spell4Effects</c> id is active on this unit.
+        /// </summary>
+        public bool HasActiveSpellEffectId(uint spell4EffectsId)
+        {
+            if (spell4EffectsId == 0u)
+                return false;
+
+            foreach (ISpell spell in pendingSpells)
+            {
+                if (spell is NexusForever.Game.Spell.Spell concrete
+                    && !concrete.IsFinished
+                    && concrete.HasPersistentEffectWithId(spell4EffectsId))
+                    return true;
+            }
+
+            return false;
+        }
+
         internal bool HasActiveSpellEffectType(SpellEffectType effectType)
         {
             foreach (ISpell spell in pendingSpells)

@@ -8,6 +8,29 @@ namespace NexusForever.Game.Spell
 {
     public partial class Spell
     {
+        /// <summary>
+        /// Returns whether this spell has a persistent effect with the supplied <c>Spell4Effects</c> id that has not ended.
+        /// </summary>
+        internal bool HasPersistentEffectWithId(uint spell4EffectsId)
+        {
+            foreach (SpellTargetInfo targetInfo in targets)
+            {
+                foreach (ISpellTargetEffectInfo effectInfo in targetInfo.Effects)
+                {
+                    if (effectInfo is not SpellTargetInfo.SpellTargetEffectInfo concrete)
+                        continue;
+
+                    if (concrete.LifetimeEnded || concrete.Entry.Id != spell4EffectsId)
+                        continue;
+
+                    if (lifetimeEvents.ContainsKey(effectInfo))
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
         internal bool HasPersistentEffectOfType(SpellEffectType effectType)
         {
             foreach (SpellTargetInfo targetInfo in targets)
