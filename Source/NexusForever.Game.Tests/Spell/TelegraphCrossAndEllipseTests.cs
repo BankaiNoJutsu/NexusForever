@@ -8,14 +8,15 @@ using NexusForever.GameTable.Model;
 namespace NexusForever.Game.Tests.Spell;
 
 // The client's telegraph geometry builder (FUN_14054d170, Decomp/Analysis/TELEGRAPH_SHAPES_3_AND_6_20261107.md) switches on the shape and reads Param00..02 through FUN_14054da10:
-//  - shape 2 (Square) and shape 7 (Rectangle) build a box (x = Param00, y = Param01, z = Param02);
+//  - shape 2 (Square) and shape 7 (Rectangle) build a box (x = Param00, y = Param01, z = Param02) from extents scaled by 0.5, i.e. the parameters are full dimensions;
 //  - shape 3 builds the same box on its first pass and, on a second pass, the box with x and z swapped (x = Param02, y = Param01, z = Param00): a cross of two bars;
 //  - shape 6 stores (Param00, Param01, Param02) unscaled as a three-axis extent vector with a full 2*pi sweep and no inner radius: a circle generalised to three radii.
 // Retail rows: shape 3 has 104 rows (for example 6/8/12 and 3/5/26), shape 6 has 159 rows (10/5/5, 20/10/10, 60/25/25 ...). Before this change both fell into "Unhandled telegraph shape" and hit
 // nobody. Status: Implemented, inferred: the axis assignment comes from the builder, the hit rule reuses the server's Square convention and the ellipse reading of shape 6 is not confirmed against a capture.
 public class TelegraphCrossAndEllipseTests
 {
-    // Cross: Param00 = 1 (bar width), Param01 = 5 (height), Param02 = 10 (bar length). Rotation 0 faces -Z, so the long bar runs along Z and the second bar along X.
+    // Cross: Param00 = 2 (full bar width), Param01 = 10 (full height), Param02 = 20 (full bar length): the client scales every box extent by 0.5, so the parameters are full dimensions
+    // (half width 1, half height 5, half length 10). Rotation 0 faces -Z, so the long bar runs along Z and the second bar along X.
     [Theory]
     [InlineData(0f, 0f, -8f, true)]       // along the long Z bar
     [InlineData(0f, 0f, 8f, true)]
@@ -30,7 +31,7 @@ public class TelegraphCrossAndEllipseTests
     [InlineData(1.5f, 0f, 8f, false)]     // outside the bar width
     public void ACrossCoversTwoPerpendicularBars(float x, float y, float z, bool expected)
     {
-        Telegraph telegraph = Shape(DamageShape.Cross, 1f, 5f, 10f);
+        Telegraph telegraph = Shape(DamageShape.Cross, 2f, 10f, 20f);
 
         Assert.Equal(expected, telegraph.InsideTelegraph(new Vector3(x, y, z), 0f));
     }
@@ -42,7 +43,7 @@ public class TelegraphCrossAndEllipseTests
     [InlineData(-5.5f, false)]
     public void ACrossHasTheVerticalToleranceOfItsSecondParameter(float y, bool expected)
     {
-        Telegraph telegraph = Shape(DamageShape.Cross, 1f, 5f, 10f);
+        Telegraph telegraph = Shape(DamageShape.Cross, 2f, 10f, 20f);
 
         Assert.Equal(expected, telegraph.InsideTelegraph(new Vector3(0f, y, -5f), 0f));
         Assert.Equal(expected, telegraph.InsideTelegraph(new Vector3(5f, y, 0f), 0f));
@@ -51,7 +52,7 @@ public class TelegraphCrossAndEllipseTests
     [Fact]
     public void ACrossUsesAGridSearchLargeEnoughForItsBarCorners()
     {
-        Telegraph telegraph = Shape(DamageShape.Cross, 1f, 5f, 10f);
+        Telegraph telegraph = Shape(DamageShape.Cross, 2f, 10f, 20f);
 
         // a target at the end of a bar corner (1, 10) is sqrt(101) from the centre
         Assert.True(telegraph.InsideTelegraph(new Vector3(0.9f, 0f, -9.9f), 0f));

@@ -136,22 +136,30 @@ namespace NexusForever.Game.Spell
         }
 
         /// <remarks>This is not perfect. It works, but there are more efficient options like https://yal.cc/rot-rect-vs-circle-intersection </remarks>
-        private bool InsideBox(Vector3 position, float hitRadius, float telegraphWidth, float telegraphHeight, float telegraphLength, bool originAtBase)
+        private bool InsideBox(Vector3 position, float hitRadius, float width, float height, float length, bool originAtBase)
         {
-            if (MathF.Abs(position.Y - Position.Y) - hitRadius > telegraphHeight)
+            // Inferred (TELEGRAPH_BOX_EXTENTS_20261107.md): the client multiplies every box extent by 0.5, so width, height and length are full dimensions and the box spans half of each
+            // on either side of the centre. A rectangle starts at its origin and runs the full length.
+            float halfWidth  = width * 0.5f;
+            float halfHeight = height * 0.5f;
+            float halfLength = length * 0.5f;
+
+            if (MathF.Abs(position.Y - Position.Y) - hitRadius > halfHeight)
                 return false;
 
             // Find the points in the local co-ordinate space
-            var bottomRight = new Vector3(-telegraphWidth, 0, -telegraphLength);
-            var bottomLeft  = new Vector3(telegraphWidth, 0, -telegraphLength);
-            var topRight    = new Vector3(-telegraphWidth, 0, telegraphLength);
-            var topLeft     = new Vector3(telegraphWidth, 0, telegraphLength);
+            var bottomRight = new Vector3(-halfWidth, 0, -halfLength);
+            var bottomLeft  = new Vector3(halfWidth, 0, -halfLength);
+            var topRight    = new Vector3(-halfWidth, 0, halfLength);
+            var topLeft     = new Vector3(halfWidth, 0, halfLength);
 
             // Rectangle's origin is at it's base, so adjust the starting points appropriately.
             if (originAtBase)
             {
                 bottomRight.Z = 0;
                 bottomLeft.Z  = 0;
+                topRight.Z    = length;
+                topLeft.Z     = length;
             }
 
             // Translate points to global co-ordinate space, and apply rotation based on the Telegraph's rotation
@@ -199,11 +207,15 @@ namespace NexusForever.Game.Spell
                 case DamageShape.LongCone:
                     return TelegraphDamage.Param01;
                 case DamageShape.Square:
+                    // never smaller than before (Param01), but large enough to reach the far corner of the box
+                    return MathF.Max(TelegraphDamage.Param01,
+                        MathF.Sqrt(TelegraphDamage.Param00 * TelegraphDamage.Param00 + TelegraphDamage.Param02 * TelegraphDamage.Param02) * 0.5f);
                 case DamageShape.Rectangle:
-                    return TelegraphDamage.Param01;
+                    return MathF.Max(TelegraphDamage.Param01,
+                        MathF.Sqrt(TelegraphDamage.Param00 * TelegraphDamage.Param00 * 0.25f + TelegraphDamage.Param02 * TelegraphDamage.Param02));
                 case DamageShape.Cross:
-                    // the corner of a bar is the farthest point
-                    return MathF.Sqrt(TelegraphDamage.Param00 * TelegraphDamage.Param00 + TelegraphDamage.Param02 * TelegraphDamage.Param02);
+                    // the corner of a bar is the farthest point (bars are full width x full length, centred)
+                    return MathF.Sqrt(TelegraphDamage.Param00 * TelegraphDamage.Param00 + TelegraphDamage.Param02 * TelegraphDamage.Param02) * 0.5f;
                 case DamageShape.ThreeAxis:
                     return MathF.Max(TelegraphDamage.Param00, TelegraphDamage.Param02);
                 default:

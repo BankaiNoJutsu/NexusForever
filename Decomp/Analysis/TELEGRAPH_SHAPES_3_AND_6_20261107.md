@@ -41,3 +41,6 @@ To settle the 0.5 scale question the consumers of `FUN_14054d170` were traced: i
 vector/render helpers). The extent vector it receives (`param_5 + 0x220/0x230`) is handed on to render code that was not followed; no function that tests a unit against these extents (a client-side containment check that would show
 whether they are half or full extents) was found among the callers. The next step would be to follow the render submission from `FUN_14054b1b0` to the box mesh and read its vertex extents. Until then the Square/Rectangle width
 question stays open and the Square code is unchanged.
+
+## Update (same day)
+The box-scale question is now answered by inference and the Square/Rectangle/Cross code changed: see [TELEGRAPH_BOX_EXTENTS_20261107.md](TELEGRAPH_BOX_EXTENTS_20261107.md). The 'Scale of boxes' open question above is superseded; the Cross tests use full dimensions.
