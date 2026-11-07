@@ -1102,27 +1102,7 @@ public class PrerequisiteCheckTests
         Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 1u, 9002u, new PrerequisiteParameters()));
     }
 
-    [Theory]
-    [InlineData(PrerequisiteComparison.Equal, 1u, true)]
-    [InlineData(PrerequisiteComparison.Equal, 0u, false)]
-    public void IsGroupLeader_ComparesPartyLeader(PrerequisiteComparison comparison, uint value, bool expected)
-    {
-        var leader = new Identity { RealmId = 1, Id = 2ul };
-        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
-        playerProxy.SetProperty(nameof(IPlayer.Identity), leader);
-        playerProxy.SetProperty(nameof(IPlayer.GroupAssociation), 99ul);
-
-        IGroupStateManager groupStateManager = RecordingDispatchProxy<IGroupStateManager>.Create(out var groupProxy);
-        groupProxy.SetMethodHandler(nameof(IGroupStateManager.TryGetGroup), args =>
-        {
-            args[1] = new GroupLootState { GroupId = (ulong)args[0], Leader = leader };
-            return true;
-        });
-
-        var check = new PrerequisiteCheckIsGroupLeader(groupStateManager);
-
-        Assert.Equal(expected, check.Meets(player, comparison, value, 0u, new PrerequisiteParameters()));
-    }
+    // IsGroupLeader_ComparesPartyLeader (type 42 compared an is-leader number with Value) was superseded by PrerequisiteCheckIsGroupLeaderTests: the native body does not read Value.
 
     [Theory]
     [InlineData(PrerequisiteComparison.Equal, 1u, GroupFlags.Raid, true)]

@@ -6,8 +6,9 @@ using NexusForever.Game.Static.Prerequisite;
 namespace NexusForever.Game.Prerequisite.Check
 {
     /// <summary>
-    /// Prerequisite type 42: handler table <c>14049e540</c> uses group-manager float compare path
-    /// (<c>1404a2010</c>). NF proxies party leader via <see cref="IGroupStateManager"/>.
+    /// Prerequisite type 42: native case <c>0x2a</c> (<c>FUN_14049e850</c>) compares the local player's entry in the group manager's member array (0 when absent) with the leader entry (0 when the group
+    /// has no members): comparison 1 returns "equal", 2 "different", anything else false, and <c>Value</c> is not read. A player without a group therefore counts as the leader.
+    /// Status: native body read. See Decomp/Analysis/PREREQUISITE_GROUP_LEADER_20261107.md.
     /// </summary>
     [PrerequisiteCheck(PrerequisiteType.IsGroupLeader)]
     public class PrerequisiteCheckIsGroupLeader : IPrerequisiteCheck
@@ -21,15 +22,11 @@ namespace NexusForever.Game.Prerequisite.Check
 
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
-            uint isLeader = 0u;
-            if (player.GroupAssociation != 0ul
-                && groupStateManager.TryGetGroup(player.GroupAssociation, out GroupLootState group)
-                && group.Leader.Equals(player.Identity))
-            {
-                isLeader = 1u;
-            }
+            bool isLeader = player.GroupAssociation == 0ul
+                || (groupStateManager.TryGetGroup(player.GroupAssociation, out GroupLootState group)
+                    && group.Leader.Equals(player.Identity));
 
-            return PrerequisiteCompare.Compare(comparison, isLeader, value);
+            return PrerequisiteCompare.CompareFlag(comparison, isLeader);
         }
     }
 }
