@@ -57,7 +57,7 @@
         Path                        = 52, // You do not meet the player path requirement
         PathEpisode                 = 53, // You do not meet the player path episode requirement
         PlayerPathMission           = 54, // You do not meet the player path mission requirement
-        Currency                    = 55, // Requirements not met - handler table[55] Prerequisite_CheckCurrency 14049e830; objectId0 CurrencyType id; NF uses CurrencyPrerequisiteHelper + ICurrencyManager
+        UnitPropertyValue           = 55, // Requirements not met - native entry 55 compares unit property array entry ObjectId with Value as floats; NOT a currency amount (retail ObjectId 9/41/100)
         DifficultyRankSlotAssigned    = 56, // Requirements not met - client case 0x38 checks entity+0x2d8 slot at index value0 (< 0x1c) is populated
         // 57 is unused in PrerequisiteType.tbl
         // 58 is unused in PrerequisiteType.tbl
@@ -66,7 +66,7 @@
         PathMissionCount            = 61, // Path mission count is incorrect 
         ScanCreature                = 62, // Unable to scan this creature - NF datacube checklist progress; native live case 0x3e vtable +0x4a8 -> Prerequisite_CheckScanCreature_LiveCase3E 14049ff30 (target +0x3754/+0x3750 scan bitmask vs value0)
         IsLocalPlayerEntity         = 63, // Requirements not met - live case 0x3f vtable +0x78 -> raw 14049c7b0; compares evaluated entity +8 identity to DAT_140c65898+0x78 local player +8
-        PathTypeLevel               = 64, // Requirements not met - objectId0 path type; value0 path level; NF uses PathPrerequisiteHelper + PathLevel.tbl
+        ResourceSlot                = 64, // Requirements not met - native entry 64 compares unit resource slot ObjectId (0..10) with Value as floats; NOT a path level (retail ObjectId 1..4, Value 0..100)
         Deprecated65                = 65, // Marked as DEPRECATED
         Deprecated66                = 66, // Marked as DEPRECATED
         PathMissionRequirement      = 67, // You do not meet the path mission requirement

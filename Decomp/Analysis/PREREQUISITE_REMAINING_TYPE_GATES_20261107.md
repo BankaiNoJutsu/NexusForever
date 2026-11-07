@@ -77,3 +77,5 @@ Update: 111 and 113 are implemented ([PREREQUISITE_HAZARD_20261107.md](PREREQUIS
 Update: 114 is implemented ([PREREQUISITE_VITAL_COMPARE_20261107.md](PREREQUISITE_VITAL_COMPARE_20261107.md)).
 
 Update: 115 is implemented ([PREREQUISITE_UNIT_PROPERTY_COMPARE_20261107.md](PREREQUISITE_UNIT_PROPERTY_COMPARE_20261107.md)).
+
+Corrections (same day): types 64 and 55 were mapped wrongly before ([PREREQUISITE_RESOURCE_SLOT_20261107.md](PREREQUISITE_RESOURCE_SLOT_20261107.md), [PREREQUISITE_UNIT_PROPERTY_VALUE_20261107.md](PREREQUISITE_UNIT_PROPERTY_VALUE_20261107.md)); they are now native-body implementations. Method for any further inline type: dump the evaluator jump table (int32 entries at `1404a4848`, index type-1, base `140000000`) and read the target block.
