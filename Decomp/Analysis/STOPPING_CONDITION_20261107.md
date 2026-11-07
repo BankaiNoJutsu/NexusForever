@@ -90,3 +90,28 @@ fragile sites rely on ([EXECUTION_STRATEGY_SCOPE_AUDIT_20261107.md](EXECUTION_ST
 
 Update: all 59 driver classes pass on MySQL 8.0.46 with the production string-concurrency generator and no retry strategy (1.24 hours), so that production difference is qualified at
 this tier; only the retry-strategy runs have failures (test-opened transactions, plus the fixed Contract recovery defect).
+
+## Re-verification (2026-11-07, after the native-evaluator work)
+
+The first version of this record said the client binary "holds presentation-side names/structure only" and that no independent Source/SQLite slice with usable evidence remained. Later work on the same day
+showed the client does hold server-relevant semantics where it mirrors a server decision: the prerequisite evaluator and its row builder, the TargetGroup evaluator, and the Lua accessors of runtime objects.
+That produced independent slices (each committed with its own record and evidence tier in `ASSESSMENT_REMAINING_WORK.md`): prerequisite types 31, 44, 143, 201, 61/67/155, 196, 141, 273, 217, 56 (inferred), 124/125/160 and the
+corrected 22/23/33-36, 11 and 52 comparisons; the TargetGroup evaluator (types 1/2/10/11, zero slots), quest objective, public event and challenge target membership; prerequisite row evaluation
+(slots after an empty slot are never evaluated); and the Ring telegraph shape (inferred). The stopping statement above is therefore **superseded**, not confirmed: it must not be read as "nothing is left".
+
+Current prerequisite state: 3,841 of 49,184 slots (7.8%, 73 types) still have no handler. What remains, with the exact missing input:
+
+| Types (slots) | Blocking input |
+|---|---|
+| 47 (1,788), 153/154 (214), 126 (72), 49 (68), 30 (54), 163/164 | The client evaluator slot is the shared `return 0` stub, so the meaning is server-side only: needs a server or retail witness |
+| 54 (256), 110 (47), 53 (33) | Path mission class virtuals `+0x28`, `+0x30`, `+0x58` unidentified (`IsComplete +0x38`, state `+0xd0` are known); see "Path mission virtuals identified from the Lua accessors" |
+| 231 (241) | The player-held 16-bit AMP list read by 231 is a different list from the enabled-AMP list; its writer is unidentified |
+| 74 (236) | Field `+0x2c` of the client challenge record is `Unlocked`; the client's record set for untouched challenges (retail first challenge update) decides Equal/NotEqual for them |
+| 107 (124), 119 (122), 162 | Per-player participation slot `unit+0x35f8` and the current-episode rule |
+| 111/113 (83), 239, 18, 146, 9, 114/115, 116, 194/195/232/292 | Unit or manager state objects unidentified; see the per-type sections of `PREREQUISITE_TYPE_COVERAGE_20261107.md` |
+| 249 to 255 arena/warplot ratings (~150) | PvP rating producers and storage do not exist in the server |
+
+Other gates unchanged: public 07CE reset rules, quest reward type 10 currency, per-type achievement credit, the 2,478 unhandled spell-effect rows, persistence design decisions (Primal Matrix, Friendship, raid locks, guild bank
+tabs), the MySQL qualification runs, and everything native-client or retail-witness gated. New items from this pass: the creature visibility prerequisite
+([CREATURE_VISIBILITY_PREREQUISITE_20261107.md](CREATURE_VISIBILITY_PREREQUISITE_20261107.md): 4,420 creatures, unknown evaluating side) and telegraph shapes 3 and 6 (263 rows, the client renderer's shape code
+not reached, see [TELEGRAPH_RING_SHAPE_20261107.md](TELEGRAPH_RING_SHAPE_20261107.md)).
