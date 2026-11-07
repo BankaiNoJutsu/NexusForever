@@ -15,4 +15,4 @@ Retail type 59: 909 slots, 260 distinct `ObjectId`s of which 253 are Spell4 ids 
 The server collapses a re-applied (spell, effect entry) into one state, so counts above 1 arise only from different effect entries or castings; a real per-node stack counter does not exist. Spells the server does not track as a unit state report 0 stacks.
 
 ## Tests
-`PrerequisiteCheckSpellStackCountTests` (19 cases): red as a compile failure first (constructor/`MeetsUnit` missing); one case then failed (my own test reused an effect entry id) and was corrected. `PrerequisiteCheckTests.SpellTier_ComparesSpellManagerTier` encoded the superseded tier reading and was removed. 2,705 Prerequisite/Spell/Unit Source/SQLite cases pass (separate scope).
+`PrerequisiteCheckSpellStackCountTests` (16 cases): red as a compile failure first (constructor/`MeetsUnit` missing); one case then failed (my own test reused an effect entry id) and was corrected. `PrerequisiteCheckTests.SpellTier_ComparesSpellManagerTier` encoded the superseded tier reading and was removed. 2,705 Prerequisite/Spell/Unit Source/SQLite cases pass (separate scope).
