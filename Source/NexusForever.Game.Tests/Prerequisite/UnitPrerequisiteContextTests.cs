@@ -33,7 +33,6 @@ public sealed class UnitPrerequisiteContextTests
     [InlineData(12, 0u)]
     [InlineData(15, 123u)]
     [InlineData(28, 1u)]
-    [InlineData(38, 1u)]
     [InlineData(40, 45u)]
     [InlineData(71, 50u)]
     [InlineData(73, 23u)]
@@ -60,6 +59,19 @@ public sealed class UnitPrerequisiteContextTests
         var parameters = new PrerequisiteParameters { Target = target };
         Assert.True(fixture.Manager.MeetsUnit(subject, 1, parameters));
         Assert.Same(target, parameters.Target);
+    }
+
+    // Type 38 compares the unit's creature id with Value (PREREQUISITE_CREATURE_ITEM_CHALLENGE_20261107.md): the NPC subject carries the id, the unrelated player target does not.
+    [Fact]
+    public void IsCreatureEvaluatesTheNpcSubjectRatherThanTheUnrelatedTarget()
+    {
+        using var fixture = new Fixture(Row(1, PrerequisiteType.IsCreature, 16623u));
+        ICreatureEntity subject = RecordingDispatchProxy<ICreatureEntity>.Create(out var proxy);
+        proxy.SetProperty(nameof(IWorldEntity.CreatureId), 16623u);
+        IPlayer target = RecordingDispatchProxy<IPlayer>.Create(out _);
+
+        Assert.True(fixture.Manager.MeetsUnit(subject, 1, new PrerequisiteParameters { Target = target }));
+        Assert.False(fixture.Manager.MeetsUnit(target, 1, new PrerequisiteParameters { Target = subject }));
     }
 
     // Type 39 (IsPlayer) returns the flag for Equal and its negation for NotEqual (PREREQUISITE_FLAG_COMPARISON_20261107.md). The NPC subject is not a player while the unrelated target is, so only a

@@ -97,20 +97,20 @@ public class PrerequisiteCheckTests
         Assert.Equal(expected, result);
     }
 
+    // Native type 69 returns the challenge record's activated field for Equal and its negation for NotEqual, other comparisons false, Value not read
+    // (PREREQUISITE_CREATURE_ITEM_CHALLENGE_20261107.md). This test used to compare the completion count with Value; the cases below keep the completion count at 2 so that reading would still show.
     [Theory]
     [InlineData(PrerequisiteComparison.Equal, 2u, true)]
-    [InlineData(PrerequisiteComparison.Equal, 1u, false)]
+    [InlineData(PrerequisiteComparison.Equal, 0u, true)]
     [InlineData(PrerequisiteComparison.NotEqual, 2u, false)]
-    [InlineData(PrerequisiteComparison.NotEqual, 1u, true)]
-    [InlineData(PrerequisiteComparison.GreaterThanOrEqual, 2u, true)]
-    [InlineData(PrerequisiteComparison.GreaterThan, 2u, false)]
-    [InlineData(PrerequisiteComparison.LessThanOrEqual, 2u, true)]
+    [InlineData(PrerequisiteComparison.GreaterThanOrEqual, 2u, false)]
     [InlineData(PrerequisiteComparison.LessThan, 2u, false)]
-    public void ChallengeRequirement_ComparesChallengeCompletionCount(PrerequisiteComparison comparison, uint requiredCount, bool expected)
+    public void ChallengeRequirement_TestsWhetherTheChallengeIsActivated(PrerequisiteComparison comparison, uint requiredCount, bool expected)
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
         IChallengeManager challengeManager = RecordingDispatchProxy<IChallengeManager>.Create(out var challengeProxy);
         challengeProxy.SetMethodReturn(nameof(IChallengeManager.GetCompletionCount), 2u);
+        challengeProxy.SetMethodReturn(nameof(IChallengeManager.IsChallengeActivated), true);
         playerProxy.SetProperty(nameof(IPlayer.ChallengeManager), challengeManager);
 
         var check = new PrerequisiteCheckChallengeRequirement(NullLogger<PrerequisiteCheckChallengeRequirement>.Instance);
@@ -1045,13 +1045,17 @@ public class PrerequisiteCheckTests
         Assert.Equal(expected, check.Meets(player, comparison, value, 0u, new PrerequisiteParameters { Target = player }));
     }
 
+    // Native type 38 compares the unit's creature id with Value (Creature2 ids in retail), not a creature-kind flag (PREREQUISITE_CREATURE_ITEM_CHALLENGE_20261107.md).
     [Theory]
-    [InlineData(PrerequisiteComparison.Equal, 1u, true)]
+    [InlineData(PrerequisiteComparison.Equal, 1u, false)]
     [InlineData(PrerequisiteComparison.Equal, 0u, false)]
-    public void IsCreature_ComparesTargetEntityKind(PrerequisiteComparison comparison, uint value, bool expected)
+    [InlineData(PrerequisiteComparison.Equal, 16623u, true)]
+    [InlineData(PrerequisiteComparison.NotEqual, 16623u, false)]
+    public void IsCreature_ComparesTargetCreatureId(PrerequisiteComparison comparison, uint value, bool expected)
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
-        ICreatureEntity creature = RecordingDispatchProxy<ICreatureEntity>.Create(out _);
+        ICreatureEntity creature = RecordingDispatchProxy<ICreatureEntity>.Create(out var creatureProxy);
+        creatureProxy.SetProperty(nameof(IWorldEntity.CreatureId), 16623u);
 
         var check = new PrerequisiteCheckIsCreature();
         var parameters = new PrerequisiteParameters { Target = creature };
