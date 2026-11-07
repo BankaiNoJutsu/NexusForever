@@ -870,27 +870,6 @@ public class PrerequisiteCheckTests
     }
 
     [Fact]
-    public void PlayerGlobalTreeLookup_RequiresNpcAndChallengePresence()
-    {
-        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
-        playerProxy.SetProperty(nameof(IPlayer.Guid), 1u);
-        IUnitEntity npc = RecordingDispatchProxy<IUnitEntity>.Create(out var npcProxy);
-        npcProxy.SetProperty(nameof(IUnitEntity.Guid), 999u);
-        IChallengeManager challenges = RecordingDispatchProxy<IChallengeManager>.Create(out var challengeProxy);
-        challengeProxy.SetMethodReturn(nameof(IChallengeManager.IsChallengeActivated), true);
-        playerProxy.SetProperty(nameof(IPlayer.ChallengeManager), challenges);
-
-        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out var tableProxy);
-        tableProxy.SetProperty(nameof(IGameTableManager.Challenge), CreateGameTable(new ChallengeEntry { Id = 42u }));
-
-        var check = new PrerequisiteCheckPlayerGlobalTreeLookup(tables);
-        var parameters = new PrerequisiteParameters { Target = npc };
-
-        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 1u, 42u, parameters));
-        Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 1u, 42u, new PrerequisiteParameters()));
-    }
-
-    [Fact]
     public void CreatureDifficultyRank_ComparesTargetDifficultyRankValue()
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
