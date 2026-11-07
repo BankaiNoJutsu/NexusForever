@@ -97,7 +97,10 @@ The first version of this record said the client binary "holds presentation-side
 showed the client does hold server-relevant semantics where it mirrors a server decision: the prerequisite evaluator and its row builder, the TargetGroup evaluator, and the Lua accessors of runtime objects.
 That produced independent slices (each committed with its own record and evidence tier in `ASSESSMENT_REMAINING_WORK.md`): prerequisite types 31, 44, 143, 201, 61/67/155, 196, 141, 273, 217, 56 (inferred), 124/125/160 and the
 corrected 22/23/33-36, 11 and 52 comparisons; the TargetGroup evaluator (types 1/2/10/11, zero slots), quest objective, public event and challenge target membership; prerequisite row evaluation
-(slots after an empty slot are never evaluated); and the Ring telegraph shape (inferred). The stopping statement above is therefore **superseded**, not confirmed: it must not be read as "nothing is left".
+(slots after an empty slot are never evaluated); the Ring telegraph shape (inferred); and, from a Value/ObjectId and comparison audit of native argument use against the server checks, corrections to types 11 and 52
+(comparisons), 83/84 (vehicle and mount creature id and seat), 102 (active effect id), 129 (spell group id), 28/39/86/87 (boolean tail: Equal returns the flag, 435 retail slots had it reversed) and the percentage rule for kill
+objectives in 22-36. Current prerequisite state after these: 3,841 of 49,184 slots unhandled (73 types); several native bodies read this way contradicted earlier table-shape inferences, so the audit method (compare each handled
+type's native argument use and comparison handling with the server) is itself a remaining lane for the types not yet read. The stopping statement above is therefore **superseded**, not confirmed: it must not be read as "nothing is left".
 
 Current prerequisite state: 3,841 of 49,184 slots (7.8%, 73 types) still have no handler. What remains, with the exact missing input:
 
