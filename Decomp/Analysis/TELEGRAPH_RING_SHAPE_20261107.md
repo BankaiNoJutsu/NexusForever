@@ -43,3 +43,6 @@ the change (the positive cases) and pass now. 1,137 Spell/Telegraph/Combat Sourc
 ## Client path traced (no shape code reached)
 
 The telegraph is created on the client by `FUN_1405458e0` (cast placement, reads the `TelegraphDamage` row through the accessor `FUN_140241c40`) → `FUN_140545d40` (copies the 0xf8-byte row into an instance) → `FUN_1406008c0` (builds a 0x160-byte instance and calls `FUN_1406007c0`). None of these branch on the shape; the shape-specific geometry lives deeper, in the renderer. Next experiment: decompile `FUN_1406007c0` and follow its shape switch to read what `Param00..05` mean for shapes 1, 3 and 6.
+
+## Update (same day)
+Shapes 3 and 6 are no longer unhandled: see [TELEGRAPH_SHAPES_3_AND_6_20261107.md](TELEGRAPH_SHAPES_3_AND_6_20261107.md) (the geometry builder `FUN_14054d170` was found by the 0-8 switch scan).

@@ -110,37 +110,14 @@ namespace NexusForever.Game.Spell
                 }
                 case DamageShape.Square:
                 case DamageShape.Rectangle:
-                {
-                    /// <remarks>This is not perfect. It works, but there are more efficient options like https://yal.cc/rot-rect-vs-circle-intersection </remarks>
-                    float telegraphWidth  = TelegraphDamage.Param00;
-                    float telegraphHeight = TelegraphDamage.Param01;
-                    float telegraphLength = TelegraphDamage.Param02;
-
-                    if (MathF.Abs(position.Y - Position.Y) - hitRadius > telegraphHeight)
-                        return false;
-
-                    // Find the points in the local co-ordinate space
-                    var bottomRight = new Vector3(-telegraphWidth, 0, -telegraphLength);
-                    var bottomLeft  = new Vector3(telegraphWidth, 0, -telegraphLength);
-                    var topRight    = new Vector3(-telegraphWidth, 0, telegraphLength);
-                    var topLeft     = new Vector3(telegraphWidth, 0, telegraphLength);
-
-                    // Rectangle's origin is at it's base, so adjust the starting points appropriately.
-                    if ((DamageShape)TelegraphDamage.DamageShapeEnum == DamageShape.Rectangle)
-                    {
-                        bottomRight.Z = 0;
-                        bottomLeft.Z  = 0;
-                    }
-
-                    // Translate points to global co-ordinate space, and apply rotation based on the Telegraph's rotation
-                    bottomLeft  = Vector3.Add(RotatePoint(bottomLeft, Rotation.X), Position);
-                    bottomRight = Vector3.Add(RotatePoint(bottomRight, Rotation.X), Position);
-                    topLeft     = Vector3.Add(RotatePoint(topLeft, Rotation.X), Position);
-                    topRight    = Vector3.Add(RotatePoint(topRight, Rotation.X), Position);
-
-                    Vector3[] points = new Vector3[] { bottomLeft, topLeft, topRight, bottomRight };
-                    return IsHitInsidePolygon(points, position, hitRadius);
-                }
+                    return InsideBox(position, hitRadius, TelegraphDamage.Param00, TelegraphDamage.Param01, TelegraphDamage.Param02,
+                        (DamageShape)TelegraphDamage.DamageShapeEnum == DamageShape.Rectangle);
+                case DamageShape.Cross:
+                    // Inferred (TELEGRAPH_SHAPES_3_AND_6_20261107.md): the client builds the box (width, height, length) and, on a second pass, the same box with width and length swapped.
+                    return InsideBox(position, hitRadius, TelegraphDamage.Param00, TelegraphDamage.Param01, TelegraphDamage.Param02, false)
+                        || InsideBox(position, hitRadius, TelegraphDamage.Param02, TelegraphDamage.Param01, TelegraphDamage.Param00, false);
+                case DamageShape.ThreeAxis:
+                    return InsideEllipse(position, hitRadius, TelegraphDamage.Param00, TelegraphDamage.Param01, TelegraphDamage.Param02);
                 case DamageShape.Pie:
                 {
                     float telegraphRadius         = TelegraphDamage.Param01;
@@ -158,6 +135,58 @@ namespace NexusForever.Game.Spell
             }
         }
 
+        /// <remarks>This is not perfect. It works, but there are more efficient options like https://yal.cc/rot-rect-vs-circle-intersection </remarks>
+        private bool InsideBox(Vector3 position, float hitRadius, float telegraphWidth, float telegraphHeight, float telegraphLength, bool originAtBase)
+        {
+            if (MathF.Abs(position.Y - Position.Y) - hitRadius > telegraphHeight)
+                return false;
+
+            // Find the points in the local co-ordinate space
+            var bottomRight = new Vector3(-telegraphWidth, 0, -telegraphLength);
+            var bottomLeft  = new Vector3(telegraphWidth, 0, -telegraphLength);
+            var topRight    = new Vector3(-telegraphWidth, 0, telegraphLength);
+            var topLeft     = new Vector3(telegraphWidth, 0, telegraphLength);
+
+            // Rectangle's origin is at it's base, so adjust the starting points appropriately.
+            if (originAtBase)
+            {
+                bottomRight.Z = 0;
+                bottomLeft.Z  = 0;
+            }
+
+            // Translate points to global co-ordinate space, and apply rotation based on the Telegraph's rotation
+            bottomLeft  = Vector3.Add(RotatePoint(bottomLeft, Rotation.X), Position);
+            bottomRight = Vector3.Add(RotatePoint(bottomRight, Rotation.X), Position);
+            topLeft     = Vector3.Add(RotatePoint(topLeft, Rotation.X), Position);
+            topRight    = Vector3.Add(RotatePoint(topRight, Rotation.X), Position);
+
+            Vector3[] points = new Vector3[] { bottomLeft, topLeft, topRight, bottomRight };
+            return IsHitInsidePolygon(points, position, hitRadius);
+        }
+
+        /// <summary>
+        /// Inferred reading of shape 6: an ellipse with radius <paramref name="radiusX"/> along the telegraph's local X axis and <paramref name="radiusZ"/> along Z, and a vertical
+        /// tolerance of <paramref name="height"/>, widened by the (halved) target hit radius.
+        /// </summary>
+        private bool InsideEllipse(Vector3 position, float hitRadius, float radiusX, float height, float radiusZ)
+        {
+            if (MathF.Abs(position.Y - Position.Y) - hitRadius > height)
+                return false;
+
+            float halfWidth  = radiusX + hitRadius;
+            float halfLength = radiusZ + hitRadius;
+            if (halfWidth <= 0f || halfLength <= 0f)
+                return false;
+
+            // Bring the target into the telegraph's local frame (RotatePoint maps local to global).
+            Vector3 local = RotatePoint(new Vector3(position.X - Position.X, 0f, position.Z - Position.Z), -Rotation.X);
+            float x = local.X / halfWidth;
+            float z = local.Z / halfLength;
+            return x * x + z * z <= 1f;
+        }
+
+        internal float SearchRadius => GridSearchSize();
+
         private float GridSearchSize()
         {
             switch ((DamageShape)TelegraphDamage.DamageShapeEnum)
@@ -172,6 +201,11 @@ namespace NexusForever.Game.Spell
                 case DamageShape.Square:
                 case DamageShape.Rectangle:
                     return TelegraphDamage.Param01;
+                case DamageShape.Cross:
+                    // the corner of a bar is the farthest point
+                    return MathF.Sqrt(TelegraphDamage.Param00 * TelegraphDamage.Param00 + TelegraphDamage.Param02 * TelegraphDamage.Param02);
+                case DamageShape.ThreeAxis:
+                    return MathF.Max(TelegraphDamage.Param00, TelegraphDamage.Param02);
                 default:
                     return 0f;
             }
