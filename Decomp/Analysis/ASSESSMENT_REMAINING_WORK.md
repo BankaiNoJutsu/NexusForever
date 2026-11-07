@@ -1,5 +1,9 @@
 # Assessment follow-through goal
 
+[Prerequisite type coverage](PREREQUISITE_TYPE_COVERAGE_20261107.md) (2026-11-07): 99 of 232 prerequisite types used by the retail table have no server handler, covering 20% of type slots and
+26% of prerequisite rows (8,380 of 32,131), and an unhandled type evaluates false, so gated content is silently unavailable. Largest: public event objective (118), quest objective 47, quest
+objective 22/23, public event 117. Semantics need the native evaluator (not yet located) or retail captures. Census only; nothing implemented.
+
 [Production concurrency generator on MySQL](MYSQL_8_0_FRESH_MIGRATION_QUALIFICATION_20261107.md#production-concurrency-generator-without-the-retry-strategy) (2026-11-07): all 59 provider-option classes (single-database, Character+Auth and
 Auth-seam) pass on MySQL 8.0.46 with the production string-concurrency SQL generator installed and no retry strategy (1.24 hours). The retry strategy remains the only option with failures.
 Not 8.4.13, no socket, broker or load run.

@@ -17,10 +17,11 @@ if (!Directory.Exists(patchDirectory))
     return 1;
 }
 
-string indexPath = Path.Combine(patchDirectory, "ClientData.index");
+string indexName = args.Skip(3).FirstOrDefault(a => a.StartsWith("--index=", StringComparison.OrdinalIgnoreCase))?["--index=".Length..] ?? "ClientData.index";
+string indexPath = Path.Combine(patchDirectory, indexName);
 if (!File.Exists(indexPath))
 {
-    Console.Error.WriteLine($"ClientData.index was not found below patch directory: {patchDirectory}");
+    Console.Error.WriteLine($"{indexName} was not found below patch directory: {patchDirectory}");
     return 1;
 }
 
@@ -78,7 +79,7 @@ static IEnumerable<IArchiveFileEntry> GetArchiveEntries(Archive archive, string 
 static int ShowUsage(int exitCode)
 {
     Console.Error.WriteLine("Usage:");
-    Console.Error.WriteLine("  dotnet run --project Tools/ArchiveProbe -- <PatchDir> <ArchivePath|contains:Text> <OutputDir> [--list-only]");
+    Console.Error.WriteLine("  dotnet run --project Tools/ArchiveProbe -- <PatchDir> <ArchivePath|contains:Text> <OutputDir> [--list-only] [--index=ClientDataEN.index]");
     Console.Error.WriteLine();
     Console.Error.WriteLine("Examples:");
     Console.Error.WriteLine(@"  dotnet run --project Tools/ArchiveProbe -- ""D:\Games\WildStar\Patch"" contains:Houston Tools\ArchiveProbe\out --list-only");
