@@ -44,3 +44,9 @@ Tests: `InlaidAugmentationTests` (20 cases: load order, cap and duplicates, pers
 Persistence/Database/Prerequisite/Player/Title/Amp/Migration/Spell Source/SQLite filter passes (3,880 passed, 2 skipped as before; separate scope). The unhandled spell-effect rows drop from 2,478 to 2,197 (the 281 `UnlockInlaidAugment` rows are handled).
 
 Not verified: the MySQL migration was generated but not applied to a fresh MySQL schema in this pass; the effect-to-list link remains data-correlated (235 of 240 ids), and the client's reaction to packet `0x019C` needs a capture.
+
+## MySQL migration applied (same day, later)
+`dotnet ef database update` (project `NexusForever.Database.Character`, startup `NexusForever.WorldServer`, a temporary design-time config) was run against a fresh disposable schema on local MySQL 8.0.46: all **50** Character migrations applied, the last two being
+`20261105080127_CraftingAccountAwards` and `20261107211527_CharacterInlaidAugmentation`, and `SHOW CREATE TABLE character_inlaid_augmentation` shows `id bigint unsigned`, `augmentationId smallint unsigned`, `PRIMARY KEY (id, augmentationId)` and the foreign key
+`FK__character_inlaid_augmentation_id__character_id` to `character(id)` with `ON DELETE CASCADE`. The schema was dropped afterwards. This closes the "generated but not applied" caveat for the MySQL provider (forward migration only: no insert, cascade or load was exercised on MySQL; the SQLite
+tests cover persistence). The effect-to-list link (data correlation) and the client's reaction to packet `0x019C` remain unverified.
