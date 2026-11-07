@@ -192,3 +192,15 @@ no files on `C:` were deleted.
   20 (16), 100 (13). Implemented as `PrerequisiteCheckCreatureWithinDistance` using the player's visible creatures (`GetVisibleCreature`) and `Position`.
 - `PrerequisiteCheckCreatureWithinDistanceTests` did not compile before the class existed and pass now; 1,010 Prerequisite/AMP cases pass (Source/SQLite). The server's visible-creature set (grid visibility) stands in for the
   client's nearby-entity list; the two radii are not compared here, so far creatures (Value 128 against a smaller visibility range) are assumed equivalent. No retail parity claim.
+
+
+## Type 44 (InTargetGroup) implemented for the creature-list and composite group types (same day)
+
+- **44 (InTargetGroup, 214 slots)**: `FUN_14049ee40` returns false when the unit or the argument is 0, evaluates a TargetGroup against the unit with `FUN_1403b4a20` (0 means member) and returns Equal: member, NotEqual: not
+  member, other comparisons false. The group id is `Value` (214 of 214 retail slots are TargetGroup ids; `ObjectId` is 0 in 213). The group evaluator switches on the group's `Type`: 1/2 creature id in/not in the seven data ids
+  (unit virtual +0x10, the first int of the unit's creature record), 3/4, 5/6, 7/8 and 12/13 the same shape against other unit fields (virtuals +0x30, +0x20, +0x28, +0x38 reading `unit+0x118`, `+0xd8`, `+0xdc`,
+  `+0xd0`), 9 a list test against `unit+0x140`, 10 every listed sub-group (skipping empty slots and its own id) and 11 any one of them. Retail slots by group type: 1 (146), 11 (48), 3 (16), 12 (3), 10 (1).
+- Implemented as `PrerequisiteCheckInTargetGroup` for group types 1, 2, 10 and 11 (195 of 214 slots plus any composite of them); a group that depends on types 3 to 9, 12 or 13 (19 slots, whose unit fields are not identified)
+  meets neither comparison. The subject follows the `CreatureDifficulty` precedent (`parameters.Target ?? player`, explicit `MeetsUnit`); a player has no creature id, so type 1 groups only match when a creature target is supplied.
+- `PrerequisiteCheckInTargetGroupTests` (21 cases) and the 1,010 existing Prerequisite/AMP cases pass (1,031 total, Source/SQLite). The test and class were written together, so this slice did not observe a red run first.
+  Whether retail evaluates the player or a target as the unit for these slots is not established. No retail parity claim.

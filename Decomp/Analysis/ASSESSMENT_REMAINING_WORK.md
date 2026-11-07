@@ -1,5 +1,7 @@
 # Assessment follow-through goal
 
+[Prerequisite type 44](PREREQUISITE_TYPE_COVERAGE_20261107.md#type-44-intargetgroup-implemented-for-the-creature-list-and-composite-group-types-same-day) (2026-11-07): the native body shows Value is a TargetGroup id (214/214 retail slots) and Equal/NotEqual test membership of the unit; group types 1, 2, 10 and 11 (creature lists and and/or composites) implemented for 195 slots, the other group types (19 slots, unmodelled unit fields) deliberately meet neither comparison. 21 new Source/SQLite cases, 1,031 Prerequisite/AMP cases pass; the test was not observed red first. Subject choice (player vs target) is unevidenced. No retail parity claim.
+
 [Prerequisite type 31](PREREQUISITE_TYPE_COVERAGE_20261107.md#type-31-creaturewithindistance-implemented-same-day) (2026-11-07): the native body (FUN_14049ed50) finds a creature with id ObjectId within Value units (3D, inclusive); Equal/NotEqual only. Implemented for 215 previously always-false slots; the new Source/SQLite cases did not compile before and 1,010 Prerequisite/AMP cases pass. The server's visible-creature set stands in for the client's nearby list. No retail parity claim.
 
 [Public event prerequisites 117 and 118](PREREQUISITE_TYPE_COVERAGE_20261107.md#public-event-types-117-and-118-implemented-from-the-native-bodies-same-day) (2026-11-07): the native bodies show 117 asks the public-event manager about the event id and 118 compares the
