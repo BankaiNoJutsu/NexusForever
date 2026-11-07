@@ -169,3 +169,17 @@ no files on `C:` were deleted.
 - **47 (QuestObjective47, 1,788 slots)**: its slot in the only vtable holding the evaluator's methods (verified by scanning every data reference to the type-68 body: exactly one vtable, `0x140b67740`) is the shared
   `return 0` stub (`FUN_140001ba0`). The client therefore never evaluates type 47, so the client binary cannot give its meaning; the type is presumably server-side. Its retail rows (comparison 1 and 2, large `Value`s such as
   13855 and 22453, `ObjectId` unused) need a server-side witness. Left unhandled.
+
+
+## Public event types 120 and 123 implemented; client-stub types identified (same day)
+
+- **120 (PublicEvent120, 42 slots)**: `FUN_1404a0760`: the public event with id `ObjectId` must be active, then `Value` 0 accepts any phase and any other `Value` must equal the event's phase (virtual +0x170); Equal returns the
+  result, NotEqual its negation. Retail: `ObjectId` is a PublicEvent id (41 of 42), comparison always Equal, `Value` 1 to 8 (the server's `IPublicEvent.Phase`). Implemented as `PrerequisiteCheckPublicEvent120`.
+- **123 (PublicEventObjective123, 184 slots)**: `FUN_1404a09d0` tail-calls the compare helper with the objective's progress count (virtual +0x98, also the numerator of the type 162 percentage `+0x98 / +0xd0`);
+  retail `ObjectId` is a PublicEventObjective id in all 184 slots, comparisons >= (86) and = (86) plus < and >, `Value` 0 to 5. Implemented as `PrerequisiteCheckPublicEventObjective123` (missing objective has count 0). The
+  separate virtual used for type 118 (+0x38) versus this one (+0x98) supports reading 118 as status and 123 as count.
+- `PrerequisiteCheckPublicEventPhaseCountTests` (14 cases) did not compile before the classes existed and pass now; 2,857 Prerequisite/PublicEvent/AMP cases pass (Source/SQLite). 226 more slots are evaluated.
+- **Not implemented**: 119 (122 slots) and 162 (8 slots, a percentage: count/max × 100 compared with Value), 121 (0 slots) and 122 (1 slot) are small or involve the player's own participation maps (`player+0x3760/0x3780`) that
+  the server does not model identically; the compare helper's argument order is assumed from the data for 123.
+- **Client stubs (the evaluator slot is the shared `return 0`)**: 153 HoldoutWave and 154 Holdout (121 and 119 slots), 163 PublicEventParticipantCount, 164 PublicEventParticipant164, and 47 above. The client never evaluates these, so
+  the client binary gives no semantics; they are server-side concepts and need a server-side witness.

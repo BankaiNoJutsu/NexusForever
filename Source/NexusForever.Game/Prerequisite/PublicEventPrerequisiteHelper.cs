@@ -11,9 +11,15 @@ namespace NexusForever.Game.Prerequisite
         /// native event-manager query behind prerequisite type 117 (the client asks its global manager; here events live on the map instance).
         /// </summary>
         public static bool IsEventRunning(IPlayer player, uint eventId)
+            => GetRunningEvent(player, eventId) != null;
+
+        /// <summary>
+        /// The running public event with the supplied id on the player's map, or null.
+        /// </summary>
+        public static IPublicEvent GetRunningEvent(IPlayer player, uint eventId)
         {
             IPublicEvent publicEvent = player.Map?.PublicEventManager?.GetEvent(eventId);
-            return publicEvent != null && !publicEvent.IsFinalised;
+            return publicEvent != null && !publicEvent.IsFinalised ? publicEvent : null;
         }
 
         /// <summary>
@@ -21,10 +27,19 @@ namespace NexusForever.Game.Prerequisite
         /// query for prerequisite type 118 yields 0 when the objective cannot be found, which is <see cref="PublicEventStatus.Inactive"/>.
         /// </summary>
         public static PublicEventStatus GetObjectiveStatus(IPlayer player, uint objectiveId)
+            => FindObjective(player, objectiveId)?.Status ?? PublicEventStatus.Inactive;
+
+        /// <summary>
+        /// Progress count of the public event objective with the supplied id (virtual +0x98 in the native prerequisite types 123 and 162), 0 when not found.
+        /// </summary>
+        public static uint GetObjectiveCount(IPlayer player, uint objectiveId)
+            => FindObjective(player, objectiveId)?.Count ?? 0u;
+
+        private static IPublicEventObjective FindObjective(IPlayer player, uint objectiveId)
         {
             IPublicEventManager manager = player.Map?.PublicEventManager;
             if (manager == null)
-                return PublicEventStatus.Inactive;
+                return null;
 
             IPublicEventObjective fallback = null;
             foreach (IPublicEvent publicEvent in manager.GetEvents())
@@ -36,13 +51,13 @@ namespace NexusForever.Game.Prerequisite
                         continue;
 
                     if (team.GetMembers().Any(member => member.CharacterId == player.CharacterId))
-                        return objective.Status;
+                        return objective;
 
                     fallback ??= objective;
                 }
             }
 
-            return fallback?.Status ?? PublicEventStatus.Inactive;
+            return fallback;
         }
     }
 }
