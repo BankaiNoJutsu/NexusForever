@@ -95,6 +95,20 @@ cases, assertion at line 34 on `Recovered`), a few `Assert.Throws` mismatches in
 is that the fault-injecting interceptor throws an `IOException` once and the retrying strategy transparently re-runs the unit on a fresh context, so the explicit
 recovery path the test asserts is never needed. These cases need a test variant that disables the retry for fault injection, or a trace, before any claim is made.
 
+#### Second census after the Contract recovery fix (same day)
+
+After fixing `ContractCompletionExecutor.Recover` and making the shared challenge fixture strategy-aware ([CONTRACT_COMPLETION_RETRY_STRATEGY_RECOVERY.md](CONTRACT_COMPLETION_RETRY_STRATEGY_RECOVERY.md)),
+one full production-options run (1.08 hours) gave **20 of 55 classes passing completely; 35 with failures (294 of 1,174 cases, down from 590 of 1,300)**. The driver
+now prints the NexusForever call chain for each strategy rejection. Every remaining rejection has one of these shapes: a test method that opened its own transaction and
+then called a persistence `Save`/`Read` path (`ExperiencePersistence`, `Quest`/`QuestObjective`, `Item`, `Title`, `Costume`, `Keybinding`, `GuildAffiliation`,
+`Progression`, `Residence`, `ChallengeManager`, `Player.Save`), or called a repository constructor inside its own transaction. No remaining chain contains a production
+executor or delivery recovery opening the transaction, which was the signature of the defect fixed above. That is an absence in this run, not a proof that no other
+production site exists: a production recovery that none of these tests reaches would not appear.
+
+Not explained by that cause: `ContractCompletionRepositoryTests` `OverflowCannotLeaveATerminalQuestOrReceipt` (`Assert.Throws` exact-type mismatch, 4 cases) and
+`InventoryRewardDeliveryTests` Contract admission and partial id allocation cases (`Assert.True`/`Assert.Equal`, about 13). They may be knock-on effects of a test-opened
+transaction, but that is unconfirmed.
+
 Evidence tier: the existing Source cases on real MySQL 8.0.46 with the production options. Not a statement that production code is correct under the retry
 strategy, and not retail parity.
 
