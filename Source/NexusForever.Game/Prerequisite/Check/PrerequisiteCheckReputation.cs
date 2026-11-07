@@ -17,7 +17,8 @@ namespace NexusForever.Game.Prerequisite.Check
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
             float amount = player.ReputationManager.GetReputation((Faction)objectId)?.Amount ?? 0f;
-            return PrerequisiteCompare.Compare(comparison, (uint)amount, value);
+            // Native compares as float; retail Values are signed (-2000, -30000, -32000 occur), so Value is read as int.
+            return PrerequisiteCompare.CompareFloat(comparison, amount, unchecked((int)value));
         }
     }
 }
