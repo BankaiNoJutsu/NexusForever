@@ -123,6 +123,13 @@ namespace NexusForever.Network
             if (length != 0 && length != data.Length)
                 throw new ArgumentException();
 
+            // fast path, a byte aligned write is identical to a raw copy as bits are written LSB first
+            if (bitPosition == 0)
+            {
+                stream.Write(data, 0, data.Length);
+                return;
+            }
+
             foreach (byte value in data)
                 WriteBits(value, 8);
         }

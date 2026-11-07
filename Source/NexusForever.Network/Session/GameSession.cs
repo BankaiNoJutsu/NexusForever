@@ -63,11 +63,26 @@ namespace NexusForever.Network.Session
         /// </summary>
         public void EnqueueMessageEncrypted(IWritable message)
         {
+            byte[] data = SerializeMessage(message);
+            if (data == null)
+                return;
+
+            EnqueueSerializedMessageEncrypted(data);
+        }
+
+        /// <summary>
+        /// Serialize <see cref="IWritable"/> including the opcode, the result can be shared between sessions.
+        /// </summary>
+        /// <remarks>
+        /// Returns null if the message has no opcode.
+        /// </remarks>
+        public byte[] SerializeMessage(IWritable message)
+        {
             GameMessageOpcode? opcode = messageManager.GetOpcode(message);
             if (opcode == null)
             {
                 log.Warn("Failed to send message with no attribute!");
-                return;
+                return null;
             }
 
             using (var stream = new MemoryStream())
@@ -76,13 +91,17 @@ namespace NexusForever.Network.Session
                 writer.Write(opcode.Value, 16);
                 message.Write(writer);
                 writer.FlushBits();
-
-                byte[] data = stream.ToArray();
-                byte[] encrypted = encryption.Encrypt(data, data.Length);
-                EnqueueMessage(BuildEncryptedMessage(encrypted));
+                return stream.ToArray();
             }
+        }
 
-            log.Trace($"Sent packet {opcode}(0x{opcode:X}).");
+        /// <summary>
+        /// Encrypt and enqueue a message previously serialized with <see cref="SerializeMessage"/>.
+        /// </summary>
+        public void EnqueueSerializedMessageEncrypted(byte[] data)
+        {
+            byte[] encrypted = encryption.Encrypt(data, data.Length);
+            EnqueueMessage(BuildEncryptedMessage(encrypted));
         }
 
         public void EnqueueMessageEncrypted(uint opcode, string hex)
@@ -254,20 +273,23 @@ namespace NexusForever.Network.Session
         /// </summary>
         public void FlushPackets()
         {
-            while (CanProcessOutgoingPackets && outgoingPackets.TryDequeue(out ServerGamePacket packet))
-                FlushPacket(packet);
-        }
+            if (!CanProcessOutgoingPackets || outgoingPackets.IsEmpty)
+                return;
 
-        private void FlushPacket(ServerGamePacket packet)
-        {
+            // batch all pending packets into a single socket send
             using (var stream = new MemoryStream())
             using (var writer = new GamePacketWriter(stream))
             {
-                writer.Write(packet.Size);
-                writer.Write(packet.Opcode, 16);
-                writer.WriteBytes(packet.Data);
+                while (CanProcessOutgoingPackets && outgoingPackets.TryDequeue(out ServerGamePacket packet))
+                {
+                    writer.Write(packet.Size);
+                    writer.Write(packet.Opcode, 16);
+                    writer.WriteBytes(packet.Data);
+                    writer.FlushBits();
+                }
 
-                SendRaw(stream.ToArray());
+                if (stream.Length > 0)
+                    SendRaw(stream.ToArray());
             }
         }
     }

@@ -97,20 +97,23 @@ namespace NexusForever.Game.Map
                 if (SharedConfiguration.Instance.Get<MapConfig>().SynchronousUpdate)
                 {
                     foreach (IMap map in maps.Values)
-                        map.Update(lastTick);
+                        UpdateMap(map, lastTick);
                 }
                 else
                 {
                     var tasks = new List<Task>();
                     foreach (IMap map in maps.Values)
-                        tasks.Add(Task.Run(() => { map.Update(lastTick); }));
+                    {
+                        IMap mapCopy = map;
+                        tasks.Add(Task.Run(() => UpdateMap(mapCopy, lastTick)));
+                    }
 
                     Task.WaitAll(tasks.ToArray());
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // ignored.
+                log.Error(ex, "Unexpected error during map updates!");
             }
 
             sw.Stop();
@@ -119,7 +122,27 @@ namespace NexusForever.Game.Map
         }
 
         /// <summary>
-        /// Enqueue <see cref="IPlayer"/> to be added to a map. 
+        /// Update a single <see cref="IMap"/>, errors are logged so one failing map doesn't hide in the others.
+        /// </summary>
+        private void UpdateMap(IMap map, double lastTick)
+        {
+            long start = Stopwatch.GetTimestamp();
+            try
+            {
+                map.Update(lastTick);
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex, $"Error updating map {map.Entry?.Id}!");
+            }
+
+            double ms = Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+            if (ms > 10d)
+                log.Warn($"Map {map.Entry?.Id} took {ms:F1}ms to update!");
+        }
+
+        /// <summary>
+        /// Enqueue <see cref="IPlayer"/> to be added to a map.
         /// </summary>
         public void AddToMap(IPlayer player, IMapPosition mapPosition)
         {

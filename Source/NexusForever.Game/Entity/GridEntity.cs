@@ -254,21 +254,34 @@ namespace NexusForever.Game.Entity
         /// </summary>
         private void UpdateVision()
         {
-            List<IGridEntity> entities = Map.Search(Position, Map.VisionRange, new SearchCheckRange<IGridEntity>(Position, Map.VisionRange)).ToList();
+            var entities = new HashSet<IGridEntity>(Map.Search(Position, Map.VisionRange, new SearchCheckRange<IGridEntity>(Position, Map.VisionRange)));
 
             // new entities now in vision range
-            foreach (IGridEntity entity in entities.Except(visibleEntities.Values))
+            foreach (IGridEntity entity in entities)
             {
+                if (visibleEntities.ContainsKey(entity.Guid))
+                    continue;
+
                 AddVisible(entity);
                 if (entity != this)
                     entity.AddVisible(this);
             }
 
             // old entities now out of vision range
-            foreach (IGridEntity entity in visibleEntities.Values.Except(entities).ToList())
+            List<IGridEntity> removed = null;
+            foreach (IGridEntity entity in visibleEntities.Values)
             {
-                RemoveVisible(entity);
-                entity.RemoveVisible(this);
+                if (!entities.Contains(entity))
+                    (removed ??= new List<IGridEntity>()).Add(entity);
+            }
+
+            if (removed != null)
+            {
+                foreach (IGridEntity entity in removed)
+                {
+                    RemoveVisible(entity);
+                    entity.RemoveVisible(this);
+                }
             }
         }
 

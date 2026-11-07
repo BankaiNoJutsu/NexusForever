@@ -136,15 +136,18 @@ namespace NexusForever.Game.Entity
             }
 
             // update spell cooldowns
-            foreach ((uint spellId, double cooldown) in spellCooldowns.ToArray())
+            if (spellCooldowns.Count > 0)
             {
-                if (cooldown - lastTick <= 0d)
+                foreach ((uint spellId, double cooldown) in spellCooldowns.ToArray())
                 {
-                    spellCooldowns.Remove(spellId);
-                    log.Trace($"Spell {spellId} cooldown has reset.");
+                    if (cooldown - lastTick <= 0d)
+                    {
+                        spellCooldowns.Remove(spellId);
+                        log.Trace($"Spell {spellId} cooldown has reset.");
+                    }
+                    else
+                        spellCooldowns[spellId] = cooldown - lastTick;
                 }
-                else
-                    spellCooldowns[spellId] = cooldown - lastTick;
             }
 
             foreach (CharacterSpell unlockedSpell in spells.Values)

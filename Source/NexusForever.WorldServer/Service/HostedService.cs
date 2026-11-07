@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
@@ -42,6 +43,8 @@ namespace NexusForever.WorldServer.Service
     public class HostedService : IHostedService
     {
         #region Dependency Injection
+
+        private const double SlowTickThresholdMs = 50d;
 
         private readonly ILogger log;
 
@@ -146,8 +149,11 @@ namespace NexusForever.WorldServer.Service
             worldManager.Initialise(lastTick =>
             {
                 // NetworkManager must be first and MapManager must come before everything else
+                long tickStart = Stopwatch.GetTimestamp();
                 networkManager.Update(lastTick);
+                long networkEnd = Stopwatch.GetTimestamp();
                 MapManager.Instance.Update(lastTick);
+                long mapsEnd = Stopwatch.GetTimestamp();
 
                 BuybackManager.Instance.Update(lastTick);
                 GlobalQuestManager.Instance.Update(lastTick);
@@ -164,6 +170,13 @@ namespace NexusForever.WorldServer.Service
 
                 // process commands after everything else in the tick has processed
                 CommandManager.Instance.Update(lastTick);
+
+                // slow tick diagnostics, breakdown by phase
+                TimeSpan total = Stopwatch.GetElapsedTime(tickStart);
+                if (total.TotalMilliseconds > SlowTickThresholdMs)
+                {
+                    log.LogWarning($"Slow tick {total.TotalMilliseconds:F1}ms: network {Stopwatch.GetElapsedTime(tickStart, networkEnd).TotalMilliseconds:F1}ms, maps {Stopwatch.GetElapsedTime(networkEnd, mapsEnd).TotalMilliseconds:F1}ms, other {Stopwatch.GetElapsedTime(mapsEnd).TotalMilliseconds:F1}ms.");
+                }
             });
 
             // initialise network and command managers last to make sure the rest of the server is ready for invoked handlers

@@ -9,6 +9,11 @@ namespace NexusForever.Shared
     {
         private static readonly ILogger log = LogManager.GetCurrentClassLogger();
 
+        /// <summary>
+        /// Minimum time in milliseconds between world ticks (about 50Hz), all update timers are delta based.
+        /// </summary>
+        private const double MinTickInterval = 20d;
+
         private Thread worldThread;
         private readonly ManualResetEventSlim waitHandle = new();
 
@@ -54,7 +59,9 @@ namespace NexusForever.Shared
                     log.Error(ex, "Error during world update.");
                 }
 
-                Thread.Sleep(1);
+                // pace the loop to a minimum tick interval to avoid spinning when idle
+                double remaining = MinTickInterval - stopwatch.Elapsed.TotalMilliseconds;
+                Thread.Sleep(remaining >= 1d ? (int)remaining : 1);
                 lastTick = (double)stopwatch.ElapsedTicks / Stopwatch.Frequency;
             }
 

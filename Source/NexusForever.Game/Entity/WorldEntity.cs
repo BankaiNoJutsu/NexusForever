@@ -792,6 +792,8 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void EnqueueToVisible(IWritable message, bool includeSelf = false)
         {
+            // serialize once and encrypt per recipient, encryption keys are per session
+            byte[] data = null;
             foreach (IGridEntity entity in visibleEntities.Values)
             {
                 if (entity is not IPlayer player)
@@ -800,7 +802,11 @@ namespace NexusForever.Game.Entity
                 if (!includeSelf && (Guid == entity.Guid || ControllerGuid == entity.Guid))
                     continue;
 
-                player.Session.EnqueueMessageEncrypted(message);
+                data ??= player.Session.SerializeMessage(message);
+                if (data == null)
+                    return;
+
+                player.Session.EnqueueSerializedMessageEncrypted(data);
             }
         }
 
