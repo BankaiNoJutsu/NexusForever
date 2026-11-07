@@ -29,3 +29,7 @@ Client strings show telegraphs are drawn with `Shaders\TelegraphPS.sho` and `Tel
 with the extent vector that `FUN_14054d170` fills. A projected-volume box test conventionally compares the local position with half extents, which agrees with the 0.5 scale producing half extents from full dimensions; the compiled
 shader (`.sho`) was not decoded, so this is consistent with the reading, not proof of it. The strings `InsideTelegraph`, `OutsideTelegraph` and `NeedsTelegraphEvaluation` are referenced only from `FUN_140709460` (13,397 bytes, which looks
 like a registration table for Lua names/events), so no client-side containment test was found that could be read directly. The missing witnesses are unchanged: the box mesh/shader extents, or a retail capture of a Square or Rectangle boundary.
+
+## Shape-class constants (same day)
+`FUN_1406177c0` (mesh draw classes {0,2}, {1,3}, {4}, {5,6}, {7,8}) appends fixed float tables per class (10 floats for {0,2}, 5 for the others, at `140b27498`/`140b275f0` and `140b27590`/`140b27688` and neighbours). The first tables dumped from the executable image are all zero, so they are filled at runtime or live in a section the
+loader initialises; they gave no mesh extent. This path is exhausted without a runtime or a shader decode; the open witnesses are unchanged (box mesh/shader extents or a retail capture of a Square/Rectangle boundary).
