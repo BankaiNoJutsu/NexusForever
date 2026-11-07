@@ -30,8 +30,9 @@ namespace NexusForever.Game.Prerequisite.Check
                 case PrerequisiteComparison.NotEqual:
                     return player.Class != (Class)value;
                 default:
+                    // Native (FUN_14049c560): comparisons other than Equal and NotEqual are false.
                     log.LogWarning($"Unhandled PrerequisiteComparison {comparison} for {PrerequisiteType.Class}!");
-                    return true;
+                    return false;
             }
         }
     }

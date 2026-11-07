@@ -971,11 +971,17 @@ public class PrerequisiteCheckTests
         Assert.Equal(expected, result);
     }
 
+    // Native type 40 (FUN_1404a4d90) compares the unit's health PERCENTAGE as a float, `health * 100 / maxHealth`, with Value (retail Values 50, 30, 25, 75, 10, 100; comparisons mostly < and <=),
+    // using the float compare helper FUN_1404a2010 (PREREQUISITE_HEALTH_PERCENT_20261107.md). The earlier cases compared the raw health with Value.
     [Theory]
-    [InlineData(PrerequisiteComparison.GreaterThanOrEqual, 800u, true)]
-    [InlineData(PrerequisiteComparison.GreaterThanOrEqual, 801u, false)]
-    [InlineData(PrerequisiteComparison.LessThan, 801u, true)]
-    public void Health_ComparesRawHealthOnTarget(
+    [InlineData(PrerequisiteComparison.GreaterThanOrEqual, 80u, true)]
+    [InlineData(PrerequisiteComparison.GreaterThanOrEqual, 81u, false)]
+    [InlineData(PrerequisiteComparison.LessThan, 81u, true)]
+    [InlineData(PrerequisiteComparison.Equal, 80u, true)]
+    [InlineData(PrerequisiteComparison.NotEqual, 80u, false)]
+    [InlineData(PrerequisiteComparison.GreaterThan, 79u, true)]
+    [InlineData(PrerequisiteComparison.LessThanOrEqual, 79u, false)]
+    public void Health_ComparesHealthPercentOnTarget(
         PrerequisiteComparison comparison,
         uint value,
         bool expected)
@@ -983,6 +989,7 @@ public class PrerequisiteCheckTests
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
         IUnitEntity target = RecordingDispatchProxy<IUnitEntity>.Create(out var targetProxy);
         targetProxy.SetProperty(nameof(IWorldEntity.Health), 800u);
+        targetProxy.SetProperty(nameof(IWorldEntity.MaxHealth), 1000u);
 
         var check = new PrerequisiteCheckHealth();
         var parameters = new PrerequisiteParameters { Target = target };

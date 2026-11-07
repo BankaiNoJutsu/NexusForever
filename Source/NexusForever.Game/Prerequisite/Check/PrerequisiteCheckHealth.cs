@@ -5,9 +5,10 @@ using NexusForever.Game.Static.Prerequisite;
 namespace NexusForever.Game.Prerequisite.Check
 {
     /// <summary>
-    /// Prerequisite type 40: handler table <c>Prerequisite_CheckHealth</c> (<c>14049e440</c>) compares
-    /// integer health via <c>PrerequisiteManager_ApplyComparison</c> (<c>1404a2090</c>), distinct from
-    /// type 172 <see cref="PrerequisiteType.HealthScaled"/> float path at <c>1404a2010</c>.
+    /// Prerequisite type 40: native test <c>FUN_1404a4d90</c> (evaluator case <c>0x28</c>) returns false for a null unit and otherwise compares the unit's health PERCENTAGE as a float,
+    /// <c>health * 100 / maxHealth</c> (virtual <c>+0x40</c> times the constant 100.0 over virtual <c>+0x48</c>), with <c>Value</c> through the float compare helper <c>FUN_1404a2010</c>.
+    /// Retail: 406 slots, <c>Value</c> 50 (72), 30 (51), 25 (29), 75 (25), 10 (25), 100 (23), comparisons &lt; (100) and &lt;= (155) and &gt; and &gt;=. The previous implementation compared the raw health
+    /// with <c>Value</c>. See Decomp/Analysis/PREREQUISITE_HEALTH_PERCENT_20261107.md.
     /// </summary>
     [PrerequisiteCheck(PrerequisiteType.Health)]
     public class PrerequisiteCheckHealth : IPrerequisiteCheck
@@ -15,10 +16,19 @@ namespace NexusForever.Game.Prerequisite.Check
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
             IWorldEntity entity = parameters.Target as IWorldEntity ?? player;
-            return PrerequisiteCompare.Compare(comparison, entity.Health, value);
+            return Meets(entity, comparison, value);
         }
 
         public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
-            => subject != null && PrerequisiteCompare.Compare(comparison, subject.Health, value);
+            => Meets(subject, comparison, value);
+
+        private static bool Meets(IWorldEntity entity, PrerequisiteComparison comparison, uint value)
+        {
+            if (entity == null)
+                return false;
+
+            float percent = (float)entity.Health * 100f / (float)entity.MaxHealth;
+            return PrerequisiteCompare.CompareFloat(comparison, percent, (float)value);
+        }
     }
 }

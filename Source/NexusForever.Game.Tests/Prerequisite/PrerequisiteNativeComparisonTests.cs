@@ -3,6 +3,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Prerequisite.Check;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Prerequisite;
 using NexusForever.Game.Tests.TestSupport;
 using Path = NexusForever.Game.Static.PlayerPath.Path;
@@ -34,6 +35,20 @@ public class PrerequisiteNativeComparisonTests
 
         Assert.Equal(expected, check.Meets(player, comparison, 0u, 1234u, new PrerequisiteParameters()));
         Assert.Equal(expected, check.MeetsUnit(player, comparison, 0u, 1234u, new PrerequisiteParameters()));
+    }
+
+    // Native type 3 (FUN_14049c560) compares the class for equality or inequality and returns false for any other comparison; the server returned true.
+    [Theory]
+    [InlineData(PrerequisiteComparison.GreaterThan)]
+    [InlineData(PrerequisiteComparison.LessThanOrEqual)]
+    [InlineData((PrerequisiteComparison)0)]
+    public void ClassNeverMeetsAnUnsupportedComparison(PrerequisiteComparison comparison)
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var proxy);
+        proxy.SetProperty(nameof(IPlayer.Class), Class.Warrior);
+
+        var check = new PrerequisiteCheckClass(NullLogger<PrerequisiteCheckClass>.Instance);
+        Assert.False(check.Meets(player, comparison, (uint)Class.Warrior, 0u, new PrerequisiteParameters()));
     }
 
     [Theory]

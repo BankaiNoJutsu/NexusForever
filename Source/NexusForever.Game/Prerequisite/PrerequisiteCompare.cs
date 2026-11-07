@@ -25,6 +25,22 @@ namespace NexusForever.Game.Prerequisite
                 _                               => false
             };
 
+        /// <summary>
+        /// The evaluator's float compare helper <c>FUN_1404a2010(…, comparison, actual, expected)</c>: 1 ==, 2 !=, 3 actual &gt; expected, 4 &gt;=, 5 &lt;, 6 &lt;=, anything else false, with IEEE
+        /// semantics (a NaN actual only satisfies !=).
+        /// </summary>
+        public static bool CompareFloat(PrerequisiteComparison comparison, float actual, float expected)
+            => comparison switch
+            {
+                PrerequisiteComparison.Equal              => actual == expected,
+                PrerequisiteComparison.NotEqual           => actual != expected,
+                PrerequisiteComparison.GreaterThan        => expected < actual,
+                PrerequisiteComparison.GreaterThanOrEqual => expected <= actual,
+                PrerequisiteComparison.LessThan           => actual < expected,
+                PrerequisiteComparison.LessThanOrEqual    => actual <= expected,
+                _                                         => false
+            };
+
         public static bool Compare(PrerequisiteComparison comparison, uint current, uint expected)
         {
             return comparison switch

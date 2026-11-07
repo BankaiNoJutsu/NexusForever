@@ -33,7 +33,7 @@ public sealed class UnitPrerequisiteContextTests
     [InlineData(12, 0u)]
     [InlineData(15, 123u)]
     [InlineData(28, 1u)]
-    [InlineData(40, 45u)]
+    [InlineData(40, 50u)]   // type 40 compares the health percentage: 45 of 90 is 50 (PREREQUISITE_HEALTH_PERCENT_20261107.md)
     [InlineData(71, 50u)]
     [InlineData(73, 23u)]
     [InlineData(82, (uint)EntityType.NonPlayer)]
