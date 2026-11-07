@@ -328,3 +328,18 @@ Read, not implemented:
   global array is unidentified.
 - **18 ScheduledEvent (17 slots, `FUN_14049ef00`)**: `Value` is looked up in a hash set at `global+0x72a0`; Equal when present, NotEqual when absent. The set (active scheduled events?) is not identified.
 - **146 ItemTradeSkillLevel (34 slots, `FUN_1404a0f90`)**: looks up an item record and a tradeskill-level table (`FUN_1405be150`), scans for the level band that contains the unit's value, then compares; needs the two tables identified.
+
+
+## Type 56 implemented as inferred; type 116 gated (same day)
+
+Evidence tier: body **read**, array identity **inferred**. Implemented, inferred (see the Evidence Ladder in `CONTINUATION_GUIDE.md`): no retail parity claim. The tests were written together with the class; no red run.
+
+- **56 (enum name `DifficultyRankSlotAssigned`, 124 slots)**: evaluator case 0x38 (inline, shared tail at `LAB_1404a22ec`) reads `Value` as a slot index; for an index below 28 the result is whether the pointer at
+  `unit+0x2d8 + index*0x10` is non-null (0 otherwise); the tail returns it for Equal, its negation for NotEqual (the `EDX == 0` branch) and false for any other comparison; no unit gives false.
+  Retail: comparisons Equal 64 and NotEqual 60, `ObjectId` unused (114 of 124 are 0), `Value` 0 to 24: 8 (21), 0 (17), 9 (12), 20 (12), 2 (10), 15 (9), 10 (6), 21 (6), 24 (6), 11 (5). The prerequisites are referenced from
+  Item2 (35), Creature2 (58), Spell4 and Quest2 rows. That distribution matches the server's `EquippedItem` indexes (System 8, Chest 0, Augment 9, Bag3 20, Head 2, Shields 15, Implant 10, Gadget 11, bank bags 21 to 24), so
+  the array is read as the unit's equipped-item slots. **That identity is inferred**, not read from code: it would be confirmed by the code that fills `unit+0x2d8` (the equipment-update packet consumer) or a
+  capture of an Item2 use gated by such a prerequisite. The enum name `DifficultyRankSlotAssigned` comes from an older guess and is not supported. Implemented as `PrerequisiteCheckEquipmentSlotAssigned`
+  (player's `Equipped` inventory location, index at or beyond 28 is unassigned). `PrerequisiteCheckEquipmentSlotAssignedTests` (15 cases) pass; 1,128 Prerequisite cases pass in the same scope (the 15 are included).
+- **116 (Stealth, 32 slots)**: case 0x74 returns `*(int*)(unit+0x54) > 1` through the same tail (Equal: true, NotEqual: false), `Value` and `ObjectId` unused. The field's meaning is known only from the
+  failure text ("Stealth property requirement not met"); why the test is `> 1` (not a flag) is unexplained, so it is not mapped to `IsStealthed`. Gated on the unit field `+0x54`.
