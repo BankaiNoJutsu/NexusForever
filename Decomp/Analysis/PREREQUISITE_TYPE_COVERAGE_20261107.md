@@ -261,3 +261,25 @@ no files on `C:` were deleted.
   event/quest participation); units of type `0x14`/`0x17` short-circuit (NotEqual true). **119 (PublicEventObjectiveObject)** `FUN_1404a0650` and **162 (percentage `+0x98/+0xd0`)** `FUN_1404a0a70` use the same per-player slot
   `unit+0x35f8` against the public-event manager (`DAT_140c65980`, virtuals `+0x30/+0x40/+0x68/+0x90`). The server has no per-player participation-slot index, so these stay unhandled. Gate: the participation-slot model
   (what assigns `unit+0x35f8`).
+
+
+## TargetGroup evaluator corrected (types 1, 2 and 11) and type 196 (Racial) implemented (same day)
+
+- Reading the wrapper virtuals behind `FUN_1403b4a20` while implementing type 44 showed that the server's existing spell-targeting evaluator (`TargetGroupCriteriaEvaluator`, used by `Spell` for `CastGroup` and `AoeGroup`)
+  disagreed with the native body in two places, both checked against the retail tables:
+  - **Types 1 and 2** were pass-through "FactionGroupId diagnostics". The native body compares a unit id (wrapper virtual `+0x10`) with the seven data ids, and the retail rows are Creature2 ids (19,555 of 19,740 type 1 ids and
+    69 of 72 type 2 ids exist in Creature2). Type 1 is therefore a creature include list and type 2 its exclusion. `Spell4Base` references type 1 groups as the cast group of 2,227 spells and the AoE group of 624, so those spells
+    previously accepted every target.
+  - **Type 11** required every sub-group to fail. The native case `0xb` returns success as soon as one sub-group passes (and failure when none does); the retail type 11 rows list other TargetGroup ids (2,288 of 2,302 data ids
+    are group ids, 1,845 of them type 1 creature lists), i.e. a union. The old rule inverted 284 cast groups and 292 AoE groups.
+  - Both native loops skip empty slots and the group's own id, and a sub-group id with no row fails; the evaluator now does the same when a TargetGroup table is loaded (without a table the legacy pass-through remains).
+  The evaluator's other mappings (types 3/4 faction, 5/6 race, 7/8 class, 9 creature list, 12/13 unit race) are unchanged. `TargetGroupCriteriaEvaluatorTests` encoded the superseded behaviour (types 1/2 always true,
+  type 11 all-fail); those assertions were replaced with the native semantics and new cases (8 failed against the old evaluator first, then passed). 4,989 Spell/TargetGroup/Prerequisite/Quest cases pass (Source/SQLite).
+  Which unit field wrapper `+0x10` reads (`*(unit+0x18)` first int) is taken to be the creature id because the data say so; the evaluator now relies on `IWorldEntity.CreatureId` for it. No retail capture compares an actual cast.
+- **Type 44** now delegates to this evaluator (`PrerequisiteCheckInTargetGroup`), replacing the narrower first version (group types 1, 2, 10, 11 only): all 214 retail slots (group types 1, 11, 3, 12, 10) are handled; an unknown
+  group row is not a member. `PrerequisiteCheckInTargetGroupTests` was updated (the "unmodelled type" case became faction-group cases).
+- **196 (Racial, 40 slots)**: `FUN_14049c520` compares the first int of the pointer at `unit+0xd0` (0 when null; the same field TargetGroup types 12/13 test) with `Value`; all 40 retail Values are UnitRace ids, Equal 34 and
+  NotEqual 6. Implemented as `PrerequisiteCheckUnitRace` over `CreatureEntry.UnitRaceId` (`parameters.Target ?? player`). `PrerequisiteCheckUnitRaceTests` (9 cases) were written together with the class (no separate red run).
+- Also read: **49 Schedule** (68 slots) and **30 FacilityWithinDistance** (54 slots) point at the shared `return 0` client stub (`FUN_140001ba0`), so they are server-side concepts like 47/153/154/163/164. **149 State** (46 slots)
+  tests `unit+0x1e4`/`+0x2ac` presence (Value 0/1) with unidentified fields; **141 IsOutOfBounds** (36) compares the unit position with a world-location record's radius (`FUN_14024b980(ObjectId)`, record `+0x4` radius, `+0xc` position,
+  `+0x28` world id) and the current world; **146 ItemTradeSkillLevel** (34) and **252 Personal3V3ArenaRating** (27, reads a rating through `FUN_1405bffe0(…, 1, -1)`) need further field mapping.

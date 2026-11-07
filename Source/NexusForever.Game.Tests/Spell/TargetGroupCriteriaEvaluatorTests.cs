@@ -99,16 +99,24 @@ public class TargetGroupCriteriaEvaluatorTests
 
     #endregion
 
-    #region Types 1 & 2 — FactionGroupId (diagnostic-only, always pass)
+    #region Types 1 & 2 — creature id list include / exclude
 
+    // Native FUN_1403b4a20 (Decomp/Analysis/PREREQUISITE_TYPE_COVERAGE_20261107.md): type 1 passes when the unit's id from wrapper virtual +0x10 equals one of the seven data ids, type 2 passes when
+    // it equals none of them. The retail TargetGroup rows of both types hold Creature2 ids (19,555 of 19,740 type 1 ids and 69 of 72 type 2 ids exist in Creature2), and 2,227 cast groups and 624
+    // AoE groups in Spell4Base are type 1. Earlier code treated both types as pass-through "FactionGroupId" diagnostics, which accepted every target of those spells.
     [Theory]
-    [InlineData(1u)]
-    [InlineData(2u)]
-    public void Evaluate_FactionGroupType_AlwaysReturnsTrue(uint type)
+    [InlineData(1u, 100u, true)]
+    [InlineData(1u, 300u, true)]
+    [InlineData(1u, 200u, false)]
+    [InlineData(1u, 0u, false)]
+    [InlineData(2u, 100u, false)]
+    [InlineData(2u, 200u, true)]
+    [InlineData(2u, 0u, true)]
+    public void Evaluate_CreatureIdListTypes_TestTheEntitysCreatureId(uint type, uint creatureId, bool expected)
     {
-        IWorldEntity entity = MakeWorldEntity();
-        TargetGroupEntry entry = MakeEntry(type, 1u, 2u, 3u);
-        Assert.True(TargetGroupCriteriaEvaluator.Evaluate(entry, entity, null));
+        IWorldEntity entity = MakeWorldEntity(creatureId: creatureId);
+        TargetGroupEntry entry = MakeEntry(type, 100u, 300u);
+        Assert.Equal(expected, TargetGroupCriteriaEvaluator.Evaluate(entry, entity, null));
     }
 
     #endregion
@@ -316,29 +324,62 @@ public class TargetGroupCriteriaEvaluatorTests
 
     #endregion
 
-    #region Type 11 — recursive NOT (all sub-groups must fail → entity passes)
+    #region Type 11 — recursive OR (any sub-group passing makes the entity pass)
+
+    // Native FUN_1403b4a20 case 0xb: each non-empty sub-group id other than the group's own is evaluated and the first sub-group that passes makes the group pass; none passing fails.
+    // Retail type 11 rows list other TargetGroup ids (2,288 of 2,302 data ids are TargetGroup ids, 1,845 of them type 1 creature lists), so the group is a union. The earlier
+    // implementation required every sub-group to fail, which inverted 284 cast groups and 292 AoE groups of Spell4Base.
+    [Fact]
+    public void Evaluate_Type11_NoSubGroupPasses_ReturnsFalse()
+    {
+        IWorldEntity entity = MakeWorldEntity(Faction.Exile);
+        TargetGroupEntry sub1 = new TargetGroupEntry { Id = 1u, Type = 3u, DataEntries = new uint[] { 166u, 0u, 0u, 0u, 0u, 0u, 0u } };
+        IGameTableManager gtm = MakeGameTableManager(sub1);
+        TargetGroupEntry entry = MakeEntry(11u, 1u);
+        Assert.False(TargetGroupCriteriaEvaluator.Evaluate(entry, entity, gtm));
+    }
 
     [Fact]
-    public void Evaluate_Type11_AllSubGroupsFail_ReturnsTrue()
+    public void Evaluate_Type11_OneSubGroupPasses_ReturnsTrue()
     {
-        // Sub-entry (id=1): type 3, include Dominion → Exile entity fails the sub-group
-        // Entity: Faction2 = Exile → sub-group fails → type 11 passes (all must fail)
-        IWorldEntity entity = MakeWorldEntity(Faction.Exile);
+        IWorldEntity entity = MakeWorldEntity(Faction.Dominion);
         TargetGroupEntry sub1 = new TargetGroupEntry { Id = 1u, Type = 3u, DataEntries = new uint[] { 166u, 0u, 0u, 0u, 0u, 0u, 0u } };
         IGameTableManager gtm = MakeGameTableManager(sub1);
         TargetGroupEntry entry = MakeEntry(11u, 1u);
         Assert.True(TargetGroupCriteriaEvaluator.Evaluate(entry, entity, gtm));
     }
 
-    [Fact]
-    public void Evaluate_Type11_OneSubGroupPasses_ReturnsFalse()
+    [Theory]
+    [InlineData(100u, true)]   // in the first creature list
+    [InlineData(500u, true)]   // in the second creature list
+    [InlineData(900u, false)]  // in neither
+    public void Evaluate_Type11_UnionOfCreatureListsPassesCreaturesInAnyList(uint creatureId, bool expected)
     {
-        // Sub-entry (id=1): type 3, include Dominion → Dominion entity passes the sub-group
-        // Entity: Faction2 = Dominion → sub-group passes → type 11 fails (at least one passed)
-        IWorldEntity entity = MakeWorldEntity(Faction.Dominion);
-        TargetGroupEntry sub1 = new TargetGroupEntry { Id = 1u, Type = 3u, DataEntries = new uint[] { 166u, 0u, 0u, 0u, 0u, 0u, 0u } };
-        IGameTableManager gtm = MakeGameTableManager(sub1);
-        TargetGroupEntry entry = MakeEntry(11u, 1u);
+        IWorldEntity entity = MakeWorldEntity(creatureId: creatureId);
+        TargetGroupEntry list1 = new TargetGroupEntry { Id = 1u, Type = 1u, DataEntries = new uint[] { 100u, 200u, 0u, 0u, 0u, 0u, 0u } };
+        TargetGroupEntry list2 = new TargetGroupEntry { Id = 2u, Type = 1u, DataEntries = new uint[] { 500u, 0u, 0u, 0u, 0u, 0u, 0u } };
+        IGameTableManager gtm = MakeGameTableManager(list1, list2);
+        TargetGroupEntry entry = new TargetGroupEntry { Id = 3u, Type = 11u, DataEntries = new uint[] { 1u, 2u, 0u, 0u, 0u, 0u, 0u } };
+        Assert.Equal(expected, TargetGroupCriteriaEvaluator.Evaluate(entry, entity, gtm));
+    }
+
+    [Fact]
+    public void Evaluate_Type11_SkipsItsOwnIdAndTreatsAMissingSubGroupRowAsNotPassing()
+    {
+        IWorldEntity entity = MakeWorldEntity(creatureId: 900u);
+        TargetGroupEntry list1 = new TargetGroupEntry { Id = 1u, Type = 1u, DataEntries = new uint[] { 100u, 0u, 0u, 0u, 0u, 0u, 0u } };
+        IGameTableManager gtm = MakeGameTableManager(list1);
+        TargetGroupEntry entry = new TargetGroupEntry { Id = 3u, Type = 11u, DataEntries = new uint[] { 3u, 77u, 1u, 0u, 0u, 0u, 0u } };
+        Assert.False(TargetGroupCriteriaEvaluator.Evaluate(entry, entity, gtm));
+    }
+
+    [Fact]
+    public void Evaluate_Type10_AMissingSubGroupRowFailsWhenTheTableIsLoaded()
+    {
+        IWorldEntity entity = MakeWorldEntity(creatureId: 100u);
+        TargetGroupEntry list1 = new TargetGroupEntry { Id = 1u, Type = 1u, DataEntries = new uint[] { 100u, 0u, 0u, 0u, 0u, 0u, 0u } };
+        IGameTableManager gtm = MakeGameTableManager(list1);
+        TargetGroupEntry entry = new TargetGroupEntry { Id = 3u, Type = 10u, DataEntries = new uint[] { 1u, 77u, 0u, 0u, 0u, 0u, 0u } };
         Assert.False(TargetGroupCriteriaEvaluator.Evaluate(entry, entity, gtm));
     }
 

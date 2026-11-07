@@ -3,6 +3,7 @@ using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Prerequisite;
 using NexusForever.Game.Prerequisite.Check;
 using NexusForever.Game.Static.Prerequisite;
+using NexusForever.Game.Static.Reputation;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.Game.Tests.Transport;
 using NexusForever.GameTable;
@@ -12,8 +13,8 @@ namespace NexusForever.Game.Tests.Entity;
 
 // Native evaluator (Decomp/Analysis/PREREQUISITE_TYPE_COVERAGE_20261107.md): type 44 (FUN_14049ee40) takes the TargetGroup id from Value (214 of 214 retail slots; ObjectId is 0),
 // evaluates the group against the unit with FUN_1403b4a20 (0 means member, 0x59 not) and returns Equal: member, NotEqual: not member, others false; a zero group id is false.
-// Group type 1 lists creature ids the unit's creature must be in, 2 inverts it, 10 requires every listed sub-group and 11 any one of them. Retail slots: group type 1 (146),
-// 11 (48), 3 (16), 12 (3), 10 (1); types 3..9, 12 and 13 test unit fields this server does not model and never meet.
+// The group is evaluated by the shared TargetGroupCriteriaEvaluator (type 1 creature id list, 2 its exclusion, 3..9 faction/race/class/creature lists, 10 every sub-group, 11 any
+// sub-group, 12/13 unit race). Retail slots: group type 1 (146), 11 (48), 3 (16), 12 (3), 10 (1). An unknown group row is not a member (native lookup failure).
 public class PrerequisiteCheckInTargetGroupTests
 {
     private const uint Creature = 5150;
@@ -28,9 +29,9 @@ public class PrerequisiteCheckInTargetGroupTests
         Group(6, 11, 2, 4),                   // any of: both fail
         Group(7, 10, 1, 3),                   // all of: both pass
         Group(8, 10, 1, 2),                   // all of: group 2 fails
-        Group(9, 3, 1),                       // a type whose unit field is not modelled
+        Group(9, 3, 166),                     // faction 166 (Dominion) include list
         Group(10, 11, 10, 1),                 // refers to itself and to a passing group
-        Group(11, 10, 9, 1)                   // all of: an unmodelled type and a passing group
+        Group(11, 10, 9, 1)                   // all of: the Dominion faction group and the creature list
     ];
 
     [Theory]
@@ -58,12 +59,14 @@ public class PrerequisiteCheckInTargetGroupTests
     }
 
     [Theory]
-    [InlineData(PrerequisiteComparison.Equal)]
-    [InlineData(PrerequisiteComparison.NotEqual)]
-    public void AGroupTypeThatTestsAnUnmodelledUnitFieldMeetsNeitherComparison(PrerequisiteComparison comparison)
+    [InlineData(166u, 9u, PrerequisiteComparison.Equal, true)]    // faction group (retail group type 3 slots)
+    [InlineData(167u, 9u, PrerequisiteComparison.Equal, false)]
+    [InlineData(167u, 9u, PrerequisiteComparison.NotEqual, true)]
+    [InlineData(166u, 11u, PrerequisiteComparison.Equal, true)]   // faction and creature list both pass
+    [InlineData(167u, 11u, PrerequisiteComparison.Equal, false)]
+    public void FactionGroupsAreEvaluatedThroughTheSharedEvaluator(uint faction, uint groupId, PrerequisiteComparison comparison, bool expected)
     {
-        Assert.False(Check().MeetsUnit(Unit(Creature), comparison, 9u, 0u, new PrerequisiteParameters()));
-        Assert.False(Check().MeetsUnit(Unit(Creature), comparison, 11u, 0u, new PrerequisiteParameters()));
+        Assert.Equal(expected, Check().MeetsUnit(Unit(Creature, (Faction)faction), comparison, groupId, 0u, new PrerequisiteParameters()));
     }
 
     [Fact]
@@ -112,10 +115,11 @@ public class PrerequisiteCheckInTargetGroupTests
         return new TargetGroupEntry { Id = id, Type = type, DataEntries = entries };
     }
 
-    private static IUnitEntity Unit(uint creatureId)
+    private static IUnitEntity Unit(uint creatureId, Faction faction = default)
     {
         IUnitEntity unit = RecordingDispatchProxy<IUnitEntity>.Create(out var proxy);
         proxy.SetProperty(nameof(IWorldEntity.CreatureId), creatureId);
+        proxy.SetProperty(nameof(IWorldEntity.Faction2), faction);
         return unit;
     }
 }

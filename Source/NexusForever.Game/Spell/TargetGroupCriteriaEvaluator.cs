@@ -32,12 +32,14 @@ namespace NexusForever.Game.Spell
 
             switch (entry.Type)
             {
-                // Types 1 & 2: client-side FactionGroupId from the faction-state component.
-                // NexusForever only exposes Faction1/Faction2, and those are not a proven analog,
-                // so keep these rows pass-through until the relationship mapping is decoded.
+                // Types 1 & 2: the native evaluator compares the unit id from wrapper virtual +0x10 with the
+                // seven data ids. Retail rows of both types list Creature2 ids (see the evaluator tests), so
+                // type 1 is a creature id include list and type 2 its exclusion.
                 case 1:
+                    return ContainsValue(entry.DataEntries, entity.CreatureId);
+
                 case 2:
-                    return true;
+                    return !ContainsValue(entry.DataEntries, entity.CreatureId);
 
                 // Type 3: Faction2Id must-include
                 case 3:
@@ -90,11 +92,11 @@ namespace NexusForever.Game.Spell
 
                 // Type 10: sub-TargetGroup all-pass (recursive AND — all sub-entries must pass)
                 case 10:
-                    return EvaluateSubGroups(entry.DataEntries, entity, gameTableManager, depth, mustAllPass: true);
+                    return EvaluateSubGroups(entry, entity, gameTableManager, depth, mustAllPass: true);
 
-                // Type 11: sub-TargetGroup all-fail (recursive NOT — all sub-entries must fail)
+                // Type 11: sub-TargetGroup any-pass (recursive OR — the first passing sub-entry passes the group)
                 case 11:
-                    return EvaluateSubGroups(entry.DataEntries, entity, gameTableManager, depth, mustAllPass: false);
+                    return EvaluateSubGroups(entry, entity, gameTableManager, depth, mustAllPass: false);
 
                 // Type 12: UnitRaceId must-include
                 case 12:
@@ -137,32 +139,44 @@ namespace NexusForever.Game.Spell
         }
 
         /// <summary>
-        /// Evaluates each non-zero sub-group id in <paramref name="dataEntries"/> recursively.
+        /// Evaluates each non-zero sub-group id of <paramref name="entry"/> (skipping its own id, as the native loop does) recursively.
         /// When <paramref name="mustAllPass"/> is <c>true</c> (type 10), all sub-groups must pass.
-        /// When <c>false</c> (type 11), all sub-groups must fail (entity is included only if every
-        /// sub-group rejects it).
+        /// When <c>false</c> (type 11), the first passing sub-group passes the group and none passing fails it.
+        /// A sub-group row missing from a loaded table does not pass (native lookup failure); without a loaded
+        /// table the legacy pass-through is kept.
         /// </summary>
-        private static bool EvaluateSubGroups(uint[] dataEntries, IWorldEntity entity, IGameTableManager gameTableManager, int depth, bool mustAllPass)
+        private static bool EvaluateSubGroups(TargetGroupEntry entry, IWorldEntity entity, IGameTableManager gameTableManager, int depth, bool mustAllPass)
         {
+            uint[] dataEntries = entry.DataEntries;
             if (dataEntries == null)
                 return true;
 
+            GameTable<TargetGroupEntry> table = gameTableManager?.TargetGroup;
             for (int i = 0; i < dataEntries.Length; i++)
             {
                 if (dataEntries[i] == 0u)
                     break;
 
-                TargetGroupEntry subEntry = gameTableManager?.TargetGroup?.GetEntry(dataEntries[i]);
-                bool subResult = Evaluate(subEntry, entity, gameTableManager, depth + 1);
+                if (dataEntries[i] == entry.Id)
+                    continue;
+
+                bool subResult;
+                if (table == null)
+                    subResult = true;
+                else
+                {
+                    TargetGroupEntry subEntry = table.GetEntry(dataEntries[i]);
+                    subResult = subEntry != null && Evaluate(subEntry, entity, gameTableManager, depth + 1);
+                }
 
                 if (mustAllPass && !subResult)
                     return false;
 
                 if (!mustAllPass && subResult)
-                    return false;
+                    return true;
             }
 
-            return true;
+            return mustAllPass;
         }
     }
 }
