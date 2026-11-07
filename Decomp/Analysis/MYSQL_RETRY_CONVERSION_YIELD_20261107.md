@@ -36,3 +36,6 @@ strategy replay into a non-retriable `InvalidOperationException` (`CharacterAtom
 verification) begins from a fresh inner context and re-reads its authoritative rows inside the delegate, which is replay-safe by construction. Not read: the Marketplace commands, `CraftingAccountDelivery`,
 `MailManager.Delivery`, `RealmBankManager.Command`, `AuthContext.SaveUnit`, `CharacterChallengeRewardExecutor`, `QuestManager.Rewards`, `VendorAccountPurchase`, `AccountCurrency.Refresh` and the Friendship/Group/Chat
 handlers. Those are the remaining candidates for a replay-safety read or a fault-injection pin; no defect is known.
+
+Addendum: `GlobalMarketplaceManager.AuctionPostingCommand.Attempt` (read) is replay-safe by receipt: each attempt uses a fresh owned context, locks, returns the stored outcome when the `MarketplaceBidReceipt`
+row already exists, and otherwise re-verifies the complete preimage before staging; a failed attempt falls to `ResolveAsync`. The other Marketplace commands share the `ExecuteAsync(Attempt)` shape but were not read.
