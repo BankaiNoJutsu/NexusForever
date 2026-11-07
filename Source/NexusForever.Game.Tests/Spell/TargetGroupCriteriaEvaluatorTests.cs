@@ -119,6 +119,25 @@ public class TargetGroupCriteriaEvaluatorTests
         Assert.Equal(expected, TargetGroupCriteriaEvaluator.Evaluate(entry, entity, null));
     }
 
+    // The native loop tests all seven slots and skips zeros (`if (slot != 0 && id == slot)`), it does not stop at the first zero. 18 retail rows have an id after a zero slot, for
+    // example TargetGroup 1 (1, 0, 1972, 0, 1974, 1955, 0) and 2743 (type 2: 12664, 0, 776, 0, 0, 0, 0).
+    [Theory]
+    [InlineData(1u, 1972u, true)]
+    [InlineData(1u, 1955u, true)]
+    [InlineData(1u, 1u, true)]
+    [InlineData(1u, 1973u, false)]
+    [InlineData(2u, 776u, false)]
+    [InlineData(2u, 12664u, false)]
+    [InlineData(2u, 777u, true)]
+    public void Evaluate_CreatureIdListTypes_ScanPastZeroSlots(uint type, uint creatureId, bool expected)
+    {
+        IWorldEntity entity = MakeWorldEntity(creatureId: creatureId);
+        TargetGroupEntry entry = type == 1u
+            ? MakeEntry(1u, 1u, 0u, 1972u, 0u, 1974u, 1955u, 0u)
+            : MakeEntry(2u, 12664u, 0u, 776u, 0u, 0u, 0u, 0u);
+        Assert.Equal(expected, TargetGroupCriteriaEvaluator.Evaluate(entry, entity, null));
+    }
+
     #endregion
 
     #region Type 3 — Faction2Id must-include

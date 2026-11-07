@@ -33,6 +33,44 @@ public sealed class ChallengeTargetIdentityTests
         Assert.Equal(1u, Runtime(f.Manager, 1001).CurrentCount);
     }
 
+    // Native evidence (Decomp/Analysis/TARGETGROUP_QUEST_OBJECTIVE_MEMBERSHIP_20261107.md): target group membership follows the client evaluator FUN_1403b4a20, so a faction
+    // group (type 3) admits the creatures of that faction and an all-of group (type 10) needs every sub-group to pass. 47 retail challenges target a faction group.
+    [Theory]
+    [InlineData(ChallengeType.Combat)] [InlineData(ChallengeType.ChecklistActivate)]
+    public void AFactionGroupTargetAdmitsCreaturesOfThatFactionOnly(ChallengeType type)
+    {
+        var definition = new ChallengeEntry { Id = 1001, ChallengeTypeEnum = (uint)type, Target = 8000, ChallengeTierId00 = 1 };
+        using var f = new Fixture(definition,
+            targetGroups: PlayerBindPointTests.Table(new TargetGroupEntry { Id = 8000, Type = (uint)TargetGroupType.FactionIdGroup, DataEntries = [166, 167, 0, 0, 0, 0, 0] }),
+            creatures: PlayerBindPointTests.Table(new Creature2Entry { Id = 101, FactionId = 166 }, new Creature2Entry { Id = 102, FactionId = 219 }));
+        f.Manager.HandleChoice(1001, ChallengeChoice.Activate);
+        f.Emit(102);
+        Assert.Equal(0u, Runtime(f.Manager, 1001).CurrentCount);
+        f.Emit(101);
+        Assert.Equal(1u, Runtime(f.Manager, 1001).CurrentCount);
+    }
+
+    [Fact]
+    public void AnAllOfGroupAdmitsOnlyTheCreaturesThatPassEverySubGroup()
+    {
+        var definition = new ChallengeEntry { Id = 1001, ChallengeTypeEnum = (uint)ChallengeType.Combat, Target = 8000, ChallengeTierId00 = 1 };
+        using var f = new Fixture(definition,
+            targetGroups: PlayerBindPointTests.Table(
+                new TargetGroupEntry { Id = 8000, Type = (uint)TargetGroupType.OtherTargetGroup, DataEntries = [8001, 8002, 0, 0, 0, 0, 0] },
+                new TargetGroupEntry { Id = 8001, Type = (uint)TargetGroupType.CreatureIdGroup, DataEntries = [101, 102, 0, 0, 0, 0, 0] },
+                new TargetGroupEntry { Id = 8002, Type = (uint)TargetGroupType.FactionIdGroup, DataEntries = [166, 0, 0, 0, 0, 0, 0] }),
+            creatures: PlayerBindPointTests.Table(
+                new Creature2Entry { Id = 101, FactionId = 166 },
+                new Creature2Entry { Id = 102, FactionId = 219 },     // listed, wrong faction
+                new Creature2Entry { Id = 103, FactionId = 166 }));   // right faction, not listed
+        f.Manager.HandleChoice(1001, ChallengeChoice.Activate);
+        f.Emit(102);
+        f.Emit(103);
+        Assert.Equal(0u, Runtime(f.Manager, 1001).CurrentCount);
+        f.Emit(101);
+        Assert.Equal(1u, Runtime(f.Manager, 1001).CurrentCount);
+    }
+
     [Theory]
     [InlineData(ChallengeType.Combat)] [InlineData(ChallengeType.ChecklistActivate)]
     public void ExistingDirectTargetsWithoutAGroupKeepTheirRoute(ChallengeType type)
@@ -113,15 +151,17 @@ public sealed class ChallengeTargetIdentityTests
         internal readonly ChallengeManager Manager;
         private readonly ChallengeEntry definition;
 
-        internal Fixture(ChallengeEntry definition, IGameTableManager actual = null)
+        internal Fixture(ChallengeEntry definition, IGameTableManager actual = null, GameTable<TargetGroupEntry> targetGroups = null, GameTable<Creature2Entry> creatures = null)
         {
             this.definition = definition;
             var tables = RecordingDispatchProxy<IGameTableManager>.Create(out var data);
             data.SetProperty(nameof(IGameTableManager.Challenge), PlayerBindPointTests.Table(definition));
             data.SetProperty(nameof(IGameTableManager.ChallengeTier), actual?.ChallengeTier ?? PlayerBindPointTests.Table(new ChallengeTierEntry { Id = 1, Count = 5 }));
-            data.SetProperty(nameof(IGameTableManager.TargetGroup), actual?.TargetGroup ?? PlayerBindPointTests.Table(
+            data.SetProperty(nameof(IGameTableManager.TargetGroup), targetGroups ?? actual?.TargetGroup ?? PlayerBindPointTests.Table(
                 new TargetGroupEntry { Id = 7000, Type = (uint)TargetGroupType.OtherTargetGroupCreatures, DataEntries = [7001, 0] },
                 new TargetGroupEntry { Id = 7001, Type = (uint)TargetGroupType.CreatureIdListGroup, DataEntries = [42, 0] }));
+            if (creatures != null)
+                data.SetProperty(nameof(IGameTableManager.Creature2), creatures);
             data.SetProperty(nameof(IGameTableManager.WorldZone), actual?.WorldZone);
             Player = RecordingDispatchProxy<IPlayer>.Create(out var actor);
             var session = RecordingDispatchProxy<IGameSession>.Create(out _);

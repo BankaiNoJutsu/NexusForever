@@ -559,15 +559,152 @@ public class AssetManagerTargetGroupTests
         Assert.Equal([17189u, 19595u], assetManager.GetQuestObjectiveTargetIds(6508u));
     }
 
+    // Native evidence (Decomp/Analysis/TARGETGROUP_QUEST_OBJECTIVE_MEMBERSHIP_20261107.md): the client target-group evaluator FUN_1403b4a20 defines membership by
+    // unit attributes. Type 10 is an AND of its sub-groups, 11 an OR, 3/4 faction include/exclude, 12/13 creature unit race include/exclude. Retail KillTargetGroups
+    // objectives such as 19319 use type 10 groups of (unit race list AND NOT faction list), which a creature id flattening cannot express: the quest objective's
+    // targets are therefore every Creature2 row that satisfies the group.
+    [Fact]
+    public void CacheQuestObjectiveTargetGroups_WithUnitRaceAndFactionExclusionGroupResolvesMatchingCreatures()
+    {
+        QuestObjectiveEntry objective = CreateQuestObjective(19319u, QuestObjectiveType.KillTargetGroups, targetGroupId: 14113u);
+        TargetGroupEntry races = CreateTargetGroup(14111u, TargetGroupType.CreatureRaceIdGroup, 184u, 278u);
+        TargetGroupEntry notFactions = CreateTargetGroup(14112u, TargetGroupType.NotFactionIdGroup, 219u, 693u, 197u);
+        TargetGroupEntry all = CreateTargetGroup(14113u, TargetGroupType.OtherTargetGroup, 14111u, 14112u);
+
+        GameTableManager gameTableManager = CreateGameTableManager(
+            questObjectiveTable: CreateGameTable(objective),
+            targetGroupTable: CreateGameTable(races, notFactions, all),
+            creature2Table: CreateGameTable(
+                Creature(1001u, unitRaceId: 184u, factionId: 100u),
+                Creature(1002u, unitRaceId: 278u, factionId: 100u),
+                Creature(1003u, unitRaceId: 184u, factionId: 219u),   // excluded faction
+                Creature(1004u, unitRaceId: 5u, factionId: 100u),     // other unit race
+                Creature(1005u, unitRaceId: 278u, factionId: 693u))); // excluded faction
+
+        AssetManager assetManager = CreateAssetManager(gameTableManager);
+
+        InvokeCache(assetManager, "CacheQuestObjectiveTargetGroups");
+
+        Assert.Equal([1001u, 1002u], assetManager.GetQuestObjectiveTargetIds(19319u));
+    }
+
+    [Fact]
+    public void CacheQuestObjectiveTargetGroups_WithFactionIncludeGroupResolvesCreaturesOfThatFaction()
+    {
+        QuestObjectiveEntry objective = CreateQuestObjective(4112u, QuestObjectiveType.KillTargetGroups, targetGroupId: 847u);
+        TargetGroupEntry factions = CreateTargetGroup(847u, TargetGroupType.FactionIdGroup, 166u, 167u);
+
+        GameTableManager gameTableManager = CreateGameTableManager(
+            questObjectiveTable: CreateGameTable(objective),
+            targetGroupTable: CreateGameTable(factions),
+            creature2Table: CreateGameTable(
+                Creature(2001u, unitRaceId: 0u, factionId: 166u),
+                Creature(2002u, unitRaceId: 0u, factionId: 167u),
+                Creature(2003u, unitRaceId: 0u, factionId: 219u)));
+
+        AssetManager assetManager = CreateAssetManager(gameTableManager);
+
+        InvokeCache(assetManager, "CacheQuestObjectiveTargetGroups");
+
+        Assert.Equal([2001u, 2002u], assetManager.GetQuestObjectiveTargetIds(4112u));
+    }
+
+    [Fact]
+    public void CacheQuestObjectiveTargetGroups_WithCreatureListAndFactionGroupKeepsOnlyListedCreaturesOfTheFaction()
+    {
+        // Retail spell AoE group 436: creature 5865 AND faction 521. The same AND shape applies to objective groups.
+        QuestObjectiveEntry objective = CreateQuestObjective(601u, QuestObjectiveType.KillTargetGroups, targetGroupId: 436u);
+        TargetGroupEntry creatures = CreateTargetGroup(428u, TargetGroupType.CreatureIdGroup, 5865u, 5866u);
+        TargetGroupEntry faction = CreateTargetGroup(435u, TargetGroupType.FactionIdGroup, 521u);
+        TargetGroupEntry all = CreateTargetGroup(436u, TargetGroupType.OtherTargetGroup, 428u, 435u);
+
+        GameTableManager gameTableManager = CreateGameTableManager(
+            questObjectiveTable: CreateGameTable(objective),
+            targetGroupTable: CreateGameTable(creatures, faction, all),
+            creature2Table: CreateGameTable(
+                Creature(5865u, unitRaceId: 0u, factionId: 521u),
+                Creature(5866u, unitRaceId: 0u, factionId: 100u),     // listed creature, wrong faction
+                Creature(5867u, unitRaceId: 0u, factionId: 521u)));   // right faction, not listed
+
+        AssetManager assetManager = CreateAssetManager(gameTableManager);
+
+        InvokeCache(assetManager, "CacheQuestObjectiveTargetGroups");
+
+        Assert.Equal([5865u], assetManager.GetQuestObjectiveTargetIds(601u));
+    }
+
+    [Fact]
+    public void CacheQuestObjectiveTargetGroups_WithTwoCreatureListsInAnAllOfGroupKeepsTheOverlap()
+    {
+        QuestObjectiveEntry objective = CreateQuestObjective(602u, QuestObjectiveType.KillTargetGroups, targetGroupId: 33u);
+        TargetGroupEntry first = CreateTargetGroup(31u, TargetGroupType.CreatureIdGroup, 1u, 2u, 3u);
+        TargetGroupEntry second = CreateTargetGroup(32u, TargetGroupType.CreatureIdGroup, 3u, 4u);
+        TargetGroupEntry all = CreateTargetGroup(33u, TargetGroupType.OtherTargetGroup, 31u, 32u);
+
+        GameTableManager gameTableManager = CreateGameTableManager(
+            questObjectiveTable: CreateGameTable(objective),
+            targetGroupTable: CreateGameTable(first, second, all));
+
+        AssetManager assetManager = CreateAssetManager(gameTableManager);
+
+        InvokeCache(assetManager, "CacheQuestObjectiveTargetGroups");
+
+        Assert.Equal([3u], assetManager.GetQuestObjectiveTargetIds(602u));
+    }
+
+    [Fact]
+    public void CacheQuestObjectiveTargetGroups_WithoutCreatureDataAttributeGroupsHaveNoTargets()
+    {
+        QuestObjectiveEntry objective = CreateQuestObjective(603u, QuestObjectiveType.KillTargetGroups, targetGroupId: 847u);
+
+        GameTableManager gameTableManager = CreateGameTableManager(
+            questObjectiveTable: CreateGameTable(objective),
+            targetGroupTable: CreateGameTable(CreateTargetGroup(847u, TargetGroupType.FactionIdGroup, 166u)));
+
+        AssetManager assetManager = CreateAssetManager(gameTableManager);
+
+        InvokeCache(assetManager, "CacheQuestObjectiveTargetGroups");
+
+        Assert.Empty(assetManager.GetQuestObjectiveTargetIds(603u));
+    }
+
+    [Fact]
+    public void CacheCreatureTargetGroups_IndexesAttributeGroupsReferencedByQuestObjectives()
+    {
+        QuestObjectiveEntry objective = CreateQuestObjective(604u, QuestObjectiveType.ActivateTargetGroup, targetGroupId: 847u);
+        TargetGroupEntry referenced = CreateTargetGroup(847u, TargetGroupType.FactionIdGroup, 166u);
+        TargetGroupEntry unreferenced = CreateTargetGroup(848u, TargetGroupType.FactionIdGroup, 166u);
+
+        GameTableManager gameTableManager = CreateGameTableManager(
+            questObjectiveTable: CreateGameTable(objective),
+            targetGroupTable: CreateGameTable(referenced, unreferenced),
+            creature2Table: CreateGameTable(
+                Creature(2001u, unitRaceId: 0u, factionId: 166u),
+                Creature(2003u, unitRaceId: 0u, factionId: 219u)));
+
+        AssetManager assetManager = CreateAssetManager(gameTableManager);
+
+        InvokeCache(assetManager, "CacheCreatureTargetGroups");
+
+        Assert.Equal([847u], assetManager.GetTargetGroupsForCreatureId(2001u));
+        Assert.Null(assetManager.GetTargetGroupsForCreatureId(2003u));
+    }
+
+    private static Creature2Entry Creature(uint id, uint unitRaceId, uint factionId)
+        => new() { Id = id, UnitRaceId = unitRaceId, FactionId = factionId };
+
     private static GameTableManager CreateGameTableManager(
         GameTable<QuestObjectiveEntry> questObjectiveTable = null,
-        GameTable<TargetGroupEntry> targetGroupTable = null)
+        GameTable<TargetGroupEntry> targetGroupTable = null,
+        GameTable<Creature2Entry> creature2Table = null)
     {
         var gameTableManager = (GameTableManager)RuntimeHelpers.GetUninitializedObject(typeof(GameTableManager));
         if (questObjectiveTable != null)
             SetAutoProperty(gameTableManager, nameof(GameTableManager.QuestObjective), questObjectiveTable);
         if (targetGroupTable != null)
             SetAutoProperty(gameTableManager, nameof(GameTableManager.TargetGroup), targetGroupTable);
+        if (creature2Table != null)
+            SetAutoProperty(gameTableManager, nameof(GameTableManager.Creature2), creature2Table);
 
         return gameTableManager;
     }

@@ -6,6 +6,7 @@ using NexusForever.Game.Retail;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Abstract;
+using NexusForever.Game.Spell;
 using NexusForever.Game.Static.Challenges;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Quest;
@@ -632,7 +633,7 @@ namespace NexusForever.Game.Challenges
             if (entry.Target == creatureId && (!groupTarget || targetGroup == null))
                 return true;
 
-            return TargetGroupContainsCreature(targetGroup, creatureId, new HashSet<uint>())
+            return TargetGroupCreatureResolver.IsMember(targetGroup, creatureId, gameTableManager)
                 || MatchesMappedChallengeCreatureTarget(entry, creatureId);
         }
 
@@ -640,31 +641,6 @@ namespace NexusForever.Game.Challenges
         {
             return MappedChallengeCreatureTargets.TryGetValue(entry.Id, out uint[] mappedCreatureIds)
                 && mappedCreatureIds.Contains(creatureId);
-        }
-
-        private bool TargetGroupContainsCreature(TargetGroupEntry entry, uint creatureId, ISet<uint> visitedTargetGroups)
-        {
-            if (entry == null || !visitedTargetGroups.Add(entry.Id))
-                return false;
-
-            switch ((TargetGroupType)entry.Type)
-            {
-                case TargetGroupType.CreatureIdGroup:
-                case TargetGroupType.CreatureIdListGroup:
-                    return entry.DataEntries?.Any(id => id == creatureId) == true;
-                case TargetGroupType.OtherTargetGroup:
-                case TargetGroupType.OtherTargetGroupCreatures:
-                    foreach (uint targetGroupId in entry.DataEntries?.Where(id => id != 0u) ?? [])
-                    {
-                        TargetGroupEntry childEntry = gameTableManager.TargetGroup?.GetEntry(targetGroupId);
-                        if (TargetGroupContainsCreature(childEntry, creatureId, visitedTargetGroups))
-                            return true;
-                    }
-
-                    return false;
-                default:
-                    return false;
-            }
         }
 
         public bool TryAdvanceProgress(ushort challengeId, uint progress = 1u)

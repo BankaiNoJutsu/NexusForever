@@ -10,6 +10,11 @@ namespace NexusForever.Game.Spell
     /// (function at 1403b4a20). Returns <c>true</c> when the entity passes all criteria (valid
     /// target), <c>false</c> when the entity is rejected.
     /// </summary>
+    /// <summary>
+    /// The unit attributes the native target-group evaluator reads: creature id, Faction2, player race and class (0 for non-players) and the creature's unit race.
+    /// </summary>
+    internal readonly record struct TargetGroupSubject(uint CreatureId, uint Faction2, uint PlayerRace, uint PlayerClass, uint UnitRaceId);
+
     internal static class TargetGroupCriteriaEvaluator
     {
         private const int MaxRecursionDepth = 5;
@@ -24,6 +29,22 @@ namespace NexusForever.Game.Spell
         /// <returns><c>true</c> if the entity satisfies the criteria; <c>false</c> to reject it.</returns>
         internal static bool Evaluate(TargetGroupEntry entry, IWorldEntity entity, IGameTableManager gameTableManager, int depth = 0)
         {
+            var subject = new TargetGroupSubject(
+                entity.CreatureId,
+                (uint)entity.Faction2,
+                entity is IPlayer player ? (uint)player.Race : 0u,
+                entity is IPlayer classPlayer ? (uint)classPlayer.Class : 0u,
+                entity.CreatureEntry?.UnitRaceId ?? 0u);
+
+            return Evaluate(entry, subject, gameTableManager, depth);
+        }
+
+        /// <summary>
+        /// Evaluate <paramref name="entry"/> against the attributes of one unit. Used directly for creature definitions (see <c>TargetGroupCreatureResolver</c>),
+        /// which have a creature id, faction and unit race but no player race or class.
+        /// </summary>
+        internal static bool Evaluate(TargetGroupEntry entry, in TargetGroupSubject subject, IGameTableManager gameTableManager, int depth = 0)
+        {
             if (entry == null)
                 return true;
 
@@ -36,81 +57,54 @@ namespace NexusForever.Game.Spell
                 // seven data ids. Retail rows of both types list Creature2 ids (see the evaluator tests), so
                 // type 1 is a creature id include list and type 2 its exclusion.
                 case 1:
-                    return ContainsValue(entry.DataEntries, entity.CreatureId);
+                    return ContainsValue(entry.DataEntries, subject.CreatureId);
 
                 case 2:
-                    return !ContainsValue(entry.DataEntries, entity.CreatureId);
+                    return !ContainsValue(entry.DataEntries, subject.CreatureId);
 
                 // Type 3: Faction2Id must-include
                 case 3:
-                {
-                    uint faction2 = (uint)entity.Faction2;
-                    return ContainsValue(entry.DataEntries, faction2);
-                }
+                    return ContainsValue(entry.DataEntries, subject.Faction2);
 
                 // Type 4: Faction2Id must-exclude
                 case 4:
-                {
-                    uint faction2 = (uint)entity.Faction2;
-                    return !ContainsValue(entry.DataEntries, faction2);
-                }
+                    return !ContainsValue(entry.DataEntries, subject.Faction2);
 
                 // Type 5: RaceId must-include
                 case 5:
-                {
-                    uint raceId = entity is IPlayer player5 ? (uint)player5.Race : 0u;
-                    return ContainsValue(entry.DataEntries, raceId);
-                }
+                    return ContainsValue(entry.DataEntries, subject.PlayerRace);
 
                 // Type 6: RaceId must-exclude
                 case 6:
-                {
-                    uint raceId = entity is IPlayer player6 ? (uint)player6.Race : 0u;
-                    return !ContainsValue(entry.DataEntries, raceId);
-                }
+                    return !ContainsValue(entry.DataEntries, subject.PlayerRace);
 
                 // Type 7: ClassId must-include
                 case 7:
-                {
-                    uint classId = entity is IPlayer player7 ? (uint)player7.Class : 0u;
-                    return ContainsValue(entry.DataEntries, classId);
-                }
+                    return ContainsValue(entry.DataEntries, subject.PlayerClass);
 
                 // Type 8: ClassId must-exclude
                 case 8:
-                {
-                    uint classId = entity is IPlayer player8 ? (uint)player8.Class : 0u;
-                    return !ContainsValue(entry.DataEntries, classId);
-                }
+                    return !ContainsValue(entry.DataEntries, subject.PlayerClass);
 
                 // Type 9: Creature2Id list-match (any matching entry)
                 case 9:
-                {
-                    uint creatureId = entity.CreatureId;
-                    return ContainsValue(entry.DataEntries, creatureId);
-                }
+                    return ContainsValue(entry.DataEntries, subject.CreatureId);
 
                 // Type 10: sub-TargetGroup all-pass (recursive AND — all sub-entries must pass)
                 case 10:
-                    return EvaluateSubGroups(entry, entity, gameTableManager, depth, mustAllPass: true);
+                    return EvaluateSubGroups(entry, subject, gameTableManager, depth, mustAllPass: true);
 
                 // Type 11: sub-TargetGroup any-pass (recursive OR — the first passing sub-entry passes the group)
                 case 11:
-                    return EvaluateSubGroups(entry, entity, gameTableManager, depth, mustAllPass: false);
+                    return EvaluateSubGroups(entry, subject, gameTableManager, depth, mustAllPass: false);
 
                 // Type 12: UnitRaceId must-include
                 case 12:
-                {
-                    uint unitRaceId = entity.CreatureEntry?.UnitRaceId ?? 0u;
-                    return ContainsValue(entry.DataEntries, unitRaceId);
-                }
+                    return ContainsValue(entry.DataEntries, subject.UnitRaceId);
 
                 // Type 13: UnitRaceId must-exclude
                 case 13:
-                {
-                    uint unitRaceId = entity.CreatureEntry?.UnitRaceId ?? 0u;
-                    return !ContainsValue(entry.DataEntries, unitRaceId);
-                }
+                    return !ContainsValue(entry.DataEntries, subject.UnitRaceId);
 
                 default:
                     return true;
@@ -118,8 +112,8 @@ namespace NexusForever.Game.Spell
         }
 
         /// <summary>
-        /// Returns whether <paramref name="value"/> appears in <paramref name="dataEntries"/>,
-        /// stopping at the first zero slot (entries are zero-terminated).
+        /// Returns whether <paramref name="value"/> appears in a non-zero slot of <paramref name="dataEntries"/>.
+        /// The native loop (<c>FUN_1403b4a20</c>) tests every slot and skips zeros rather than stopping at the first zero; 18 retail rows have ids after a zero slot.
         /// </summary>
         private static bool ContainsValue(uint[] dataEntries, uint value)
         {
@@ -128,10 +122,7 @@ namespace NexusForever.Game.Spell
 
             for (int i = 0; i < dataEntries.Length; i++)
             {
-                if (dataEntries[i] == 0u)
-                    break;
-
-                if (dataEntries[i] == value)
+                if (dataEntries[i] != 0u && dataEntries[i] == value)
                     return true;
             }
 
@@ -145,7 +136,7 @@ namespace NexusForever.Game.Spell
         /// A sub-group row missing from a loaded table does not pass (native lookup failure); without a loaded
         /// table the legacy pass-through is kept.
         /// </summary>
-        private static bool EvaluateSubGroups(TargetGroupEntry entry, IWorldEntity entity, IGameTableManager gameTableManager, int depth, bool mustAllPass)
+        private static bool EvaluateSubGroups(TargetGroupEntry entry, in TargetGroupSubject subject, IGameTableManager gameTableManager, int depth, bool mustAllPass)
         {
             uint[] dataEntries = entry.DataEntries;
             if (dataEntries == null)
@@ -154,10 +145,7 @@ namespace NexusForever.Game.Spell
             GameTable<TargetGroupEntry> table = gameTableManager?.TargetGroup;
             for (int i = 0; i < dataEntries.Length; i++)
             {
-                if (dataEntries[i] == 0u)
-                    break;
-
-                if (dataEntries[i] == entry.Id)
+                if (dataEntries[i] == 0u || dataEntries[i] == entry.Id)
                     continue;
 
                 bool subResult;
@@ -166,7 +154,7 @@ namespace NexusForever.Game.Spell
                 else
                 {
                     TargetGroupEntry subEntry = table.GetEntry(dataEntries[i]);
-                    subResult = subEntry != null && Evaluate(subEntry, entity, gameTableManager, depth + 1);
+                    subResult = subEntry != null && Evaluate(subEntry, subject, gameTableManager, depth + 1);
                 }
 
                 if (mustAllPass && !subResult)

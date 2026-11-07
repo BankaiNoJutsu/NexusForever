@@ -5,6 +5,7 @@ using NexusForever.Database.Character;
 using NexusForever.Database.World;
 using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract;
+using NexusForever.Game.Spell;
 using NexusForever.Game.Static;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Quest;
@@ -109,12 +110,17 @@ namespace NexusForever.Game
             IGameTableManager manager = GetGameTableManager();
             IEnumerable<TargetGroupEntry> targetGroupEntries =
                 manager.TargetGroup?.Entries ?? Enumerable.Empty<TargetGroupEntry>();
+
+            // Groups made only of creature id lists are indexed for every group. A group with faction/unit race criteria needs each Creature2 definition evaluated, so only
+            // those a quest objective refers to are indexed; the rest were never indexed before either.
+            HashSet<uint> objectiveGroupIds = GetQuestObjectiveTargetGroups(manager).Select(o => o.TargetGroupId).ToHashSet();
             foreach (TargetGroupEntry entry in targetGroupEntries)
             {
-                var targetIds = new HashSet<uint>();
-                var unhandledTargetGroups = new HashSet<TargetGroupType>();
-                AddToTargets(entry, targetIds, unhandledTargetGroups, new HashSet<uint>());
-                if (unhandledTargetGroups.Count != 0)
+                HashSet<uint> targetIds = TargetGroupCreatureResolver.TryResolveCreatureLists(entry, manager);
+                if (targetIds == null && objectiveGroupIds.Contains(entry.Id))
+                    targetIds = TargetGroupCreatureResolver.ResolveByCreatureAttributes(entry, manager);
+
+                if (targetIds == null)
                     continue;
 
                 foreach (uint creatureId in targetIds)
@@ -129,35 +135,11 @@ namespace NexusForever.Game
             creatureAssociatedTargetGroups = entries.ToImmutableDictionary(e => e.Key, e => e.Value.ToImmutableList());
         }
 
-        private void AddToTargets(TargetGroupEntry entry, ISet<uint> targetIds, ISet<TargetGroupType> unhandledTargetGroups, ISet<uint> visitedTargetGroups)
+        /// <summary>
+        /// The quest objectives that identify their targets through a TargetGroup, with that group's id.
+        /// </summary>
+        private static IEnumerable<(QuestObjectiveEntry Objective, uint TargetGroupId)> GetQuestObjectiveTargetGroups(IGameTableManager manager)
         {
-            if (entry == null || !visitedTargetGroups.Add(entry.Id))
-                return;
-
-            switch ((TargetGroupType)entry.Type)
-            {
-                case TargetGroupType.CreatureIdGroup:
-                case TargetGroupType.CreatureIdListGroup:
-                    foreach (uint targetId in entry.DataEntries.Where(id => id != 0u))
-                        targetIds.Add(targetId);
-                    break;
-                case TargetGroupType.OtherTargetGroup:
-                case TargetGroupType.OtherTargetGroupCreatures:
-                    foreach (uint targetGroupId in entry.DataEntries.Where(id => id != 0u))
-                        AddToTargets(GetGameTableManager().TargetGroup?.GetEntry(targetGroupId), targetIds, unhandledTargetGroups, visitedTargetGroups);
-                    break;
-                default:
-                    unhandledTargetGroups.Add((TargetGroupType)entry.Type);
-                    break;
-            }
-        }
-
-        private void CacheQuestObjectiveTargetGroups()
-        {
-            var entries = ImmutableDictionary.CreateBuilder<uint, ImmutableList<uint>>();
-            var unhandledTargetGroups = new HashSet<TargetGroupType>();
-            IGameTableManager manager = GetGameTableManager();
-
             IEnumerable<QuestObjectiveEntry> questObjectiveEntries =
                 manager.QuestObjective?.Entries ?? Enumerable.Empty<QuestObjectiveEntry>();
             foreach (QuestObjectiveEntry questObjectiveEntry in questObjectiveEntries
@@ -173,12 +155,27 @@ namespace NexusForever.Game
                     ? questObjectiveEntry.Data
                     : questObjectiveEntry.TargetGroupIdRewardPane;
 
-                if (targetGroupId == 0u)
-                    continue;
+                if (targetGroupId != 0u)
+                    yield return (questObjectiveEntry, targetGroupId);
+            }
+        }
 
-                var targetIds = new HashSet<uint>();
-                AddToTargets(manager.TargetGroup?.GetEntry(targetGroupId), targetIds, unhandledTargetGroups, new HashSet<uint>());
-                entries[questObjectiveEntry.Id] = targetIds.Order().ToImmutableList();
+        private void CacheQuestObjectiveTargetGroups()
+        {
+            var entries = ImmutableDictionary.CreateBuilder<uint, ImmutableList<uint>>();
+            IGameTableManager manager = GetGameTableManager();
+
+            // Several objectives share a group; resolving a group that needs every Creature2 definition evaluated is not cheap.
+            var resolved = new Dictionary<uint, ImmutableList<uint>>();
+            foreach ((QuestObjectiveEntry questObjectiveEntry, uint targetGroupId) in GetQuestObjectiveTargetGroups(manager))
+            {
+                if (!resolved.TryGetValue(targetGroupId, out ImmutableList<uint> targets))
+                {
+                    targets = TargetGroupCreatureResolver.Resolve(manager.TargetGroup?.GetEntry(targetGroupId), manager).Order().ToImmutableList();
+                    resolved.Add(targetGroupId, targets);
+                }
+
+                entries[questObjectiveEntry.Id] = targets;
             }
 
             questObjectiveTargets = entries.ToImmutable();
