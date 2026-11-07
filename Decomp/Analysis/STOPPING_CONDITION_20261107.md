@@ -84,3 +84,6 @@ mechanical test-fixture work, Auth-only classes without a provider seam, MySQL 8
 Update: the Auth-seam classes (account currency, crafting account outbox, world session admission, account keybinding) now run on MySQL 8.0.46 and pass with plain options;
 under the production options two pass fully and two fail only through test-opened transactions. Remaining MySQL work is test-fixture strategy-awareness for the other
 classes, MySQL 8.4.13, and socket, broker and load runs.
+
+Update: a static audit of all 56 production transaction sites found no further instance of the retry-strategy recovery defect, and three pins confirm the EF scope assumption the
+fragile sites rely on ([EXECUTION_STRATEGY_SCOPE_AUDIT_20261107.md](EXECUTION_STRATEGY_SCOPE_AUDIT_20261107.md)).

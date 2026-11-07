@@ -1,5 +1,8 @@
 # Assessment follow-through goal
 
+[Execution-strategy scope audit](EXECUTION_STRATEGY_SCOPE_AUDIT_20261107.md) (2026-11-07): all 56 production transaction sites were traced (agent audit, static) after the Contract recovery fix;
+no further site of the same defect kind was found. Three new pins confirm EF's strategy scope survives an await after a synchronous Execute (passed on first run).
+
 [Contract completion recovery under the retrying strategy](CONTRACT_COMPLETION_RETRY_STRATEGY_RECOVERY.md) (2026-11-07): the MySQL production-options run exposed a real
 defect. `ContractCompletionExecutor.Recover` opened its transaction outside the execution strategy, so on a retry-enabled provider the recovery after a
 non-transient commit failure returned `Conflict` instead of resolving the outcome. Fixed (5 new SQLite tests failed before; `ContractCompletionExecutorTests`
