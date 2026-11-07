@@ -17,7 +17,7 @@ length is stored as the bounding radius). For shape 7 the builder additionally w
 
 ## Change
 `Telegraph.InsideBox` now takes full dimensions: half width, half height and (Square, Cross) half length are the parameter times 0.5; a Rectangle runs from the origin to its full length with half width Param00 / 2. The grid search for Square, Rectangle and
-Cross reaches the box's far corner (and is never smaller than the old value). The three-axis shape 6 and the other shapes are unchanged. `TelegraphBoxExtentTests` (21 cases) failed 14 of 72 in the Telegraph filter before the change (the
+Cross reaches the box's far corner (and is never smaller than the old value). The three-axis shape 6 and the other shapes are unchanged. `TelegraphBoxExtentTests` (19 cases) failed 14 of 72 in the Telegraph filter before the change (the
 over-wide, over-tall and over-long hits and the too-small search radius); `TelegraphCrossAndEllipseTests` was updated to full dimensions (same coordinates, parameters doubled). 1,266 Telegraph/Spell/Combat Source/SQLite cases pass (separate scope).
 
 ## Risk and how to falsify
