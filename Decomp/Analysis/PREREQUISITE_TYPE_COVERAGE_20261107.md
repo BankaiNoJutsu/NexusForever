@@ -357,3 +357,15 @@ Evidence tier: body **read**, array identity **inferred**. Implemented, inferred
   and the objective class's virtual `+0x38`. Until then the status-versus-count reading of 118 stays inferred (see the 117/118 section).
 - **115 Unit (18 slots)** and **114 Vital (10 slots)** were read at case level only: 115 calls `FUN_1404a2010(unit, comparison)` (unit-dependent compare, `Value` unused by the call), 114 compares two unit property
   reads (`FUN_140466520(unit, ObjectId)` and `(unit, Value)`) through `FUN_1404a2010`; their helpers were not read.
+
+
+## Type 118 and 123 confirmed by the Lua objective accessors (same day)
+
+Evidence tier: native bodies plus the client's own Lua accessors. This closes the open point in "Public event types 117 and 118": whether the value compared by type 118 is a status or a count.
+
+- The `Game.PublicEventObjective` method table (mapped in `INITIAL_FINDINGS.md`, "Eighty-eighth Game.PublicEventObjective method-table follow-up") binds `GetStatus` at `14068dd50`. Its decompiled body fetches the objective
+  from the public event manager (`DAT_140c65980` vtable `+0x30`, the same lookup type 118 uses) and returns the result of **virtual `+0x38`** on the objective object.
+- Type 118 (`FUN_1404a0590`) compares exactly that virtual with `Value`. So 118 compares the objective **status**, as implemented. The status constants registered in Lua are `Inactive 0, Active 1, Succeeded 2, Failed 3`,
+  and the retail `Value`s are 1 (1,689 slots) and 2 (658), Equal 2,139 and NotEqual 283.
+- `GetCount` (`14068e110`) reaches the raw counter through virtual `+0x98`, the virtual type 123 compares, which confirms 123 as the objective count.
+- Status change: 118 and 123 move from "inferred from the value distribution" to read-confirmed. No code change was needed.
