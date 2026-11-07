@@ -386,3 +386,16 @@ Identified mission-object virtuals (decompiled Lua accessors):
 
 - **110 (PlayerPathMissionCount, 47 slots, `FUN_1404a00e0`)**: virtual `+0x30` chooses between the two counters (`+0x40` when it returns 0, else `+0x48`) and the result goes to the compare helper. The retail `Value`s mix counts (3, 4, 6, 30, 60) with percentages (33, 66, 100), which follows the type-dependent counter. Implementing it needs the per-mission-type progress counters of the server's path model; the unidentified virtual `+0x30` (which counter a mission class uses) is the blocker.
 - **54 (PlayerPathMission, 256 slots, `FUN_1404a1950`)**: looks the mission up in the player's mission map (`DAT_140c65970+0x58`); if the player's path word (`+8`) is 0 it returns 0 when virtual `+0x28` is 0, then by definition type 0 a table membership test (`+0x68`, keyed by the definition's object id), by types 4 to 7 bit 0 of virtual `+0x58`, otherwise virtual `+0x28`; with a non-zero path word it returns virtual `+0x28`. Virtuals `+0x28` and `+0x58` are not among the Lua accessors decompiled here. Next experiment: decompile the remaining PathMission Lua methods (`GetSoldierHoldout`, `GetSettlerMayorInfo`, ...) for calls to `+0x28` and `+0x58` to name them, then map them onto `PathManager`'s mission state.
+
+
+## Type 9 EpisodeState: the episode class state virtual read (same day)
+
+Evidence tier: native bodies. No code change; the quest-to-state mapping is unproven.
+
+- The runtime episode objects are built from `Episode.tbl` (0x68-byte entries, vtable `0x140b77ed0`, constructor `FUN_140787970`) and populated from `EpisodeQuest.tbl` by `FUN_140723ce0`, which adds every `EpisodeQuest`
+  row whose quest definition exists to its episode (`FUN_140787bd0`). The client Lua exposes `Episode.EpisodeState_Unknown / Mentioned / Active / Complete` and an `EpisodeStateChanged` event, and the server sends no episode packet,
+  so the client derives the state locally.
+- Virtual `+0xc0` (`FUN_140788b50`), the one type 9 compares with `Value`: iterate the episode's per-quest state map (`this+0x50`, state at node `+0x24`); if every entry is 3 (or the map is empty) the episode state is **3**;
+  otherwise it is the **highest state among the entries that are not 3**. Virtual `+0xc8` (`FUN_140788be0`) is the per-quest state lookup (0 when absent) and `FUN_140788a30` counts quests in a given quest state.
+- Retail: `Value` is 3 in 33 of 34 slots (Equal 32, NotEqual 2), so the check is "the episode is Complete" (or not). A server model would be: complete when every quest of the episode's `EpisodeQuest` rows is Completed.
+- Not implemented because: (1) the mapping from the quest manager's quest state to the per-quest value at `+0x24` (is 3 exactly Completed? what are 1 and 2?) was not read; (2) which `EpisodeQuest` rows reach the map (the loader filters on the quest definition, and a flag at `EpisodeQuest +0x10 & 1` is tested by a neighbouring predicate) is not settled; (3) the server has no episode model to test against. Next experiment: find the writer of node `+0x24` (the caller of the episode state update, with `FUN_140787bd0`'s neighbours) to read the quest-state mapping.
