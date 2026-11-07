@@ -1318,6 +1318,17 @@ namespace NexusForever.Game.Entity
                 && state.Completed;
         }
 
+        public bool TryGetMissionProgress(uint pathMissionId, out uint progressCount)
+        {
+            progressCount = 0u;
+            if (pathMissionId > ushort.MaxValue
+                || !pathMissions.TryGetValue((ushort)pathMissionId, out PathMissionRuntimeState state))
+                return false;
+
+            progressCount = state.ProgressCount;
+            return true;
+        }
+
         public PathMissionState GetMissionState(uint pathMissionId)
         {
             if (pathMissionId > ushort.MaxValue

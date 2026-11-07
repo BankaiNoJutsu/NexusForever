@@ -138,6 +138,11 @@ namespace NexusForever.Game.Abstract.Entity
         PathMissionState GetMissionState(uint pathMissionId);
 
         /// <summary>
+        /// Returns the progress word (the <c>ProgressCount</c> sent in <c>ServerPathMissionUpdate</c>) of the player's path mission, false when the player has no record of it.
+        /// </summary>
+        bool TryGetMissionProgress(uint pathMissionId, out uint progressCount);
+
+        /// <summary>
         /// The id of the path episode most recently set as the player's current episode (sent with <c>ServerPathSetCurrentEpisode</c>), or 0 when none has been set.
         /// Native prerequisite type 53 compares <c>Value</c> with the client's current episode.
         /// </summary>

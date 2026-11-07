@@ -38,3 +38,6 @@ type 0 and the type 4 to 7 flag refinement. `PrerequisiteCheckPlayerPathMissionT
 - **110** (47 slots, `FUN_1404a00e0`): its virtual `+0x30` is now known (the table above), so it returns the bit-count (`+0x48`) for those types and the plain progress value (`+0x40`) otherwise; it compares that with `Value` for the mission with id `ObjectId`.
   Not implemented: the server has no per-mission progress value equal to the client's `+0x1c` (the server keeps its own progress representation), which is the remaining input.
 - **53** (33 slots) was not re-read.
+
+## Correction (same day)
+The field table above names `+0x1c` 'progress value' and `+0x20` 'flags'. They are the update packet's **ProgressCount** and **ProgressData**, and `+0x24` is **Completed**: see [PREREQUISITE_PATH_MISSION_COUNT_20261107.md](PREREQUISITE_PATH_MISSION_COUNT_20261107.md), which also implements type 110. Type 110 is no longer blocked.
