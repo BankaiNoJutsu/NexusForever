@@ -46,3 +46,16 @@ character query bootstrap, friendship presence, `CharacterAtomicSaveTests` (IOEx
 `AuctionPostingRetryingStrategyTests` (2 cases, SQLite, a strategy that replays once on an injected transient `IOException`; the test counts the replay): a transaction failing before commit is replayed
 and commits, and a commit whose acknowledgement is lost is replayed and finds its receipt; both leave exactly one listing, one escrowed item and one receipt, and the wallet unchanged. Both passed first
 run (pins, no defect). The existing 37 auction posting cases still pass. Settlement, commodity posting/return and the bid commands share the `ExecuteAsync(Attempt)` shape and are not pinned yet.
+
+## Remaining strategy units read (same day)
+Replay-safe by construction (read): `CommodityPostingCommand.Attempt`, `CommodityReturnCommand.Attempt` and `AuctionSettlementCommand.Attempt` (each fresh owned context, receipt checked first, then complete preimage
+verification, same shape as auction posting, which is now pinned); `CraftingAccountDelivery.Acknowledge`/`ResolveReservation` (fresh context, `FOR UPDATE` re-read, idempotent `Delivered = true`, plus existing
+really-retrying crafting tests); `MailManager.Delivery` inbox load and `QuestManager.Rewards.PrepareWorker` (read-only transactions in fresh contexts, results created per attempt); `AccountCurrency.Refresh`
+observation (read-only, fresh context); `RealmBankManager.Command.Attempt` (fresh context per attempt, explicit lost-acknowledgement recovery through a retained commit graph, covered by
+`RealmBankItemIdentityTests.MailDeliveryRecovery`). Not read: `ContractAccountSync`, `CharacterChallengeRewardExecutor`/`VendorAccountPurchase` (both have really-retrying tests), the `AuthDatabase` bootstrap and
+`CharacterManager` in `Server.Character`.
+
+**Upstream observation, not changed:** the Group service handlers (for example `GroupPlayerInviteHandler.Handle`; the same shape appears in the other Group, Friendship and Chat handlers) run their work inside
+`strategy.ExecuteAsync` on the shared injected `_context` and call `_messagePublisher.PublishAsync` *before* `SaveChangesAsync`/`CommitAsync`. A transient commit fault would replay the delegate on a context that
+still tracks the first attempt's entries and would publish the result message again (and a non-transient failure still leaves the message published). These handlers come from the upstream service refactor
+(`c0899fce`, `99752578`), not from this restoration; changing them is an upstream design decision (publish after commit or an outbox) and no retail or ledger requirement asks for it, so it is recorded here only.
