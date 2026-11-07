@@ -34,4 +34,4 @@ Retail: shape 3 has 104 rows (for example 6/8/12 and 3/5/26) and shape 6 has 159
 - Shape 3's extra parameters (Param03 to Param05 in 17 rows) are not read by this builder case.
 
 ## Tests
-`TelegraphCrossAndEllipseTests` (32 cases): the red run was a compile failure (the shapes and `SearchRadius` did not exist). 1,247 Telegraph/Spell/Combat Source/SQLite cases pass (separate scope).
+`TelegraphCrossAndEllipseTests` (30 cases): the red run was a compile failure (the shapes and `SearchRadius` did not exist). 1,247 Telegraph/Spell/Combat Source/SQLite cases pass (separate scope).
