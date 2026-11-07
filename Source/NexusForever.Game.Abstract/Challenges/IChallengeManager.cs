@@ -55,5 +55,10 @@ namespace NexusForever.Game.Abstract.Challenges
         /// Returns whether the supplied challenge is unlocked for this character: the server tracks it (and sends <c>Unlocked = true</c> for it); false when the character has no record of it.
         /// </summary>
         bool IsChallengeUnlocked(ushort challengeId);
+
+        /// <summary>
+        /// Returns the current tier of the supplied challenge (the <c>CurrentTier</c> of <c>ServerChallengeUpdate</c>), or 0 when the character has no record of it.
+        /// </summary>
+        uint GetCurrentTier(ushort challengeId);
     }
 }

@@ -945,6 +945,13 @@ namespace NexusForever.Game.Challenges
             return activeChallenges.TryGetValue(challengeId, out ChallengeRuntimeState state) && state.Activated;
         }
 
+        public uint GetCurrentTier(ushort challengeId)
+        {
+            return activeChallenges.TryGetValue(challengeId, out ChallengeRuntimeState state)
+                ? state.CurrentTier
+                : 0u;
+        }
+
         public bool IsChallengeUnlocked(ushort challengeId)
         {
             return activeChallenges.ContainsKey(challengeId);

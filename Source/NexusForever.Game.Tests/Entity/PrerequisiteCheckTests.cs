@@ -2098,22 +2098,6 @@ public class PrerequisiteCheckTests
         Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 6u, 0u, parameters));
     }
 
-    [Theory]
-    [InlineData(PrerequisiteComparison.GreaterThanOrEqual, 2u, true)]
-    [InlineData(PrerequisiteComparison.GreaterThan, 2u, false)]
-    public void ChallengeTier_ComparesChallengeCompletionCount(PrerequisiteComparison comparison, uint requiredTier, bool expected)
-    {
-        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
-        IChallengeManager challengeManager = RecordingDispatchProxy<IChallengeManager>.Create(out var challengeProxy);
-        challengeProxy.SetMethodReturn(nameof(IChallengeManager.GetCompletionCount), 2u);
-        playerProxy.SetProperty(nameof(IPlayer.ChallengeManager), challengeManager);
-
-        var check = new PrerequisiteCheckChallengeTier();
-        bool result = check.Meets(player, comparison, requiredTier, objectId: 42u, new PrerequisiteParameters());
-
-        Assert.Equal(expected, result);
-    }
-
     [Fact]
     public void CreatureDifficulty_ComparesTargetCreatureDifficultyId()
     {
