@@ -407,6 +407,7 @@ namespace NexusForever.Game.Entity
         public ICurrencyManager CurrencyManager { get; }
         public IPathManager PathManager { get; private set; }
         public ITitleManager TitleManager { get; private set; }
+        public IInlaidAugmentationManager InlaidAugmentationManager { get; private set; }
         public ISpellManager SpellManager { get; private set; }
         public ICostumeManager CostumeManager { get; private set; }
         public IPetCustomisationManager PetCustomisationManager { get; private set; }
@@ -734,6 +735,7 @@ namespace NexusForever.Game.Entity
             CurrencyManager.Initialise(this, model);
             PathManager             = new PathManager(this, model, prerequisiteManager, gameTableManager, entityFactory);
             TitleManager            = new TitleManager(this, model, gameTableManager);
+            InlaidAugmentationManager = new InlaidAugmentationManager(model);
             SpellManager            = new SpellManager(this, model, prerequisiteManager, globalSpellManager, gameTableManager);
             SpellManager.Initialise();
             PetCustomisationManager = new PetCustomisationManager(this, model, gameTableManager, textFilterManager, prerequisiteManager);
@@ -1383,6 +1385,7 @@ namespace NexusForever.Game.Entity
             if (experienceReputationOwner == null) ReputationManager.Save(context);
             if (snapshot == null) GuildManager.Save(context); else snapshot.SaveGuildAffiliation(context);
             EntitlementManager.Save(context);
+            InlaidAugmentationManager?.Save(context);
             AppearanceManager.Save(context);
             snapshot?.Quests.EndContractSave(context);
         }
@@ -1640,6 +1643,7 @@ namespace NexusForever.Game.Entity
             }
 
             playerCreate.SpecIndex = SpellManager.ActiveActionSet;
+            playerCreate.UnlockedInlaidAugmentationIds.AddRange(InlaidAugmentationManager?.Ids ?? []);
             Session.EnqueueMessageEncrypted(playerCreate);
 
             TitleManager.SendTitles();

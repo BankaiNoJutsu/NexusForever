@@ -3033,6 +3033,33 @@ namespace NexusForever.Game.Spell
             SpellEffectDiagnostics.TracePlayerCollection(spell, target, "unlock-mount", player.Guid, info.Entry.DataBits00, spell4BaseId, true, null);
         }
 
+        /// <remarks>
+        /// Inferred (Decomp/Analysis/PREREQUISITE_231_INLAID_AUGMENTATION_20261107.md): DataBits00 is the inlaid augmentation id (235 of the 240 ids prerequisite type 231 tests are DataBits00 values of these rows);
+        /// the client list is replaced by packet 0x019C, which carries the full id list.
+        /// </remarks>
+        [SpellEffectHandler(SpellEffectType.UnlockInlaidAugment)]
+        public static void HandleEffectUnlockInlaidAugment(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            IPlayer player = GetPlayerSpellOwner(spell, target);
+            if (player == null)
+            {
+                SpellEffectDiagnostics.TracePlayerCollection(spell, target, "unlock-inlaid-augment", 0u, info.Entry.DataBits00, 0u, false, "target-not-player");
+                return;
+            }
+
+            if (info.Entry.DataBits00 == 0u || info.Entry.DataBits00 > ushort.MaxValue
+                || !player.InlaidAugmentationManager.Unlock((ushort)info.Entry.DataBits00))
+            {
+                SpellEffectDiagnostics.TracePlayerCollection(spell, target, "unlock-inlaid-augment", player.Guid, info.Entry.DataBits00, 0u, false, "not-unlocked");
+                return;
+            }
+
+            var update = new ServerActionSetUInt16List();
+            update.UnlockedInlaidAugmentationIds.AddRange(player.InlaidAugmentationManager.Ids);
+            player.Session.EnqueueMessageEncrypted(update);
+            SpellEffectDiagnostics.TracePlayerCollection(spell, target, "unlock-inlaid-augment", player.Guid, info.Entry.DataBits00, 0u, true, null);
+        }
+
         [SpellEffectHandler(SpellEffectType.UnlockPetFlair)]
         public static void HandleEffectUnlockPetFlair(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {

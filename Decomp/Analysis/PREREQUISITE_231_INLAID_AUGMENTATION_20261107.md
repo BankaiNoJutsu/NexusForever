@@ -30,3 +30,17 @@ The cost is the integration. A persisted Character entity here must follow the r
 (`ServerActionSetUInt16List.MaxUnlockedInlaidAugmentations`; packet `0x019C` replaces the whole list and raises `CharacterUnlockedInlaidEldanAugmentation`). This is an estimated multi-file feature (model, mapping, 2 migrations, manager, save/load/normal-save integration, packet list in `ServerPlayerCreate`
 and the `0x019C` update, the effect handler, the 231 check, tests), judged larger than a safe single slice without a way to run the Character persistence qualification here; it is declined as an effort and risk gate, not a missing witness. The effect's observable result (the `0x019C` update and the event) is already
 named by the packet comment, so the only external input still wanted is confirmation from a capture.
+
+## Implemented (same day, after the sizing above proved too pessimistic)
+The ownership validation in `CharacterSaveGraph.ValidateCharacterOwner` is generic: it follows mapped foreign keys to the character id, so a new row type with a foreign key to `character` needs no special rule. That removed the main obstacle and the
+feature was built:
+- `CharacterInlaidAugmentationModel` (`character_inlaid_augmentation`: `id` bigint unsigned, `augmentationId` smallint unsigned, primary key both, foreign key to `character` with cascade), the context mapping, `CharacterModel.InlaidAugmentation` and the load include in `CharacterDatabase`.
+- Migrations generated with `dotnet ef` for both providers: `20261107211527_CharacterInlaidAugmentation` (MySQL, in the Character project) and `20261107211556_CharacterInlaidAugmentation` (SQLite), each a single `CreateTable`, with snapshot additions only.
+- `IInlaidAugmentationManager` / `InlaidAugmentationManager` (ascending ids, zero and duplicates rejected, 54-id client cap, `Save` stages only unpersisted ids and marks them persisted after a committed save via `OnSaveSettled`), exposed as `IPlayer.InlaidAugmentationManager`, loaded in the player constructor, saved with the character, and written into `ServerPlayerCreate.UnlockedInlaidAugmentationIds`.
+- The `UnlockInlaidAugment` effect handler (`DataBits00` = id, then packet `0x019C` with the full list) and `PrerequisiteCheckEldanAugmentation231` (Equal present, NotEqual absent, other comparisons false).
+
+Tests: `InlaidAugmentationTests` (20 cases: load order, cap and duplicates, persistence including a save that never commits, the prerequisite and the effect) passed after fixing my test's spell proxy; the code was written before the tests, so no red run was observed. Two existing tests encoded assumptions this broke and were updated, not weakened:
+`CraftingAccountMigrationTests.BeforeLast` asserted that `CraftingAccountAwards` is the *last* migration (it now finds that migration by name and migrates to its predecessor), and `Player` null-tolerance for the new manager was needed because several tests build a partial `Player`. The 3,882-case
+Persistence/Database/Prerequisite/Player/Title/Amp/Migration/Spell Source/SQLite filter passes (3,880 passed, 2 skipped as before; separate scope). The unhandled spell-effect rows drop from 2,478 to 2,197 (the 281 `UnlockInlaidAugment` rows are handled).
+
+Not verified: the MySQL migration was generated but not applied to a fresh MySQL schema in this pass; the effect-to-list link remains data-correlated (235 of 240 ids), and the client's reaction to packet `0x019C` needs a capture.

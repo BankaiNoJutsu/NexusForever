@@ -86,7 +86,9 @@ public sealed class CraftingAccountMigrationTests
     private static Task BeforeLast(DbContext context)
     {
         var migrations = context.GetService<IMigrationsAssembly>().Migrations.Keys.ToArray();
-        Assert.EndsWith("_CraftingAccountAwards", migrations[^1], StringComparison.Ordinal);
-        return context.GetService<IMigrator>().MigrateAsync(migrations[^2]);
+        // Locate the crafting migration by name: later migrations may follow it.
+        int index = Array.FindIndex(migrations, migration => migration.EndsWith("_CraftingAccountAwards", StringComparison.Ordinal));
+        Assert.True(index > 0, "The CraftingAccountAwards migration must exist and have a predecessor.");
+        return context.GetService<IMigrator>().MigrateAsync(migrations[index - 1]);
     }
 }

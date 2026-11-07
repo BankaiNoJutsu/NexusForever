@@ -1429,6 +1429,22 @@ namespace NexusForever.Database.Character.Migrations
                     b.ToTable("character_galactic_archive", (string)null);
                 });
 
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterInlaidAugmentationModel", b =>
+                {
+                    b.Property<ulong>("Id")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("id");
+
+                    b.Property<ushort>("AugmentationId")
+                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnName("augmentationId");
+
+                    b.HasKey("Id", "AugmentationId")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("character_inlaid_augmentation", (string)null);
+                });
+
             modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterKeybindingModel", b =>
                 {
                     b.Property<ulong>("Id")
@@ -4275,6 +4291,18 @@ namespace NexusForever.Database.Character.Migrations
                     b.Navigation("Character");
                 });
 
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterInlaidAugmentationModel", b =>
+                {
+                    b.HasOne("NexusForever.Database.Character.Model.CharacterModel", "Character")
+                        .WithMany("InlaidAugmentation")
+                        .HasForeignKey("Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK__character_inlaid_augmentation_id__character_id");
+
+                    b.Navigation("Character");
+                });
+
             modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterKeybindingModel", b =>
                 {
                     b.HasOne("NexusForever.Database.Character.Model.CharacterModel", "Character")
@@ -4687,6 +4715,8 @@ namespace NexusForever.Database.Character.Migrations
                     b.Navigation("Entitlement");
 
                     b.Navigation("GalacticArchive");
+
+                    b.Navigation("InlaidAugmentation");
 
                     b.Navigation("Item");
 

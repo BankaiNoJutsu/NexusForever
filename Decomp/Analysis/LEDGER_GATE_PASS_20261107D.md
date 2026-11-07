@@ -21,3 +21,5 @@ Rows closed or narrowed since the older table was written: telegraph shapes 3 an
 
 Conclusion: every older row was re-checked above and its recorded number or absence reproduces. No row has gained a witness, so none can move from gated to actionable. This is the stopping-condition statement for the work reachable without
 retail, native or runtime inputs, not completion.
+
+Update (same day, later): the 2,478-row spell-effect recount above was taken before `UnlockInlaidAugment` (281 rows) got a handler; the same recomputation now gives 2,197 rows over 29 types ([PREREQUISITE_231_INLAID_AUGMENTATION_20261107.md](PREREQUISITE_231_INLAID_AUGMENTATION_20261107.md)).

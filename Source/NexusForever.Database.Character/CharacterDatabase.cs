@@ -210,6 +210,7 @@ namespace NexusForever.Database.Character
                     .Include(c => c.Path)
                     .Include(c => c.PathMission)
                     .Include(c => c.CharacterTitle)
+                    .Include(c => c.InlaidAugmentation)
                     .Include(c => c.Stat)
                     .Include(c => c.Costume)
                         .ThenInclude(c => c.CostumeItem)

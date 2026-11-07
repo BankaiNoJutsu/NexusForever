@@ -100,6 +100,7 @@ namespace NexusForever.Game.Abstract.Entity
         ICurrencyManager CurrencyManager { get; }
         IPathManager PathManager { get; }
         ITitleManager TitleManager { get; }
+        IInlaidAugmentationManager InlaidAugmentationManager { get; }
         ISpellManager SpellManager { get; }
         ICostumeManager CostumeManager { get; }
         IPetCustomisationManager PetCustomisationManager { get; }

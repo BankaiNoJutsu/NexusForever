@@ -9,6 +9,7 @@ namespace NexusForever.Database.Character
         public DbSet<CharacterModel> Character { get; set; }
         public DbSet<CharacterBindModel> CharacterBind { get; set; }
         public DbSet<CharacterTaxiNodeModel> CharacterTaxiNode { get; set; }
+        public DbSet<CharacterInlaidAugmentationModel> CharacterInlaidAugmentation { get; set; }
         public DbSet<CharacterAchievementModel> CharacterAchievement { get; set; }
         public DbSet<CharacterActionSetAmpModel> CharacterActionSetAmp { get; set; }
         public DbSet<CharacterActionSetShortcutModel> CharacterActionSetShortcut { get; set; }
@@ -82,6 +83,16 @@ namespace NexusForever.Database.Character
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<CharacterInlaidAugmentationModel>(entity =>
+            {
+                entity.ToTable("character_inlaid_augmentation");
+                entity.HasKey(e => new { e.Id, e.AugmentationId }).HasName("PRIMARY");
+                entity.Property(e => e.Id).HasColumnName("id").HasColumnType("bigint(20) unsigned").ValueGeneratedNever();
+                entity.Property(e => e.AugmentationId).HasColumnName("augmentationId").HasColumnType("smallint(5) unsigned");
+                entity.HasOne(e => e.Character).WithMany(c => c.InlaidAugmentation)
+                    .HasForeignKey(e => e.Id).HasConstraintName("FK__character_inlaid_augmentation_id__character_id");
+            });
+
             modelBuilder.Entity<CharacterTaxiNodeModel>(entity =>
             {
                 entity.ToTable("character_taxi_node");
