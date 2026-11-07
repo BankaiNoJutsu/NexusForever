@@ -6,6 +6,8 @@
 > table or native-body evidence, such as prerequisite types 22 to 36, is not retail
 > parity. Do not restate it as such, and do not treat agent-written tests as proof.
 
+[Ledger gate pass B](LEDGER_GATE_PASS_20261107B.md) (2026-11-07): per-item gates restated after the second prerequisite audit (types 4/250, 50/103/130, 214/190/245/275, 54/110/53, 9, 60, telegraph shapes 3 and 6 and the older rows). The only item without a missing witness is the large mechanical MySQL retry-strategy test conversion (about 280 test-opened transactions), not started. Tier: reading and local tables; no tests run. No retail parity claim.
+
 [Prerequisite audit pass B](PREREQUISITE_AUDIT_PASS_20261107B.md) (2026-11-07): native bodies read for types 1, 4/250, 73, 109, 214, 50, 103/104, 76, 190, 245/275; no code change. Blocked with named missing inputs: 4/250 (which packet field fills entity +0x110/+0x118), 214 and 190 (flag/state semantics), 50 and 103 (per-effect caster/target link the server does not record), 245/275 (helper FUN_1403b91d0 unread). Tier: native body read only; no tests run. No retail parity claim.
 
 [Prerequisite type 42 (IsGroupLeader)](PREREQUISITE_GROUP_LEADER_20261107.md) (2026-11-07): the native body reads no Value and treats a player without a group as the leader; the server compared an is-leader number with Value, so the single retail slot (Equal, Value 0) held for non-leaders. Now `CompareFlag`. Type 1 Level read, unchanged. Tier: native body read; Source/SQLite only (6 of 12 new cases failed first; 1,986-case scope separate). No retail parity claim.
