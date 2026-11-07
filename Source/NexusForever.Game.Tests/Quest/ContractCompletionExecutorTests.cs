@@ -31,7 +31,9 @@ public sealed class ContractCompletionExecutorTests
     {
         using var f = new Fixture(options); var command = f.Command(); int contexts = 0;
         var executor = new ContractCompletionExecutor(() => Interlocked.Increment(ref contexts) == 2 ? f.Context(new CommitFault(committed)) : f.Context(), f.Catalog);
-        var result = await executor.ExecuteAsync(command); Assert.True(result.Recovered); Assert.True(result.OriginalUnitEnded);
+        var result = await executor.ExecuteAsync(command);
+        string detail = $"outcome={result.Outcome} changed={result.Changed} recovered={result.Recovered} ended={result.OriginalUnitEnded} contexts={contexts} error={result.Error}";
+        Assert.True(result.Recovered, detail); Assert.True(result.OriginalUnitEnded, detail);
         Assert.Equal(committed ? ContractCompletionOutcome.Committed : ContractCompletionOutcome.Failed, result.Outcome);
         using (var read = f.Context()) Assert.Equal(committed ? 1 : 0, read.CharacterContractCompletion.Count());
         var retry = await executor.ExecuteAsync(command); Assert.Equal(ContractCompletionOutcome.Committed, retry.Outcome); Assert.Equal(!committed, retry.Changed);
@@ -64,7 +66,8 @@ public sealed class ContractCompletionExecutorTests
         using var f = new Fixture(options); using var cancellation = new CancellationTokenSource(); int contexts = 0; var command = f.Command();
         var executor = new ContractCompletionExecutor(() => Interlocked.Increment(ref contexts) == 2 ? f.Context(new CommitFault(true, cancellation.Cancel)) : f.Context(), f.Catalog);
         var result = await executor.ExecuteAsync(command, cancellation.Token);
-        Assert.True(cancellation.IsCancellationRequested); Assert.Equal(ContractCompletionOutcome.Committed, result.Outcome); Assert.True(result.Recovered);
+        string detail = $"outcome={result.Outcome} changed={result.Changed} recovered={result.Recovered} ended={result.OriginalUnitEnded} contexts={contexts} error={result.Error}";
+        Assert.True(cancellation.IsCancellationRequested, detail); Assert.True(ContractCompletionOutcome.Committed == result.Outcome, detail); Assert.True(result.Recovered, detail);
         using var read = f.Context(); Assert.Single(read.CharacterContractCompletion); Assert.Equal(command.Points, read.CharacterContractRewardTrack.Single().Points);
     }
 

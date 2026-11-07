@@ -1,5 +1,11 @@
 # Assessment follow-through goal
 
+[Contract completion recovery under the retrying strategy](CONTRACT_COMPLETION_RETRY_STRATEGY_RECOVERY.md) (2026-11-07): the MySQL production-options run exposed a real
+defect. `ContractCompletionExecutor.Recover` opened its transaction outside the execution strategy, so on a retry-enabled provider the recovery after a
+non-transient commit failure returned `Conflict` instead of resolving the outcome. Fixed (5 new SQLite tests failed before; `ContractCompletionExecutorTests`
+now passes fully on MySQL 8.0.46 with the production options; 2,797 Contract/Quest SQLite cases pass; separate scopes). A shared test fixture was also made
+strategy-aware. Other classes still fail under the retry options mainly through test-opened transactions.
+
 [MySQL provider qualification](MYSQL_8_0_FRESH_MIGRATION_QUALIFICATION_20261107.md#provider-qualification-on-mysql-8046-2026-11-07) (2026-11-07): a new opt-in driver runs the 52 existing
 test classes that accept provider options against fresh disposable MySQL 8.0.46 schemas; all 52 pass in one 57-minute run, and the three Character+Auth two-database classes (Contract claim, crafting settlement, bank recovery) pass on separate Character/Auth schemas (no product defect found; under the production retry options 16 of 55 classes pass as written, mostly blocked by tests that open their own transactions, with a few unexplained Contract cases;
 five initial failures were driver defects or SQLite-only fault-injection triggers, fixed without weakening assertions). Skipped unless

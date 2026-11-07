@@ -143,19 +143,26 @@ namespace NexusForever.Game.Quest.Reward
                 // Cancellation cannot establish whether a commit succeeded.
                 // Recovery uses fresh bounded provider operations independently.
                 await using var context = CreateContext(ref database);
-                await using var transaction = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
-                var repository = new ContractCompletionRepository(context, command.CharacterId, catalog);
-                bool present = await context.CharacterContractCompletion.AsNoTracking().AnyAsync(row => row.Id == command.CharacterId && row.AcceptanceId == command.AcceptanceId);
-                if (!present)
+                // The configured provider strategy (MySQL retries on failure) rejects a user-initiated transaction that is not
+                // executed through the context's own execution strategy, so recovery must run inside it. Each attempt is read-only
+                // until it proves the original commit, and starts from an empty change tracker.
+                return await context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
                 {
-                    new QuestTransactionParticipants(context, command.CharacterId, command.Changes).VerifyQuestChanges(command.Changes, false);
-                    await transaction.RollbackAsync();
-                    return Failure(ContractCompletionOutcome.Failed, original, original.Error) with { Recovered = true };
-                }
-                var observed = repository.Complete(command);
-                if (observed.Applied || context.ChangeTracker.HasChanges()) throw new InvalidOperationException("Contract recovery attempted a new mutation.");
-                await context.SaveChangesAsync(); await transaction.CommitAsync();
-                return new(ContractCompletionOutcome.Committed, observed, original.HadWrites, true, true, original.Error);
+                    context.ChangeTracker.Clear();
+                    await using var transaction = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+                    var repository = new ContractCompletionRepository(context, command.CharacterId, catalog);
+                    bool present = await context.CharacterContractCompletion.AsNoTracking().AnyAsync(row => row.Id == command.CharacterId && row.AcceptanceId == command.AcceptanceId);
+                    if (!present)
+                    {
+                        new QuestTransactionParticipants(context, command.CharacterId, command.Changes).VerifyQuestChanges(command.Changes, false);
+                        await transaction.RollbackAsync();
+                        return Failure(ContractCompletionOutcome.Failed, original, original.Error) with { Recovered = true };
+                    }
+                    var observed = repository.Complete(command);
+                    if (observed.Applied || context.ChangeTracker.HasChanges()) throw new InvalidOperationException("Contract recovery attempted a new mutation.");
+                    await context.SaveChangesAsync(); await transaction.CommitAsync();
+                    return new ContractCompletionExecution(ContractCompletionOutcome.Committed, observed, original.HadWrites, true, true, original.Error);
+                });
             }
             catch (Exception error)
             {

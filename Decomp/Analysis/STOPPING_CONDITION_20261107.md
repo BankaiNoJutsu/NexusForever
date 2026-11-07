@@ -72,3 +72,7 @@ crafting settlement, bank recovery) on real MySQL 8.0.46 and all pass with plain
 generator) 16 of 55 classes pass as written; most failures are tests that open their own transactions, and a few Contract cases are unexplained
 (see the census section of MYSQL_8_0_FRESH_MIGRATION_QUALIFICATION_20261107.md). Remaining MySQL-gated work: wrapping those tests for the retry strategy or
 explaining the Contract/InventoryRewardDelivery differences, the Auth-only classes without a provider seam, MySQL 8.4.13, socket, broker and load.
+
+Update (retry strategy): the production-options MySQL run found and fixed a real recovery defect in `ContractCompletionExecutor`
+([CONTRACT_COMPLETION_RETRY_STRATEGY_RECOVERY.md](CONTRACT_COMPLETION_RETRY_STRATEGY_RECOVERY.md)). The retry-strategy gate is therefore partly worked, not closed: other
+classes still need their tests made strategy-aware (or each failure traced to a production site) before the production-options run can be claimed for them.

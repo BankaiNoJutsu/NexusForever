@@ -31,14 +31,24 @@ public sealed class MySqlProviderQualificationTests
         }
     }
 
-    public static IEnumerable<object[]> Classes() => DiscoverClasses().Select(type => new object[] { type.FullName! });
+    // A class filter can leave a theory without data; xunit reports that as a failure, so yield a placeholder the test ignores.
+    private const string NoClass = "(none)";
 
-    public static IEnumerable<object[]> TwoDatabaseClasses() => DiscoverTwoDatabaseClasses().Select(type => new object[] { type.FullName! });
+    public static IEnumerable<object[]> Classes() => WithPlaceholder(DiscoverClasses());
+
+    public static IEnumerable<object[]> TwoDatabaseClasses() => WithPlaceholder(DiscoverTwoDatabaseClasses());
+
+    private static IEnumerable<object[]> WithPlaceholder(IEnumerable<Type> types)
+    {
+        object[][] rows = types.Select(type => new object[] { type.FullName! }).ToArray();
+        return rows.Length == 0 ? [[NoClass]] : rows;
+    }
 
     [RequiresMySqlTheory]
     [MemberData(nameof(Classes))]
     public async Task ClassHoldsOnMySql(string className)
     {
+        if (className == NoClass) return;
         Type type = DiscoverClasses().Single(candidate => candidate.FullName == className);
         await RunClass(type, async (server, schema) =>
         {
@@ -54,6 +64,7 @@ public sealed class MySqlProviderQualificationTests
     [MemberData(nameof(TwoDatabaseClasses))]
     public async Task TwoDatabaseClassHoldsOnMySql(string className)
     {
+        if (className == NoClass) return;
         Type type = DiscoverTwoDatabaseClasses().Single(candidate => candidate.FullName == className);
         await RunClass(type, async (server, schema) =>
         {
@@ -118,6 +129,15 @@ public sealed class MySqlProviderQualificationTests
                     // First frame inside this test assembly's own files (other than this driver) shows where an assertion failed.
                     string? site = root.StackTrace?.Split('\n')
                         .FirstOrDefault(frame => frame.Contains(".Tests") && !frame.Contains(nameof(MySqlProviderQualificationTests)))?.Trim();
+                    // For the retry strategy's rejection, show the NexusForever call chain so a test-opened transaction can be told
+                    // apart from one that production code opened outside the execution strategy.
+                    if (rootText.Contains("does not support user-initiated transactions", StringComparison.Ordinal))
+                    {
+                        string[] chain = (root.StackTrace ?? "").Split('\n').Select(frame => frame.Trim())
+                            .Where(frame => frame.StartsWith("at NexusForever.", StringComparison.Ordinal) && !frame.Contains(nameof(MySqlProviderQualificationTests)))
+                            .Select(ShortSite).Take(14).ToArray();
+                        rootText = $"retry strategy rejects strategy work inside an open transaction; NexusForever frames: {string.Join(" <- ", chain)}";
+                    }
                     failures.Add($"{label}: {root.GetType().Name}: {rootText}"
                         + (ReferenceEquals(leaf, root) ? "" : $" <- {leaf.GetType().Name}: {leafText}")
                         + (site == null ? "" : $" @ {ShortSite(site)}"));

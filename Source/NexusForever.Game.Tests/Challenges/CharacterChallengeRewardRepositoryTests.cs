@@ -452,8 +452,15 @@ public sealed class CharacterChallengeRewardRepositoryTests
             => new(42, Challenge(track), null, true, false, false, 0, 0, 0, 0, 300, 0, 0);
         public async Task<T> Execute<T>(Func<CharacterChallengeRewardRepository, T> stage)
         {
-            await using var context = Context(); await using var transaction = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
-            T result = stage(Repository(context)); await context.SaveChangesAsync(); await transaction.CommitAsync(); return result;
+            // Run the unit through the context's execution strategy: a retrying provider strategy (production MySQL) rejects a transaction
+            // that is opened outside it. Without a retrying strategy this executes the delegate exactly once, as before.
+            await using var context = Context();
+            return await context.Database.CreateExecutionStrategy().ExecuteAsync(async () =>
+            {
+                context.ChangeTracker.Clear();
+                await using var transaction = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+                T result = stage(Repository(context)); await context.SaveChangesAsync(); await transaction.CommitAsync(); return result;
+            });
         }
         public async Task<CharacterChallengeAttemptState> Begin(uint track)
         {
