@@ -157,3 +157,15 @@ and data; 54, 74 and 231 have matching shapes but were not implemented here (the
 
 Environment note: during this work `C:` became full (0 MB free). Builds, tests and Ghidra still ran by redirecting `TEMP`, `TMP`, `DOTNET_CLI_HOME` and the NuGet HTTP cache to `I:\tools\claude-tmp` for the individual commands, with `--no-restore -m:1 -nodeReuse:false -p:NuGetAudit=false`;
 no files on `C:` were deleted.
+
+
+## Type 19 implemented; type 47 is a client stub (same day)
+
+- **19 (TradeSkillProfession, 268 slots)**: the Ghidra "void" signature of `FUN_14049f0f0` is a tail call into the shared compare helper. The body looks up the `TradeskillTier` row with id `ObjectId`
+  (267 of 268 retail slots match a row), finds the unit's matching tradeskill and compares the unit's tier in it with the row's `Tier` using the comparison; `Value` is unused (255 of 268 are 0) and a unit without that
+  tradeskill compares as tier 0. Retail comparisons: greater-or-equal 181, equal 66, less-than 21. Implemented as `PrerequisiteCheckTradeskillTier`, reusing `TradeskillPrerequisiteHelper.GetPlayerTradeskillTierRank`.
+  `PrerequisiteCheckTradeskillTierTests` (17 cases) did not compile before the class existed and pass now; 1,039 Prerequisite/Tradeskill/AMP cases pass (Source/SQLite). The order of the compare helper's
+  arguments (player tier versus row tier) is assumed from the data, where greater-or-equal dominates, not read from the helper.
+- **47 (QuestObjective47, 1,788 slots)**: its slot in the only vtable holding the evaluator's methods (verified by scanning every data reference to the type-68 body: exactly one vtable, `0x140b67740`) is the shared
+  `return 0` stub (`FUN_140001ba0`). The client therefore never evaluates type 47, so the client binary cannot give its meaning; the type is presumably server-side. Its retail rows (comparison 1 and 2, large `Value`s such as
+  13855 and 22453, `ObjectId` unused) need a server-side witness. Left unhandled.
