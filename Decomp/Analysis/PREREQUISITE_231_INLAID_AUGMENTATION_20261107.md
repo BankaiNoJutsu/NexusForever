@@ -22,3 +22,11 @@ would silently forget unlocks at relog and was not added. This also moves the 28
 
 ## Remaining gate
 A persistence design (table and migrations) approved for the Character database, and confirmation of the effect's observable result from a capture (that the aux update packet is sent when the effect fires).
+
+## Sizing of the persistence step (same day)
+Tooling is not the obstacle: `dotnet-ef` 10.0.8 is installed and both providers have design-time contexts (`SqliteContextFactories`, `NexusForever.WorldServer/Design/CharacterContextFactory`), so the two migrations (and their snapshots) could be generated.
+The cost is the integration. A persisted Character entity here must follow the repo's atomic save idiom: `CharacterSaveGraph.Seal` runs `ValidateCharacterOwner` on every tracked row, so a new row type needs an ownership rule; titles show the full pattern
+(`TitleManager` + `TitlePersistence` snapshots, `Player.NormalRewardSave` capture, `Player.TitlePublication`, load through `CharacterDatabase` includes, plus the durability tests). Keybindings are the simplest comparable. The set also has a client cap of 54 ids
+(`ServerActionSetUInt16List.MaxUnlockedInlaidAugmentations`; packet `0x019C` replaces the whole list and raises `CharacterUnlockedInlaidEldanAugmentation`). This is an estimated multi-file feature (model, mapping, 2 migrations, manager, save/load/normal-save integration, packet list in `ServerPlayerCreate`
+and the `0x019C` update, the effect handler, the 231 check, tests), judged larger than a safe single slice without a way to run the Character persistence qualification here; it is declined as an effort and risk gate, not a missing witness. The effect's observable result (the `0x019C` update and the event) is already
+named by the packet comment, so the only external input still wanted is confirmation from a capture.
