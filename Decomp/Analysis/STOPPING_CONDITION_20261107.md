@@ -67,6 +67,6 @@ the client binary, its Lua, or the local databases: a retail/server-side witness
 achievement and spell-effect semantics), a schema/DDL design decision, or the recovery/socket/broker/load harness and runtime.
 No independent Source/SQLite slice with usable evidence remains.
 
-Update: an opt-in MySQL driver now runs the 36 Quest persistence durability cases on real MySQL 8.0.46 (all pass), so the
-"harness" gate is partly addressed by a reusable pattern; the other recovery flows (account settlement, Contract claim, Auth outbox)
-still need provider seams or the earlier adapter harness.
+Update: an opt-in MySQL driver now runs the 52 existing provider-option test classes on real MySQL 8.0.46 (47 pass; the 5 others fail
+for driver/fixture/SQLite-only reasons, no product defect). The "harness" gate is therefore largely addressed for Character-side flows; Auth-side and
+two-database recovery, the retry strategy, MySQL 8.4.13, socket, broker and load remain.
