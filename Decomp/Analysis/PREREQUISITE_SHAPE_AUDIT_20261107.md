@@ -1,0 +1,21 @@
+# Prerequisite retail-shape and jump-table audit of the implemented types (2026-11-07)
+
+Evidence tier: **native bodies (decompile/disassembly) compared with each implemented check; documentation of one pass**. Source/SQLite only. No retail parity claim.
+
+Method: (1) dumped the evaluator jump table (`FUN_1404a2100`, int32 entries at `1404a4848`, index `type-1`, base `140000000`) and mapped the blocks the decompile merged; (2) listed, for every implemented type, the retail ObjectId/Value distributions from `Prerequisite.tbl` next to its implemented meaning and looked for ids that cannot belong to that meaning; (3) read the evaluator body of every implemented type whose case is inline.
+
+Corrected in this pass (each with its own record, tests written first):
+| Type | Was | Native | Slots | Record |
+|---|---|---|---|---|
+| 64 | path type level | unit resource slot ObjectId (Resource0..10) vs Value, floats | 107 | PREREQUISITE_RESOURCE_SLOT_20261107.md |
+| 55 | currency amount | unit property ObjectId vs Value, floats | 4 | PREREQUISITE_UNIT_PROPERTY_VALUE_20261107.md |
+| 177 | NPC-gated challenge presence | unit base level (+0x38) vs Value | 220 | PREREQUISITE_TRUE_LEVEL_20261107.md |
+| 12 | `!IsAlive`, any comparison | flag(+0x250 or +0x254 or Ghost) == Value, Equal/NotEqual only | 168 | PREREQUISITE_DEAD_STATE_BOOLEAN_20261107.md |
+| 115 | unhandled | property vs property, floats | 18 | PREREQUISITE_UNIT_PROPERTY_COMPARE_20261107.md |
+
+Found and **not** changed (exact gate recorded):
+- **24 (InPhase) and 25 (CanSeePhase)**: both vtable slots (`+0x290`, `+0x298`) are the same function `FUN_14049e640`: `flag = (*(uint*)(globalPlayerObject + 0x6750) >> (Value & 31)) & 1`; Equal returns flag, NotEqual its negation, ObjectId unused (retail Values 0 to 7 are bit indices; 97 + 48 slots). The server implements 24 as "entity public-event phase compared with Value" and 25 as "caster and target share a public-event phase", neither of which is this test. The only literal writer of that mask is the object constructor (zero init, `1403e2c8c`); how the client fills it is not visible, and the server has no per-player phase mask, so no honest replacement exists. Needed: the path that fills `+0x6750` (a packet field or a quest/phase effect) and a server phase-mask model.
+- **70 (ChallengeTier), 220 (PathMissionChecklistItemComplete), 16/219 (Datacube/Volume), 82 (UnitEntityType), 191 (PetEntitySpell4)**: their own comments call them proxies; their native bodies were not re-read in this pass.
+- Inline types checked and consistent with their implementation or already corrected earlier: 1, 5, 11, 15, 22/23/33-35 (shared tail), 28, 37, 39, 40, 50, 56, 59/60, 71, 73, 78, 80, 86/87, 93, 95, 102-105, 114, 129/130, 172 (no retail rows), 215, 279/280. "Consistent" here means the body's reads match the implemented meaning, not that every server field behind them is verified.
+
+Lesson: the earlier handler-table address comments in NF were unreliable (0 of 13 agreed); the jump table and the evaluator body are the reference. Any type still described only by an NF comment should be re-read the same way.
