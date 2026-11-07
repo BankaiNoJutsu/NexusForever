@@ -131,6 +131,15 @@ namespace NexusForever.Game.Abstract.Entity
         bool RemoveVendorPriceModifier(uint effectId);
         void RefreshSelectedVendorInfo(uint? vendorGuid = null);
 
+        /// <summary>
+        /// Whether the hazard is enabled for the player (listed to the client with <c>Enabled = true</c>).
+        /// </summary>
+        bool IsHazardEnabled(uint hazardId);
+
+        /// <summary>
+        /// The hazard's current meter value, -1 when the player has no record of it.
+        /// </summary>
+        float GetHazardMeter(uint hazardId);
         bool TryEnableHazard(uint effectId, uint hazardId, out string skippedReason);
         bool RemoveHazard(uint effectId);
         bool TryModifyHazard(uint hazardId, float amount, out string skippedReason);

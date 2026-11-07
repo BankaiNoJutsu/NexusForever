@@ -7,7 +7,7 @@ Evidence tiers follow `CONTINUATION_GUIDE.md`; everything below is Source/SQLite
 | Area | What | Commit(s) | Tier |
 |---|---|---|---|
 | Prerequisite evaluator corrections | Types 5, 6, 13, 14, 38, 40, 42, 43, 50, 59/280, 60, 69, 83/84, 102, 129, 130 and the boolean-tail types 28/39/86/87 corrected against the native bodies; row evaluation stops at the first empty slot | 0d75e42f, 01be4219, d7d06361, b5f1795a, 0eb587d5, 7e5189fe, bf821d54, d45f9c10, 38100573, ae9fc08b, d261300b, d63704bc | native bodies read; mostly Implemented |
-| Prerequisites newly handled | 20, 53, 54, 74, 110, 162, 231 (3,013 of 49,184 slots remain unhandled, 67 types) | ea78f62b, 7b838b2d, d48e8cd0, ad8fd474, cf632dc9, db42937c, 148cf7f7 | native body read; server mappings inferred |
+| Prerequisites newly handled | 20, 53, 54, 74, 110, 111, 113, 162, 231 (2,930 of 49,184 slots remain unhandled, 65 types) | ea78f62b, 7b838b2d, d48e8cd0, ad8fd474, cf632dc9, db42937c, 148cf7f7, and the hazard commit | native body read; server mappings inferred |
 | Inlaid augmentation list | `character_inlaid_augmentation` table (MySQL + SQLite migrations), manager, player-create list, `UnlockInlaidAugment` effect (281 rows) + packet 0x019C, prerequisite 231 | 148cf7f7, 1eb9b46c | Implemented; migration applied on a fresh MySQL 8.0.46 schema; effect-to-list link data-correlated (235 of 240 ids) |
 | Telegraph shapes | Ring (1), Cross (3), three-axis (6) added; Square/Rectangle/Cross parameters treated as full dimensions | 51c5ea7a, 88c9ced7, dcf317b6 | native builder read; hit rules inferred |
 | MySQL | Tolerant production-options census, 49 of 49 harness classes pass on 8.0.46; replay pins for `CharacterAtomicSave` and marketplace posting/settlement lost-acknowledgement | be8eb5c0, a61a9fd7, 2c887e1c, a025973a | real MySQL 8.0.46 / Source |
@@ -24,6 +24,7 @@ Evidence tiers follow `CONTINUATION_GUIDE.md`; everything below is Source/SQLite
 | 110 progress word (types 5/6 treated plain, missing mission = 0) | Table row behind types 5/6 unread | Read `FUN_140223380` row |
 | 162 percentage uses the server's required count (float mode unmodelled) | `+0xf0` mode unread | Read the objective class |
 | 20 group size = member count | Group manager count read; member list assumed | Low risk |
+| 111/113 hazard Enabled and meter fields | Identified from the Hazard packet field order, not a client reader | Read the hazard record reader / capture |
 | 231 / `UnlockInlaidAugment` DataBits00 = augmentation id | Data correlation only | Capture of the effect firing |
 
 ## 3. Open outcomes and their exact gate

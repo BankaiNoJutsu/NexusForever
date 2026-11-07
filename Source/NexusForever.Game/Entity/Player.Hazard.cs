@@ -8,6 +8,10 @@ namespace NexusForever.Game.Entity
     {
         private readonly HazardStateCollection hazardStates = new();
 
+        public bool IsHazardEnabled(uint hazardId) => hazardStates.IsActive(hazardId);
+
+        public float GetHazardMeter(uint hazardId) => hazardStates.GetMeterValue(hazardId);
+
         public bool TryEnableHazard(uint effectId, uint hazardId, out string skippedReason)
         {
             HazardEntry entry = gameTableManager?.Hazard?.GetEntry(hazardId);

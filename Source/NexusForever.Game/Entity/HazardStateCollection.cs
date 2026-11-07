@@ -140,6 +140,23 @@ namespace NexusForever.Game.Entity
             return suspensionEffects.Remove(effectId);
         }
 
+        /// <summary>
+        /// Whether the hazard has a record (the client lists only enabled hazards and sends <c>Enabled = true</c> for them).
+        /// </summary>
+        public bool IsActive(uint hazardId) => activeHazards.ContainsKey(hazardId);
+
+        /// <summary>
+        /// The hazard's current meter value, or -1 when there is no record (the client's default, <c>DAT_140b7a23c</c>).
+        /// </summary>
+        public float GetMeterValue(uint hazardId)
+        {
+            if (!activeHazards.TryGetValue(hazardId, out ActiveHazardState state))
+                return -1f;
+
+            Advance(state, utcNow());
+            return state.MeterValue;
+        }
+
         public List<Hazard> BuildHazards()
         {
             AdvanceAll(utcNow());

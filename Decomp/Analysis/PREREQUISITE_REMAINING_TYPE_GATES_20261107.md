@@ -2,7 +2,7 @@
 
 Evidence tier: classification generated from `Prerequisite.tbl` (slot counts), the registered handler classes and the client evaluator (`decomp_evaluator.txt` plus the evaluator vtable at `140b67740`: a slot whose function is `FUN_140001ba0` is the shared client stub). Source/SQLite only; no retail parity claim.
 
-After types 5, 20, 42, 50, 53, 54, 59, 60, 74, 110, 130, 162, 231 and 280 were handled this stretch: **3013 slots over 67 types** have no handler (2281 slots on client stubs, 3 on types with no evaluator case, 729 on real client bodies).
+After types 5, 20, 42, 50, 53, 54, 59, 60, 74, 110, 111, 113, 130, 162, 231 and 280 were handled this stretch: **2930 slots over 65 types** have no handler (2281 slots on client stubs, 3 on types with no evaluator case, 646 on real client bodies).
 
 Gate classes: **stub** = the client evaluator slot is the shared return-0 stub, so the meaning is server-side only and needs a server or retail witness; **real body** = the client body exists; the table says what is read and what is missing; **no case** = the client never evaluates it.
 
@@ -16,9 +16,7 @@ Gate classes: **stub** = the client evaluator slot is the shared return-0 stub, 
 | 126 | PathHoldout | 72 | stub | Client stub: server-only concept, needs a server or retail witness for its meaning. |
 | 49 | Schedule | 68 | stub | Client stub: server-only concept, needs a server or retail witness for its meaning. |
 | 30 | FacilityWithinDistance | 54 | stub | Client stub: server-only concept, needs a server or retail witness for its meaning. |
-| 111 | HazardProperty111 | 47 | vtable 1404a03e0 | Hazard manager tree lookup (`FUN_1404a03e0`): flag from a record field at `+0x28`; the hazard property record is unidentified and the server has no hazard model. |
 | 149 | State | 46 | vtable 14049c840 | Body read (`FUN_14049c840`): `unit+0x1e4 != 0 || unit+0x2ac != 0` compared with Value (0/1); prior notes: `+0x2ac` is a cast/action update block flag, `+0x1e4` is overloaded; no server owner for either (46 slots). |
-| 113 | HazardProperty113 | 36 | vtable 1404a04f0 | Hazard family (`FUN_1404a04f0`, float compare of a hazard property); same gate as 111. |
 | 146 | ItemTradeSkillLevel | 34 | vtable 1404a0f90 | Body read (`FUN_1404a0f90`): ObjectId is a tradeskill id (1 to 16), the unit word at `+0x15c` or `+0x160` (chosen by bit 0 of `unit+0x14c`) is counted against a list of entries with stride `0x30` and threshold at `+0x34`, and the index reached is compared with Value. Not mapped to `TradeskillTier` (at most 6 tiers per tradeskill, while 11 retail slots compare with Value 10): the list is a different, unidentified table, and the 0-based index versus the server`s 1-based tier rank is unresolved. |
 | 9 | EpisodeState | 34 | vtable 14049f700 | Episode class state (`FUN_14049f700`): per-quest states at episode node `+0x24` and the server has no episode model; see PREREQUISITE_TYPE_COVERAGE. |
 | 116 | Stealth | 32 | inline | Client unit field `+0x54 > 1`; 354 writers of offset `+0x54` across the client, none tied to a stealth state. |
@@ -75,3 +73,5 @@ Gate classes: **stub** = the client evaluator slot is the shared return-0 stub, 
 | 281 | Falling | 1 | inline | Inline Falling check: movement state unread. |
 | 294 | Unknown294 | 1 | stub | Client stub: server-only concept, needs a server or retail witness for its meaning. |
 | 295 | ? | 1 | no evaluator case (falls to default) | No evaluator case and no enum name. |
+
+Update: 111 and 113 are implemented ([PREREQUISITE_HAZARD_20261107.md](PREREQUISITE_HAZARD_20261107.md)); 112 (4 slots) remains and shares the hazard manager gate.
