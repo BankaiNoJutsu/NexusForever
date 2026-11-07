@@ -121,3 +121,24 @@ The test `QuestObjective_ComparesObjectiveCompletion`, which encoded the objecti
 
 Limits: for Completed quests the objective count is not available from the quest manager, so the bound is the native 6, not the quest's real count; type 94's unit-type handling (NPC units) and per-unit
 bit are not modelled (one evaluated player); the type 22 to 36 family's completed-quest behaviour is still unknown because its virtual body was not read.
+
+
+## Public event types 117 and 118 implemented from the native bodies (same day)
+
+With the native-body method above (match each evaluator call shape to a function in the base vtable at `0x140b67740`, then confirm with the table data), two more of the
+largest unhandled types were read:
+
+- **117** (slot +0x538, `FUN_1404a0540`, 458 slots): `(this, comparison, objectId)`; asks the global public-event manager (`DAT_140c65980`, virtual +0x48) about the event id, returns it
+  for Equal and its negation for NotEqual. Retail: `ObjectId` is a PublicEvent id (457 of 458), comparisons 1 and 2 only. Modelled as "the event exists on the player's map and is not finished".
+- **118** (slot +0x540, `FUN_1404a0590`, 2,422 slots, the largest unhandled type): `(this, comparison, value, objectId)`; finds the public event objective with id `objectId` through the same manager
+  (an existence/active check, then a second lookup), reads its value (virtual +0x38, 0 when absent) and compares it for **equality** with `Value`; Equal and NotEqual only. Retail `Value` is 1 or 2 for
+  about 97% of slots (1,689 and 658 of 2,422) with comparisons 1 (2,139) and 2 (283); `PublicEventStatus` (Inactive 0, Active 1, Succeeded 2, Failed 3) is the matching server enum, so the objective
+  status is compared. That the native value is the status and not a count is inferred from this distribution, not read from the virtual body.
+
+Implemented as `PrerequisiteCheckPublicEvent117` and `PrerequisiteCheckPublicEventObjective118` with `PublicEventPrerequisiteHelper` (map public-event manager, events, teams; the objective of a team the
+player is a member of is preferred, otherwise the first match, otherwise Inactive). `PrerequisiteCheckPublicEventTests` (13 cases) did not compile before the classes existed and pass now; 5,330 Prerequisite/
+PublicEvent/Quest cases pass (Source/SQLite). 2,880 previously always-false slots (458 + 2,422) are now evaluated.
+
+**Alignment caveat.** The vtable alignment is validated by call shape and table data per type, not globally: the slot at +0x3d8 (type 19) resolved to a `void` function that cannot be the evaluator's uint-returning
+call, the repo's older comments cite different addresses for 13 types (0 of 13 agree), and one other slot (+0x408, the type 22 to 36 family) resolved to a mismatching shape. Types 68, 94, 117 and 118 match on shape
+and data; 54, 74 and 231 have matching shapes but were not implemented here (their lookups call helper functions whose objects are not yet identified).

@@ -1,5 +1,9 @@
 # Assessment follow-through goal
 
+[Public event prerequisites 117 and 118](PREREQUISITE_TYPE_COVERAGE_20261107.md#public-event-types-117-and-118-implemented-from-the-native-bodies-same-day) (2026-11-07): the native bodies show 117 asks the public-event manager about the event id and 118 compares the
+public event objective value (inferred as status from the 1/2-dominated retail values) for equality. Implemented (2,880 previously always-false slots, the largest unhandled type among them); 13 new Source/SQLite cases did not compile before and pass,
+5,330 Prerequisite/PublicEvent/Quest cases pass. Value-as-status is inferred from the distribution, and the vtable alignment is per type, not global. No retail parity claim.
+
 [Prerequisite types 68 and 94 corrected](PREREQUISITE_TYPE_COVERAGE_20261107.md#types-68-and-94-resolved-from-the-native-bodies-same-day) (2026-11-07): the client's native bodies show `ObjectId` is a quest id and `Value` an objective
 index (a Completed quest counts every valid index as complete; Equal/NotEqual only). The server read `ObjectId` as an objective id; fixed for 2,913 retail slots. 8 discriminating tests failed on the old code; 930 Prerequisite and
 4,182 Quest/Communicator/Prerequisite/Challenge cases pass (Source/SQLite). The completed-quest objective count uses the native bound 6; unit-type handling of type 94 not modelled. No retail parity claim.
