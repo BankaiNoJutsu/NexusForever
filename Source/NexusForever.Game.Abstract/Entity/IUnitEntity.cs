@@ -51,6 +51,12 @@ namespace NexusForever.Game.Abstract.Entity
         /// Returns whether a spell currently active on this unit belongs to the supplied spell group (one of the <c>SpellGroupId</c> values of its <c>Spell4GroupList</c>).
         /// </summary>
         bool HasActiveSpellInGroup(uint spellGroupId);
+
+        /// <summary>
+        /// Returns the number of stacks (distinct castings) of the supplied Spell4 id active on this unit; native prerequisite type 59 sums a per-spell count over matching active spells.
+        /// </summary>
+        uint GetActiveSpellStackCount(uint spell4Id);
+
         uint CurrentAbsorption { get; }
         uint MaxAbsorption { get; }
         uint CurrentHealingAbsorption { get; }

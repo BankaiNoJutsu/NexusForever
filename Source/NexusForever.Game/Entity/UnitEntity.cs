@@ -161,27 +161,52 @@ namespace NexusForever.Game.Entity
         /// <summary>
         /// The Spell4 id of every tracked spell state on this unit (one entry per state, so an id can repeat).
         /// </summary>
-        private IEnumerable<uint> TrackedSpell4Ids()
+        private IEnumerable<(uint Spell4Id, uint CastingId)> TrackedSpellCastings()
         {
-            return spellProperties.Values.SelectMany(states => states.Values.Select(state => state.Spell4Id))
-                .Concat(ccStates.Values.SelectMany(states => states.Values.Select(state => state.Spell4Id)))
-                .Concat(stealthStates.Values.Select(state => state.Spell4Id))
-                .Concat(aggroImmuneStates.Values.Select(state => state.Spell4Id))
-                .Concat(spellEffectImmunityStates.Values.Select(state => state.Spell4Id))
-                .Concat(spellImmunityStates.Values.Select(state => state.Spell4Id))
-                .Concat(delayDeathStates.Values.Select(state => state.Spell4Id))
-                .Concat(procStates.Values.Select(state => state.Spell4Id))
-                .Concat(vitalClampStates.Values.Select(state => state.Spell4Id))
-                .Concat(shieldOverloadStates.Values.Select(state => state.Spell4Id))
-                .Concat(unitStateSetStates.Values.Select(state => state.Spell4Id))
-                .Concat(busyStates.Values.Select(state => state.Spell4Id))
-                .Concat(scaleStates.Values.Select(state => state.Spell4Id))
-                .Concat(factionStates.Values.Select(state => state.Spell4Id))
-                .Concat(itemVisualSwapStates.Values.Select(state => state.Spell4Id))
-                .Concat(disguiseOutfitStates.Values.Select(state => state.Spell4Id))
-                .Concat(mimicDisguiseStates.Values.Select(state => state.Spell4Id))
-                .Concat(absorptionStates.Values.Select(state => state.Spell4Id))
-                .Concat(healingAbsorptionStates.Values.Select(state => state.Spell4Id));
+            return spellProperties.Values.SelectMany(states => states.Values.Select(state => (state.Spell4Id, state.CastingId)))
+                .Concat(ccStates.Values.SelectMany(states => states.Values.Select(state => (state.Spell4Id, state.CastingId))))
+                .Concat(stealthStates.Values.Select(state => (state.Spell4Id, state.CastingId)))
+                .Concat(aggroImmuneStates.Values.Select(state => (state.Spell4Id, state.CastingId)))
+                .Concat(spellEffectImmunityStates.Values.Select(state => (state.Spell4Id, state.CastingId)))
+                .Concat(spellImmunityStates.Values.Select(state => (state.Spell4Id, state.CastingId)))
+                .Concat(delayDeathStates.Values.Select(state => (state.Spell4Id, state.CastingId)))
+                .Concat(procStates.Values.Select(state => (state.Spell4Id, state.CastingId)))
+                .Concat(vitalClampStates.Values.Select(state => (state.Spell4Id, state.CastingId)))
+                .Concat(shieldOverloadStates.Values.Select(state => (state.Spell4Id, state.CastingId)))
+                .Concat(unitStateSetStates.Values.Select(state => (state.Spell4Id, state.CastingId)))
+                .Concat(busyStates.Values.Select(state => (state.Spell4Id, state.CastingId)))
+                .Concat(scaleStates.Values.Select(state => (state.Spell4Id, state.CastingId)))
+                .Concat(factionStates.Values.Select(state => (state.Spell4Id, state.CastingId)))
+                .Concat(itemVisualSwapStates.Values.Select(state => (state.Spell4Id, state.CastingId)))
+                .Concat(disguiseOutfitStates.Values.Select(state => (state.Spell4Id, state.CastingId)))
+                .Concat(mimicDisguiseStates.Values.Select(state => (state.Spell4Id, state.CastingId)))
+                .Concat(absorptionStates.Values.Select(state => (state.Spell4Id, state.CastingId)))
+                .Concat(healingAbsorptionStates.Values.Select(state => (state.Spell4Id, state.CastingId)));
+        }
+
+        private IEnumerable<uint> TrackedSpell4Ids() => TrackedSpellCastings().Select(casting => casting.Spell4Id);
+
+        /// <summary>
+        /// Native prerequisite type 59 (sum of the per-spell count at node <c>+0x50</c> over the unit's active spells with the id). The count is modelled as the number of distinct castings of
+        /// the spell that are tracked on this unit (a stacking effect is one casting per stack, see <see cref="EnforceSpellPropertyStackGroupCap"/>) plus each unfinished pending spell with the id
+        /// that is not already tracked. That <c>+0x50</c> is a stack count is correlated, not read: several retail <c>Value</c>s equal the spell's <c>Spell4StackGroup</c> cap.
+        /// </summary>
+        public uint GetActiveSpellStackCount(uint spell4Id)
+        {
+            if (spell4Id == 0u)
+                return 0u;
+
+            var castings = new HashSet<uint>(TrackedSpellCastings().Where(casting => casting.Spell4Id == spell4Id).Select(casting => casting.CastingId));
+            uint count = (uint)castings.Count;
+            foreach (ISpell spell in pendingSpells)
+            {
+                if (spell.IsFinished || spell.Parameters.SpellInfo.Entry.Id != spell4Id || castings.Contains(spell.CastingId))
+                    continue;
+
+                count++;
+            }
+
+            return count;
         }
 
         public bool HasActiveSpellInGroup(uint spellGroupId)

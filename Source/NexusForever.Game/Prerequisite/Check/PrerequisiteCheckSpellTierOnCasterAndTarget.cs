@@ -1,33 +1,23 @@
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Static.Prerequisite;
-using NexusForever.GameTable;
 
 namespace NexusForever.Game.Prerequisite.Check
 {
     /// <summary>
-    /// Prerequisite type 280: live case <c>0x118</c> requires caster and target to pass
-    /// <c>Prerequisite_CheckSpellTier</c> (<c>1404a4f60</c>).
+    /// Prerequisite type 280: native case <c>0x118</c> requires the type 59 helper (<c>FUN_1404a4f60</c>, a stack count of the spell id <c>ObjectId</c> compared with <c>Value</c>) to hold for both
+    /// the caster and the target unit. See <see cref="PrerequisiteCheckSpellTier"/> and Decomp/Analysis/PREREQUISITE_SPELL_STACK_COUNT_20261107.md.
     /// </summary>
     [PrerequisiteCheck(PrerequisiteType.SpellTierOnCasterAndTarget)]
     public class PrerequisiteCheckSpellTierOnCasterAndTarget : IPrerequisiteCheck
     {
-        private readonly IGameTableManager gameTableManager;
-
-        public PrerequisiteCheckSpellTierOnCasterAndTarget(IGameTableManager gameTableManager)
-        {
-            this.gameTableManager = gameTableManager;
-        }
-
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
-            if (!SpellPrerequisiteHelper.MeetsSpellTier(player, comparison, value, objectId, gameTableManager))
+            if (player == null || parameters?.Target == null)
                 return false;
 
-            if (parameters.Target is not IPlayer targetPlayer)
-                return false;
-
-            return SpellPrerequisiteHelper.MeetsSpellTier(targetPlayer, comparison, value, objectId, gameTableManager);
+            return PrerequisiteCompare.Compare(comparison, player.GetActiveSpellStackCount(objectId), value)
+                && PrerequisiteCompare.Compare(comparison, parameters.Target.GetActiveSpellStackCount(objectId), value);
         }
     }
 }

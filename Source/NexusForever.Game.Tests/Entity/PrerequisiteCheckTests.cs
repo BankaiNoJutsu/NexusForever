@@ -1923,30 +1923,7 @@ public class PrerequisiteCheckTests
         Assert.Equal(expected, result);
     }
 
-    [Theory]
-    [InlineData(PrerequisiteComparison.Equal, 3u, true)]
-    [InlineData(PrerequisiteComparison.Equal, 2u, false)]
-    [InlineData(PrerequisiteComparison.GreaterThanOrEqual, 3u, true)]
-    public void SpellTier_ComparesSpellManagerTier(PrerequisiteComparison comparison, uint requiredTier, bool expected)
-    {
-        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
-        ISpellManager spellManager = RecordingDispatchProxy<ISpellManager>.Create(out var spellProxy);
-        spellProxy.SetMethodReturn(nameof(ISpellManager.GetSpell), RecordingDispatchProxy<ICharacterSpell>.Create(out _));
-        spellProxy.SetMethodReturn(nameof(ISpellManager.GetSpellTier), (byte)3);
-        playerProxy.SetProperty(nameof(IPlayer.SpellManager), spellManager);
-
-        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out var tableProxy);
-        tableProxy.SetProperty(nameof(IGameTableManager.Spell4), CreateGameTable(new Spell4Entry
-        {
-            Id                     = 9001u,
-            Spell4BaseIdBaseSpell  = 100u
-        }));
-
-        var check = new PrerequisiteCheckSpellTier(tables);
-        bool result = check.Meets(player, comparison, requiredTier, objectId: 9001u, new PrerequisiteParameters());
-
-        Assert.Equal(expected, result);
-    }
+    // SpellTier_ComparesSpellManagerTier (type 59 compared the ability-book tier) was superseded by PrerequisiteCheckSpellStackCountTests: the native body sums a per-spell count over the unit's spell list.
 
     [Theory]
     [InlineData(PrerequisiteComparison.Equal, 3u, true)]
