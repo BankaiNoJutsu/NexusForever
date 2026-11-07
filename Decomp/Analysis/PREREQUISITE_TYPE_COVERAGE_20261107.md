@@ -30,3 +30,21 @@ Prerequisite table accessor) and is not done.
 Gate: per-type comparison/object/value semantics, from the native evaluator (decompile) or a retail capture of an affected quest, vendor or reward. Next independent step: locate the evaluator by
 following the callers of the Prerequisite table loader, then implement the largest types (118, 47, 22, 117, 23) one at a time with red tests from real table rows. Evidence tier of this record:
 raw-table and text census plus static source grep.
+
+## Discrepancy in the implemented quest-objective types (types 68 and 94)
+
+Field-shape check against the retail rows (build 16042 tables, `ObjectId` tested against the Quest2 and QuestObjective id spaces):
+
+| Type (enum) | Slots | `ObjectId` is a Quest2 id | `ObjectId` is also a QuestObjective id | Comparisons | Common `Value`s |
+|---|---|---|---|---|---|
+| 68 QuestObjective (implemented) | 2,132 | 2,122 (99.5%) | 954 (45%, about the density of that id range) | 1, 2 | 0, 1, 2, 3 |
+| 94 QuestObjective6 (implemented) | 781 | 771 (98.7%) | 345 | 1, 2 | 0, 1, 2, 3 |
+| 22, 23, 33, 34, 35, 36 (unhandled) | 597, 379, 152, 87, 74, 17 | 555, 362, 147, 84, 70, 15 | far below | mostly 1 (also 4, 5, 2) | 0, 1, 2, 3 |
+| 47 QuestObjective47, 107 (unhandled) | 1,788, 124 | 48, 22 | 47, 7 | 1, 2 | large ids (47), 0 (107) |
+
+`PrerequisiteCheckQuestObjective` and `...QuestObjective6` pass `ObjectId` to `QuestObjectivePrerequisiteHelper.IsObjectiveComplete`, which matches
+`objective.ObjectiveInfo.Id == objectId` over the player's active quests. The data says `ObjectId` is a **quest** id for these types, so that lookup can only
+match by numeric coincidence of two dense id ranges, and the check mostly evaluates "objective not found". `Value` is below the quest's listed objective count in 94% of the type-68
+slots (objective-index-like), but equals the count in many of the remaining ones (completed-count-like); neither reading fits every slot, so the semantics (index, count, or state, per comparison)
+cannot be chosen from the tables. Not changed: the existing tests encode the objective-id reading, and replacing it needs the native evaluator or a capture that shows which quests or
+interactions a given row gates. This is a probable defect in an implemented check affecting 2,913 slots, recorded as evidence, not as a fix.
