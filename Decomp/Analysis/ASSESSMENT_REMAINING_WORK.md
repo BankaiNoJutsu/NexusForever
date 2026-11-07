@@ -1,5 +1,7 @@
 # Assessment follow-through goal
 
+[Prerequisite type 31](PREREQUISITE_TYPE_COVERAGE_20261107.md#type-31-creaturewithindistance-implemented-same-day) (2026-11-07): the native body (FUN_14049ed50) finds a creature with id ObjectId within Value units (3D, inclusive); Equal/NotEqual only. Implemented for 215 previously always-false slots; the new Source/SQLite cases did not compile before and 1,010 Prerequisite/AMP cases pass. The server's visible-creature set stands in for the client's nearby list. No retail parity claim.
+
 [Public event prerequisites 117 and 118](PREREQUISITE_TYPE_COVERAGE_20261107.md#public-event-types-117-and-118-implemented-from-the-native-bodies-same-day) (2026-11-07): the native bodies show 117 asks the public-event manager about the event id and 118 compares the
 public event objective value (inferred as status from the 1/2-dominated retail values) for equality. Implemented (2,880 previously always-false slots, the largest unhandled type among them); 13 new Source/SQLite cases did not compile before and pass,
 5,330 Prerequisite/PublicEvent/Quest cases pass. Value-as-status is inferred from the distribution, and the vtable alignment is per type, not global. No retail parity claim.

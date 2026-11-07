@@ -183,3 +183,12 @@ no files on `C:` were deleted.
   the server does not model identically; the compare helper's argument order is assumed from the data for 123.
 - **Client stubs (the evaluator slot is the shared `return 0`)**: 153 HoldoutWave and 154 Holdout (121 and 119 slots), 163 PublicEventParticipantCount, 164 PublicEventParticipant164, and 47 above. The client never evaluates these, so
   the client binary gives no semantics; they are server-side concepts and need a server-side witness.
+
+
+## Type 31 (CreatureWithinDistance) implemented (same day)
+
+- **31 (CreatureWithinDistance, 215 slots)**: `FUN_14049ed50` (evaluator slot +0x368) reads the unit position, walks the nearby-entity list and looks for an entity whose creature id (virtual +8) equals `ObjectId` and whose
+  squared 3D distance from the unit is at most `(float)Value` squared. Equal returns found, NotEqual returns not found, other comparisons are false. Retail: comparisons Equal 112 and NotEqual 103; `Value` 128 (46), 10 (22), 32 (17),
+  20 (16), 100 (13). Implemented as `PrerequisiteCheckCreatureWithinDistance` using the player's visible creatures (`GetVisibleCreature`) and `Position`.
+- `PrerequisiteCheckCreatureWithinDistanceTests` did not compile before the class existed and pass now; 1,010 Prerequisite/AMP cases pass (Source/SQLite). The server's visible-creature set (grid visibility) stands in for the
+  client's nearby-entity list; the two radii are not compared here, so far creatures (Value 128 against a smaller visibility range) are assumed equivalent. No retail parity claim.
