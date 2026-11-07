@@ -39,3 +39,10 @@ handlers. Those are the remaining candidates for a replay-safety read or a fault
 
 Addendum: `GlobalMarketplaceManager.AuctionPostingCommand.Attempt` (read) is replay-safe by receipt: each attempt uses a fresh owned context, locks, returns the stored outcome when the `MarketplaceBidReceipt`
 row already exists, and otherwise re-verifies the complete preimage before staging; a failed attempt falls to `ResolveAsync`. The other Marketplace commands share the `ExecuteAsync(Attempt)` shape but were not read.
+
+## Auction posting under a really replaying strategy (same day)
+Existing strategy coverage found in the tests (really retrying strategies): Auth save unit and pending-item durability, challenge reward executor, crafting outbox and settlement, world session admission,
+character query bootstrap, friendship presence, `CharacterAtomicSaveTests` (IOException). Areas with none: Marketplace, Group, Chat, Fortune, Server.Character handlers, the Auth bootstrap in `AuthDatabase`.
+`AuctionPostingRetryingStrategyTests` (2 cases, SQLite, a strategy that replays once on an injected transient `IOException`; the test counts the replay): a transaction failing before commit is replayed
+and commits, and a commit whose acknowledgement is lost is replayed and finds its receipt; both leave exactly one listing, one escrowed item and one receipt, and the wallet unchanged. Both passed first
+run (pins, no defect). The existing 37 auction posting cases still pass. Settlement, commodity posting/return and the bid commands share the `ExecuteAsync(Attempt)` shape and are not pinned yet.
