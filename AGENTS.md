@@ -176,6 +176,36 @@ Run the load-test harness commands listed in
 - When recording durable work, preserve decisions, blockers, owners, dates, and useful links back to repo files, issues, PRs, or evidence.
 - If nothing meaningful changed, do not churn the vault with timestamp-only or wording-only edits.
 
+## Reverse-Engineering Discipline
+
+The hard part of this project is recovering the meaning of data and behavior
+whose source and documentation are gone. Code volume is not progress; verified
+understanding is. A plausible implementation that reproduces observed cases can
+be wrong in a way that stays invisible for a long time.
+
+- Tests an agent wrote from its own hypothesis show self-consistency, not
+  parity. Passing them never raises a claim above "implemented against an
+  inferred reading".
+- Table data alone does not define a field's meaning. Ground truth is a native
+  evaluator body, a retail capture or sniff, or an independent source. Say which
+  one you have.
+- When a field has more than one plausible meaning, record the competing
+  hypotheses with evidence for and against and the experiment that separates
+  them. Do not pick one because the task needs an answer.
+- If an implementation needs a growing list of special cases to fit the data,
+  stop. The model is probably wrong; record the exceptions as evidence.
+- When new evidence contradicts code that is already implemented, record the
+  discrepancy and do not patch around it. Existing handlers and tests are not
+  ground truth (see the type 68/94 `ObjectId` record in
+  `Decomp/Analysis/PREREQUISITE_TYPE_COVERAGE_20261107.md`).
+- Behavior that only ever ran on the retired server may be unrecoverable. Record
+  it as unknown; do not invent it.
+- State the evidence tier in commit messages and handoff records, and write
+  "no retail parity claim" where none exists. Do not describe work as complete
+  or qualified without it.
+- Preferring an explicit unknown to a confident wrong answer is the correct
+  outcome, not a failure.
+
 ## Conventions And Constraints
 
 - Inspect relevant docs and source before editing. Prefer `rg` for repo search.

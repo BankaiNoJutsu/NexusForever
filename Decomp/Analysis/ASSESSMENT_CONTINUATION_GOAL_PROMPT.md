@@ -1,5 +1,11 @@
 # Assessment continuation Goal prompt
 
+> Evidence discipline: "complete", "qualified" and "implemented" in these records
+> carry an evidence tier (see Reverse-Engineering Discipline in `AGENTS.md` and the
+> Evidence Ladder in `CONTINUATION_GUIDE.md`). Code built on an inferred reading of
+> table or native-body evidence, such as prerequisite types 22 to 36, is not retail
+> parity. Do not restate it as such, and do not treat agent-written tests as proof.
+
 Updated 5 November 2026 with verified chat/pet-flair/creation/LAS milestones and bank contracts,
 remaining implementation/evidence priorities and current REA boundary. Retains
 roadmap-driven execution, scoped-only validation and the existing main-thread

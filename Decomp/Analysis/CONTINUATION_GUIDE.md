@@ -813,9 +813,23 @@ implementation comments.
 | Observed | A string, import, constant, branch, or call shape appears in one client function. | Record in notes. Do not implement. |
 | Correlated | The observation lines up with a table, packet, enum, handler, sniff, or existing server path. | Add a tentative finding and possibly a conservative label. |
 | Mapped | Inputs, outputs, field names, constants, and call direction are understood well enough to explain the function. | Add a durable label and update `INITIAL_FINDINGS.md`. |
-| Verified | Local runtime behavior, sniff evidence, table data, or packet shape confirms the mapped meaning. | Implement server behavior. |
+| Verified | Local runtime behavior, a sniff or retail capture, a native evaluator body, or packet shape confirms the mapped meaning. Table correlation alone and tests written from the agent's own reading do not qualify for field semantics. | Implement server behavior. |
 | Implemented | NexusForever code was changed and build or focused runtime checks passed. | Record the implementation and verification result. |
+| Implemented, inferred | Code was changed from a reading that is not yet Verified (for example inferred from table shape or adjacency). Its tests only check that reading. | Record the tier and "no retail parity claim"; keep the reading replaceable and list what would confirm it. |
 | Blocked | The evidence shows a feature but not enough safe semantics to mutate server state. | Keep diagnostic-only and list the blocker. |
+
+Rules that go with the ladder:
+
+- A status only moves up on new evidence, never on the same reading passing more
+  tests. A test written from the hypothesis does not count as evidence for it.
+- When evidence contradicts an already implemented handler, record the
+  discrepancy and its slot counts before changing anything; do not patch around
+  it with exceptions. Re-audit existing handlers when new evidence lands.
+- A reconstructed rule should also handle valid data combinations it was not
+  derived from. If every new case needs another special case, the model is
+  approximating examples, not reproducing the system.
+- Anything that only the retired server did, and that never reached the client or
+  the tables, is Blocked as unrecoverable. Do not fill it in.
 
 ## Repeatable Flow
 
@@ -1100,7 +1114,9 @@ For each candidate function, create a small function map before changing code.
 - Calls out to:
 - Called by:
 - Matching NexusForever files:
-- Confidence:
+- Hypotheses (meaning, confidence, evidence for, evidence against):
+- Next experiment that would separate them:
+- Confidence of the proposed name:
 - Open questions:
 ```
 
