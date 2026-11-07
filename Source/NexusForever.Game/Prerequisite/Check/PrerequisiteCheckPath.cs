@@ -22,10 +22,13 @@ namespace NexusForever.Game.Prerequisite.Check
 
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
+            // Native (FUN_14049fd50): the path equals Value; Equal returns that, NotEqual its negation, any other comparison is false.
             switch (comparison)
             {
                 case PrerequisiteComparison.Equal:
                     return player.PathManager.IsPathActive((Static.PlayerPath.Path)value);
+                case PrerequisiteComparison.NotEqual:
+                    return !player.PathManager.IsPathActive((Static.PlayerPath.Path)value);
                 default:
                     log.LogWarning($"Unhandled PrerequisiteComparison {comparison} for {PrerequisiteType.Path}!");
                     return false;

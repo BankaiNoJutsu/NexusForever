@@ -25,26 +25,15 @@ namespace NexusForever.Game.Prerequisite.Check
 
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
-            switch (comparison)
-            {
-                case PrerequisiteComparison.NotEqual:
-                    return !prerequisiteManager.Meets(player, objectId, parameters);
-                case PrerequisiteComparison.Equal:
-                    return prerequisiteManager.Meets(player, objectId, parameters);
-                default:
-                    log.LogWarning($"Unhandled {comparison} for {PrerequisiteType.OtherPrerequisite}!");
-                    return false;
-            }
+            // Native (evaluator case 0xb): comparison 2 negates the nested result, every other comparison returns it. Retail uses comparison 0 in 22 slots.
+            bool nested = prerequisiteManager.Meets(player, objectId, parameters);
+            return comparison == PrerequisiteComparison.NotEqual ? !nested : nested;
         }
 
         public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
-            return comparison switch
-            {
-                PrerequisiteComparison.Equal => prerequisiteManager.MeetsUnit(subject, objectId, parameters),
-                PrerequisiteComparison.NotEqual => !prerequisiteManager.MeetsUnit(subject, objectId, parameters),
-                _ => false
-            };
+            bool nested = prerequisiteManager.MeetsUnit(subject, objectId, parameters);
+            return comparison == PrerequisiteComparison.NotEqual ? !nested : nested;
         }
     }
 }
