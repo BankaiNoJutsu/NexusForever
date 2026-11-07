@@ -34,8 +34,8 @@ written independently and agree.
 
 `PrerequisiteCheckChallengeCompletionCount` (124), `PrerequisiteCheckChallengeCurrentCount` (160) and `PrerequisiteCheckChallengeOnCooldown` (125), through new `IChallengeManager.GetCurrentCount` and
 `IsChallengeOnCooldown` (`ChallengeManager` already had `GetCompletionCount`). A challenge the manager has no state for compares 0 / not on cooldown, as an absent client record does, and an id above 16 bits is absent.
-`ChallengeCountPrerequisiteTests` (25 cases) pass; the first build of the 124/160 tests failed to compile against the missing `GetCurrentCount` (the red run was a compile failure), the 125 tests were written before the
-check but not run red. 1,928 Prerequisite/Challenge Source/SQLite cases pass in the same scope (the 25 are included). 193 previously always-false slots (7 + 33 + 153) now evaluate.
+`ChallengeCountPrerequisiteTests` (22 cases) pass; the first build of the 124/160 tests failed to compile against the missing `GetCurrentCount` (the red run was a compile failure), the 125 tests were written before the
+check but not run red. 1,928 Prerequisite/Challenge Source/SQLite cases pass in the same scope (the 22 are included). 193 previously always-false slots (7 + 33 + 153) now evaluate.
 
 ## Not implemented: 74 (236 slots)
 
