@@ -2,7 +2,7 @@
 
 Evidence tier: classification generated from `Prerequisite.tbl` (slot counts), the registered handler classes and the client evaluator (`decomp_evaluator.txt` plus the evaluator vtable at `140b67740`: a slot whose function is `FUN_140001ba0` is the shared client stub). Source/SQLite only; no retail parity claim.
 
-After types 5, 20, 42, 50, 53, 54, 59, 60, 74, 110, 111, 113, 130, 162, 231 and 280 were handled this stretch: **2930 slots over 65 types** have no handler (2281 slots on client stubs, 3 on types with no evaluator case, 646 on real client bodies).
+After types 5, 20, 42, 50, 53, 54, 59, 60, 74, 110, 111, 113, 114, 130, 162, 231 and 280 were handled this stretch: **2920 slots over 64 types** have no handler (2281 slots on client stubs, 3 on types with no evaluator case, 636 on real client bodies).
 
 Gate classes: **stub** = the client evaluator slot is the shared return-0 stub, so the meaning is server-side only and needs a server or retail witness; **real body** = the client body exists; the table says what is read and what is missing; **no case** = the client never evaluates it.
 
@@ -33,7 +33,6 @@ Gate classes: **stub** = the client evaluator slot is the shared return-0 stub, 
 | 127 | PathHoldoutPlayer | 11 | stub | Client stub: server-only concept, needs a server or retail witness for its meaning. |
 | 200 | PublicEventObjective200 | 11 | vtable 1404a0bf0 | Body read (`FUN_1404a0bf0`): event active and the objective virtual `+0xa0` word AND `Value` (a status/phase mask); the mask meaning is unmapped (11 slots). |
 | 142 | Unknown142 | 10 | stub | Client stub: server-only concept, needs a server or retail witness for its meaning. |
-| 114 | Vital114 | 10 | inline/helper FUN_140466520,FUN_1404a2010 | Compares two unit property values (`FUN_140466520` vital reader) - both operands depend on unread unit fields. |
 | 77 | QuestObjectiveOnTarget | 9 | inline | Inline QuestObjectiveOnTarget: reads quest objective state on the prerequisite target; unread. |
 | 189 | Unknown189 | 9 | stub | Client stub: server-only concept, needs a server or retail witness for its meaning. |
 | 147 | PlayersInWorld | 9 | stub | Client stub: server-only concept, needs a server or retail witness for its meaning. |
@@ -75,3 +74,5 @@ Gate classes: **stub** = the client evaluator slot is the shared return-0 stub, 
 | 295 | ? | 1 | no evaluator case (falls to default) | No evaluator case and no enum name. |
 
 Update: 111 and 113 are implemented ([PREREQUISITE_HAZARD_20261107.md](PREREQUISITE_HAZARD_20261107.md)); 112 (4 slots) remains and shares the hazard manager gate.
+
+Update: 114 is implemented ([PREREQUISITE_VITAL_COMPARE_20261107.md](PREREQUISITE_VITAL_COMPARE_20261107.md)).
