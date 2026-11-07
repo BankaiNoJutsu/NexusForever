@@ -59,3 +59,15 @@ observation (read-only, fresh context); `RealmBankManager.Command.Attempt` (fres
 `strategy.ExecuteAsync` on the shared injected `_context` and call `_messagePublisher.PublishAsync` *before* `SaveChangesAsync`/`CommitAsync`. A transient commit fault would replay the delegate on a context that
 still tracks the first attempt's entries and would publish the result message again (and a non-transient failure still leaves the message published). These handlers come from the upstream service refactor
 (`c0899fce`, `99752578`), not from this restoration; changing them is an upstream design decision (publish after commit or an outbox) and no retail or ledger requirement asks for it, so it is recorded here only.
+
+## Last three units read (same day)
+- `ContractAccountSync.ReadPlan`: read-only transaction in a fresh context, plan built per attempt: replay-safe.
+- `CharacterManager.UpdateCharacterRemoteAsync` (Server.Character): only wraps `UpdateCharacterCoreAsync` when no caller transaction exists; the core fetches the API snapshot, then begins its transaction and sets a column to an
+  absolute value (`IsModified = true`), so a replay repeats the same write. It reuses the shared scoped `_context`, so the first attempt's tracked `CharacterModel` is still tracked on replay; the write is idempotent.
+- `AuthDatabase.TryAddStorePurchaseHistory`: each attempt uses a fresh context, re-counts the velocity window and inserts a new row. A replay after a *rolled-back* attempt is correct. A replay after a commit whose
+  acknowledgement was lost would insert a second history row (no idempotency key), overcounting the account's purchase velocity by one. The MySQL connector's lost-acknowledgement error (number 0 with an IO cause) is
+  documented in `RealmBankManager.Command` as not classified as transient, so the production strategy would not replay it; the hazard is therefore theoretical and is not fixed here. Closing it would need a stable
+  purchase key (the history table has none) and so a schema decision. Existing test: `AuthDatabaseStorePurchaseHistoryTests` (records once, respects the limit; no strategy).
+
+With these, every `CreateExecutionStrategy` site in `Source/` has been read or has a really-retrying test, except the Group/Friendship/Chat handlers recorded above as an upstream observation. Remaining
+gate for that observation: an upstream service design decision (publish after commit or an outbox), not a witness.
