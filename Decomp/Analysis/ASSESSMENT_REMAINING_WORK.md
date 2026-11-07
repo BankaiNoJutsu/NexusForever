@@ -6,6 +6,8 @@
 > table or native-body evidence, such as prerequisite types 22 to 36, is not retail
 > parity. Do not restate it as such, and do not treat agent-written tests as proof.
 
+[Prerequisite types 50, 60 and 130 (caster-attributed spells)](PREREQUISITE_CASTER_ATTRIBUTED_SPELLS_20261107.md) (2026-11-07): the native bodies only count spells whose source unit is the prerequisite target; 50 reads `Value` as the spell id, 130 `ObjectId` as a spell group, 60 sums stacks. The server had no caster on tracked spell states and tested the wrong unit. Added `RegisterSpellCaster` (from `Spell.ExecuteEffect`) and caster-filtered stack/group lookups. Tier: native body read; caster/stack model inferred; Source/SQLite only (compile-red first; 2,742-case scope separate). 103 still unmodelled. No retail parity claim.
+
 [Ledger gate pass B](LEDGER_GATE_PASS_20261107B.md) (2026-11-07): per-item gates restated after the second prerequisite audit (types 4/250, 50/103/130, 214/190/245/275, 54/110/53, 9, 60, telegraph shapes 3 and 6 and the older rows). The only item without a missing witness is the large mechanical MySQL retry-strategy test conversion (about 280 test-opened transactions), not started. Tier: reading and local tables; no tests run. No retail parity claim.
 
 [Prerequisite audit pass B](PREREQUISITE_AUDIT_PASS_20261107B.md) (2026-11-07): native bodies read for types 1, 4/250, 73, 109, 214, 50, 103/104, 76, 190, 245/275; no code change. Blocked with named missing inputs: 4/250 (which packet field fills entity +0x110/+0x118), 214 and 190 (flag/state semantics), 50 and 103 (per-effect caster/target link the server does not record), 245/275 (helper FUN_1403b91d0 unread). Tier: native body read only; no tests run. No retail parity claim.

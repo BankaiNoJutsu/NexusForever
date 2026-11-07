@@ -57,6 +57,22 @@ namespace NexusForever.Game.Abstract.Entity
         /// </summary>
         uint GetActiveSpellStackCount(uint spell4Id);
 
+        /// <summary>
+        /// As <see cref="GetActiveSpellStackCount(uint)"/> but only counts castings registered (<see cref="RegisterSpellCaster"/>) to the unit with the supplied guid; native prerequisite types 50, 60 and 130
+        /// only consider spells whose source unit is the prerequisite target.
+        /// </summary>
+        uint GetActiveSpellStackCount(uint spell4Id, uint casterGuid);
+
+        /// <summary>
+        /// As <see cref="HasActiveSpellInGroup(uint)"/> but only considers spells cast by the unit with the supplied guid.
+        /// </summary>
+        bool HasActiveSpellInGroup(uint spellGroupId, uint casterGuid);
+
+        /// <summary>
+        /// Records which unit cast the spell with the supplied casting id so spell states applied to this unit can be attributed to their caster.
+        /// </summary>
+        void RegisterSpellCaster(uint castingId, uint casterGuid);
+
         uint CurrentAbsorption { get; }
         uint MaxAbsorption { get; }
         uint CurrentHealingAbsorption { get; }

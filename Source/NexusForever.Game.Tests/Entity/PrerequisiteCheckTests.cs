@@ -1935,21 +1935,8 @@ public class PrerequisiteCheckTests
         Assert.Equal(expected, result);
     }
 
-    [Theory]
-    [InlineData(PrerequisiteComparison.Equal, true, true)]
-    [InlineData(PrerequisiteComparison.Equal, false, false)]
-    public void UnderSpellOnTarget_UsesTargetActiveSpellState(PrerequisiteComparison comparison, bool active, bool expected)
-    {
-        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
-        IUnitEntity target = RecordingDispatchProxy<IUnitEntity>.Create(out var targetProxy);
-        targetProxy.SetMethodReturn(nameof(IUnitEntity.HasTrackedSpellState), active);
-
-        var check = new PrerequisiteCheckUnderSpellOnTarget(NullLogger<PrerequisiteCheckUnderSpellOnTarget>.Instance);
-        var parameters = new PrerequisiteParameters { Target = target };
-        bool result = check.Meets(player, comparison, value: 42u, objectId: 0u, parameters);
-
-        Assert.Equal(expected, result);
-    }
+    // UnderSpellOnTarget_UsesTargetActiveSpellState (type 50 asked whether the target held the spell) was superseded by PrerequisiteCheckCasterAttributedSpellTests: the native body asks whether the
+    // subject holds a spell with id Value cast by the target.
 
     [Theory]
     [InlineData(PrerequisiteComparison.Equal, 1u, true)]

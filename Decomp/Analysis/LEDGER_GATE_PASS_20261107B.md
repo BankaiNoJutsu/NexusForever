@@ -17,7 +17,6 @@ Prerequisite 5 ([PREREQUISITE_REPUTATION_FLOAT_20261107.md](PREREQUISITE_REPUTAT
 | Prerequisite 54 (256), 110 (47), 53 (33) | Native identity | Mission class virtuals `+0x28` (labelled "IsVisibleOrStarted" only from a Lua guard), `+0x30`, `+0x58`, and what `DAT_140c65970+8` is; GetMissionState values (1/2/3) disagree with the server enum (0/2/3/4) |
 | Prerequisite 9 (34) | Native mapping | The writer of the per-quest state at episode map node `+0x24` and the server has no episode model |
 | Prerequisite 47 (1,788), 76 (281), 153/154, 126, 49, 30, 163/164 | Server-only concept | Client evaluator slot is the `return 0` stub; needs a server or retail witness |
-| Prerequisite 60 (SpellTierOnTarget) | Native body unread | Evaluator case `0x3c` uses a different body than 59; read it before changing the old tier helper it still uses |
 | Prerequisite 231, 74, 107/119/162, 111/113, 239, 18, 146, 114/115/116, 194/195/232/292, 249 to 255 | Native identity / producers | As listed in STOPPING_CONDITION_20261107.md (AMP list writer, challenge untouched-record set, participation slot, unit/manager objects, PvP rating producers) |
 | Telegraph shapes 3 (104 rows) and 6 (159 rows) | Native renderer | Shape switch of the client telegraph renderer (the builder chain `FUN_1405458e0` to `FUN_14061a840` has no shape branch); even once read, the renderer only fixes geometry, not server hit rules |
 | Creature visibility prerequisite (4,420 creatures) | Native identity | Evaluating side (client vs server) |

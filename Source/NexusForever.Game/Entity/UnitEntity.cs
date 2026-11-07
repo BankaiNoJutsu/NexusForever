@@ -209,6 +209,60 @@ namespace NexusForever.Game.Entity
             return count;
         }
 
+        private readonly Dictionary</*castingId*/uint, /*casterGuid*/uint> spellCasters = new();
+
+        /// <summary>
+        /// Records which unit cast the spell with the supplied casting id. Native prerequisite types 50, 60 and 130 only consider spells whose source unit (spell object <c>+0x154</c>) is the
+        /// prerequisite target, and the tracked spell states carry only the casting id.
+        /// </summary>
+        public void RegisterSpellCaster(uint castingId, uint casterGuid)
+        {
+            if (castingId == 0u || casterGuid == 0u)
+                return;
+
+            spellCasters[castingId] = casterGuid;
+
+            // drop entries whose castings no longer have a tracked state so the map cannot grow without bound
+            if (spellCasters.Count > 256)
+            {
+                HashSet<uint> live = TrackedSpellCastings().Select(casting => casting.CastingId).ToHashSet();
+                foreach (uint id in spellCasters.Keys.Where(id => !live.Contains(id) && id != castingId).ToArray())
+                    spellCasters.Remove(id);
+            }
+        }
+
+        private bool IsCastBy(uint castingId, uint casterGuid)
+            => casterGuid != 0u && spellCasters.TryGetValue(castingId, out uint registered) && registered == casterGuid;
+
+        /// <summary>
+        /// Stack count (see <see cref="GetActiveSpellStackCount(uint)"/>) restricted to castings by the supplied unit; unfinished pending spells are this unit's own casts, so they only count for self-casts.
+        /// </summary>
+        public uint GetActiveSpellStackCount(uint spell4Id, uint casterGuid)
+        {
+            if (spell4Id == 0u || casterGuid == 0u)
+                return 0u;
+
+            var castings = new HashSet<uint>(TrackedSpellCastings()
+                .Where(casting => casting.Spell4Id == spell4Id && IsCastBy(casting.CastingId, casterGuid))
+                .Select(casting => casting.CastingId));
+            uint count = (uint)castings.Count;
+            if (casterGuid == Guid)
+            {
+                foreach (ISpell spell in pendingSpells)
+                {
+                    if (spell.IsFinished || spell.Parameters.SpellInfo.Entry.Id != spell4Id || castings.Contains(spell.CastingId))
+                        continue;
+
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        public bool HasActiveSpellInGroup(uint spellGroupId, uint casterGuid)
+            => HasActiveSpellInGroup(spellGroupId, casterGuid, GetGameTableManager());
+
         public bool HasActiveSpellInGroup(uint spellGroupId)
             => HasActiveSpellInGroup(spellGroupId, GetGameTableManager());
 
@@ -234,6 +288,25 @@ namespace NexusForever.Game.Entity
             return TrackedSpell4Ids().Any(InGroup)
                 || pendingSpells.Any(spell => !spell.IsFinished && InGroup(spell.Parameters.SpellInfo.Entry.Id));
         }
+        internal bool HasActiveSpellInGroup(uint spellGroupId, uint casterGuid, IGameTableManager gameTableManager)
+        {
+            if (spellGroupId == 0u || casterGuid == 0u || gameTableManager?.Spell4 == null || gameTableManager.Spell4GroupList == null)
+                return false;
+
+            bool InGroup(uint spell4Id)
+            {
+                Spell4Entry spell4Entry = gameTableManager.Spell4.GetEntry(spell4Id);
+                if (spell4Entry == null || spell4Entry.Spell4GroupListId == 0u)
+                    return false;
+
+                return NexusForever.Game.Spell.Spell.Spell4GroupListContainsGroupId(
+                    gameTableManager.Spell4GroupList.GetEntry(spell4Entry.Spell4GroupListId), spellGroupId);
+            }
+
+            return TrackedSpellCastings().Any(casting => IsCastBy(casting.CastingId, casterGuid) && InGroup(casting.Spell4Id))
+                || (casterGuid == Guid && pendingSpells.Any(spell => !spell.IsFinished && InGroup(spell.Parameters.SpellInfo.Entry.Id)));
+        }
+
         public uint CurrentAbsorption => (uint)Math.Min(uint.MaxValue, absorptionStates.Values.Aggregate(0ul, (total, state) => total + state.Amount));
         public uint MaxAbsorption => (uint)Math.Min(uint.MaxValue, absorptionStates.Values.Aggregate(0ul, (total, state) => total + state.MaxAmount));
         public uint CurrentHealingAbsorption => (uint)Math.Min(uint.MaxValue, healingAbsorptionStates.Values.Aggregate(0ul, (total, state) => total + state.Amount));

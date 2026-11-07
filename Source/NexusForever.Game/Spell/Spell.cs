@@ -1922,6 +1922,9 @@ namespace NexusForever.Game.Spell
                     continue;
                 }
 
+                // lets the target attribute the spell states this effect creates to their caster (prerequisite types 50, 60 and 130)
+                unitTarget.RegisterSpellCaster(CastingId, Caster.Guid);
+
                 if (effect.Entry.EffectType != SpellEffectType.SpellImmunity && unitTarget.IsImmuneToSpell(Parameters.SpellInfo.Entry.Id))
                 {
                     info.DropEffect = true;

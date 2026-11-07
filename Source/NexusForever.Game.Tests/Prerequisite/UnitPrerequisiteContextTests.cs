@@ -234,7 +234,8 @@ public sealed class UnitPrerequisiteContextTests
         var target = Unit(3, 10, out var targetProxy);
         subjectProxy.SetProperty(nameof(IUnitEntity.Position), Vector3.Zero);
         targetProxy.SetProperty(nameof(IUnitEntity.Position), new Vector3(3, 0, 4));
-        targetProxy.SetMethodHandler(nameof(IUnitEntity.HasTrackedSpellState), args => (uint)args[0] == 123);
+        // native type 50: the subject holds spell 123 cast by the target (superseded: the target holding it)
+        subjectProxy.SetMethodHandler(nameof(IUnitEntity.GetActiveSpellStackCount), args => (uint)args[0] == 123u && (uint)args[1] == target.Guid ? 1u : 0u);
         var parameters = new PrerequisiteParameters { Target = target };
         Assert.True(fixture.Manager.MeetsUnit(subject, 1, parameters));
         Assert.True(fixture.Manager.MeetsUnit(subject, 2, parameters));
