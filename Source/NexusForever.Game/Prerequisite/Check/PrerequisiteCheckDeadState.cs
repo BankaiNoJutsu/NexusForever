@@ -1,15 +1,14 @@
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Prerequisite;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Prerequisite;
 
 namespace NexusForever.Game.Prerequisite.Check
 {
     /// <summary>
-    /// Prerequisite type 12: live case <c>0x0c</c> dispatches to
-    /// <c>Prerequisite_CheckDeadState</c> (<c>14049c800</c>), which tests native
-    /// entity state fields <c>+0x250</c>/<c>+0x254</c> and entity type <c>0x17</c>.
-    /// NF keeps the existing <see cref="IUnitEntity.IsAlive"/> proxy until those native
-    /// fields are mapped to server-owned runtime state.
+    /// Prerequisite type 12: native <c>FUN_14049c800</c> computes <c>flag = unit+0x250 != 0 || unit+0x254 != 0 || entity type (unit+0x80) == 0x17</c> and ends with the boolean tail:
+    /// Equal is <c>flag == Value</c>, NotEqual is <c>flag != Value</c>, every other comparison is false. <c>0x17</c> is <see cref="EntityType.Ghost"/>; the two fields are not mapped and are
+    /// represented by <see cref="IUnitEntity.IsAlive"/> (inferred). See Decomp/Analysis/PREREQUISITE_DEAD_STATE_BOOLEAN_20261107.md.
     /// </summary>
     [PrerequisiteCheck(PrerequisiteType.DeadState)]
     public class PrerequisiteCheckDeadState : IPrerequisiteCheck
@@ -17,14 +16,16 @@ namespace NexusForever.Game.Prerequisite.Check
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
             IWorldEntity entity = parameters.Target as IWorldEntity ?? player;
-            if (entity is not IUnitEntity unit)
-                return false;
-
-            uint deadState = unit.IsAlive ? 0u : 1u;
-            return PrerequisiteCompare.Compare(comparison, deadState, value);
+            return entity is IUnitEntity unit && MeetsUnit(unit, comparison, value, objectId, parameters);
         }
 
         public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
-            => subject != null && PrerequisiteCompare.Compare(comparison, subject.IsAlive ? 0u : 1u, value);
+        {
+            if (subject == null)
+                return false;
+
+            bool dead = !subject.IsAlive || subject.Type == EntityType.Ghost;
+            return PrerequisiteCompare.CompareFlag(comparison, (dead ? 1u : 0u) == value);
+        }
     }
 }
