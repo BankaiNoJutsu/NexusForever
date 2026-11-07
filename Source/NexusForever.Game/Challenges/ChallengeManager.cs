@@ -933,6 +933,13 @@ namespace NexusForever.Game.Challenges
                 : 0u;
         }
 
+        public uint GetCurrentCount(ushort challengeId)
+        {
+            return activeChallenges.TryGetValue(challengeId, out ChallengeRuntimeState state)
+                ? state.CurrentCount
+                : 0u;
+        }
+
         public bool IsChallengeActivated(ushort challengeId)
         {
             return activeChallenges.TryGetValue(challengeId, out ChallengeRuntimeState state) && state.Activated;

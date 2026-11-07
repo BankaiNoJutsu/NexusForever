@@ -37,6 +37,11 @@ namespace NexusForever.Game.Abstract.Challenges
         uint GetCompletionCount(ushort challengeId);
 
         /// <summary>
+        /// Returns the current progress count of the supplied challenge, or 0 when the character has no record of it.
+        /// </summary>
+        uint GetCurrentCount(ushort challengeId);
+
+        /// <summary>
         /// Returns whether the supplied challenge is currently activated on this character.
         /// </summary>
         bool IsChallengeActivated(ushort challengeId);
