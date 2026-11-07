@@ -105,9 +105,17 @@ then called a persistence `Save`/`Read` path (`ExperiencePersistence`, `Quest`/`
 executor or delivery recovery opening the transaction, which was the signature of the defect fixed above. That is an absence in this run, not a proof that no other
 production site exists: a production recovery that none of these tests reaches would not appear.
 
-Not explained by that cause: `ContractCompletionRepositoryTests` `OverflowCannotLeaveATerminalQuestOrReceipt` (`Assert.Throws` exact-type mismatch, 4 cases) and
-`InventoryRewardDeliveryTests` Contract admission and partial id allocation cases (`Assert.True`/`Assert.Equal`, about 13). They may be knock-on effects of a test-opened
-transaction, but that is unconfirmed.
+Previously unexplained failures, now traced (rerun of those two classes, 3.4 minutes):
+- `ContractCompletionRepositoryTests.OverflowCannotLeaveATerminalQuestOrReceipt` (4 cases): the `Assert.Throws` exact-type mismatch carries the retry
+  strategy's own `InvalidOperationException` ("does not support user-initiated transactions") as the actual exception, so this is the same test-opened-transaction cause.
+- `InventoryRewardDeliveryTests` (Contract admission, partial id allocation, changed definitions): these tests open a serializable transaction themselves and then
+  assert `Assert.Throws<InvalidOperationException>(() => f.Stage(context, held))`. Under the retry strategy that assertion is satisfied by the strategy's own
+  `InvalidOperationException`, thrown before `Stage` reaches the failure the test is trying to provoke, so the following assertion fails (for example
+  `Assert.True(context.IsSaveRejected)` at InventoryRewardDeliveryTests.cs:151 and the resolved-state check at :564). The same shape appears in the other
+  cases of the family, but only these two sites were read line by line; the rest of the family is inferred from the shared pattern.
+
+Consequence: no failure in the second census is attributed to a production site. These classes need their own transaction opened through the execution
+strategy (or a strategy-aware helper) before they can be run under the production options.
 
 Evidence tier: the existing Source cases on real MySQL 8.0.46 with the production options. Not a statement that production code is correct under the retry
 strategy, and not retail parity.

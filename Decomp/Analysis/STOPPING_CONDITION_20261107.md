@@ -76,3 +76,7 @@ explaining the Contract/InventoryRewardDelivery differences, the Auth-only class
 Update (retry strategy): the production-options MySQL run found and fixed a real recovery defect in `ContractCompletionExecutor`
 ([CONTRACT_COMPLETION_RETRY_STRATEGY_RECOVERY.md](CONTRACT_COMPLETION_RETRY_STRATEGY_RECOVERY.md)). The retry-strategy gate is therefore partly worked, not closed: other
 classes still need their tests made strategy-aware (or each failure traced to a production site) before the production-options run can be claimed for them.
+
+Update: the two previously unexplained production-options failure groups (Contract overflow, InventoryRewardDelivery Contract admission and allocation) are traced to
+the same test-opened-transaction cause (see the MySQL record). No remaining production-options failure is attributed to a production site; the remaining MySQL work is
+mechanical test-fixture work, Auth-only classes without a provider seam, MySQL 8.4.13, and socket, broker and load runs.
