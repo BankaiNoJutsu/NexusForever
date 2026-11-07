@@ -69,10 +69,19 @@ How the first run's five failing classes were resolved (the first run passed 47 
   trigger by provider (the convention already used by `ArchivePublicationTests` and others). Every assertion is unchanged; the two classes still
   pass on SQLite (93 cases).
 
+### Two-database (Character + Auth) flows
+
+A second theory, `TwoDatabaseClassHoldsOnMySql`, drives the three classes that also accept an Auth database, each case with its own
+Character schema, a separate Auth schema and (for crafting) a foreign Auth schema, all created and dropped by the driver:
+`ContractClaimTransactionTests` (Character + Auth `DbContextOptions`), `CraftingSettlementTests` (Character options + Auth and foreign Auth
+connection strings) and `BankDeferredCurrencyRecoveryTests` (Character options + vendor Auth connection). All three pass on MySQL 8.0.46
+(10.5 minutes; no leftover schemas). That covers the Contract claim, crafting award delivery/admission and bank recovery flows across two real
+databases, which the earlier single-database run could not.
+
 No product defect was found. Evidence tier: the existing Source cases that accept provider options, on real MySQL 8.0.46 with fresh schemas. This
-covers Character-side save/retry/rollback/commit-fault ownership across Quest, Challenge rewards, Contract claims, Crafting, Bank, Housing,
-Achievement, Title and others. It does not cover MySQL 8.4.13, the configured retry execution strategy, Auth-side or two-database recovery flows that
-need their own provider seam, or socket, broker and load runs.
+covers Character-side and Character+Auth save/retry/rollback/commit-fault ownership across Quest, Challenge rewards, Contract claims, Crafting, Bank,
+Housing, Achievement, Title and others. It does not cover MySQL 8.4.13, the configured retry execution strategy, the other Auth-only test classes
+(account currency, account inventory, keybinding, world session admission) that have no provider seam, or socket, broker and load runs.
 
 Run: set `NEXUS_FOREVER_TEST_MYSQL_SERVER="server=127.0.0.1;port=3306;user=<user>;password=<password>"` then
 `dotnet test NexusForever.Game.Tests --filter "FullyQualifiedName~MySqlProviderQualification"`.

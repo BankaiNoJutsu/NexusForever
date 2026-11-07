@@ -1,17 +1,22 @@
-using System.Reflection;
 using System.Data.Common;
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using MySqlConnector;
+using NexusForever.Database;
+using NexusForever.Database.Auth;
 using NexusForever.Database.Character;
+using NexusForever.Database.Configuration.Model;
 
 namespace NexusForever.Game.Tests.Database;
 
 /// <summary>
-/// Opt-in provider qualification. Every test class in this assembly that already accepts a single
-/// <see cref="DbContextOptions{CharacterContext}"/> constructor argument is driven against a fresh disposable MySQL schema per case
-/// (created and dropped here). Enable with NEXUS_FOREVER_TEST_MYSQL_SERVER set to a server connection string without a database,
-/// for example "server=127.0.0.1;port=3306;user=...;password=...". Without it every case is skipped, so default runs are unchanged.
+/// Opt-in provider qualification. Every test class in this assembly that already accepts a
+/// <see cref="DbContextOptions{CharacterContext}"/> constructor argument (and the three classes that also accept an Auth database) is
+/// driven against fresh disposable MySQL schemas per case, created and dropped here. Enable with NEXUS_FOREVER_TEST_MYSQL_SERVER set
+/// to a server connection string without a database, for example "server=127.0.0.1;port=3306;user=...;password=...".
+/// NEXUS_FOREVER_TEST_MYSQL_CLASSES optionally restricts the run to class-name substrings. Without the server variable every case is
+/// skipped, so default runs are unchanged.
 /// </summary>
 public sealed class MySqlProviderQualificationTests
 {
@@ -28,12 +33,57 @@ public sealed class MySqlProviderQualificationTests
 
     public static IEnumerable<object[]> Classes() => DiscoverClasses().Select(type => new object[] { type.FullName! });
 
+    public static IEnumerable<object[]> TwoDatabaseClasses() => DiscoverTwoDatabaseClasses().Select(type => new object[] { type.FullName! });
+
     [RequiresMySqlTheory]
     [MemberData(nameof(Classes))]
     public async Task ClassHoldsOnMySql(string className)
     {
-        string server = Environment.GetEnvironmentVariable(ServerVariable)!;
         Type type = DiscoverClasses().Single(candidate => candidate.FullName == className);
+        await RunClass(type, async (server, schema) =>
+        {
+            await Execute(server, $"CREATE DATABASE `{schema}`");
+            CharacterOptions options = CreateCharacterOptions(server, schema, type);
+            await using (var schemaContext = new CharacterContext(options.Options)) await schemaContext.Database.EnsureCreatedAsync();
+            return [options.Options];
+        });
+    }
+
+    /// <summary>The Auth-aware constructors: a Character schema plus a separate Auth schema (and a foreign Auth schema where asked for).</summary>
+    [RequiresMySqlTheory]
+    [MemberData(nameof(TwoDatabaseClasses))]
+    public async Task TwoDatabaseClassHoldsOnMySql(string className)
+    {
+        Type type = DiscoverTwoDatabaseClasses().Single(candidate => candidate.FullName == className);
+        await RunClass(type, async (server, schema) =>
+        {
+            string authSchema = schema + "_auth", foreignAuthSchema = schema + "_fauth";
+            await Execute(server, $"CREATE DATABASE `{schema}`");
+            await Execute(server, $"CREATE DATABASE `{authSchema}`");
+            await Execute(server, $"CREATE DATABASE `{foreignAuthSchema}`");
+            CharacterOptions character = CreateCharacterOptions(server, schema, type);
+            var authOptions = new DbContextOptionsBuilder<AuthContext>()
+                .UseMySql($"{server};database={authSchema};Pooling=False", new MySqlServerVersion(new Version(8, 0, 0))).Options;
+            await using (var characterContext = new CharacterContext(character.Options)) await characterContext.Database.EnsureCreatedAsync();
+            await using (var authContext = new AuthContext(authOptions)) await authContext.Database.EnsureCreatedAsync();
+            DatabaseConnectionString Connection(string database) => new()
+            {
+                Provider = DatabaseProvider.MySql,
+                ConnectionString = $"{server};database={database};Pooling=False"
+            };
+            return type.Name switch
+            {
+                "CraftingSettlementTests" => [character.Options, Connection(authSchema), Connection(foreignAuthSchema)],
+                "ContractClaimTransactionTests" => [character.Options, authOptions],
+                "BankDeferredCurrencyRecoveryTests" => [character.Options, Connection(authSchema)],
+                _ => throw new InvalidOperationException($"No two-database constructor mapping for {type.Name}.")
+            };
+        });
+    }
+
+    private static async Task RunClass(Type type, Func<string, string, Task<object[]>> buildConstructorArguments)
+    {
+        string server = Environment.GetEnvironmentVariable(ServerVariable)!;
         var failures = new List<string>();
         int executed = 0;
 
@@ -55,16 +105,8 @@ public sealed class MySqlProviderQualificationTests
                 string label = $"{method.Name}({string.Join(", ", arguments)})";
                 try
                 {
-                    await Execute(server, $"CREATE DATABASE `{schema}`");
-                    var builder = new DbContextOptionsBuilder<CharacterContext>()
-                        .UseMySql($"{server};database={schema};Pooling=False", new MySqlServerVersion(new Version(8, 0, 0)));
-                    // These fixtures are documented as synthetic and run SQLite with foreign keys disabled; mirror that per session.
-                    if (ForeignKeysDisabledFixtures.Contains(type.Name)) builder.AddInterceptors(new DisableForeignKeyChecks());
-                    var options = builder.Options;
-                    // Some fixtures expect the caller to supply the schema when given provider options; EnsureCreated is a no-op
-                    // for fixtures that create it themselves afterwards.
-                    await using (var schemaContext = new CharacterContext(options)) await schemaContext.Database.EnsureCreatedAsync();
-                    object instance = Activator.CreateInstance(type, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, null, [options], null)!;
+                    object[] constructorArguments = await buildConstructorArguments(server, schema);
+                    object instance = Activator.CreateInstance(type, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, null, constructorArguments, null)!;
                     if (method.Invoke(instance, arguments) is Task task) await task;
                 }
                 catch (Exception error)
@@ -79,17 +121,27 @@ public sealed class MySqlProviderQualificationTests
                 }
                 finally
                 {
-                    await Execute(server, $"DROP DATABASE IF EXISTS `{schema}`");
-                    await Execute(server, $"DROP DATABASE IF EXISTS `{schema}_foreign`");
+                    foreach (string suffix in new[] { "", "_foreign", "_auth", "_fauth" })
+                        await Execute(server, $"DROP DATABASE IF EXISTS `{schema}{suffix}`");
                 }
             }
         }
 
-        Assert.True(executed > 0, $"No cases were discovered in {className}.");
-        Assert.True(failures.Count == 0, $"{failures.Count} of {executed} cases failed on MySQL in {className}:{Environment.NewLine}{string.Join(Environment.NewLine, failures)}");
+        Assert.True(executed > 0, $"No cases were discovered in {type.FullName}.");
+        Assert.True(failures.Count == 0, $"{failures.Count} of {executed} cases failed on MySQL in {type.FullName}:{Environment.NewLine}{string.Join(Environment.NewLine, failures)}");
     }
 
-    // Optional comma-separated class-name substrings (NEXUS_FOREVER_TEST_MYSQL_CLASSES) to rerun a subset.
+    private readonly record struct CharacterOptions(DbContextOptions<CharacterContext> Options);
+
+    private static CharacterOptions CreateCharacterOptions(string server, string schema, Type type)
+    {
+        var builder = new DbContextOptionsBuilder<CharacterContext>()
+            .UseMySql($"{server};database={schema};Pooling=False", new MySqlServerVersion(new Version(8, 0, 0)));
+        // These fixtures are documented as synthetic and run SQLite with foreign keys disabled; mirror that per session.
+        if (ForeignKeysDisabledFixtures.Contains(type.Name)) builder.AddInterceptors(new DisableForeignKeyChecks());
+        return new CharacterOptions(builder.Options);
+    }
+
     private static bool MatchesClassFilter(Type type)
     {
         string? filter = Environment.GetEnvironmentVariable("NEXUS_FOREVER_TEST_MYSQL_CLASSES");
@@ -97,12 +149,19 @@ public sealed class MySqlProviderQualificationTests
             || filter.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Any(part => type.FullName!.Contains(part, StringComparison.Ordinal));
     }
 
-    private static IEnumerable<Type> DiscoverClasses() => typeof(MySqlProviderQualificationTests).Assembly.GetTypes()
+    private static IEnumerable<Type> PublicTestClasses() => typeof(MySqlProviderQualificationTests).Assembly.GetTypes()
         .Where(MatchesClassFilter)
         .Where(type => type.IsClass && !type.IsAbstract && type.IsPublic && type != typeof(MySqlProviderQualificationTests)
-            && type.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, null, [typeof(DbContextOptions<CharacterContext>)], null) != null
             && type.GetConstructor(Type.EmptyTypes) != null)
         .OrderBy(type => type.FullName, StringComparer.Ordinal);
+
+    private static IEnumerable<Type> DiscoverClasses() => PublicTestClasses().Where(type =>
+        type.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, null, [typeof(DbContextOptions<CharacterContext>)], null) != null);
+
+    private static readonly string[] TwoDatabaseClassNames =
+        ["BankDeferredCurrencyRecoveryTests", "ContractClaimTransactionTests", "CraftingSettlementTests"];
+
+    private static IEnumerable<Type> DiscoverTwoDatabaseClasses() => PublicTestClasses().Where(type => TwoDatabaseClassNames.Contains(type.Name));
 
     private static readonly HashSet<string> ForeignKeysDisabledFixtures = ["CharacterItemDurabilityTests"];
 

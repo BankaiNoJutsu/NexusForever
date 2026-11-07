@@ -67,6 +67,6 @@ the client binary, its Lua, or the local databases: a retail/server-side witness
 achievement and spell-effect semantics), a schema/DDL design decision, or the recovery/socket/broker/load harness and runtime.
 No independent Source/SQLite slice with usable evidence remains.
 
-Update: an opt-in MySQL driver runs the 52 existing provider-option test classes on real MySQL 8.0.46 and all 52 pass (the first run's five
-failures were driver defects or SQLite-only fault-injection triggers). The Character-side MySQL gate is therefore closed at this tier; Auth-side and
-two-database recovery, the retry strategy, MySQL 8.4.13, socket, broker and load remain.
+Update: an opt-in MySQL driver runs the 52 existing provider-option test classes plus the three Character+Auth two-database classes (Contract claim,
+crafting settlement, bank recovery) on real MySQL 8.0.46 and all pass. The remaining MySQL-gated items are the Auth-only classes with no provider seam,
+the retry strategy, MySQL 8.4.13, socket, broker and load.

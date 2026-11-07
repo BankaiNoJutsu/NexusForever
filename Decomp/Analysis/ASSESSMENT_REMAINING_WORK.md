@@ -1,7 +1,7 @@
 # Assessment follow-through goal
 
 [MySQL provider qualification](MYSQL_8_0_FRESH_MIGRATION_QUALIFICATION_20261107.md#provider-qualification-on-mysql-8046-2026-11-07) (2026-11-07): a new opt-in driver runs the 52 existing
-test classes that accept provider options against fresh disposable MySQL 8.0.46 schemas; all 52 pass in one 57-minute run (no product defect found;
+test classes that accept provider options against fresh disposable MySQL 8.0.46 schemas; all 52 pass in one 57-minute run, and the three Character+Auth two-database classes (Contract claim, crafting settlement, bank recovery) pass on separate Character/Auth schemas (no product defect found;
 five initial failures were driver defects or SQLite-only fault-injection triggers, fixed without weakening assertions). Skipped unless
 `NEXUS_FOREVER_TEST_MYSQL_SERVER` is set. Not 8.4.13, no retry strategy, Auth/two-database flows, socket, broker or load.
 
