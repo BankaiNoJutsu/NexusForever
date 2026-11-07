@@ -1,6 +1,7 @@
 using System.Data.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Storage;
 using NexusForever.Database.Character;
 using NexusForever.Database.Character.Model;
 using NexusForever.Game.Mail;
@@ -18,9 +19,11 @@ public sealed class NormalAuctionBidCommandTests
     [InlineData(true, true, false, false, true)] [InlineData(false, true, false, false, false)]
     [InlineData(false, false, true, false, false)] [InlineData(false, true, false, true, false)]
     [InlineData(false, true, false, true, true)]
-    public async Task CommodityReturnsCommitRefundOrCompleteItemMaterialDelivery(bool buy, bool online, bool mailed, bool satchel, bool lost)
+    // the same lost acknowledgements under a strategy that really replays the attempt: the replay finds the receipt and settles once
+    [InlineData(true, true, false, false, true, true)] [InlineData(false, true, false, true, true, true)]
+    public async Task CommodityReturnsCommitRefundOrCompleteItemMaterialDelivery(bool buy, bool online, bool mailed, bool satchel, bool lost, bool replay = false)
     {
-        using var f = new Fixture("none", lost); var command = f.CommodityReturn(buy, online, mailed, satchel);
+        using var f = new Fixture("none", lost, replay: replay); var command = f.CommodityReturn(buy, online, mailed, satchel);
         Assert.True((await command.ExecuteAsync()).Committed); Assert.True((await command.ResolveAsync()).Committed);
         using var read = f.Context(); Assert.Empty(read.MarketplaceCommodityOrder); Assert.Single(read.MarketplaceBidReceipt);
         Assert.Equal(buy && online ? 30ul : 0ul, read.CharacterCurrency.SingleOrDefault(row => row.Id == 1)?.Amount ?? 0);
@@ -34,6 +37,7 @@ public sealed class NormalAuctionBidCommandTests
         if (mailed) Assert.Equal(buy ? 30ul : 0ul, Assert.Single(read.CharacterMail).CurrencyAmount);
         else Assert.Empty(read.CharacterMail);
         Assert.Equal(!buy && mailed ? 1 : 0, read.CharacterMailAttachment.Count());
+        if (replay) Assert.Equal(1, Fixture.Replays);
     }
 
     [Theory]
@@ -74,9 +78,10 @@ public sealed class NormalAuctionBidCommandTests
     [InlineData(false, false, false)] [InlineData(true, false, false)]
     [InlineData(true, true, false)] [InlineData(true, false, true)]
     [InlineData(true, true, true)] [InlineData(false, false, true)]
-    public async Task CancellationReturnsOwnerItemWithoutDebitAndRefundsTheFullHeldBid(bool heldBid, bool onlineBidder, bool mailed)
+    [InlineData(true, true, false, true)] [InlineData(true, false, true, true)]    // lost acknowledgement replayed by the strategy
+    public async Task CancellationReturnsOwnerItemWithoutDebitAndRefundsTheFullHeldBid(bool heldBid, bool onlineBidder, bool mailed, bool replay = false)
     {
-        using var f = new Fixture(heldBid ? "online" : "none");
+        using var f = new Fixture(heldBid ? "online" : "none", lose: replay, replay: replay);
         var command = f.Cancellation(heldBid, onlineBidder, mailed);
         Assert.True((await command.ExecuteAsync()).Committed);
         Assert.True((await command.ResolveAsync()).Committed);
@@ -88,6 +93,7 @@ public sealed class NormalAuctionBidCommandTests
         Assert.Equal(heldBid && !onlineBidder ? 50ul : 0ul, read.CharacterMail.Where(row => row.RecipientId == 3).Select(row => row.CurrencyAmount).SingleOrDefault());
         Assert.Equal(mailed ? 1 : 0, read.CharacterMailAttachment.Count());
         Assert.Single(read.MarketplaceBidReceipt);
+        if (replay) Assert.Equal(1, Fixture.Replays);
     }
 
     [Theory]
@@ -107,10 +113,11 @@ public sealed class NormalAuctionBidCommandTests
     [InlineData(false, true, true, true)]
     [InlineData(true, true, false, false)]
     [InlineData(true, false, false, true)]
-    public async Task ExpiryModesPreserveHeldBidAndReturnCustodyWithoutNewDebit(bool returning, bool online, bool sellerOnline, bool mail)
+    [InlineData(false, true, true, false, true)] [InlineData(true, false, false, true, true)]    // lost acknowledgement replayed by the strategy
+    public async Task ExpiryModesPreserveHeldBidAndReturnCustodyWithoutNewDebit(bool returning, bool online, bool sellerOnline, bool mail, bool replay = false)
     {
         var kind = returning ? AuctionSettlementKind.UnsoldReturn : AuctionSettlementKind.WinningExpiry;
-        using var f = new Fixture("none"); var command = f.Expiry(kind, online, sellerOnline, mail);
+        using var f = new Fixture("none", lose: replay, replay: replay); var command = f.Expiry(kind, online, sellerOnline, mail);
         Assert.Equal(new BidOutcome(true, true), await command.ExecuteAsync());
         Assert.Equal(new BidOutcome(true, true), await command.ResolveAsync());
         using var read = f.Context(); Assert.Empty(read.MarketplaceAuction); Assert.Single(read.MarketplaceBidReceipt);
@@ -122,6 +129,7 @@ public sealed class NormalAuctionBidCommandTests
         else if (sellerOnline) Assert.Equal(147ul, read.CharacterCurrency.Single(row => row.Id == 1).Amount);
         else Assert.Equal(47ul, Assert.Single(read.CharacterMail.Where(row => row.RecipientId == 1)).CurrencyAmount);
         Assert.Equal(mail ? 1 : 0, read.CharacterMailAttachment.Count());
+        if (replay) Assert.Equal(1, Fixture.Replays);
     }
 
     [Theory]
@@ -160,9 +168,10 @@ public sealed class NormalAuctionBidCommandTests
     [InlineData("online", false, false)] [InlineData("offline", false, false)]
     [InlineData("new-wallet", false, false)] [InlineData("none", true, false)]
     [InlineData("offline", true, true)] [InlineData("online", false, true)]
-    public async Task BuyoutDeletesListingAndTransfersWholeItemWithDebitProceedsAndRefundInOneCommit(string prior, bool mail, bool lose)
+    [InlineData("offline", true, true, true)] [InlineData("online", false, true, true)]
+    public async Task BuyoutDeletesListingAndTransfersWholeItemWithDebitProceedsAndRefundInOneCommit(string prior, bool mail, bool lose, bool replay = false)
     {
-        using var f = new Fixture(prior, lose, buyout: true);
+        using var f = new Fixture(prior, lose, buyout: true, replay: replay);
         var command = f.Buyout(mail); Assert.Equal(new BidOutcome(true, true), await command.ExecuteAsync());
         Assert.Equal(new BidOutcome(true, true), await command.ResolveAsync());
         using var read = f.Context(); Assert.Empty(read.MarketplaceAuction);
@@ -181,6 +190,7 @@ public sealed class NormalAuctionBidCommandTests
         else Assert.Empty(read.CharacterMailAttachment);
         Assert.Single(read.MarketplaceBidReceipt);
         Assert.Equal(lose ? 1 : 0, f.AcknowledgementsLost);
+        if (replay) Assert.Equal(1, Fixture.Replays);
     }
 
     [Theory]
@@ -300,6 +310,22 @@ public sealed class NormalAuctionBidCommandTests
         Assert.Equal(100ul, Assert.Single(read.MarketplaceAuction).CurrentBid); Assert.Single(read.MarketplaceBidReceipt);
     }
 
+    private sealed class ReplayingStrategyFactory(ExecutionStrategyDependencies dependencies) : IExecutionStrategyFactory
+    {
+        public IExecutionStrategy Create() => new ReplayingStrategy(dependencies);
+    }
+
+    /// <summary>Replays the attempt once when the injected lost-acknowledgement IOException surfaces (Source/SQLite only; the production MySQL strategy classifies transience itself).</summary>
+    private sealed class ReplayingStrategy(ExecutionStrategyDependencies dependencies) : ExecutionStrategy(dependencies, 1, TimeSpan.Zero)
+    {
+        protected override bool ShouldRetryOn(Exception exception)
+        {
+            bool retry = exception is IOException;
+            if (retry) Interlocked.Increment(ref Fixture.Replays);
+            return retry;
+        }
+    }
+
     private sealed class LostAcknowledgement : DbTransactionInterceptor
     {
         internal int Lost;
@@ -323,8 +349,12 @@ public sealed class NormalAuctionBidCommandTests
         private readonly DateTime created = new(2026, 11, 1, 10, 0, 0, DateTimeKind.Utc);
         internal int AcknowledgementsLost => lost?.Lost ?? 0;
 
-        internal Fixture(string prior, bool lose = false, bool buyout = false, ulong buyoutPrice = 80)
+        private readonly bool replay;
+        internal static int Replays;
+
+        internal Fixture(string prior, bool lose = false, bool buyout = false, ulong buyoutPrice = 80, bool replay = false)
         {
+            this.replay = replay; Replays = 0;
             this.prior = prior; this.buyoutPrice = buyoutPrice; startingWallet = buyout ? Math.Max(500ul, buyoutPrice * 2) : 500ul; Directory.CreateDirectory(directory);
             connection = $"Data Source={Path.Combine(directory, "bid.sqlite")};Pooling=False;Foreign Keys=True";
             using var seed = Context(); seed.Database.EnsureCreated();
@@ -347,6 +377,7 @@ public sealed class NormalAuctionBidCommandTests
         {
             var options = new DbContextOptionsBuilder<CharacterContext>().UseSqlite(connection);
             if (lost != null) options.AddInterceptors(lost);
+            if (replay) options.ReplaceService<IExecutionStrategyFactory, ReplayingStrategyFactory>();
             return new(options.Options);
         }
 
