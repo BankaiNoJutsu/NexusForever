@@ -115,8 +115,12 @@ public sealed class MySqlProviderQualificationTests
                     while (leaf.InnerException != null) leaf = leaf.InnerException;
                     string rootText = root.Message.Split(Environment.NewLine)[0];
                     string leafText = leaf.Message.Split(Environment.NewLine)[0];
+                    // First frame inside this test assembly's own files (other than this driver) shows where an assertion failed.
+                    string? site = root.StackTrace?.Split('\n')
+                        .FirstOrDefault(frame => frame.Contains(".Tests") && !frame.Contains(nameof(MySqlProviderQualificationTests)))?.Trim();
                     failures.Add($"{label}: {root.GetType().Name}: {rootText}"
-                        + (ReferenceEquals(leaf, root) ? "" : $" <- {leaf.GetType().Name}: {leafText}"));
+                        + (ReferenceEquals(leaf, root) ? "" : $" <- {leaf.GetType().Name}: {leafText}")
+                        + (site == null ? "" : $" @ {ShortSite(site)}"));
                 }
                 finally
                 {
@@ -128,6 +132,18 @@ public sealed class MySqlProviderQualificationTests
 
         Assert.True(executed > 0, $"No cases were discovered in {type.FullName}.");
         Assert.True(failures.Count == 0, $"{failures.Count} of {executed} cases failed on MySQL in {type.FullName}:{Environment.NewLine}{string.Join(Environment.NewLine, failures)}");
+    }
+
+    // "at Ns.Class.Method(args) in <path>\File.cs:line N" -> "Class.Method File.cs:line N"
+    private static string ShortSite(string frame)
+    {
+        int inIndex = frame.IndexOf(" in ", StringComparison.Ordinal);
+        string method = inIndex < 0 ? frame : frame[..inIndex];
+        string location = inIndex < 0 ? "" : frame[(inIndex + 4)..];
+        string file = location.Contains('\\') ? location[(location.LastIndexOf('\\') + 1)..] : location;
+        int paren = method.IndexOf('(');
+        if (paren > 0) method = method[..paren];
+        return $"{method.Replace("at NexusForever.Game.Tests.", "").Trim()} {file}";
     }
 
     private readonly record struct CharacterOptions(DbContextOptions<CharacterContext> Options);

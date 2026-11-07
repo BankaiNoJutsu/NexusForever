@@ -78,10 +78,30 @@ connection strings) and `BankDeferredCurrencyRecoveryTests` (Character options +
 (10.5 minutes; no leftover schemas). That covers the Contract claim, crafting award delivery/admission and bank recovery flows across two real
 databases, which the earlier single-database run could not.
 
-No product defect was found. Evidence tier: the existing Source cases that accept provider options, on real MySQL 8.0.46 with fresh schemas. This
-covers Character-side and Character+Auth save/retry/rollback/commit-fault ownership across Quest, Challenge rewards, Contract claims, Crafting, Bank,
-Housing, Achievement, Title and others. It does not cover MySQL 8.4.13, the configured retry execution strategy, the other Auth-only test classes
-(account currency, account inventory, keybinding, world session admission) that have no provider seam, or socket, broker and load runs.
+### Production options (retry strategy) census
 
-Run: set `NEXUS_FOREVER_TEST_MYSQL_SERVER="server=127.0.0.1;port=3306;user=<user>;password=<password>"` then
-`dotnet test NexusForever.Game.Tests --filter "FullyQualifiedName~MySqlProviderQualification"`.
+Setting `NEXUS_FOREVER_TEST_MYSQL_PRODUCTION_OPTIONS=1` builds every context through the repository's own `UseConfiguration`, i.e. the production MySQL
+options: `EnableRetryOnFailure(5, 10 s)` and the string-concurrency `IUpdateSqlGenerator`. One full run (1.07 hours) over the 55 driver theory cases:
+**16 classes pass completely; 39 have failures (590 of 1,300 cases)**. About 95% of the failure messages are one cause: EF's
+`MySqlRetryingExecutionStrategy` rejects tests that open their own user transaction with `Database.BeginTransaction` ("does not support
+user-initiated transactions"). Those tests were written for the SQLite path and would have to wrap their transaction in
+`CreateExecutionStrategy().Execute` to run under this strategy; the production save paths do (for example `ContractCompletionExecutor.Run` executes inside
+the execution strategy, and `CharacterAtomicSaveTests` passes 19 of 20 cases through the production save path, the one failure again being a
+test-opened transaction). So this census measures which test classes are portable to the retry strategy as written, not product behaviour under it.
+
+Failures with a different cause, not yet explained: `ContractCompletionExecutorTests` 3 of 10 (the lost-commit-acknowledgement and cancellation-after-commit
+cases, assertion at line 34 on `Recovered`), a few `Assert.Throws` mismatches in `ContractCompletionRepositoryTests`, and `Assert.True`/`Assert.Equal` failures in
+`InventoryRewardDeliveryTests` (Contract admission cases and partial id allocation). A plausible explanation for the executor cases, unconfirmed by a trace,
+is that the fault-injecting interceptor throws an `IOException` once and the retrying strategy transparently re-runs the unit on a fresh context, so the explicit
+recovery path the test asserts is never needed. These cases need a test variant that disables the retry for fault injection, or a trace, before any claim is made.
+
+Evidence tier: the existing Source cases on real MySQL 8.0.46 with the production options. Not a statement that production code is correct under the retry
+strategy, and not retail parity.
+
+No product defect was found. Evidence tier of the plain-options runs above: the existing Source cases that accept provider options, on real MySQL 8.0.46 with fresh schemas. This
+covers Character-side and Character+Auth save/retry/rollback/commit-fault ownership across Quest, Challenge rewards, Contract claims, Crafting, Bank,
+Housing, Achievement, Title and others. It does not cover MySQL 8.4.13, the Auth-only test classes (account currency, account inventory, keybinding, world
+session admission) that have no provider seam, or socket, broker and load runs.
+
+Run: set `NEXUS_FOREVER_TEST_MYSQL_SERVER="server=127.0.0.1;port=3306;user=<user>;password=<password>"` (optionally
+`NEXUS_FOREVER_TEST_MYSQL_PRODUCTION_OPTIONS=1`) then `dotnet test NexusForever.Game.Tests --filter "FullyQualifiedName~MySqlProviderQualification"`.

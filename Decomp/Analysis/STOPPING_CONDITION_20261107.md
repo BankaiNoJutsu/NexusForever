@@ -68,5 +68,7 @@ achievement and spell-effect semantics), a schema/DDL design decision, or the re
 No independent Source/SQLite slice with usable evidence remains.
 
 Update: an opt-in MySQL driver runs the 52 existing provider-option test classes plus the three Character+Auth two-database classes (Contract claim,
-crafting settlement, bank recovery) on real MySQL 8.0.46 and all pass. The remaining MySQL-gated items are the Auth-only classes with no provider seam,
-the retry strategy, MySQL 8.4.13, socket, broker and load.
+crafting settlement, bank recovery) on real MySQL 8.0.46 and all pass with plain options. Under the production options (retry strategy plus string concurrency
+generator) 16 of 55 classes pass as written; most failures are tests that open their own transactions, and a few Contract cases are unexplained
+(see the census section of MYSQL_8_0_FRESH_MIGRATION_QUALIFICATION_20261107.md). Remaining MySQL-gated work: wrapping those tests for the retry strategy or
+explaining the Contract/InventoryRewardDelivery differences, the Auth-only classes without a provider seam, MySQL 8.4.13, socket, broker and load.
