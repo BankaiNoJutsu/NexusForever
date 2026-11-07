@@ -33,5 +33,5 @@ types 103 and 104 are unchanged.
 ## Not changed
 
 - **103 SpellCooldownNodeOnTarget (36 slots) and 104 (3)** ignore `ObjectId` in the server while the native bodies (`FUN_14046a190`, `FUN_14046a210`) use it; they were not read in this pass.
-- **129 ActiveSpellEffectOnUnit (146 slots)** and **130** pass a different id space (retail `ObjectId` 375, 503, 387 ... and `Value` mostly 0) through the native case `0x81`; their bodies were not read.
+- **129 ActiveSpellEffectOnUnit (146 slots)** was read afterwards and fixed (a spell group id on the unit's spell list, [PREREQUISITE_ACTIVE_SPELL_GROUP_20261107.md](PREREQUISITE_ACTIVE_SPELL_GROUP_20261107.md)); **130** (spells cast by the target) is still on its earlier behaviour.
 - The server's active-effect lookup covers persistent effects with a lifetime event; instantaneous effects are not instances in the native list either, but this was not verified.
