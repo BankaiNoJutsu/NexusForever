@@ -142,3 +142,18 @@ PublicEvent/Quest cases pass (Source/SQLite). 2,880 previously always-false slot
 **Alignment caveat.** The vtable alignment is validated by call shape and table data per type, not globally: the slot at +0x3d8 (type 19) resolved to a `void` function that cannot be the evaluator's uint-returning
 call, the repo's older comments cite different addresses for 13 types (0 of 13 agree), and one other slot (+0x408, the type 22 to 36 family) resolved to a mismatching shape. Types 68, 94, 117 and 118 match on shape
 and data; 54, 74 and 231 have matching shapes but were not implemented here (their lookups call helper functions whose objects are not yet identified).
+
+
+## Types 231, 74 and 54 read but not implemented (same day)
+
+- **231 (EldanAugmentation231, 241 slots, all `NotEqual` with `Value` 0)**: the body (`FUN_14049d7b0`) returns false unless the unit is the local player, then scans a player-held array of 16-bit AMP ids
+  (count at +0x6df0, ids at +0x6df4) for `ObjectId` and returns found for Equal and not found for NotEqual. An implementation that mapped it to `ISpellManager.IsAmpEnabled` was written and **withdrawn**: the existing
+  `AmpLifecycleTests.RegisteredPrerequisiteDispatchKeepsEnabledAndGlobalAmpListsSeparate` pins type 231 as a *different* list from the enabled-AMP list used by type 227, and it failed against the new check.
+  The server has no model of the 231 list, so the type stays unhandled (evaluates false, which for NotEqual-only rows means the gated content stays unavailable). Needs identification of that list (what writes player+0x6df4).
+- **74 (ChallengeLocked, 236 slots)**: `FUN_14049fa80` returns one 32-bit field of the challenge record found by `ObjectId` (`record+0x2c` of the entry in the client challenge table) for Equal, zero-test for NotEqual. That the field is
+  "locked" is only the type's name and its error text; the field's meaning is not read, so it was not implemented.
+- **54 (PlayerPathMission, 256 slots)**: `FUN_1404a1950` looks up a path mission by `Value` and returns completion-like state that depends on the mission's own sub-type (a state test for sub-types 4 to 7, a table membership test for sub-type 0,
+  and a virtual call otherwise); not implemented because the sub-type dispatch is not mapped to server concepts.
+
+Environment note: during this work `C:` became full (0 MB free). Builds, tests and Ghidra still ran by redirecting `TEMP`, `TMP`, `DOTNET_CLI_HOME` and the NuGet HTTP cache to `I:\tools\claude-tmp` for the individual commands, with `--no-restore -m:1 -nodeReuse:false -p:NuGetAudit=false`;
+no files on `C:` were deleted.
