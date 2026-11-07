@@ -6,6 +6,8 @@
 > table or native-body evidence, such as prerequisite types 22 to 36, is not retail
 > parity. Do not restate it as such, and do not treat agent-written tests as proof.
 
+[Ledger gate pass E](LEDGER_GATE_PASS_20261107E.md) (2026-11-07): the whole queue re-read after the prerequisite audit, each gated item stating whether its missing input could live in the client binary; no item is unblocked and unfinished in the Source/SQLite lane except the 5f prerequisite slots, each blocked on a named server model or witness; items 2c and 3 need a runtime harness. Stopping-condition statement at this evidence level, not completion and not retail parity.
+
 [Prerequisite 70 (ChallengeTier) implemented](PREREQUISITE_CHALLENGE_TIER_20261107.md) (2026-11-07): the challenge row reader and update consumer show the state words mirror the `ServerChallengeUpdate` fields in order, so state `+0x20` is CurrentTier and type 70 is "tier above Value" (25 retail slots; the completion-count proxy is removed, `IChallengeManager.GetCurrentTier` added; the older `+0x1c`/`+0x28` labels in INITIAL_FINDINGS are superseded). Tier: native bodies read; Source/SQLite only (new tests written first and red on the missing member; 2,405-case Prerequisite+Challenge filter). No retail parity claim.
 
 [Prerequisite 82 boolean tail, 70 native body](PREREQUISITE_UNIT_ENTITY_TYPE_20261107.md) (2026-11-07): type 82 (1 retail slot) now uses the native Equal/NotEqual-only tail; type 70 (ChallengeTier) was read (`challengeState.+0x20 > Value`) but not changed because the identity of `+0x20` is unconfirmed (server proxy compares completion count). Tier: native bodies read; Source/SQLite only (1,640-case Prerequisite filter; 82's tests written with the change, no red run). No retail parity claim.
