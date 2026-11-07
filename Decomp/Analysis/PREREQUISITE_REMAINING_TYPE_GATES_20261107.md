@@ -2,22 +2,22 @@
 
 Evidence tier: classification generated from `Prerequisite.tbl` (slot counts), the registered handler classes and the client evaluator (`decomp_evaluator.txt` plus the evaluator vtable at `140b67740`: a slot whose function is `FUN_140001ba0` is the shared client stub). Source/SQLite only; no retail parity claim.
 
-After types 5, 20, 42, 50, 53, 54, 59, 60, 74, 110, 130, 231 and 280 were handled this stretch: **3021 slots over 68 types** have no handler (2281 slots on client stubs, 3 on types with no evaluator case, 737 on real client bodies).
+After types 5, 20, 42, 50, 53, 54, 59, 60, 74, 110, 130, 162, 231 and 280 were handled this stretch: **3013 slots over 67 types** have no handler (2281 slots on client stubs, 3 on types with no evaluator case, 729 on real client bodies).
 
 Gate classes: **stub** = the client evaluator slot is the shared return-0 stub, so the meaning is server-side only and needs a server or retail witness; **real body** = the client body exists; the table says what is read and what is missing; **no case** = the client never evaluates it.
 
 | Type | Enum name | Slots | Client body | Blocking input |
 |---|---|---|---|---|
 | 47 | QuestObjective47 | 1788 | stub | Client slot is the shared return-0 stub; Value is a QuestObjective id (Equal 847, NotEqual 941). Server-only concept with no client body: needs a server or retail witness for the meaning. |
-| 107 | QuestObjective7 | 124 | vtable 14049fff0 | Per-player participation slot at `unit+0x35f8` and the current-episode rule are unidentified (body `FUN_14049fff0`). |
-| 119 | PublicEventObjectiveObject | 122 | vtable 1404a0650 | Same participation slot / public event objective state (body `FUN_1404a0650`); needs the writer of that slot. |
+| 107 | QuestObjective7 | 124 | vtable 14049fff0 | Body read (`FUN_14049fff0`): for a non-player unit, the path mission `ObjectId` (mission lookup) ProgressCount bit `1 << unit+0x35f8` (virtual `+0x40`); player/pet pairs only answer NotEqual true. Blocked on the creature participation slot at `unit+0x35f8` (no server model of which bit a creature owns). |
+| 119 | PublicEventObjectiveObject | 122 | vtable 1404a0650 | Body read (`FUN_1404a0650`): the public event objective `ObjectId`: event active and the objective`s virtual `+0x90` result for the unit participation slot `+0x35f8` (same slot as 107). Blocked on that slot. |
 | 154 | Holdout | 119 | stub | Client stub: server-only concept, needs a server or retail witness for its meaning. |
 | 153 | HoldoutWave | 95 | stub | Client stub: server-only concept, needs a server or retail witness for its meaning. |
 | 126 | PathHoldout | 72 | stub | Client stub: server-only concept, needs a server or retail witness for its meaning. |
 | 49 | Schedule | 68 | stub | Client stub: server-only concept, needs a server or retail witness for its meaning. |
 | 30 | FacilityWithinDistance | 54 | stub | Client stub: server-only concept, needs a server or retail witness for its meaning. |
 | 111 | HazardProperty111 | 47 | vtable 1404a03e0 | Hazard manager tree lookup (`FUN_1404a03e0`): flag from a record field at `+0x28`; the hazard property record is unidentified and the server has no hazard model. |
-| 149 | State | 46 | vtable 14049c840 | Real body `FUN_14049c840` not yet read; State has no server model named in the enum. |
+| 149 | State | 46 | vtable 14049c840 | Body read (`FUN_14049c840`): `unit+0x1e4 != 0 || unit+0x2ac != 0` compared with Value (0/1); prior notes: `+0x2ac` is a cast/action update block flag, `+0x1e4` is overloaded; no server owner for either (46 slots). |
 | 113 | HazardProperty113 | 36 | vtable 1404a04f0 | Hazard family (`FUN_1404a04f0`, float compare of a hazard property); same gate as 111. |
 | 146 | ItemTradeSkillLevel | 34 | vtable 1404a0f90 | Reads `FUN_1404a0f90`: item-record tradeskill tier lookup against a list at `+0x34 + n*0x30` by the unit`s level/word; item tradeskill table rows not mapped. |
 | 9 | EpisodeState | 34 | vtable 14049f700 | Episode class state (`FUN_14049f700`): per-quest states at episode node `+0x24` and the server has no episode model; see PREREQUISITE_TYPE_COVERAGE. |
@@ -29,17 +29,16 @@ Gate classes: **stub** = the client evaluator slot is the shared return-0 stub, 
 | 255 | Warplots255 | 21 | vtable 14049dd70 | As 251 (`FUN_14049dd70`). |
 | 115 | Unit | 18 | inline/helper FUN_1404a2010 | Unit-dependent float compare `FUN_1404a2010(unit, comparison)` with Value unused; the unit property it reads is unidentified. |
 | 18 | ScheduledEvent | 17 | vtable 14049ef00 | Hash set at global `+0x72a0` holds the ids; its contents (active scheduled events?) are unidentified. |
-| 199 | PublicEvent199 | 14 | vtable 1404a0b70 | Public event variant (body `FUN_1404a0b70`); unread. |
+| 199 | PublicEvent199 | 14 | vtable 1404a0b70 | Body read (`FUN_1404a0b70`): the public event `ObjectId` exists and its field `+0x1d0 == 1` (event state); Equal true/NotEqual false. The mapping of `+0x1d0` to the server`s event state is unverified (14 slots). |
 | 193 | Unknown193 | 12 | stub | Client stub: server-only concept, needs a server or retail witness for its meaning. |
 | 239 | ActionBar | 12 | vtable 14049ca10 | Bit 0 of four dwords at global `+0x1448` (index = Value 0 to 3, player only); what the four flags are is unidentified. |
 | 127 | PathHoldoutPlayer | 11 | stub | Client stub: server-only concept, needs a server or retail witness for its meaning. |
-| 200 | PublicEventObjective200 | 11 | vtable 1404a0bf0 | Public event objective variant (body `FUN_1404a0bf0`); unread. |
+| 200 | PublicEventObjective200 | 11 | vtable 1404a0bf0 | Body read (`FUN_1404a0bf0`): event active and the objective virtual `+0xa0` word AND `Value` (a status/phase mask); the mask meaning is unmapped (11 slots). |
 | 142 | Unknown142 | 10 | stub | Client stub: server-only concept, needs a server or retail witness for its meaning. |
 | 114 | Vital114 | 10 | inline/helper FUN_140466520,FUN_1404a2010 | Compares two unit property values (`FUN_140466520` vital reader) - both operands depend on unread unit fields. |
 | 77 | QuestObjectiveOnTarget | 9 | inline | Inline QuestObjectiveOnTarget: reads quest objective state on the prerequisite target; unread. |
 | 189 | Unknown189 | 9 | stub | Client stub: server-only concept, needs a server or retail witness for its meaning. |
 | 147 | PlayersInWorld | 9 | stub | Client stub: server-only concept, needs a server or retail witness for its meaning. |
-| 162 | PublicEventObjective2 | 8 | vtable 1404a0a70 | Same family as 107/119 (body `FUN_1404a0a70`). |
 | 230 | WarplotRating | 8 | inline | Warplot rating: no server producer or storage. |
 | 203 | Unknown203 | 7 | stub | Client stub: server-only concept, needs a server or retail witness for its meaning. |
 | 216 | Shield216 | 6 | inline/helper FUN_1404a2090 | Inline shield compare using `FUN_1404a2090`; the unit shield value source is unread. |
@@ -65,7 +64,7 @@ Gate classes: **stub** = the client evaluator slot is the shared return-0 stub, 
 | 271 | Unknown271 | 2 | stub | Client stub: server-only concept, needs a server or retail witness for its meaning. |
 | 285 | Unknown285 | 2 | stub | Client stub: server-only concept, needs a server or retail witness for its meaning. |
 | 145 | ItemIsSelfCraftedWeapon | 1 | inline | Inline ItemIsSelfCraftedWeapon: item flag unread. |
-| 122 | PublicEventObjective122 | 1 | vtable 1404a08f0 | Public event objective variant (body `FUN_1404a08f0`); unread beyond the family above. |
+| 122 | PublicEventObjective122 | 1 | vtable 1404a08f0 | Body read (`FUN_1404a08f0`): the public event `ObjectId` is active and the unit`s record map at `unit+0x3780` contains the event id (the player participates in it). Needs the server`s per-player participation record for events (1 slot). |
 | 234 | WarplotUpgrade | 1 | vtable 1404a1370 | Warplot upgrade (`FUN_1404a1370`): no warplot model. |
 | 224 | LevelGrantAbilityTierPoints | 1 | vtable 14049efc0 | Looks Value up in a table row (`FUN_14024dfc0`, field `+0xc` non-zero): table identity unread. |
 | 228 | TradeSkill228 | 1 | inline | Inline tradeskill check: unread. |

@@ -35,6 +35,20 @@ namespace NexusForever.Game.Prerequisite
         public static uint GetObjectiveCount(IPlayer player, uint objectiveId)
             => FindObjective(player, objectiveId)?.Count ?? 0u;
 
+        /// <summary>
+        /// Progress of the public event objective with the supplied id as a percentage (count * 100 / required count; native type 162, <c>FUN_1404a0a70</c>), 0 when it is not found or its required count is 0.
+        /// The required count is the dynamic maximum when set, otherwise the table count (the server's own completion rule).
+        /// </summary>
+        public static float GetObjectivePercent(IPlayer player, uint objectiveId)
+        {
+            IPublicEventObjective objective = FindObjective(player, objectiveId);
+            if (objective == null)
+                return 0f;
+
+            uint required = objective.DynamicMax > 0u ? objective.DynamicMax : objective.Entry?.Count ?? 0u;
+            return required == 0u ? 0f : objective.Count * 100f / required;
+        }
+
         private static IPublicEventObjective FindObjective(IPlayer player, uint objectiveId)
         {
             IPublicEventManager manager = player.Map?.PublicEventManager;
