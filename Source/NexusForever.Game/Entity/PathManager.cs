@@ -1795,6 +1795,7 @@ namespace NexusForever.Game.Entity
         {
             activatedEpisodes.Clear();
             activatedMissions.Clear();
+            CurrentEpisodeId = 0u;
             WorldZoneEntry zone = player.Zone;
             return zone != null && TryActivateCurrentZoneEpisode(zone.Id, allowWhileLoading);
         }
@@ -2099,8 +2100,11 @@ namespace NexusForever.Game.Entity
             return state;
         }
 
+        public uint CurrentEpisodeId { get; private set; }
+
         private void SendPathCurrentEpisode(ushort episodeId)
         {
+            CurrentEpisodeId = episodeId;
             player.Session.EnqueueMessageEncrypted(new ServerPathSetCurrentEpisode
             {
                 PathEpisodeId = episodeId

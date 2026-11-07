@@ -138,6 +138,12 @@ namespace NexusForever.Game.Abstract.Entity
         PathMissionState GetMissionState(uint pathMissionId);
 
         /// <summary>
+        /// The id of the path episode most recently set as the player's current episode (sent with <c>ServerPathSetCurrentEpisode</c>), or 0 when none has been set.
+        /// Native prerequisite type 53 compares <c>Value</c> with the client's current episode.
+        /// </summary>
+        uint CurrentEpisodeId { get; }
+
+        /// <summary>
         /// Returns whether the player has scan credit for <see cref="GameTable.Model.PathScientistCreatureInfoEntry.Id"/>.
         /// </summary>
         bool HasScannedScientistCreature(uint pathScientistCreatureInfoId);
