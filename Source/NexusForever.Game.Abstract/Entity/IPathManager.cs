@@ -132,6 +132,12 @@ namespace NexusForever.Game.Abstract.Entity
         bool IsMissionComplete(uint pathMissionId);
 
         /// <summary>
+        /// Returns the state of the player's path mission, <see cref="PathMissionState.NoMission"/> when the player has no record of it
+        /// and <see cref="PathMissionState.Complete"/> once it is completed.
+        /// </summary>
+        PathMissionState GetMissionState(uint pathMissionId);
+
+        /// <summary>
         /// Returns whether the player has scan credit for <see cref="GameTable.Model.PathScientistCreatureInfoEntry.Id"/>.
         /// </summary>
         bool HasScannedScientistCreature(uint pathScientistCreatureInfoId);

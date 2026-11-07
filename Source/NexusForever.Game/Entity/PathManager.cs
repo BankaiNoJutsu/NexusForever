@@ -1318,6 +1318,15 @@ namespace NexusForever.Game.Entity
                 && state.Completed;
         }
 
+        public PathMissionState GetMissionState(uint pathMissionId)
+        {
+            if (pathMissionId > ushort.MaxValue
+                || !pathMissions.TryGetValue((ushort)pathMissionId, out PathMissionRuntimeState state))
+                return PathMissionState.NoMission;
+
+            return state.Completed ? PathMissionState.Complete : state.State;
+        }
+
         public bool TryIsPathMissionChecklistItemComplete(ushort pathMissionId, uint checklistIndex, out bool isComplete)
         {
             isComplete = false;

@@ -230,3 +230,20 @@ no files on `C:` were deleted.
 - Implemented as `PrerequisiteCheckAchievementChecklistBit` plus `IBaseAchievementManager.IsChecklistBitSet` (`BaseAchievementManager`). `AchievementChecklistBitPrerequisiteTests` (16 cases) did not compile before and pass; 1,346
   Prerequisite/AMP/Achievement cases pass (Source/SQLite; this scope is wider than the 1,041 above and must not be added to it). For checklist achievements the server keeps the completed mask in `ProgressState`; for
   count-style achievements `ProgressState` is a counter, so a bit test there reads counter bits exactly as the client would. Only the first word is observed in retail data. No retail parity claim.
+
+
+## Path mission types 61, 67 and 155 implemented; 110 read (same day)
+
+- The shared compare helper `FUN_1404a2090(comparison, actual, expected)` was decompiled: Equal/NotEqual, `3: expected < actual`, `4: expected <= actual`, `5: actual < expected`, `6: actual <= expected`, so the "actual first, Value second"
+  order assumed earlier for types 19 and 123 is confirmed.
+- **67 (PathMissionRequirement, 191 slots)**: `FUN_14049fe10` looks up the mission with id `Value` (a PathMission id in 174 of 191) through the path-mission manager (`DAT_140c65970`, `FUN_1403d7bc0`) and reads the mission's
+  virtual `+0x38` (the flag type 61 counts, read as completion); Equal returns it, NotEqual its negation, missing mission 0. Implemented as `PrerequisiteCheckPathMissionRequirement` over `IPathManager.IsMissionComplete`.
+- **61 (PathMissionCount, 25 slots)**: `FUN_1404a1aa0` counts the missions of the episode with id `ObjectId` (22 of 25 are PathEpisode ids, none 0) whose `+0x38` is set and whose definition's `PathMissionFlags` (`+0x34`)
+  lacks 0x40 (one mission in the table has it), then compares count with `Value`. Implemented as `PrerequisiteCheckPathMissionCount` over the PathMission table's `PathEpisodeId` and `IsMissionComplete`.
+- **155 (PathMission155, 174 slots)**: `FUN_1404a0360` takes the mission id from the fifth (stack) argument = `ObjectId` (PathMission id in 155 of 174), reads its state (virtual `+0xd0`, 0 when absent) and compares it with
+  `Value`: 0 to 4, matching `PathMissionState` (NoMission 0, Unlocked 2, Started 3, Complete 4), Equal 138 and NotEqual 36. Implemented as `PrerequisiteCheckPathMissionState` with a new `IPathManager.GetMissionState`.
+- **110 (PlayerPathMissionCount, 47 slots)**, read not implemented: `FUN_1404a00e0` looks up the mission with `ObjectId` (PathMission id in 40 of 47) and compares `mission.+0x48()` if `mission.+0x30()` is non-zero else
+  `mission.+0x40()` with `Value` (1 to 8 for Equal; 20 to 100 for the other comparisons, so probably counts versus percentages). The mission class's vtable and those three virtuals are not identified, so the server field to
+  compare is unknown. Gate: identify the PathMission runtime class vtable (`+0x30/+0x40/+0x48`).
+- `PrerequisiteCheckPathMissionTests` (27 cases) and `GetMissionState_...` (PathManager) did not compile before and pass; 1,429 Prerequisite/AMP/Path cases pass (Source/SQLite; a different filter scope than earlier totals).
+  The test classes for 61/67 were written before this slice's red build was run for them (the first run was already green). Completion meaning of `+0x38` is inferred from the count helper and the retail value pattern.

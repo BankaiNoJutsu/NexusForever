@@ -305,6 +305,35 @@ public partial class PathManagerTests
     }
 
     [Fact]
+    public void GetMissionState_ReportsTheStateOfEachPersistedMissionAndNoMissionForAnUnknownOne()
+    {
+        PathManager manager = CreateManager(
+            Path.Explorer,
+            totalXp: 0u,
+            levelRewarded: 1,
+            out _,
+            out _,
+            out _,
+            out _,
+            out _,
+            pathMissionModels:
+            [
+                new CharacterPathMissionModel { Id = 42ul, PathMissionId = 35, PathEpisodeId = 9, State = (byte)PathMissionState.Complete, Completed = 1 },
+                new CharacterPathMissionModel { Id = 42ul, PathMissionId = 36, PathEpisodeId = 9, State = (byte)PathMissionState.Started },
+                new CharacterPathMissionModel { Id = 42ul, PathMissionId = 37, PathEpisodeId = 9, State = (byte)PathMissionState.Unlocked },
+                // completed flag without the state byte still reads as complete, matching IsMissionComplete
+                new CharacterPathMissionModel { Id = 42ul, PathMissionId = 38, PathEpisodeId = 9, State = (byte)PathMissionState.Started, Completed = 1 }
+            ]);
+
+        Assert.Equal(PathMissionState.Complete, manager.GetMissionState(35u));
+        Assert.Equal(PathMissionState.Started, manager.GetMissionState(36u));
+        Assert.Equal(PathMissionState.Unlocked, manager.GetMissionState(37u));
+        Assert.Equal(PathMissionState.Complete, manager.GetMissionState(38u));
+        Assert.Equal(PathMissionState.NoMission, manager.GetMissionState(999u));
+        Assert.Equal(PathMissionState.NoMission, manager.GetMissionState(uint.MaxValue));
+    }
+
+    [Fact]
     public void Constructor_WithCompletedScientistScanMission_HydratesScanCredit()
     {
         BuildGameTableProvider(
