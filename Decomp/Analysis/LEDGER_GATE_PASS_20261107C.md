@@ -20,7 +20,7 @@ linked records. Source/SQLite unless stated. Not completion and not a retail-par
 | 2c | Cross-character notification atomicity, other atomic financial settlement, live broker/restart | Open, runtime | Needs a broker/restart harness; no Source/SQLite slice with a witness |
 | 2d | Legacy mail action/publication, ordinary Item audit, attachment index (receive/update) | Done at recorded gates; attachment-index correction not implemented | Independent Verified corroboration of the nServerIndex receive/update behavior (retail/sniff) |
 | 2e | Revised 604 taxi, physical/provider travel | Reconciled; physical travel unqualified | Runtime/retail witness |
-| 3 | Qualify current binaries on fresh disposable MySQL, model/copied-upgrade, full-table delivery, socket/deployment, load | Partly done: fresh and copied-upgrade migration on 8.0.46, plain-options and string-generator runs of 59 classes, 20 of 55 classes on the retry strategy. The remaining 35 classes fail only through test-opened transactions ([MYSQL_RETRY_CONVERSION_YIELD_20261107.md](MYSQL_RETRY_CONVERSION_YIELD_20261107.md): conversion adds portability, no retry evidence) | MySQL 8.4.13, socket, broker, load, deployment: runtime/harness not in the repository |
+| 3 | Qualify current binaries on fresh disposable MySQL, model/copied-upgrade, full-table delivery, socket/deployment, load | Partly done: fresh and copied-upgrade migration on 8.0.46, plain-options and string-generator runs of 59 classes, 20 of 55 classes on the plain retry strategy, and (later this pass) all 49 harness classes passing under the production retry options with user-opened transactions exempted ([MYSQL_RETRY_CONVERSION_YIELD_20261107.md](MYSQL_RETRY_CONVERSION_YIELD_20261107.md): portability and production-options compatibility, not retry evidence for test-opened units) | MySQL 8.4.13, socket, broker, load, deployment: runtime/harness not in the repository |
 | 4 | 609 native/actual-table qualification | Gated | The 481,759-byte table `6a46e0e5...` (or independent confirmation); Verified table/runtime/sniff corroboration before changing the zero-bound predicate; full-table delivery, native timing/UI, retail qualification |
 | 5a | Track 35 Zone earning | Gated | Producer witness ([ZONE_REWARD_TRACK_35_EVIDENCE.md](ZONE_REWARD_TRACK_35_EVIDENCE.md)) |
 | 5b | Unsupported Challenge producers, retail odds | Gated | Retail witness |
@@ -37,9 +37,9 @@ linked records. Source/SQLite unless stated. Not completion and not a retail-par
 Its items 1 to 5 restate the above (general reward tracks, #595, #557, AMP/protocol/Hycrest, Q5597); each is either marked done in its own text or gated as listed. No separate item exists there.
 
 ## Recorded observations that are not restoration slices
-- Group/Friendship/Chat handlers publish a message before commit inside a replayable strategy delegate (upstream design; gate: upstream decision, publish after commit or an outbox).
+- `GroupPlayerInviteHandler.Handle` and `GroupMemberRequestHandler.Handle` (only these two; the other eleven Group/Friendship/Chat strategy files publish nothing inside the delegate) publish a message before commit inside a replayable strategy delegate (upstream design; gate: upstream decision, publish after commit or an outbox).
 - `AuthDatabase.TryAddStorePurchaseHistory` has no idempotency key for a replay after a lost commit acknowledgement (theoretical for the MySQL strategy; gate: a schema decision for a purchase key).
 
 ## Conclusion
-After this pass no queue item is both unblocked and unfinished except runtime-harness work (broker/restart, MySQL 8.4.13, socket, load) and the optional bulk test-fixture conversion, which has no evidential yield. Every other item
+After this pass no queue item is both unblocked and unfinished except runtime-harness work (broker/restart, MySQL 8.4.13, socket, load); the bulk test-fixture conversion is replaced by the tolerant-mode census, which passed. Every other item
 names its blocking input above. This is a stopping-condition statement for the Source/SQLite lane, not completion.

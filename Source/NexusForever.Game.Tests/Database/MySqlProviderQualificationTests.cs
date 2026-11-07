@@ -186,6 +186,15 @@ public sealed class MySqlProviderQualificationTests
         var builder = new DbContextOptionsBuilder<TContext>();
         if (UseProductionOptions)
             builder.UseConfiguration(new DatabaseConnectionString { Provider = DatabaseProvider.MySql, ConnectionString = connection });
+        else if (UseTolerantRetry)
+        {
+            // Production retry options (EnableRetryOnFailure(5, 10s)) plus the string concurrency generator, except that a user-opened transaction is
+            // allowed: the strategy neither rejects it nor retries inside it. This measures the 35 classes the plain production-options run rejects
+            // only because their tests open their own transactions; it adds no retry evidence for those tests (EF cannot replay a user transaction).
+            builder.UseMySql(connection, new MySqlServerVersion(new Version(8, 0, 0)),
+                b => b.ExecutionStrategy(dependencies => new TransactionTolerantRetryingStrategy(dependencies)));
+            builder.UseStringConcurrencyChecks();
+        }
         else
         {
             builder.UseMySql(connection, new MySqlServerVersion(new Version(8, 0, 0)));
@@ -193,6 +202,24 @@ public sealed class MySqlProviderQualificationTests
         }
         return builder;
     }
+
+    // NEXUS_FOREVER_TEST_MYSQL_PRODUCTION_OPTIONS=tolerant: see MySqlBuilder.
+    private static bool UseTolerantRetry => Environment.GetEnvironmentVariable("NEXUS_FOREVER_TEST_MYSQL_PRODUCTION_OPTIONS") == "tolerant";
+
+#pragma warning disable EF1001
+    private sealed class TransactionTolerantRetryingStrategy(Microsoft.EntityFrameworkCore.Storage.ExecutionStrategyDependencies dependencies)
+        : MySqlRetryingExecutionStrategy(dependencies, 5, TimeSpan.FromSeconds(10), null)
+    {
+        private bool InUserTransaction => Dependencies.CurrentContext.Context.Database.CurrentTransaction != null;
+
+        protected override void OnFirstExecution()
+        {
+            if (!InUserTransaction) base.OnFirstExecution();
+        }
+
+        protected override bool ShouldRetryOn(Exception exception) => !InUserTransaction && base.ShouldRetryOn(exception);
+    }
+#pragma warning restore EF1001
 
     private static CharacterOptions CreateCharacterOptions(string server, string schema, Type type)
     {

@@ -71,3 +71,24 @@ still tracks the first attempt's entries and would publish the result message ag
 
 With these, every `CreateExecutionStrategy` site in `Source/` has been read or has a really-retrying test, except the Group/Friendship/Chat handlers recorded above as an upstream observation. Remaining
 gate for that observation: an upstream service design decision (publish after commit or an outbox), not a witness.
+
+## Correction to the upstream observation (same day)
+A line-by-line scan of every Group, Friendship and Chat file that calls `CreateExecutionStrategy` shows that only **two** handlers call `PublishAsync` inside the strategy delegate before
+`SaveChangesAsync`/`CommitAsync`: `GroupPlayerInviteHandler.Handle` (publishes at lines 46 or 55, saves at 64 and commits at 65) and `GroupMemberRequestHandler.Handle` (publishes at 46 or 56, saves at 64
+and commits at 65). The other eleven strategy files (`GroupMemberRequestReponseHandler`, `GroupPlayerInviteRespondedHandler`, `MatchCreatedHandler`, the six Friendship invite/response handlers,
+`FriendshipPresenceTransaction`, `ChatChannelJoinHandler`) contain no publish call between the strategy and the commit. The earlier wording ("the same shape appears in the other Group, Friendship and
+Chat handlers") was too broad and is withdrawn; the observation stands for those two Group handlers only, with the same gate (an upstream design decision).
+
+## Tolerant production-options census on MySQL 8.0.46 (same day)
+`MySqlProviderQualificationTests` gained `NEXUS_FOREVER_TEST_MYSQL_PRODUCTION_OPTIONS=tolerant`: the production retry options (`EnableRetryOnFailure(5, 10 s)`) and the string-concurrency generator, with a
+strategy subclass (`TransactionTolerantRetryingStrategy`) that skips EF's user-transaction rejection and never retries while a user transaction is open. It turns the 35 classes that the plain production-options
+run rejected only for test-opened transactions into runnable ones without editing about 280 sites.
+
+Run: one `dotnet test` per harness class (a single all-class run hung with no CPU and no MySQL connection and was stopped), local MySQL 8.0.46 on 127.0.0.1:3306, the documented dev account, fresh disposable
+schemas per case, 2026-11-07 20:22 to 21:30. **All 49 class runs passed (49 of 49, 0 failures, 0 timeouts).** Each run reports 2 passed cases (the class case and the placeholder case of the two-database theory), so the
+numbers are per-class outcomes and are not added to any other scope. Classes include `QuestPersistenceDurabilityTests` (18 test-opened transactions), `CharacterAtomicSaveTests`,
+`CharacterChallengeRewardExecutorTests`, `ContractCompletionExecutorTests`/`Repository`/`LiveCompletion`, `BankDeferredCurrencyRecoveryTests` and the Guild/Housing/Player persistence classes.
+`GuildAchievementProviderQualification` finished in 16 ms, which suggests its MySQL case did not run; it is not counted as qualified.
+
+Evidence tier: existing Source cases on real MySQL 8.0.46 with the production retry configuration and concurrency generator, with user-opened transactions exempted from the strategy. It shows these classes' production
+paths are compatible with those options; it is not retry evidence for the test-opened units, not MySQL 8.4.13, not socket/broker/load, and not retail parity. No production defect was found in the census.
