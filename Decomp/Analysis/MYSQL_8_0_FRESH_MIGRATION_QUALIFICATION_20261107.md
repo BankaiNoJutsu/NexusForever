@@ -78,6 +78,16 @@ connection strings) and `BankDeferredCurrencyRecoveryTests` (Character options +
 (10.5 minutes; no leftover schemas). That covers the Contract claim, crafting award delivery/admission and bank recovery flows across two real
 databases, which the earlier single-database run could not.
 
+### Auth-seam classes (added later the same day)
+
+My first discovery only matched a `DbContextOptions<CharacterContext>` constructor and missed the classes with an `AuthContext` seam. The two-database theory now also
+drives `AccountCurrencyDurabilityTests` (Auth + Character options, which covers its vendor-purchase partial), `CraftingAccountOutboxTests` (Auth + Character),
+`AccountWorldSessionAdmissionTests` and `AccountKeybindingPersistenceTests` (Auth options). All four pass on MySQL 8.0.46 with plain options (7.3 minutes).
+With the production options, `AccountWorldSessionAdmissionTests` and `CraftingAccountOutboxTests` pass completely; `AccountCurrencyDurabilityTests` (8 of 96) and
+`AccountKeybindingPersistenceTests` (15 of 34) fail only with chains that end in a test method calling `SaveChangesAsync` inside a transaction the test opened
+(no production executor or delivery opens the transaction). `AccountItemCooldownTests` and `GenericUnlockManagerTests` construct MySQL contexts without connecting and
+have no provider seam. With these, the driver covers 59 classes in total.
+
 ### Production options (retry strategy) census
 
 Setting `NEXUS_FOREVER_TEST_MYSQL_PRODUCTION_OPTIONS=1` builds every context through the repository's own `UseConfiguration`, i.e. the production MySQL

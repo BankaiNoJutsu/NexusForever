@@ -86,6 +86,10 @@ public sealed class MySqlProviderQualificationTests
                 "CraftingSettlementTests" => [character.Options, Connection(authSchema), Connection(foreignAuthSchema)],
                 "ContractClaimTransactionTests" => [character.Options, authOptions],
                 "BankDeferredCurrencyRecoveryTests" => [character.Options, Connection(authSchema)],
+                "AccountCurrencyDurabilityTests" => [authOptions, character.Options],
+                "CraftingAccountOutboxTests" => [authOptions, character.Options],
+                "AccountWorldSessionAdmissionTests" => [authOptions],
+                "AccountKeybindingPersistenceTests" => [authOptions],
                 _ => throw new InvalidOperationException($"No two-database constructor mapping for {type.Name}.")
             };
         });
@@ -208,7 +212,10 @@ public sealed class MySqlProviderQualificationTests
         type.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, null, [typeof(DbContextOptions<CharacterContext>)], null) != null);
 
     private static readonly string[] TwoDatabaseClassNames =
-        ["BankDeferredCurrencyRecoveryTests", "ContractClaimTransactionTests", "CraftingSettlementTests"];
+        [
+            "BankDeferredCurrencyRecoveryTests", "ContractClaimTransactionTests", "CraftingSettlementTests",
+            "AccountCurrencyDurabilityTests", "CraftingAccountOutboxTests", "AccountWorldSessionAdmissionTests", "AccountKeybindingPersistenceTests"
+        ];
 
     private static IEnumerable<Type> DiscoverTwoDatabaseClasses() => PublicTestClasses().Where(type => TwoDatabaseClassNames.Contains(type.Name));
 
