@@ -176,6 +176,10 @@ public sealed class MySqlProviderQualificationTests
     // EnableRetryOnFailure(5, 10s) and the string concurrency SQL generator) instead of plain UseMySql.
     private static bool UseProductionOptions => Environment.GetEnvironmentVariable("NEXUS_FOREVER_TEST_MYSQL_PRODUCTION_OPTIONS") == "1";
 
+    // NEXUS_FOREVER_TEST_MYSQL_PRODUCTION_OPTIONS=concurrency installs only the production string-concurrency SQL generator (no retry strategy), so
+    // tests that open their own transactions are not rejected and the generator's effect on every UPDATE can be qualified separately.
+    private static bool UseConcurrencyGeneratorOnly => Environment.GetEnvironmentVariable("NEXUS_FOREVER_TEST_MYSQL_PRODUCTION_OPTIONS") == "concurrency";
+
     private static DbContextOptionsBuilder<TContext> MySqlBuilder<TContext>(string server, string database) where TContext : DbContext
     {
         string connection = $"{server};database={database};Pooling=False";
@@ -183,7 +187,10 @@ public sealed class MySqlProviderQualificationTests
         if (UseProductionOptions)
             builder.UseConfiguration(new DatabaseConnectionString { Provider = DatabaseProvider.MySql, ConnectionString = connection });
         else
+        {
             builder.UseMySql(connection, new MySqlServerVersion(new Version(8, 0, 0)));
+            if (UseConcurrencyGeneratorOnly) builder.UseStringConcurrencyChecks();
+        }
         return builder;
     }
 

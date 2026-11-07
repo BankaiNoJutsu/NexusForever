@@ -1,5 +1,9 @@
 # Assessment follow-through goal
 
+[Production concurrency generator on MySQL](MYSQL_8_0_FRESH_MIGRATION_QUALIFICATION_20261107.md#production-concurrency-generator-without-the-retry-strategy) (2026-11-07): all 59 provider-option classes (single-database, Character+Auth and
+Auth-seam) pass on MySQL 8.0.46 with the production string-concurrency SQL generator installed and no retry strategy (1.24 hours). The retry strategy remains the only option with failures.
+Not 8.4.13, no socket, broker or load run.
+
 [Execution-strategy scope audit](EXECUTION_STRATEGY_SCOPE_AUDIT_20261107.md) (2026-11-07): all 56 production transaction sites were traced (agent audit, static) after the Contract recovery fix;
 no further site of the same defect kind was found. Three new pins confirm EF's strategy scope survives an await after a synchronous Execute (passed on first run).
 

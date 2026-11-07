@@ -88,6 +88,15 @@ With the production options, `AccountWorldSessionAdmissionTests` and `CraftingAc
 (no production executor or delivery opens the transaction). `AccountItemCooldownTests` and `GenericUnlockManagerTests` construct MySQL contexts without connecting and
 have no provider seam. With these, the driver covers 59 classes in total.
 
+### Production concurrency generator, without the retry strategy
+
+`NEXUS_FOREVER_TEST_MYSQL_PRODUCTION_OPTIONS=concurrency` installs only the production string-concurrency SQL generator (`UseStringConcurrencyChecks`, which replaces
+`IUpdateSqlGenerator` for every UPDATE on MySQL) on plain MySQL options, with no retrying execution strategy. One full run (1.24 hours) over all 59 driver cases of
+the combined set (52 single-database classes, the 3 Character+Auth classes and the 4 Auth-seam classes): **all 59 classes pass** on MySQL Server 8.0.46, and no
+`nexus_qual%` or `nf_remodel%` schema remained. Together with the plain-options runs, this separates the two production differences: the concurrency generator is
+qualified on every provider-option class at this tier; the retrying strategy is the only option that produces failures, and those were test-opened transactions apart from the
+`ContractCompletionExecutor.Recover` defect fixed earlier.
+
 ### Production options (retry strategy) census
 
 Setting `NEXUS_FOREVER_TEST_MYSQL_PRODUCTION_OPTIONS=1` builds every context through the repository's own `UseConfiguration`, i.e. the production MySQL

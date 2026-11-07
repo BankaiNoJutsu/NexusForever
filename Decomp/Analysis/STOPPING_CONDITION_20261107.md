@@ -87,3 +87,6 @@ classes, MySQL 8.4.13, and socket, broker and load runs.
 
 Update: a static audit of all 56 production transaction sites found no further instance of the retry-strategy recovery defect, and three pins confirm the EF scope assumption the
 fragile sites rely on ([EXECUTION_STRATEGY_SCOPE_AUDIT_20261107.md](EXECUTION_STRATEGY_SCOPE_AUDIT_20261107.md)).
+
+Update: all 59 driver classes pass on MySQL 8.0.46 with the production string-concurrency generator and no retry strategy (1.24 hours), so that production difference is qualified at
+this tier; only the retry-strategy runs have failures (test-opened transactions, plus the fixed Contract recovery defect).
