@@ -21,6 +21,7 @@ public class PrerequisiteCheckQuestObjectiveIndexTests
 {
     private const ushort ActiveQuest = 700;
     private const ushort CompletedQuest = 701;
+    private const ushort KillQuest = 706;
 
     [Theory]
     [InlineData(PrerequisiteType.QuestObjective0, 0)]
@@ -103,6 +104,42 @@ public class PrerequisiteCheckQuestObjectiveIndexTests
         Assert.Equal(expectedProgress > 0u, Check((byte)index).Meets(player, PrerequisiteComparison.GreaterThanOrEqual, 1u, CompletedQuest, parameters));
     }
 
+    // Native FUN_1406113b0: for a kill-type objective (types 2, 8, 15, 16, 46) with a required count of at least 2 and flag 0x200 clear, the progress handed to the compare helper is a percentage:
+    // a Completed quest reports 100 (FUN_140551840) and an active one reports `100 * raw * 0.001` of the objective's own progress value, so 3 of 10 kills is 30. Other objectives report their count.
+    // The conversion of the server's kill count to the client's per-mille value is assumed to be kills * 1000 / count, which this reading makes equal to kills * 100 / count percent.
+    [Theory]
+    [InlineData(PrerequisiteComparison.Equal, 30u, true)]
+    [InlineData(PrerequisiteComparison.Equal, 3u, false)]
+    [InlineData(PrerequisiteComparison.GreaterThanOrEqual, 30u, true)]
+    [InlineData(PrerequisiteComparison.GreaterThan, 30u, false)]
+    [InlineData(PrerequisiteComparison.LessThan, 31u, true)]
+    public void AnActiveKillObjectiveWithoutTheCountFlagComparesAPercentage(PrerequisiteComparison comparison, uint value, bool expected)
+    {
+        // Quest 706: index 0 a plain TalkTo, index 1 a kill objective of 10 (no flag), index 2 a kill objective of 10 with flag 0x200, index 3 a single-kill objective.
+        IPlayer player = Player(activeProgress: [5, 3, 3, 1], KillQuest);
+
+        Assert.Equal(expected, Check(1).Meets(player, comparison, value, KillQuest, new PrerequisiteParameters()));
+    }
+
+    [Theory]
+    [InlineData(0, 5u)]     // a plain objective: the raw count
+    [InlineData(2, 3u)]     // flag 0x200 set: the raw count
+    [InlineData(3, 1u)]     // required count 1: not a percentage
+    public void ObjectivesThatAreNotPercentageKillsKeepTheirCount(int index, uint expected)
+    {
+        IPlayer player = Player(activeProgress: [5, 3, 3, 1], KillQuest);
+
+        Assert.True(Check((byte)index).Meets(player, PrerequisiteComparison.Equal, expected, KillQuest, new PrerequisiteParameters()));
+    }
+
+    [Fact]
+    public void APercentageIsCappedAtOneHundred()
+    {
+        IPlayer player = Player(activeProgress: [5, 14, 3, 1], KillQuest);
+
+        Assert.True(Check(1).Meets(player, PrerequisiteComparison.Equal, 100u, KillQuest, new PrerequisiteParameters()));
+    }
+
     private static IPrerequisiteCheck Check(byte index) => index switch
     {
         0 => new PrerequisiteCheckQuestObjective0(Tables()),
@@ -120,7 +157,8 @@ public class PrerequisiteCheckQuestObjectiveIndexTests
         proxy.SetProperty(nameof(IGameTableManager.Quest2), PlayerBindPointTests.Table(
             new Quest2Entry { Id = ActiveQuest, Objectives = [9001, 9002, 9003, 9004, 0, 0] },
             new Quest2Entry { Id = 702, Objectives = [9001, 0, 0, 0, 0, 0] },
-            new Quest2Entry { Id = CompletedQuest, Objectives = [9010, 9011, 9012, 9013, 0, 9999] }));
+            new Quest2Entry { Id = CompletedQuest, Objectives = [9010, 9011, 9012, 9013, 0, 9999] },
+            new Quest2Entry { Id = KillQuest, Objectives = [9001, 9011, 9012, 9013, 0, 0] }));
 
         proxy.SetProperty(nameof(IGameTableManager.QuestObjective), PlayerBindPointTests.Table(
             Objective(9001, QuestObjectiveType.TalkTo, 0u, 5),
@@ -138,7 +176,7 @@ public class PrerequisiteCheckQuestObjectiveIndexTests
     private static QuestObjectiveEntry Objective(uint id, QuestObjectiveType type, uint flags, uint count)
         => new() { Id = id, Type = (uint)type, Flags = flags, Count = count };
 
-    private static IPlayer Player(uint[] activeProgress)
+    private static IPlayer Player(uint[] activeProgress, ushort activeQuestId = ActiveQuest)
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
         IQuestManager manager = RecordingDispatchProxy<IQuestManager>.Create(out var managerProxy);
@@ -150,15 +188,12 @@ public class PrerequisiteCheckQuestObjectiveIndexTests
             objectiveProxy.SetProperty(nameof(IQuestObjective.Progress), value);
             return objective;
         }).ToList();
-        questProxy.SetProperty(nameof(IQuest.Id), ActiveQuest);
+        questProxy.SetProperty(nameof(IQuest.Id), activeQuestId);
         questProxy.SetMethodHandler("GetEnumerator", _ => objectives.GetEnumerator());
         managerProxy.SetMethodReturn(nameof(IQuestManager.GetActiveQuests), new List<IQuest> { quest });
-        managerProxy.SetMethodHandler(nameof(IQuestManager.GetQuestState), args => (ushort)args[0] switch
-        {
-            ActiveQuest    => QuestState.Accepted,
-            CompletedQuest => QuestState.Completed,
-            _              => null
-        });
+        managerProxy.SetMethodHandler(nameof(IQuestManager.GetQuestState), args => (ushort)args[0] == activeQuestId
+            ? QuestState.Accepted
+            : (ushort)args[0] == CompletedQuest ? QuestState.Completed : null);
         playerProxy.SetProperty(nameof(IPlayer.QuestManager), manager);
         return player;
     }

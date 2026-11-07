@@ -74,18 +74,23 @@ namespace NexusForever.Game.Prerequisite
         /// there is no objective at the index, 100 for a kill-type objective with a count of at least 2 and without flag 0x200). Otherwise the progress is that of the
         /// player's active quest objective, and 0 when the quest is not active or has no objective at the index. The result is always handed to the compare helper,
         /// so progress 0 can still satisfy Equal 0 or LessThan.
-        /// Unresolved: for kill-type objectives without flag 0x200 the native active-quest path also rescales the objective's own value by <c>100 * x * 0.001</c>
-        /// (<c>FUN_1406113b0</c>); the unit of the client's runtime value is not known, so the server's own progress is returned unscaled for them.
+        /// For a kill-type objective with a required count of at least 2 and without flag 0x200 both branches report a percentage: 100 when the quest is Completed and, for an active quest,
+        /// <c>100 * raw * 0.001</c> of the objective's own value (<c>FUN_1406113b0</c>). That raw value is taken to be per-mille of completion, so the server's kill count becomes
+        /// <c>kills * 100 / count</c>, capped at 100 (inferred: the unit of the client's runtime value was not read, but 100 for Completed fixes the scale as percent).
         /// </summary>
         public static uint GetObjectiveProgress(IPlayer player, IGameTableManager gameTableManager, uint questId, byte objectiveIndex)
         {
             if (questId > ushort.MaxValue || gameTableManager.Quest2?.GetEntry(questId) is not Quest2Entry definition)
                 return 0u;
 
+            QuestObjectiveEntry entry = GetObjectiveEntry(definition, gameTableManager, objectiveIndex);
             switch (player.QuestManager.GetQuestState((ushort)questId))
             {
                 case QuestState.Completed:
-                    return GetCompletedObjectiveCount(definition, gameTableManager, objectiveIndex);
+                    if (entry == null)
+                        return 0u;
+
+                    return IsPercentageObjective(entry) ? 100u : entry.Count;
                 default:
                     foreach (IQuest quest in player.QuestManager.GetActiveQuests())
                     {
@@ -94,8 +99,13 @@ namespace NexusForever.Game.Prerequisite
 
                         foreach (IQuestObjective objective in quest)
                         {
-                            if (objective.Index == objectiveIndex)
-                                return objective.Progress;
+                            if (objective.Index != objectiveIndex)
+                                continue;
+
+                            if (entry != null && IsPercentageObjective(entry))
+                                return (uint)Math.Min(100ul, (ulong)objective.Progress * 100ul / entry.Count);
+
+                            return objective.Progress;
                         }
                     }
 
@@ -103,22 +113,25 @@ namespace NexusForever.Game.Prerequisite
             }
         }
 
-        private static uint GetCompletedObjectiveCount(Quest2Entry definition, IGameTableManager gameTableManager, byte objectiveIndex)
+        private static QuestObjectiveEntry GetObjectiveEntry(Quest2Entry definition, IGameTableManager gameTableManager, byte objectiveIndex)
         {
             if (definition.Objectives == null || objectiveIndex >= definition.Objectives.Length)
-                return 0u;
+                return null;
 
             uint objectiveId = definition.Objectives[objectiveIndex];
-            if (objectiveId == 0u || gameTableManager.QuestObjective?.GetEntry(objectiveId) is not QuestObjectiveEntry objective)
-                return 0u;
+            return objectiveId == 0u ? null : gameTableManager.QuestObjective?.GetEntry(objectiveId);
+        }
 
-            if (objective.Count < 2u)
-                return objective.Count;
+        /// <summary>
+        /// Native bitset <c>0x400000018104</c>: the kill objective types 2, 8, 15, 16 and 46, with a required count of at least 2 and flag 0x200 clear, are reported as a percentage.
+        /// </summary>
+        private static bool IsPercentageObjective(QuestObjectiveEntry objective)
+        {
+            if (objective.Count < 2u || (objective.Flags & 0x200u) != 0u)
+                return false;
 
-            // Native bitset 0x400000018104: objective types 2, 8, 15, 16 and 46 (the kill types) report 100 unless flag 0x200 is set.
-            bool killType = (QuestObjectiveType)objective.Type is QuestObjectiveType.KillCreature or QuestObjectiveType.KillTargetGroups
+            return (QuestObjectiveType)objective.Type is QuestObjectiveType.KillCreature or QuestObjectiveType.KillTargetGroups
                 or QuestObjectiveType.KillNamedCreature or QuestObjectiveType.KillTargetGroup or QuestObjectiveType.KillCreature2;
-            return killType && (objective.Flags & 0x200u) == 0u ? 100u : objective.Count;
         }
     }
 }
