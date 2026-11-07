@@ -83,6 +83,22 @@ namespace NexusForever.Game.Spell
                     float telegraphRange = TelegraphDamage.Param00;
                     return Vector2.Distance(new Vector2(Position.X, Position.Z), new Vector2(position.X, position.Z)) <= telegraphRange + hitRadius;
                 }
+                case DamageShape.Ring:
+                {
+                    // Inferred reading (see TELEGRAPH_RING_SHAPE_20261107.md): Param00 is the inner radius, Param01 the outer radius and a non-zero Param02 limits the ring to an arc
+                    // of that angle in front of the telegraph, the same (start, radius, angle) layout cones use.
+                    float innerRadius = TelegraphDamage.Param00;
+                    float outerRadius = TelegraphDamage.Param01;
+
+                    float distance = Position.GetDistance(position);
+                    if (distance - hitRadius > outerRadius || distance + hitRadius < innerRadius)
+                        return false;
+
+                    if (TelegraphDamage.Param02 <= 0f)
+                        return true;
+
+                    return IsHitInsideAngle(position, hitRadius, innerRadius, outerRadius, TelegraphDamage.Param02);
+                }
                 case DamageShape.Cone:
                 case DamageShape.LongCone:
                 {
@@ -148,6 +164,8 @@ namespace NexusForever.Game.Spell
             {
                 case DamageShape.Circle:
                     return TelegraphDamage.Param00;
+                case DamageShape.Ring:
+                    return TelegraphDamage.Param01;
                 case DamageShape.Cone:
                 case DamageShape.LongCone:
                     return TelegraphDamage.Param01;
