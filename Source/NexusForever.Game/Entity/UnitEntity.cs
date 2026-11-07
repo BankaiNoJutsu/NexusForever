@@ -155,25 +155,59 @@ namespace NexusForever.Game.Entity
             if (spell4Id == 0u)
                 return false;
 
-            return spellProperties.Values.Any(states => states.Values.Any(state => state.Spell4Id == spell4Id))
-                || ccStates.Values.Any(states => states.Values.Any(state => state.Spell4Id == spell4Id))
-                || stealthStates.Values.Any(state => state.Spell4Id == spell4Id)
-                || aggroImmuneStates.Values.Any(state => state.Spell4Id == spell4Id)
-                || spellEffectImmunityStates.Values.Any(state => state.Spell4Id == spell4Id)
-                || spellImmunityStates.Values.Any(state => state.Spell4Id == spell4Id)
-                || delayDeathStates.Values.Any(state => state.Spell4Id == spell4Id)
-                || procStates.Values.Any(state => state.Spell4Id == spell4Id)
-                || vitalClampStates.Values.Any(state => state.Spell4Id == spell4Id)
-                || shieldOverloadStates.Values.Any(state => state.Spell4Id == spell4Id)
-                || unitStateSetStates.Values.Any(state => state.Spell4Id == spell4Id)
-                || busyStates.Values.Any(state => state.Spell4Id == spell4Id)
-                || scaleStates.Values.Any(state => state.Spell4Id == spell4Id)
-                || factionStates.Values.Any(state => state.Spell4Id == spell4Id)
-                || itemVisualSwapStates.Values.Any(state => state.Spell4Id == spell4Id)
-                || disguiseOutfitStates.Values.Any(state => state.Spell4Id == spell4Id)
-                || mimicDisguiseStates.Values.Any(state => state.Spell4Id == spell4Id)
-                || absorptionStates.Values.Any(state => state.Spell4Id == spell4Id)
-                || healingAbsorptionStates.Values.Any(state => state.Spell4Id == spell4Id);
+            return TrackedSpell4Ids().Contains(spell4Id);
+        }
+
+        /// <summary>
+        /// The Spell4 id of every tracked spell state on this unit (one entry per state, so an id can repeat).
+        /// </summary>
+        private IEnumerable<uint> TrackedSpell4Ids()
+        {
+            return spellProperties.Values.SelectMany(states => states.Values.Select(state => state.Spell4Id))
+                .Concat(ccStates.Values.SelectMany(states => states.Values.Select(state => state.Spell4Id)))
+                .Concat(stealthStates.Values.Select(state => state.Spell4Id))
+                .Concat(aggroImmuneStates.Values.Select(state => state.Spell4Id))
+                .Concat(spellEffectImmunityStates.Values.Select(state => state.Spell4Id))
+                .Concat(spellImmunityStates.Values.Select(state => state.Spell4Id))
+                .Concat(delayDeathStates.Values.Select(state => state.Spell4Id))
+                .Concat(procStates.Values.Select(state => state.Spell4Id))
+                .Concat(vitalClampStates.Values.Select(state => state.Spell4Id))
+                .Concat(shieldOverloadStates.Values.Select(state => state.Spell4Id))
+                .Concat(unitStateSetStates.Values.Select(state => state.Spell4Id))
+                .Concat(busyStates.Values.Select(state => state.Spell4Id))
+                .Concat(scaleStates.Values.Select(state => state.Spell4Id))
+                .Concat(factionStates.Values.Select(state => state.Spell4Id))
+                .Concat(itemVisualSwapStates.Values.Select(state => state.Spell4Id))
+                .Concat(disguiseOutfitStates.Values.Select(state => state.Spell4Id))
+                .Concat(mimicDisguiseStates.Values.Select(state => state.Spell4Id))
+                .Concat(absorptionStates.Values.Select(state => state.Spell4Id))
+                .Concat(healingAbsorptionStates.Values.Select(state => state.Spell4Id));
+        }
+
+        public bool HasActiveSpellInGroup(uint spellGroupId)
+            => HasActiveSpellInGroup(spellGroupId, GetGameTableManager());
+
+        /// <summary>
+        /// Native prerequisite type 129: some spell active on this unit belongs to the spell group. A spell belongs to the groups listed (<c>SpellGroupId00..31</c>) in the
+        /// <c>Spell4GroupList</c> its Spell4 row points at. Active spells are the tracked spell states plus the unfinished pending spells, the same set <see cref="HasActiveSpell4"/> uses.
+        /// </summary>
+        internal bool HasActiveSpellInGroup(uint spellGroupId, IGameTableManager gameTableManager)
+        {
+            if (spellGroupId == 0u || gameTableManager?.Spell4 == null || gameTableManager.Spell4GroupList == null)
+                return false;
+
+            bool InGroup(uint spell4Id)
+            {
+                Spell4Entry spell4Entry = gameTableManager.Spell4.GetEntry(spell4Id);
+                if (spell4Entry == null || spell4Entry.Spell4GroupListId == 0u)
+                    return false;
+
+                return NexusForever.Game.Spell.Spell.Spell4GroupListContainsGroupId(
+                    gameTableManager.Spell4GroupList.GetEntry(spell4Entry.Spell4GroupListId), spellGroupId);
+            }
+
+            return TrackedSpell4Ids().Any(InGroup)
+                || pendingSpells.Any(spell => !spell.IsFinished && InGroup(spell.Parameters.SpellInfo.Entry.Id));
         }
         public uint CurrentAbsorption => (uint)Math.Min(uint.MaxValue, absorptionStates.Values.Aggregate(0ul, (total, state) => total + state.Amount));
         public uint MaxAbsorption => (uint)Math.Min(uint.MaxValue, absorptionStates.Values.Aggregate(0ul, (total, state) => total + state.MaxAmount));

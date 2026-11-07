@@ -46,6 +46,11 @@ namespace NexusForever.Game.Abstract.Entity
         /// Returns whether a persistent spell effect with the supplied <c>Spell4Effects</c> id is currently active on this unit.
         /// </summary>
         bool HasActiveSpellEffectId(uint spell4EffectsId);
+
+        /// <summary>
+        /// Returns whether a spell currently active on this unit belongs to the supplied spell group (one of the <c>SpellGroupId</c> values of its <c>Spell4GroupList</c>).
+        /// </summary>
+        bool HasActiveSpellInGroup(uint spellGroupId);
         uint CurrentAbsorption { get; }
         uint MaxAbsorption { get; }
         uint CurrentHealingAbsorption { get; }

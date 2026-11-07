@@ -1570,15 +1570,15 @@ public class PrerequisiteCheckTests
     [InlineData(PrerequisiteComparison.Equal, false, false)]
     [InlineData(PrerequisiteComparison.NotEqual, true, false)]
     [InlineData(PrerequisiteComparison.NotEqual, false, true)]
-    public void ActiveSpellEffectOnUnit_UsesTrackedSpellStateFallback(PrerequisiteComparison comparison, bool active, bool expected)
+    public void ActiveSpellEffectOnUnit_UsesTheSpellGroupMembership(PrerequisiteComparison comparison, bool active, bool expected)
     {
+        // Native type 129 tests ObjectId as a spell group id against the unit's active spells; the earlier version of this test read Value as a Spell4 id (tracked spell state).
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
-        playerProxy.SetMethodReturn(nameof(IPlayer.HasTrackedSpellState), active);
+        playerProxy.SetMethodReturn(nameof(IPlayer.HasActiveSpellInGroup), active);
 
-        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out _);
-        var check = new PrerequisiteCheckActiveSpellEffectOnUnit(NullLogger<PrerequisiteCheckActiveSpellEffectOnUnit>.Instance, tables);
+        var check = new PrerequisiteCheckActiveSpellEffectOnUnit();
 
-        bool result = check.Meets(player, comparison, value: 77357u, objectId: 0u, new PrerequisiteParameters());
+        bool result = check.Meets(player, comparison, value: 77357u, objectId: 375u, new PrerequisiteParameters());
 
         Assert.Equal(expected, result);
     }

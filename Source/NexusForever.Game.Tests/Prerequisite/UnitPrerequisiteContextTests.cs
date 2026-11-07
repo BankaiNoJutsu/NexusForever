@@ -87,6 +87,8 @@ public sealed class UnitPrerequisiteContextTests
         proxy.SetProperty(nameof(IUnitEntity.MaxHealth), 90u);
         proxy.SetProperty(nameof(IUnitEntity.Type), EntityType.Pet);
         proxy.SetMethodReturn(nameof(IUnitEntity.HasTrackedSpellState), true);
+        // Type 129 now tests ObjectId as a spell group id on the unit (PREREQUISITE_ACTIVE_SPELL_GROUP_20261107.md); the subject answers it, the unrelated target does not.
+        proxy.SetMethodReturn(nameof(IUnitEntity.HasActiveSpellInGroup), true);
         Assert.True(fixture.Manager.MeetsUnit(subject, 1, new PrerequisiteParameters { Target = Unit(3, 10, out _) }));
     }
 

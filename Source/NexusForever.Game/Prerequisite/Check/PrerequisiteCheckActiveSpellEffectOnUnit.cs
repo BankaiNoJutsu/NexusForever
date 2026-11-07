@@ -1,63 +1,34 @@
-using Microsoft.Extensions.Logging;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Static.Prerequisite;
-using NexusForever.GameTable;
 
 namespace NexusForever.Game.Prerequisite.Check
 {
     /// <summary>
-    /// Prerequisite type 129: handler table <c>1404a0540</c>; live case <c>0x81</c> walks active spell effects on unit.
-    /// NF checks tracked spell state / pending spell for Spell4 <c>value0</c>, then applies the same grouped Spell4
-    /// comparison used by rental-license spell rows that share a Spell4 group list.
+    /// Prerequisite type 129: native case <c>0x81</c> returns false for a null unit, then walks the spell list at <c>unit+0x15c8</c> and asks the spell group manager (<c>DAT_140c65b70</c> virtual <c>+0x38</c>)
+    /// whether each spell id belongs to group <c>ObjectId</c>. Equal returns "some spell is in the group", NotEqual its negation and other comparisons are false. <c>Value</c> is not read. All 146 retail
+    /// <c>ObjectId</c>s are at most 784, the largest <c>SpellGroupId</c> in <c>Spell4GroupList</c> (the list ids run to 1579), so <c>ObjectId</c> is a spell group id. The previous implementation read <c>Value</c>
+    /// (0 in 102 of 146 slots) as a Spell4 id and fell back to <c>ObjectId</c> as a Spell4 id.
+    /// Status: Implemented (ObjectId range evidence; the manager call's body was not read). See Decomp/Analysis/PREREQUISITE_ACTIVE_SPELL_GROUP_20261107.md.
     /// </summary>
     [PrerequisiteCheck(PrerequisiteType.ActiveSpellEffectOnUnit)]
     public class PrerequisiteCheckActiveSpellEffectOnUnit : IPrerequisiteCheck
     {
-        private readonly ILogger<PrerequisiteCheckActiveSpellEffectOnUnit> log;
-        private readonly IGameTableManager gameTableManager;
-
-        public PrerequisiteCheckActiveSpellEffectOnUnit(
-            ILogger<PrerequisiteCheckActiveSpellEffectOnUnit> log,
-            IGameTableManager gameTableManager)
-        {
-            this.log              = log;
-            this.gameTableManager = gameTableManager;
-        }
-
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
-            => MeetsEntity(parameters.Target ?? player, comparison, value, objectId);
+            => MeetsUnit(parameters?.Target ?? player, comparison, value, objectId, parameters);
 
         public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
-            => MeetsEntity(subject, comparison, value, objectId);
-
-        private bool MeetsEntity(IUnitEntity unit, PrerequisiteComparison comparison, uint value, uint objectId)
         {
-            bool active = HasActiveSpellEffect(unit, value, objectId);
+            if (subject == null)
+                return false;
 
+            bool active = subject.HasActiveSpellInGroup(objectId);
             return comparison switch
             {
                 PrerequisiteComparison.Equal    => active,
                 PrerequisiteComparison.NotEqual => !active,
-                _ => LogUnhandled(comparison)
+                _                               => false
             };
-        }
-
-        private bool HasActiveSpellEffect(IUnitEntity unit, uint spell4Id, uint objectId)
-        {
-            if (spell4Id != 0u)
-            {
-                return SpellPrerequisiteHelper.HasActiveSpell4(unit, spell4Id)
-                    || SpellPrerequisiteHelper.HasActiveSpellMatchingSpell4Group(unit, spell4Id, gameTableManager);
-            }
-
-            return SpellPrerequisiteHelper.HasActiveSpell4(unit, objectId);
-        }
-
-        private bool LogUnhandled(PrerequisiteComparison comparison)
-        {
-            log.LogWarning($"Unhandled PrerequisiteComparison {comparison} for {PrerequisiteType.ActiveSpellEffectOnUnit}!");
-            return false;
         }
     }
 }
