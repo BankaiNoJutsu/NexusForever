@@ -23,3 +23,9 @@ over-wide, over-tall and over-long hits and the too-small search radius); `Teleg
 ## Risk and how to falsify
 If the client mesh spans -0.5..0.5 instead of -1..1 the drawn box is half the size assumed here and the old width was closer to right than the new one for some axes. The missing input is the box mesh's vertex extents in the render submission that follows
 `FUN_14054b1b0`, or a retail capture of a Square or Rectangle hit boundary. To revert, restore `halfWidth/halfHeight/halfLength = width/height/length` in `Telegraph.InsideBox` and the grid search expressions.
+
+## Further look for a witness (same day)
+Client strings show telegraphs are drawn with `Shaders\TelegraphPS.sho` and `TelegraphColorPS.sho` plus the ramp and tile textures under `Art\FX\Texture\Telegraphs`, i.e. as a projected volume whose per-pixel shape test runs in the pixel shader
+with the extent vector that `FUN_14054d170` fills. A projected-volume box test conventionally compares the local position with half extents, which agrees with the 0.5 scale producing half extents from full dimensions; the compiled
+shader (`.sho`) was not decoded, so this is consistent with the reading, not proof of it. The strings `InsideTelegraph`, `OutsideTelegraph` and `NeedsTelegraphEvaluation` are referenced only from `FUN_140709460` (13,397 bytes, which looks
+like a registration table for Lua names/events), so no client-side containment test was found that could be read directly. The missing witnesses are unchanged: the box mesh/shader extents, or a retail capture of a Square or Rectangle boundary.
