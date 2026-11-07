@@ -369,3 +369,20 @@ Evidence tier: native bodies plus the client's own Lua accessors. This closes th
   and the retail `Value`s are 1 (1,689 slots) and 2 (658), Equal 2,139 and NotEqual 283.
 - `GetCount` (`14068e110`) reaches the raw counter through virtual `+0x98`, the virtual type 123 compares, which confirms 123 as the objective count.
 - Status change: 118 and 123 move from "inferred from the value distribution" to read-confirmed. No code change was needed.
+
+
+## Path mission virtuals identified from the Lua accessors; 54 and 110 stay gated (same day)
+
+Evidence tier: native bodies plus the client's `Game.PathMission` Lua accessors (labelled in `INITIAL_FINDINGS.md`, "Eighty-first/Eighty-second PathMission" follow-ups). No code change.
+
+Identified mission-object virtuals (decompiled Lua accessors):
+
+| Virtual | Meaning | Evidence |
+|---|---|---|
+| `+0x38` | is complete | `IsComplete` (`FUN_14067c220`) returns `virtual +0x38 != 0` |
+| `+0xd0` | mission state (started when greater than 1) | `GetMissionState` / `IsStarted` / `GetNumCompleted` / `GetNumNeeded` all call it first (type 155 uses it) |
+| `+0x40` / `+0x48` | progress counters | `GetNumCompleted` (`FUN_14056d0d0`) returns `+0x40` for mission definition types 2, 4, 7, 0x13, 0x15, 0x18 and `+0x48` for 3, 0xd, 0xf, 0x14, 0x17, 0x19, 0x1a, 0x1b; other types derive a percentage |
+| def `+0x34 & 0x40` | optional mission | `IsOptional` (`FUN_14067c290`) |
+
+- **110 (PlayerPathMissionCount, 47 slots, `FUN_1404a00e0`)**: virtual `+0x30` chooses between the two counters (`+0x40` when it returns 0, else `+0x48`) and the result goes to the compare helper. The retail `Value`s mix counts (3, 4, 6, 30, 60) with percentages (33, 66, 100), which follows the type-dependent counter. Implementing it needs the per-mission-type progress counters of the server's path model; the unidentified virtual `+0x30` (which counter a mission class uses) is the blocker.
+- **54 (PlayerPathMission, 256 slots, `FUN_1404a1950`)**: looks the mission up in the player's mission map (`DAT_140c65970+0x58`); if the player's path word (`+8`) is 0 it returns 0 when virtual `+0x28` is 0, then by definition type 0 a table membership test (`+0x68`, keyed by the definition's object id), by types 4 to 7 bit 0 of virtual `+0x58`, otherwise virtual `+0x28`; with a non-zero path word it returns virtual `+0x28`. Virtuals `+0x28` and `+0x58` are not among the Lua accessors decompiled here. Next experiment: decompile the remaining PathMission Lua methods (`GetSoldierHoldout`, `GetSettlerMayorInfo`, ...) for calls to `+0x28` and `+0x58` to name them, then map them onto `PathManager`'s mission state.
