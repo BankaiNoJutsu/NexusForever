@@ -1194,10 +1194,13 @@ namespace NexusForever.Game.Entity
         /// </summary>
         public void EnqueueToVisible(IWritable message, bool includeSelf = false)
         {
+            // serialize once and encrypt per recipient, encryption keys are per session
+            byte[] serialized = null;
+
             bool sentToOwningPlayer = false;
             if (includeSelf && this is IPlayer selfPlayer && !selfPlayer.IsLoading)
             {
-                EnqueueToVisiblePlayer(selfPlayer, message);
+                EnqueueToVisiblePlayer(selfPlayer, message, ref serialized);
                 sentToOwningPlayer = true;
             }
 
@@ -1212,11 +1215,11 @@ namespace NexusForever.Game.Entity
                 if (!includeSelf && (Guid == entity.Guid || ControllerGuid == entity.Guid))
                     continue;
 
-                EnqueueToVisiblePlayer(player, message);
+                EnqueueToVisiblePlayer(player, message, ref serialized);
             }
         }
 
-        private void EnqueueToVisiblePlayer(IPlayer player, IWritable message)
+        private void EnqueueToVisiblePlayer(IPlayer player, IWritable message, ref byte[] serialized)
         {
             if (message is ServerCombatLog combatLog && ShouldSuppressCombatLogForPlayer(player, combatLog))
                 return;
@@ -1228,7 +1231,15 @@ namespace NexusForever.Game.Entity
                 return;
             }
 
-            player.Session.EnqueueMessageEncrypted(message);
+            serialized ??= player.Session.SerializeMessage(message);
+            // a serialized message always contains at least the opcode, otherwise fall back to the standard path
+            if (serialized == null || serialized.Length == 0)
+            {
+                player.Session.EnqueueMessageEncrypted(message);
+                return;
+            }
+
+            player.Session.EnqueueSerializedMessageEncrypted(message, serialized);
         }
 
         private bool ShouldSuppressCombatLogForPlayer(IPlayer player, ServerCombatLog combatLog)

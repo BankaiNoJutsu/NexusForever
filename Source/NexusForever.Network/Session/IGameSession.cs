@@ -27,6 +27,19 @@ namespace NexusForever.Network.Session
 
         void EnqueueMessageEncrypted(uint opcode, string hex);
 
+        /// <summary>
+        /// Serialize <see cref="IWritable"/> including the opcode, the result can be shared between sessions.
+        /// </summary>
+        /// <remarks>
+        /// Returns null if the message can't be serialized for sharing, callers should fall back to <see cref="EnqueueMessageEncrypted(IWritable)"/>.
+        /// </remarks>
+        byte[] SerializeMessage(IWritable message) => null;
+
+        /// <summary>
+        /// Encrypt and enqueue a message previously serialized with <see cref="SerializeMessage"/>.
+        /// </summary>
+        void EnqueueSerializedMessageEncrypted(IWritable message, byte[] data) => EnqueueMessageEncrypted(message);
+
         void HandlePacket(ClientGamePacket packet);
 
         /// <summary>

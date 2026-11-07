@@ -789,7 +789,7 @@ public sealed partial class Q5597RewardPersistenceTests
                 Assert.Empty(PropertyPackets(observer));
                 Assert.Empty(PropertyMessages(actor));
                 lateObserverSession = CreateLateObserver(actor.Player);
-                var create = Assert.Single(lateObserverSession.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted))
+                var create = Assert.Single(EncryptedInvocations(lateObserverSession)
                     .SelectMany(call => call.Arguments).OfType<ServerEntityCreate>());
                 Assert.Equal(1f, Assert.Single(create.Stats, stat => stat.Stat == Stat.Level).Value);
                 Assert.Equal(10f, Assert.Single(create.Properties, property => property.Property == FixtureLevelProperty).Value);
@@ -911,7 +911,7 @@ public sealed partial class Q5597RewardPersistenceTests
         }
 
         static IEnumerable<ServerQuestShareResult> ShareResults(RecordingDispatchProxy<IGameSession> session)
-            => session.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Select(call => call.Arguments[0])
+            => EncryptedInvocations(session).Select(call => call.Arguments[0])
                 .OfType<ServerQuestShareResult>();
     }
 
@@ -1025,11 +1025,11 @@ public sealed partial class Q5597RewardPersistenceTests
     }
 
     private static IEnumerable<ServerSpellStart> FanfarePackets(RecordingDispatchProxy<IWorldSession> observer)
-        => observer.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).SelectMany(call => call.Arguments)
+        => EncryptedInvocations(observer).SelectMany(call => call.Arguments)
             .OfType<ServerSpellStart>().Where(packet => packet.Spell4Id == FixtureFanfareSpellId);
 
     private static IEnumerable<ServerEntityStatUpdateInteger> LevelPackets(RecordingDispatchProxy<IWorldSession> observer)
-        => observer.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).SelectMany(call => call.Arguments)
+        => EncryptedInvocations(observer).SelectMany(call => call.Arguments)
             .OfType<ServerEntityStatUpdateInteger>().Where(packet => packet.Stat.Stat == Stat.Level);
 
     private static IEnumerable<PlayerStatUpdatedMessage> LevelMessages(Actor actor)
@@ -1041,11 +1041,11 @@ public sealed partial class Q5597RewardPersistenceTests
             .OfType<PlayerStatUpdatedMessage>().Where(message => message.Stat is Stat.Health or Stat.Shield);
 
     private static IEnumerable<ServerEntityHealthUpdate> HealthPackets(RecordingDispatchProxy<IWorldSession> observer)
-        => observer.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).SelectMany(call => call.Arguments)
+        => EncryptedInvocations(observer).SelectMany(call => call.Arguments)
             .OfType<ServerEntityHealthUpdate>();
 
     private static IEnumerable<ServerEntityStatUpdateInteger> ShieldPackets(RecordingDispatchProxy<IWorldSession> observer)
-        => observer.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).SelectMany(call => call.Arguments)
+        => EncryptedInvocations(observer).SelectMany(call => call.Arguments)
             .OfType<ServerEntityStatUpdateInteger>().Where(packet => packet.Stat.Stat == Stat.Shield);
 
     private static void AssertNoVitals(RecordingDispatchProxy<IWorldSession> observer, Actor actor)
@@ -1056,7 +1056,7 @@ public sealed partial class Q5597RewardPersistenceTests
     }
 
     private static IEnumerable<ServerEntityPropertiesUpdate> PropertyPackets(RecordingDispatchProxy<IWorldSession> observer)
-        => observer.GetInvocations(nameof(IWorldSession.EnqueueMessageEncrypted)).SelectMany(call => call.Arguments)
+        => EncryptedInvocations(observer).SelectMany(call => call.Arguments)
             .OfType<ServerEntityPropertiesUpdate>();
 
     private static IEnumerable<PlayerPropertyUpdatedMessage> PropertyMessages(Actor actor)
@@ -1158,4 +1158,18 @@ public sealed partial class Q5597RewardPersistenceTests
             .Invoke(actor.Player, [new List<ServerPlayerCreate.Faction.FactionReputation>()]);
         actor.Quests.SendInitialPackets();
     }
+
+    /// <summary>
+    /// Messages broadcast to several sessions are serialized once and handed to each session pre-serialized,
+    /// treat both paths as an enqueued message.
+    /// </summary>
+    private static IEnumerable<RecordingDispatchProxy<T>.Invocation> EncryptedInvocations<T>(RecordingDispatchProxy<T> proxy) where T : class
+        => proxy.Invocations
+            .Where(i => i.MethodName is nameof(IGameSession.EnqueueMessageEncrypted) or nameof(IGameSession.EnqueueSerializedMessageEncrypted))
+            .Select(i => i.MethodName == nameof(IGameSession.EnqueueSerializedMessageEncrypted)
+                ? new RecordingDispatchProxy<T>.Invocation(nameof(IGameSession.EnqueueMessageEncrypted), [i.Arguments[0]])
+                : i)
+            .ToList();
+
 }
+

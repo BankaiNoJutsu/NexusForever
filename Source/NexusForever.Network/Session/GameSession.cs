@@ -106,11 +106,26 @@ namespace NexusForever.Network.Session
         /// </summary>
         public void EnqueueMessageEncrypted(IWritable message)
         {
+            byte[] data = SerializeMessage(message);
+            if (data == null)
+                return;
+
+            EnqueueSerializedMessageEncrypted(message, data);
+        }
+
+        /// <summary>
+        /// Serialize <see cref="IWritable"/> including the opcode, the result can be shared between sessions.
+        /// </summary>
+        /// <remarks>
+        /// Returns null if the message has no opcode.
+        /// </remarks>
+        public byte[] SerializeMessage(IWritable message)
+        {
             GameMessageOpcode? opcode = messageManager.GetOpcode(message);
             if (opcode == null)
             {
                 log.Warn("Failed to send message with no attribute!");
-                return;
+                return null;
             }
 
             using (var stream = new MemoryStream())
@@ -119,13 +134,23 @@ namespace NexusForever.Network.Session
                 writer.Write(opcode.Value, 16);
                 message.Write(writer);
                 writer.FlushBits();
-
-                byte[] data = stream.ToArray();
-                PacketEvidenceRecorder.Record(Id, "outgoing-plaintext", opcode.Value, message.GetType().Name, data, true);
-                byte[] encrypted = encryption.Encrypt(data, data.Length);
-                EnqueueMessage(BuildEncryptedMessage(encrypted));
-                LogSpellPacketBoundary("outgoing-encrypted-body", opcode.Value, true, message.GetType().Name, encrypted.Length);
+                return stream.ToArray();
             }
+        }
+
+        /// <summary>
+        /// Encrypt and enqueue a message previously serialized with <see cref="SerializeMessage"/>.
+        /// </summary>
+        public void EnqueueSerializedMessageEncrypted(IWritable message, byte[] data)
+        {
+            GameMessageOpcode? opcode = messageManager.GetOpcode(message);
+            if (opcode == null)
+                return;
+
+            PacketEvidenceRecorder.Record(Id, "outgoing-plaintext", opcode.Value, message.GetType().Name, data, true);
+            byte[] encrypted = encryption.Encrypt(data, data.Length);
+            EnqueueMessage(BuildEncryptedMessage(encrypted));
+            LogSpellPacketBoundary("outgoing-encrypted-body", opcode.Value, true, message.GetType().Name, encrypted.Length);
 
             log.Trace($"Sent packet {opcode}(0x{opcode:X}).");
         }
