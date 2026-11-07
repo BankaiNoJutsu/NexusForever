@@ -35,3 +35,9 @@ Retail: shape 3 has 104 rows (for example 6/8/12 and 3/5/26) and shape 6 has 159
 
 ## Tests
 `TelegraphCrossAndEllipseTests` (30 cases): the red run was a compile failure (the shapes and `SearchRadius` did not exist). 1,247 Telegraph/Spell/Combat Source/SQLite cases pass (separate scope).
+
+## Box-scale trace attempt (same day)
+To settle the 0.5 scale question the consumers of `FUN_14054d170` were traced: its only caller is `FUN_14054b1b0` (6,230 bytes, a per-frame telegraph update that also calls `FUN_14054da10`, the time ramp helpers and several
+vector/render helpers). The extent vector it receives (`param_5 + 0x220/0x230`) is handed on to render code that was not followed; no function that tests a unit against these extents (a client-side containment check that would show
+whether they are half or full extents) was found among the callers. The next step would be to follow the render submission from `FUN_14054b1b0` to the box mesh and read its vertex extents. Until then the Square/Rectangle width
+question stays open and the Square code is unchanged.
