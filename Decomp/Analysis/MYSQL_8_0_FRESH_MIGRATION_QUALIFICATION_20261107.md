@@ -52,27 +52,27 @@ not copied; MySQL 8.0.46 only (not 8.4.13); no public-flow, recovery, retry-stra
 `MySqlProviderQualificationTests` (new, opt-in, `Source/NexusForever.Game.Tests/Database`) discovers by reflection every public test
 class that already exposes a `DbContextOptions<CharacterContext>` constructor (52 classes) and runs each of its facts and
 theory cases against its own fresh disposable MySQL schema (created and dropped by the driver, `Pooling=False`). It is skipped
-unless `NEXUS_FOREVER_TEST_MYSQL_SERVER` is set to a server connection string without a database (no credentials in the repository).
-Run against the local MySQL Server 8.0.46 with the documented development account: 47 of 52 classes passed completely (56.8 minutes);
-`SHOW DATABASES LIKE 'nexus_qual%'` was empty afterwards. A first attempt exhausted the server's connection limit because pooled
-connections outlived their dropped schemas ("Too many connections"); that was a driver defect, fixed by disabling pooling, and the
-first-attempt failures were discarded.
+unless `NEXUS_FOREVER_TEST_MYSQL_SERVER` is set to a server connection string without a database (no credentials in the repository);
+`NEXUS_FOREVER_TEST_MYSQL_CLASSES` optionally restricts it to named classes.
 
-The five classes with failures, none a product defect:
+**Final result: all 52 classes pass on the local MySQL Server 8.0.46** (57.4 minutes, one full run with the final driver), using the
+documented development account; `SHOW DATABASES LIKE 'nexus_qual%'` and `'nf_remodel%'` were empty afterwards.
 
-| Class | Failed / total cases | Cause |
-|---|---|---|
-| BankDeferredCurrencyRecoveryTests | 19 / 61 | `TargetParameterCountException`: theory cases my reflection driver cannot invoke (data-source shape); the other 42 passed |
-| BankUnreservedCurrencyRecoveryTests | 7 / 26 | same driver limitation; the other 19 passed |
-| CharacterItemDurabilityTests | 45 / 45 | `Table '...item' doesn't exist`: the fixture builds its own SQLite-shaped schema, so this class is not provider-portable as written |
-| CharacterRewardItemEnrollmentTests | 1 / 48 | SQLite-only fault injection (`RAISE(ABORT, ...)` trigger); the other 47 passed |
-| HousingRemodelPublicationTests | 1 / 22 | the case requires its SQLite "foreign provider" owned schema; the other 21 passed |
+How the first run's five failing classes were resolved (the first run passed 47 of 52):
+- Driver defects: pooled connections exhausted the server ("Too many connections") until pooling was disabled; theory cases with omitted
+  optional parameters (the two Bank recovery classes) now get their declared defaults; fixtures that expect the caller to create the
+  schema (CharacterItemDurabilityTests) get `EnsureCreated`; the housing remodel class's own guard needs a primary schema named
+  `nf_remodel_*`, so the driver uses that prefix for it and drops its `_foreign` companion; fixtures documented as foreign-key-free
+  synthetic ones (CharacterItemDurabilityTests) run with `SET SESSION foreign_key_checks = 0`, mirroring their SQLite `Foreign Keys=False`.
+- Test source: two fault-injection triggers were SQLite-only. `CharacterItemDurabilityTests` (3 cases) and
+  `CharacterRewardItemEnrollmentTests` (1 case) now choose the SQLite `RAISE(ABORT, ...)` trigger or the MySQL `SIGNAL SQLSTATE '45000'`
+  trigger by provider (the convention already used by `ArchivePublicationTests` and others). Every assertion is unchanged; the two classes still
+  pass on SQLite (93 cases).
 
-Evidence tier: the existing Source cases that accept provider options, executed on real MySQL 8.0.46 with fresh schemas. It covers
-Character-side save/retry/rollback/commit-fault ownership across Quest, Challenge rewards, Contract claims, Crafting, Bank, Housing,
-Achievement, Title and others. It does not cover: MySQL 8.4.13, the configured retry execution strategy, Auth-side or two-database
-recovery flows that need their own provider seam, socket, broker or load. The five classes above still need driver or fixture work
-(or SQLite-neutral fault injection) before they can count as MySQL-qualified.
+No product defect was found. Evidence tier: the existing Source cases that accept provider options, on real MySQL 8.0.46 with fresh schemas. This
+covers Character-side save/retry/rollback/commit-fault ownership across Quest, Challenge rewards, Contract claims, Crafting, Bank, Housing,
+Achievement, Title and others. It does not cover MySQL 8.4.13, the configured retry execution strategy, Auth-side or two-database recovery flows that
+need their own provider seam, or socket, broker and load runs.
 
 Run: set `NEXUS_FOREVER_TEST_MYSQL_SERVER="server=127.0.0.1;port=3306;user=<user>;password=<password>"` then
 `dotnet test NexusForever.Game.Tests --filter "FullyQualifiedName~MySqlProviderQualification"`.

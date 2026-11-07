@@ -132,7 +132,9 @@ public sealed class CharacterRewardItemEnrollmentTests : IDisposable
         using var token = Reserve();
         await using (var fail = Context())
         {
-            await fail.Database.ExecuteSqlRawAsync("CREATE TRIGGER reject_item BEFORE UPDATE ON item BEGIN SELECT RAISE(ABORT, 'owned test failure'); END");
+            await fail.Database.ExecuteSqlRawAsync(fail.Database.IsSqlite()
+                ? "CREATE TRIGGER reject_item BEFORE UPDATE ON item BEGIN SELECT RAISE(ABORT, 'owned test failure'); END"
+                : "CREATE TRIGGER reject_item BEFORE UPDATE ON item FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='owned test failure'");
             StageClaim(fail, token, 4);
             await Assert.ThrowsAsync<DbUpdateException>(() => fail.SaveChangesAsync());
         }

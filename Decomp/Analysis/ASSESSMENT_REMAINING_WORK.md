@@ -1,8 +1,9 @@
 # Assessment follow-through goal
 
 [MySQL provider qualification](MYSQL_8_0_FRESH_MIGRATION_QUALIFICATION_20261107.md#provider-qualification-on-mysql-8046-2026-11-07) (2026-11-07): a new opt-in driver runs the 52 existing
-test classes that accept provider options against fresh disposable MySQL 8.0.46 schemas; 47 classes pass, 5 have driver/fixture/SQLite-only causes
-(no product defect found). Skipped unless `NEXUS_FOREVER_TEST_MYSQL_SERVER` is set. Not 8.4.13, no retry strategy, Auth/two-database flows, socket, broker or load.
+test classes that accept provider options against fresh disposable MySQL 8.0.46 schemas; all 52 pass in one 57-minute run (no product defect found;
+five initial failures were driver defects or SQLite-only fault-injection triggers, fixed without weakening assertions). Skipped unless
+`NEXUS_FOREVER_TEST_MYSQL_SERVER` is set. Not 8.4.13, no retry strategy, Auth/two-database flows, socket, broker or load.
 
 [Unhandled spell effect candidates](SPELL_EFFECT_UNHANDLED_CANDIDATES_20261107.md) (2026-11-07): the carrying spells and DataBits shapes give weak to
 moderate candidates for UnlockInlaidAugment, ChangeDisplayName and ChangePhase, and nothing conclusive for FacilityModification or

@@ -293,12 +293,12 @@ public sealed class CharacterItemDurabilityTests : IDisposable
         var item = operation == "create" ? NewItem(3) : await PersistedItem(2);
         if (operation == "update") item.StackCount = 7;
         if (operation == "delete") item.EnqueueDelete(true);
-        string trigger = operation switch
-        {
-            "create" => "CREATE TRIGGER fail_item BEFORE INSERT ON item BEGIN SELECT RAISE(ABORT, 'owned fixture failure'); END;",
-            "update" => "CREATE TRIGGER fail_item BEFORE UPDATE ON item BEGIN SELECT RAISE(ABORT, 'owned fixture failure'); END;",
-            _ => "CREATE TRIGGER fail_item BEFORE DELETE ON item BEGIN SELECT RAISE(ABORT, 'owned fixture failure'); END;"
-        };
+        bool sqlite;
+        await using (CharacterContext probe = Context()) sqlite = probe.Database.IsSqlite();
+        string verb = operation switch { "create" => "INSERT", "update" => "UPDATE", _ => "DELETE" };
+        string trigger = sqlite
+            ? $"CREATE TRIGGER fail_item BEFORE {verb} ON item BEGIN SELECT RAISE(ABORT, 'owned fixture failure'); END;"
+            : $"CREATE TRIGGER fail_item BEFORE {verb} ON item FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='owned fixture failure'";
         await using (CharacterContext setup = Context())
             await setup.Database.ExecuteSqlRawAsync(trigger);
         await using (CharacterContext failed = Context())
