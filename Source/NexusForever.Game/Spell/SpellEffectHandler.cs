@@ -2611,6 +2611,25 @@ namespace NexusForever.Game.Spell
                 changePhase.ClearPerceiveMe));
         }
 
+        /// <summary>
+        /// ChangePlane (0x85): adds plane bits to the target player's two plane words (packet 0x0172). The client has no handler for this effect; the data layout is inferred from the shipped rows,
+        /// see Decomp/Analysis/SPELL_EFFECT_CHANGEPLANE_20261108.md. Only players have plane words; other targets are ignored.
+        /// </summary>
+        [SpellEffectHandler(SpellEffectType.ChangePlane)]
+        public static void HandleEffectChangePlane(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            SpellEffectChangePlaneSemantics changePlane = SpellEffectInterpreter.Interpret(info).ChangePlane;
+            if (changePlane == null || target is not IPlayer player)
+                return;
+
+            player.AddPlaneChange(new PlaneChange(
+                info.EffectId,
+                spell.Parameters.SpellInfo.Entry.Id,
+                spell.CastingId,
+                changePlane.AddCanSee,
+                changePlane.AddCanBeSeen));
+        }
+
         [SpellEffectHandler(SpellEffectType.UnitStateSet)]
         public static void HandleEffectUnitStateSet(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {

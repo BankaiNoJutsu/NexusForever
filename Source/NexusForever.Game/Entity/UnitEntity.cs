@@ -1846,6 +1846,12 @@ namespace NexusForever.Game.Entity
                         AddRemoval(new SpellStateRemoval(SpellStateRemovalKind.PhaseChange,
                             change.Spell4Id, change.CastingId, change.EffectId));
 
+            if (this is IPlayer planePlayer)
+                foreach (PlaneChange change in planePlayer.GetPlaneChanges())
+                    if (CanRemove(change.Spell4Id) && planePlayer.RemovePlaneChange(change.EffectId))
+                        AddRemoval(new SpellStateRemoval(SpellStateRemovalKind.PlaneChange,
+                            change.Spell4Id, change.CastingId, change.EffectId));
+
             return removals;
         }
 

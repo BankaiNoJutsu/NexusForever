@@ -675,6 +675,14 @@ namespace NexusForever.Game.Spell.Effect
         uint ClearIPerceive,
         uint ClearPerceiveMe);
 
+    /// <summary>
+    /// <c>ChangePlane</c> (0x85): no client handler exists, so this reading is inferred from the shipped rows (Decomp/Analysis/SPELL_EFFECT_CHANGEPLANE_20261108.md).
+    /// DataBits00/01 are plane bits added to the player's <c>PlanesCanSee</c> / <c>PlanesCanBeSeen</c>.
+    /// </summary>
+    public sealed record SpellEffectChangePlaneSemantics(
+        uint AddCanSee,
+        uint AddCanBeSeen);
+
     public sealed record SpellEffectUnitPropertyModifierSemantics(
         Property Property,
         uint Priority,
@@ -783,6 +791,7 @@ namespace NexusForever.Game.Spell.Effect
         public SpellEffectStateSemantics RemoveStealth { get; internal set; }
         public SpellEffectStateSemantics AggroImmune { get; internal set; }
         public SpellEffectChangePhaseSemantics ChangePhase { get; internal set; }
+        public SpellEffectChangePlaneSemantics ChangePlane { get; internal set; }
         public SpellEffectUnitPropertyModifierSemantics UnitPropertyModifier { get; internal set; }
         public SpellEffectPersonalDmgHealModSemantics PersonalDmgHealMod { get; internal set; }
         public SpellEffectUnitPropertyConversionSemantics UnitPropertyConversion { get; internal set; }
@@ -864,6 +873,7 @@ namespace NexusForever.Game.Spell.Effect
             || RemoveStealth != null
             || AggroImmune != null
             || ChangePhase != null
+            || ChangePlane != null
             || UnitPropertyModifier != null
             || PersonalDmgHealMod != null
             || UnitPropertyConversion != null;
@@ -1692,6 +1702,11 @@ namespace NexusForever.Game.Spell.Effect
                         entry.DataBits01,
                         entry.DataBits02,
                         entry.DataBits03);
+                    break;
+                case SpellEffectType.ChangePlane:
+                    interpretation.ChangePlane = new SpellEffectChangePlaneSemantics(
+                        entry.DataBits00,
+                        entry.DataBits01);
                     break;
             }
 

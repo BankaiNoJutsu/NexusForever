@@ -88,6 +88,32 @@ namespace NexusForever.Game.Abstract.Entity
         /// </summary>
         IReadOnlyList<PhaseChange> GetPhaseChanges();
 
+        /// <summary>
+        /// Plane bits this player can see, the second dword of <c>ServerPlaneVisibilitySpellSlingerVoid</c> (0x0172). Prerequisite 232 tests it. Zero until a <c>ChangePlane</c> effect sets bits.
+        /// </summary>
+        uint PlanesCanSee { get; }
+
+        /// <summary>
+        /// Plane bits in which this player can be seen, the first dword of 0x0172; the client stores it but never reads it.
+        /// </summary>
+        uint PlanesCanBeSeen { get; }
+
+        /// <summary>
+        /// Apply a <c>ChangePlane</c> spell effect: record it (replacing an earlier record of the same effect instance), recompute both plane words from zero and every active change, and send
+        /// the packet when they changed.
+        /// </summary>
+        void AddPlaneChange(PlaneChange change);
+
+        /// <summary>
+        /// Remove the change owned by the spell effect instance and recompute the plane words. Returns false when none was recorded.
+        /// </summary>
+        bool RemovePlaneChange(uint effectId);
+
+        /// <summary>
+        /// Active <c>ChangePlane</c> records in the order they were applied.
+        /// </summary>
+        IReadOnlyList<PlaneChange> GetPlaneChanges();
+
         bool DisableOtherPlayersCombatLogs { get; set; }
         CombatLogOptions CombatLogDisableFlags { get; set; }
         AccountPresenceState PresenceState { get; set; }

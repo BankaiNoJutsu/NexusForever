@@ -35,7 +35,7 @@ for example on death or dispel); a recast of the same effect instance replaces i
 * Two rows carry `0x40A00000` (the float 5.0) in DataBits02 (spells 42746 and 75582) and two rows have DataBits04/05 = 1; they are applied as plain clear words and the extra words are ignored.
 * The server does not use the phase words to filter which entities or players a client is sent (the entity grid has no phase concept), so today the visible effect is the client-side evaluation of
   prerequisites 24/25 (world hex groups, spells, gossip, items) and `bCanSeeMe`.
-* `ChangePlane` (0x85, 16 rows, packet `0x172`) is separate and not implemented.
+* `ChangePlane` (0x85, 16 rows, packet `0x172`) is separate; see [SPELL_EFFECT_CHANGEPLANE_20261108.md](SPELL_EFFECT_CHANGEPLANE_20261108.md).
 
 ## Code
 `PhaseChange` record and `IPlayer.AddPhaseChange` / `RemovePhaseChange` / `GetPhaseChanges`; `PhaseChangeRules.Fold`; `SpellEffectChangePhaseSemantics`; `SpellHandler.HandleEffectChangePhase`;

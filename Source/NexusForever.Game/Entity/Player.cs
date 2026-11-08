@@ -360,6 +360,52 @@ namespace NexusForever.Game.Entity
             SetPhaseVisibility(phasesIPerceive, phasesThatPerceiveMe);
         }
 
+        public uint PlanesCanSee { get; private set; }
+        public uint PlanesCanBeSeen { get; private set; }
+
+        // Created on first use: some tests build a Player without running field initialisers.
+        private List<PlaneChange> planeChanges;
+
+        public void AddPlaneChange(PlaneChange change)
+        {
+            planeChanges ??= [];
+            planeChanges.RemoveAll(c => c.EffectId == change.EffectId);
+            planeChanges.Add(change);
+            ApplyPlaneChanges();
+        }
+
+        public bool RemovePlaneChange(uint effectId)
+        {
+            if (planeChanges == null || planeChanges.RemoveAll(c => c.EffectId == effectId) == 0)
+                return false;
+
+            ApplyPlaneChanges();
+            return true;
+        }
+
+        public IReadOnlyList<PlaneChange> GetPlaneChanges()
+            => planeChanges?.ToArray() ?? [];
+
+        private void ApplyPlaneChanges()
+        {
+            PlaneChangeRules.Fold(planeChanges ?? [], out uint canSee, out uint canBeSeen);
+            if (canSee == PlanesCanSee && canBeSeen == PlanesCanBeSeen)
+                return;
+
+            PlanesCanSee    = canSee;
+            PlanesCanBeSeen = canBeSeen;
+            SendPlaneVisibility();
+        }
+
+        private void SendPlaneVisibility()
+        {
+            Session?.EnqueueMessageEncrypted(new ServerPlaneVisibilitySpellSlingerVoid
+            {
+                PlanesCanBeSeen = PlanesCanBeSeen,
+                PlanesCanSee    = PlanesCanSee
+            });
+        }
+
         private void SendPhaseVisibility()
         {
             Session?.EnqueueMessageEncrypted(new ServerPhaseVisibilityWorldLocation
@@ -1731,6 +1777,10 @@ namespace NexusForever.Game.Entity
             });
 
             SendPhaseVisibility();
+
+            // The client zero-initialises the plane words, so the packet is only needed once a ChangePlane effect has set bits.
+            if (PlanesCanSee != 0u || PlanesCanBeSeen != 0u)
+                SendPlaneVisibility();
 
             // Do not send 0988/098B/0987 in the same enqueue pass as ServerPlayerCreate and the rest of the
             // login burst; the client can drop or mis-apply store payloads while applying create data.
