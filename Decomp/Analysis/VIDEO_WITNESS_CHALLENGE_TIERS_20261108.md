@@ -1,0 +1,29 @@
+# Video witness V2 (second pass): multi-tier and time-tiered challenges, 2026-11-08
+
+Goal: [VIDEO_WITNESS_GOAL_PROMPT.md](VIDEO_WITNESS_GOAL_PROMPT.md), row V2; follows [VIDEO_WITNESS_CHALLENGE_20261108.md](VIDEO_WITNESS_CHALLENGE_20261108.md).
+Evidence tier: **Observed** (two videos) + **Correlated** (table values equal the on-screen thresholds) + **native/Lua read** (the client addon `ChallengeDisplay.lua` from the installed client and the native Lua getter `FUN_140685440`). Two **server divergences are identified but not changed**: the fix touches the durable reward invariants and needs a design decision (below). No retail parity claim.
+
+## Footage
+- `_Additional/Wildstar Challenge： Thayd Sprint - Without mount guide [IdrR35AkrpI].mp4` (uploaded 2014-06-05; HUD of that era). At 40 s the widget shows a countdown `01:21` and a threshold list `:00`, `1:00`, `1:10` beside three medal icons; at 68 s the card "Thayd Sprint Complete!" with an enabled "Loot Rewards" button and a disabled "On Cooldown" button.
+- `_Additional/WildStar [Might as Well Jump] Challenge in Grimvault [yKt3Us7JVIk].mp4` (2014-06-27). At 175 s the card "Might as Well Jump: Time Expired: Silver Achieved" with both buttons greyed.
+
+## Correlation (Challenge.tbl, ChallengeTier.tbl, en-US text)
+- Challenge 1002 "Thayd Sprint": tier columns 2723/2724/2725 with goals **1 / 60000 / 70000**: equals the on-screen `:00 / 1:00 / 1:10` (1 ms displays as `:00`).
+- Challenge 700 and 1006 "Might as Well Jump": goals **15 / 20 / 25** (rings): "Silver Achieved" is the second of three ascending tiers.
+- 392 of 643 challenges have three tiers, 211 one, 40 two. 72 challenges (57 of them type 2) have a tier goal of 1000 or more, mostly millisecond values (Supply Run [0, 90000, 120000], Windspire Ascent [1, 11000, 23000], Eldan Wall Scaler [0, 30000, 40000], ...).
+
+## Client semantics (authored Lua and native getter)
+- `Challenge:GetCurrentTier` (`FUN_140685440`) returns the challenge state word at `+0x20`, the `CurrentTier` of `ServerChallengeUpdate` (the same field prerequisite 70 reads).
+- `ChallengeDisplay.lua` line 172: the tier being pursued is `GetCurrentTier() + 1`, so during play CurrentTier is the **number of tiers already achieved** (0 at the start).
+- Lines 423 to 437 and 465: the completion card uses `GetCurrentTier()` directly as the medal index ("Bronze/Silver/Gold Completed", reward `tFinal.nBronze/nSilver/nGold` by that index; index 0 has no string). Lines 333 to 337: a challenge that ended without the Completed event is shown as completed if `GetCurrentTier() > 0`, else as failed. The observed "Bronze Completed: Flitterfly Chaser" therefore needs CurrentTier = 1 for a single-tier challenge, and "Silver Achieved" on expiry needs CurrentTier = 2.
+- Lines 199 to 225: `IsTimeTiered()` challenges treat each tier goal as milliseconds: `nTierTimeRemaining = max(0, TimeLimit - TierGoal - TimeElapsed)`, i.e. a tier is kept while elapsed time is below limit minus its goal (a minimum-remaining-time threshold). That is the `:00 / 1:00 / 1:10` list shown in the footage.
+
+## Server divergences found (unchanged; each needs a design decision)
+1. **Final tier not counted.** `ChallengeManager.HandleTierGoalReached` increments `CurrentTier` for every tier except the last; the last completes with `CurrentTier` = the last medal index (0 for a single-tier challenge, 2 for a Gold finish). The client then sees 0 (blank medal, treated as failed on the not-Activated path) where retail needs 1 (and 3 for Gold). The persisted model deliberately stores the last medal index (`CharacterChallengeRewardRepository.Legacy.cs:21` requires `advanced.Tier == medal` for a terminal completion; `CharacterChallengeRewardRepository.cs:325` requires `Tier < 3`), so the fix cannot be a one-line increment. It also affects my type 70 rewrite: a completed single-tier challenge reads as tier 0 ("not even Bronze"). Ambiguity found while checking a wire-only fix: for a single-tier challenge, a final completion and an abandoned retry both end with Tier 0, LastRewardTier 0 and differ only by the completion count transition, so deriving the wire value from state alone is not possible; a per-attempt completed-final marker (persisted) or a redefinition of the persisted tier is needed. Multi-tier (len 2 or 3) terminal states are distinguishable (Tier equals Last only after the final medal).
+2. **Time tiers handled as counts.** `GetTierGoalCounts` drops zero goals and `TryAdvanceProgress` accumulates progress to the goal, so a time-tiered challenge such as Thayd Sprint (1 / 60000 / 70000) cannot reach Silver or Gold by counting, and a first tier of 0 (e.g. Supply Run [0, 90000, 120000]) is silently removed, turning the 2nd and 3rd tiers into the 1st and 2nd. Retail needs the tier to be chosen from the remaining time at completion, and the client's own timer needs the correct `GoalCount`/limit. Which tier set the server must use for challenge types other than 2 (type 0 with ms goals, 5 rows, 7 rows) is not decided here.
+
+## Proposed order (next implementation slice, not started)
+(a) Decide the persisted representation (completed-final marker versus tier count with the invariant relaxed to `Tier <= 3`); (b) failing test: single-tier completion publishes `CurrentTier` 1 and prerequisite 70 `Value 0` passes; Gold finish publishes 3; (c) separately, a time-tier selection test for challenge 1002 using the table goals.
+
+## Still not visible
+Whether retail resets CurrentTier at re-activation and what a relog shows for a terminal challenge; the quality of rewards per tier (a Dec 2013 beta stream shows a post-challenge chooser, see the goal-doc lead).
