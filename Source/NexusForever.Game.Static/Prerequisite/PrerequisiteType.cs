@@ -151,7 +151,7 @@
         Difficulty                  = 143, // Difficulty requirement not met
         Unknown144                  = 144, // Exist in PrerequisiteType.tbl but does not have a description - no retail rows found; live dispatcher skips case 0x90, while handler table[144] 1404a0b70 checks live event runtime +0x1d0 == 1 with field semantics blocked
         ItemIsSelfCraftedWeapon     = 145, // Self-crafted weapon requirement not met
-        ItemTradeSkillLevel         = 146, // Item tradeskill level requirement not met
+        ItemTradeSkillLevel         = 146, // Item tradeskill level requirement not met - item-derived band index vs TradeskillTier(ObjectId).Tier, player and Value ignored; see PREREQUISITE_146_NATIVE_READ_20261108.md
         PlayersInWorld              = 147, // There are no players in the world who meet the requirement
         InfrastructureState         = 148, // The infrastructure state requirement is not met - client case 0x94 via Prerequisite_CheckInfrastructureState 1404a0150 (+0x4e8); FUN_1403d2d60 lookup then value0 vs state +0x10; NF maps PathMissionTypeEnum 0x15 (21) ObjectId = PathSettlerInfrastructure.Id
         State                       = 149, // State requirement not met - live case 0x95 vtable +0x88 -> Prerequisite_CheckEntityStateFlags_Table149 14049c840; state = (in-use flag from ServerUnitInUse at +0x1e4) || (in-combat at +0x2ac) compared with Value; see PREREQUISITE_9_149_WRITERS_NATIVE_READ_20261108.md
