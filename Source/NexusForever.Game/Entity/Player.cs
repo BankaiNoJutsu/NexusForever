@@ -309,6 +309,15 @@ namespace NexusForever.Game.Entity
         }
         private bool sharedChallengeEnabled;
 
+        // Created on first use: some tests build a Player without running field initialisers.
+        private Dictionary<uint, Static.PublicEvent.PublicEventRemoveReason> publicEventEndReasons;
+
+        public void RecordPublicEventEnd(uint publicEventId, Static.PublicEvent.PublicEventRemoveReason reason)
+            => (publicEventEndReasons ??= [])[publicEventId] = reason;
+
+        public Static.PublicEvent.PublicEventRemoveReason? GetPublicEventEndReason(uint publicEventId)
+            => publicEventEndReasons != null && publicEventEndReasons.TryGetValue(publicEventId, out Static.PublicEvent.PublicEventRemoveReason reason) ? reason : null;
+
         public bool DisableOtherPlayersCombatLogs
         {
             get => disableOtherPlayersCombatLogs;

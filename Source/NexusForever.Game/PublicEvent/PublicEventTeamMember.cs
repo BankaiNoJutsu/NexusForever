@@ -113,7 +113,8 @@ namespace NexusForever.Game.PublicEvent
             if (GetCurrentPlayer() == null)
                 return;
 
-            TryEnqueue(message);
+            if (TryEnqueue(message) && message is ServerPublicEventEnd end)
+                GetCurrentPlayer()?.RecordPublicEventEnd(end.PublicEventId, end.Reason);
         }
 
         public void SendStart(ServerPublicEventStart message, Func<bool> ownsMembership)

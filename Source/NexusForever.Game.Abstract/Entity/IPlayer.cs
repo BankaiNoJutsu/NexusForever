@@ -43,6 +43,20 @@ namespace NexusForever.Game.Abstract.Entity
         byte InnateIndex { get; set; }
         CastingOptionFlags CastingOptions { get; set; }
         bool SharedChallengeEnabled { get; set; }
+
+        /// <summary>
+        /// Record the reason of the last <c>ServerPublicEventEnd</c> delivered to this player for the public event.
+        /// </summary>
+        /// <remarks>
+        /// The client keeps this per event for its whole session (it is only ever overwritten by a later End) and prerequisite 199 tests it.
+        /// </remarks>
+        void RecordPublicEventEnd(uint publicEventId, Static.PublicEvent.PublicEventRemoveReason reason);
+
+        /// <summary>
+        /// Reason of the last <c>ServerPublicEventEnd</c> delivered to this player for the public event, or null when none was delivered this session.
+        /// </summary>
+        Static.PublicEvent.PublicEventRemoveReason? GetPublicEventEndReason(uint publicEventId);
+
         bool DisableOtherPlayersCombatLogs { get; set; }
         CombatLogOptions CombatLogDisableFlags { get; set; }
         AccountPresenceState PresenceState { get; set; }

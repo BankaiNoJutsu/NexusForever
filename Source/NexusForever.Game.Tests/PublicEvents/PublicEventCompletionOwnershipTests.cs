@@ -75,6 +75,32 @@ public sealed class PublicEventCompletionOwnershipTests(ITestOutputHelper output
         Assert.Equal(0u, losingObjective.Count);
     }
 
+    // The client keeps the reason of the last ServerPublicEventEnd it received per event (native FUN_1405f30a0 stores it at event +0x1d0, read by prerequisite 199).
+    [Fact]
+    public void EndDeliveredToAPlayerIsRecordedAsTheirLastEndReasonForThatEvent()
+    {
+        const uint objectId = 501u;
+        var map = RecordingDispatchProxy<IBaseMap>.Create(out _);
+        var red = new Actor(map, 42ul, 100u);
+        var blue = new Actor(map, 43ul, 200u);
+        var players = RecordingDispatchProxy<IPlayerManager>.Create(out var registry);
+        registry.SetMethodHandler(nameof(IPlayerManager.GetPlayer), args => (ulong)args[0] == 42ul ? red.Player : blue.Player);
+        var publicEvent = CreateEvent(players, map,
+            CreateObjective(201u, objectId, EventTeam.RedTeam),
+            CreateObjective(202u, objectId, EventTeam.BlueTeam));
+        publicEvent.JoinEvent(red.Player, EventTeam.RedTeam);
+        publicEvent.JoinEvent(blue.Player, EventTeam.BlueTeam);
+
+        publicEvent.UpdateObjective(PublicEventObjectiveType.Script, objectId, 1);
+
+        var redCall = Assert.Single(red.Proxy.GetInvocations(nameof(IPlayer.RecordPublicEventEnd)));
+        Assert.Equal(publicEvent.Id, redCall.Arguments[0]);
+        Assert.Equal(PublicEventRemoveReason.Success, redCall.Arguments[1]);
+        var blueCall = Assert.Single(blue.Proxy.GetInvocations(nameof(IPlayer.RecordPublicEventEnd)));
+        Assert.Equal(publicEvent.Id, blueCall.Arguments[0]);
+        Assert.Equal(PublicEventRemoveReason.Failure, blueCall.Arguments[1]);
+    }
+
     [Fact]
     public void ObjectiveBatchStopsWhenAnObjectiveStatusScriptFinishesItsEvent()
     {
