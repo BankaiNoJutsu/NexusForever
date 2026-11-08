@@ -117,6 +117,12 @@ namespace NexusForever.Game.Abstract.Entity
         bool ProgressSoldierAssassinateMissionForCreatureKill(uint creature2Id, IReadOnlyCollection<uint> targetGroupIds);
 
         /// <summary>
+        /// Progresses the player's active checklist missions (Explorer_ActivateChecklist 17, Soldier_Demolition 5 and Soldier_Rescue 6) when a matching target is activated. For the bitmask
+        /// modes the bit of the target's <c>QuestChecklistIdx</c> is set once in the mission's progress word; returns true when any mission changed.
+        /// </summary>
+        bool ProgressActivateChecklistMissions(uint creature2Id, IReadOnlyCollection<uint> targetGroupIds, byte checklistIdx);
+
+        /// <summary>
         /// Increments an active Soldier SWAT mission by its PathMission id.
         /// </summary>
         bool ProgressSoldierSwatMission(ushort pathMissionId, uint amount);

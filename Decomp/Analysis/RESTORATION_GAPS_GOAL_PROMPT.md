@@ -68,6 +68,7 @@ the others with the exact missing system. Status (2026-11-08): census corrected 
 Prerequisite 107 tests a bit of the mission's `ProgressCount` word ([PREREQUISITE_107_PATH_MISSION_WORD_20261108.md](PREREQUISITE_107_PATH_MISSION_WORD_20261108.md)), but the server has no producer
 of checklist bitmasks for mission types 5, 6, 13, 14 and 17, so 97 of 124 retail slots read 0. Find how retail set those bits per mission type (client Lua and the mission tables first, a native read
 if needed), implement the producers with tests, and re-run the 107 evaluations over the retail rows.
+Status (2026-11-08): types 17, 5 and 6 done (86 of 124 slots), 13 and 14 remain, see [RESTORATION_GAP3_PATH_CHECKLIST_20261108.md](RESTORATION_GAP3_PATH_CHECKLIST_20261108.md).
 
 ## 4. Time-tiered challenges
 80 challenges carry `ChallengeFlags & 8`; the rule (tier goal = minimum remaining time) and the limit source (packet `TimeTotalActive`) are established, 12 limits are observed and 69 are missing, and

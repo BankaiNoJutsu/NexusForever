@@ -2926,6 +2926,12 @@ namespace NexusForever.Game.Entity
             GetGlobalLootManager()?.DistributeLoot(contributors, this);
         }
 
+        /// <summary>
+        /// Target groups this creature belongs to, as used for kill and activation credit.
+        /// </summary>
+        protected IReadOnlyCollection<uint> GetCreatureTargetGroupIds()
+            => (assetManagerResolver?.Invoke()?.GetTargetGroupsForCreatureId(CreatureId) ?? Enumerable.Empty<uint>()).ToList();
+
         protected virtual void RewardKiller(IPlayer player)
         {
             player.QuestManager.ObjectiveUpdate(QuestObjectiveType.KillCreature, CreatureId, 1u);

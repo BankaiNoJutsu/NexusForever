@@ -29,6 +29,9 @@ namespace NexusForever.Game.Entity
         private const uint SoldierHoldoutMissionType = 0x0000;
         private const uint SoldierAssassinateMissionType = 0x0004;
         private const uint SoldierSwatMissionType = 0x0007;
+        private const uint SoldierDemolitionMissionType = 0x0005;
+        private const uint SoldierRescueMissionType = 0x0006;
+        private const uint ExplorerActivateChecklistMissionType = 0x0011;
         private const uint ScientistCreatureInfoMissionType = 0x0002;
         private const uint ScientistDatacubeDiscoveryMissionType = 0x0018;
         private const uint ExplorerNodeMissionType = 0x000F;
@@ -1210,6 +1213,93 @@ namespace NexusForever.Game.Entity
                 // Client PathMission.GetNumCompleted reads the first progress payload for
                 // Soldier_Assassinate (0x04). ProgressData remains a conservative in-progress
                 // marker until per-type producer semantics are fully mapped.
+                player.Session.EnqueueMessageEncrypted(new ServerPathMissionUpdate
+                {
+                    Mission = BuildMission(state)
+                });
+            }
+
+            return progressedAny;
+        }
+
+        /// <summary>
+        /// Checklist missions keep a bitmask in the mission's <c>ProgressCount</c> word: the client shows popcount(ProgressCount) as the progress of Explorer_ActivateChecklist (17) and, for activate
+        /// modes 1 and 2, Soldier_Demolition (5) and Soldier_Rescue (6), and prerequisite 107 tests the bit of the activated creature's <c>QuestChecklistIdx</c> (agent-written native read, see
+        /// Decomp/Analysis/PREREQUISITE_107_PATH_MISSION_WORD_20261108.md). The producer rule is inferred: activating a target that matches the mission's PathExplorerActivate / PathSoldierActivate
+        /// row (<c>Creature2Id</c> or <c>TargetGroupId</c>) sets the bit once; the mission completes when the number of set bits reaches <c>Count</c>; activate mode 0 counts every activation.
+        /// </summary>
+        public bool ProgressActivateChecklistMissions(uint creature2Id, IReadOnlyCollection<uint> targetGroupIds, byte checklistIdx)
+        {
+            targetGroupIds ??= Array.Empty<uint>();
+            if (creature2Id == 0u && targetGroupIds.Count == 0)
+                return false;
+
+            bool progressedAny = false;
+            foreach (PathMissionRuntimeState state in pathMissions.Values.ToList())
+            {
+                if (state.Completed)
+                    continue;
+
+                PathMissionEntry mission = gameTableManager.PathMission?.GetEntry(state.MissionId);
+                if (mission == null || mission.PathTypeEnum != (uint)player.Path)
+                    continue;
+
+                uint rowCreature2Id, rowTargetGroupId, count;
+                bool bitmask;
+                if (player.Path == Path.Explorer && mission.PathMissionTypeEnum == ExplorerActivateChecklistMissionType)
+                {
+                    PathExplorerActivateEntry row = gameTableManager.PathExplorerActivate?.GetEntry(mission.ObjectId);
+                    if (row == null)
+                        continue;
+
+                    (rowCreature2Id, rowTargetGroupId, count, bitmask) = (row.Creature2Id, row.TargetGroupId, row.Count, true);
+                }
+                else if (player.Path == Path.Soldier
+                    && (mission.PathMissionTypeEnum == SoldierDemolitionMissionType || mission.PathMissionTypeEnum == SoldierRescueMissionType))
+                {
+                    PathSoldierActivateEntry row = gameTableManager.PathSoldierActivate?.GetEntry(mission.ObjectId);
+                    if (row == null)
+                        continue;
+
+                    // Soldier activate modes 1 and 2 keep a checklist bitmask, mode 0 a plain count (native FUN_14056b260).
+                    (rowCreature2Id, rowTargetGroupId, count, bitmask) = (row.Creature2Id, row.TargetGroupId, row.Count, row.SoldierActivateModeEnum is 1u or 2u);
+                }
+                else
+                {
+                    continue;
+                }
+
+                bool matches = (rowCreature2Id != 0u && rowCreature2Id == creature2Id)
+                    || (rowTargetGroupId != 0u && targetGroupIds.Contains(rowTargetGroupId));
+                if (!matches)
+                    continue;
+
+                uint requiredCount = Math.Max(count, 1u);
+                bool complete;
+                if (bitmask)
+                {
+                    uint bit = 1u << (checklistIdx & 31);
+                    if ((state.ProgressCount & bit) != 0u)
+                        continue;
+
+                    state.ProgressCount |= bit;
+                    complete = System.Numerics.BitOperations.PopCount(state.ProgressCount) >= requiredCount;
+                }
+                else
+                {
+                    state.ProgressCount = Math.Min(state.ProgressCount + 1u, requiredCount);
+                    complete = state.ProgressCount >= requiredCount;
+                }
+
+                state.ProgressData = complete ? 0u : 1u;
+                progressedAny = true;
+
+                if (complete)
+                {
+                    CompleteMission(state.MissionId);
+                    continue;
+                }
+
                 player.Session.EnqueueMessageEncrypted(new ServerPathMissionUpdate
                 {
                     Mission = BuildMission(state)

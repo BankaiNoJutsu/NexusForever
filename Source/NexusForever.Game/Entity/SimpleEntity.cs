@@ -69,6 +69,15 @@ namespace NexusForever.Game.Entity
             activator.PathManager.CompleteCurrentScientistDatacubeDiscoveryMission();
         }
 
+        /// <summary>
+        /// Credits the activation to the player's checklist path missions (Explorer_ActivateChecklist, Soldier_Demolition and Soldier_Rescue): the bit of this entity's
+        /// <c>QuestChecklistIdx</c> is set in the mission's progress word. See <see cref="IPathManager.ProgressActivateChecklistMissions"/>.
+        /// </summary>
+        private void ProgressPathChecklistMissions(IPlayer activator)
+        {
+            activator.PathManager.ProgressActivateChecklistMissions(CreatureId, GetCreatureTargetGroupIds(), QuestChecklistIdx);
+        }
+
         private bool ShouldCastInteractionCompletionSpell()
         {
             return CreatureEntry.ArchiveArticleIdInteractUnlock != 0u
@@ -80,6 +89,7 @@ namespace NexusForever.Game.Entity
         {
             activator.AchievementManager.CheckAchievements(activator, AchievementType.ActivateCreature, CreatureId);
             UnlockInteractArchiveArticle(activator);
+            ProgressPathChecklistMissions(activator);
 
             if (CreatureEntry.DatacubeId != 0u)
                 activator.DatacubeManager.AddDatacube((ushort)CreatureEntry.DatacubeId, int.MaxValue);
@@ -93,6 +103,7 @@ namespace NexusForever.Game.Entity
 
             activator.AchievementManager.CheckAchievements(activator, AchievementType.ActivateCreature, CreatureId);
             UnlockInteractArchiveArticle(activator);
+            ProgressPathChecklistMissions(activator);
 
             if (CreatureEntry.DatacubeId != 0u)
             {
