@@ -1,6 +1,7 @@
 # Video witness V2: challenge tiers (Flitterfly Chaser), 2026-11-08
 
 Goal: [VIDEO_WITNESS_GOAL_PROMPT.md](VIDEO_WITNESS_GOAL_PROMPT.md), question V2. Gates fed: prerequisite 70 "tier above Value" ([PREREQUISITE_CHALLENGE_TIER_20261107.md](PREREQUISITE_CHALLENGE_TIER_20261107.md)) and 5b challenge producers.
+**Provenance caveat added 2026-11-08:** this video is undated in the index, so it is not confirmed as retail footage (it could be an emulator capture); the on-screen observations are leads only, the table correlation is unaffected. See [VIDEO_WITNESS_CHALLENGE_PERSISTED_TIER_20261108.md](VIDEO_WITNESS_CHALLENGE_PERSISTED_TIER_20261108.md).
 Evidence tier: **Observed** (one video) plus **Correlated** (three exact matches against the recovered Challenge/ChallengeTier/text tables). No code changed; no retail parity claim.
 
 ## Video
