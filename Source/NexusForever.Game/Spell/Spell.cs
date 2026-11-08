@@ -2483,6 +2483,15 @@ namespace NexusForever.Game.Spell
                         if (phasePlayer.RemovePhaseChange(info.EffectId))
                             SendRemoveBuff(target.Guid);
                     };
+                case SpellEffectType.ChangeDisplayName:
+                    if (effect.ChangeDisplayName == null)
+                        return null;
+
+                    return () =>
+                    {
+                        if (target.RemoveDisplayName(info.EffectId))
+                            SendRemoveBuff(target.Guid);
+                    };
                 case SpellEffectType.ChangePlane:
                     if (effect.ChangePlane == null || target is not IPlayer planePlayer)
                         return null;

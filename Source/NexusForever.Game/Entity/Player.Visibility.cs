@@ -295,6 +295,11 @@ namespace NexusForever.Game.Entity
                 AddPlayerPositionSnapshot(createPacket, playerEntity);
 
             Session.EnqueueMessageEncrypted(createPacket);
+
+            // The create packet carries the unit's own name; repeat a spell-given name for this observer.
+            if (worldEntity is IUnitEntity renamedUnit && renamedUnit.DisplayNameOverride != null)
+                Session.EnqueueMessageEncrypted(DisplayNameSync.Build(renamedUnit, renamedUnit.DisplayNameOverride));
+
             GetGlobalLootManager()?.SendLootNotifyForVisibleOwner(this, worldEntity);
 
             if (playerEntity != null)

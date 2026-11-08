@@ -1089,6 +1089,32 @@ namespace NexusForever.Game.Entity
             return aggroImmuneStates.Remove(effectId);
         }
 
+        // Created on first use: some tests build entities without running field initialisers.
+        private DisplayNameStack displayNames;
+
+        public string DisplayNameOverride => displayNames?.Current;
+
+        public void AddDisplayName(uint effectId, uint spell4Id, uint castingId, string name, bool temporary)
+        {
+            (displayNames ??= new DisplayNameStack()).Add(effectId, spell4Id, castingId, name, temporary);
+            SendDisplayName();
+        }
+
+        public bool RemoveDisplayName(uint effectId)
+        {
+            if (displayNames == null || !displayNames.Remove(effectId))
+                return false;
+
+            SendDisplayName();
+            return true;
+        }
+
+        private void SendDisplayName()
+        {
+            if (InWorld && Guid != 0u)
+                EnqueueToVisible(DisplayNameSync.Build(this, DisplayNameOverride), true);
+        }
+
         public void AddAbsorption(uint effectId, uint spell4Id, uint castingId, uint amount, uint absorptionType = 7u)
         {
             if (amount == 0u)
@@ -1845,6 +1871,23 @@ namespace NexusForever.Game.Entity
                     if (CanRemove(change.Spell4Id) && phasePlayer.RemovePhaseChange(change.EffectId))
                         AddRemoval(new SpellStateRemoval(SpellStateRemovalKind.PhaseChange,
                             change.Spell4Id, change.CastingId, change.EffectId));
+
+            if (displayNames != null)
+            {
+                bool displayNameRemoved = false;
+                foreach (DisplayNameState state in displayNames.TemporaryStates)
+                {
+                    if (!CanRemove(state.Spell4Id) || !displayNames.Remove(state.EffectId))
+                        continue;
+
+                    displayNameRemoved = true;
+                    AddRemoval(new SpellStateRemoval(SpellStateRemovalKind.DisplayName,
+                        state.Spell4Id, state.CastingId, state.EffectId));
+                }
+
+                if (displayNameRemoved)
+                    SendDisplayName();
+            }
 
             if (this is IPlayer planePlayer)
                 foreach (PlaneChange change in planePlayer.GetPlaneChanges())

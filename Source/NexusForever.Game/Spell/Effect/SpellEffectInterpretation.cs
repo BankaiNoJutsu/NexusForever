@@ -683,6 +683,13 @@ namespace NexusForever.Game.Spell.Effect
         uint AddCanSee,
         uint AddCanBeSeen);
 
+    /// <summary>
+    /// <c>ChangeDisplayName</c> (0x52): DataBits00 is a LocalizedText id that resolves to the unit name to show (for example "Hacked Dominion Turret"). DataBits01 (4000 on 2 rows) and DataBits02 (39983
+    /// on 13 rows) are unexplained and ignored. Inferred from the shipped rows, see Decomp/Analysis/SPELL_EFFECT_CHANGEDISPLAYNAME_20261108.md.
+    /// </summary>
+    public sealed record SpellEffectChangeDisplayNameSemantics(
+        uint TextId);
+
     public sealed record SpellEffectUnitPropertyModifierSemantics(
         Property Property,
         uint Priority,
@@ -792,6 +799,7 @@ namespace NexusForever.Game.Spell.Effect
         public SpellEffectStateSemantics AggroImmune { get; internal set; }
         public SpellEffectChangePhaseSemantics ChangePhase { get; internal set; }
         public SpellEffectChangePlaneSemantics ChangePlane { get; internal set; }
+        public SpellEffectChangeDisplayNameSemantics ChangeDisplayName { get; internal set; }
         public SpellEffectUnitPropertyModifierSemantics UnitPropertyModifier { get; internal set; }
         public SpellEffectPersonalDmgHealModSemantics PersonalDmgHealMod { get; internal set; }
         public SpellEffectUnitPropertyConversionSemantics UnitPropertyConversion { get; internal set; }
@@ -874,6 +882,7 @@ namespace NexusForever.Game.Spell.Effect
             || AggroImmune != null
             || ChangePhase != null
             || ChangePlane != null
+            || ChangeDisplayName != null
             || UnitPropertyModifier != null
             || PersonalDmgHealMod != null
             || UnitPropertyConversion != null;
@@ -1707,6 +1716,9 @@ namespace NexusForever.Game.Spell.Effect
                     interpretation.ChangePlane = new SpellEffectChangePlaneSemantics(
                         entry.DataBits00,
                         entry.DataBits01);
+                    break;
+                case SpellEffectType.ChangeDisplayName:
+                    interpretation.ChangeDisplayName = new SpellEffectChangeDisplayNameSemantics(entry.DataBits00);
                     break;
             }
 

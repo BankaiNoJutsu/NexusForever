@@ -140,6 +140,22 @@ namespace NexusForever.Game.Abstract.Entity
         void AddAggroImmune(uint effectId, uint spell4Id, uint castingId);
         bool RemoveAggroImmune(uint effectId);
 
+        /// <summary>
+        /// Name a <c>ChangeDisplayName</c> spell effect has given the unit, or null when the unit shows its own name.
+        /// </summary>
+        string DisplayNameOverride { get; }
+
+        /// <summary>
+        /// Show <paramref name="name"/> for the unit and send the rename to everyone who can see it. Rows with a duration are <paramref name="temporary"/> and are undone with
+        /// <see cref="RemoveDisplayName"/> when they expire.
+        /// </summary>
+        void AddDisplayName(uint effectId, uint spell4Id, uint castingId, string name, bool temporary);
+
+        /// <summary>
+        /// Undo the name owned by the spell effect instance; shows the previous spell-given name or the unit's own name. Returns false when none was recorded.
+        /// </summary>
+        bool RemoveDisplayName(uint effectId);
+
         void AddAbsorption(uint effectId, uint spell4Id, uint castingId, uint amount, uint absorptionType = 7u);
         uint RemoveAbsorption(uint effectId);
         uint ConsumeAbsorption(uint amount, DamageType damageType);

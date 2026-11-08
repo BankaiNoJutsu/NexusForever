@@ -2630,6 +2630,29 @@ namespace NexusForever.Game.Spell
                 changePlane.AddCanBeSeen));
         }
 
+        /// <summary>
+        /// ChangeDisplayName (0x52): the target shows the unit name that DataBits00 (a LocalizedText id) resolves to; rows with a duration are undone when they expire. The text is the English string,
+        /// as for other server-sent names. Inferred from the shipped rows, see Decomp/Analysis/SPELL_EFFECT_CHANGEDISPLAYNAME_20261108.md. A text id that does not resolve is ignored.
+        /// </summary>
+        [SpellEffectHandler(SpellEffectType.ChangeDisplayName)]
+        public static void HandleEffectChangeDisplayName(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            SpellEffectChangeDisplayNameSemantics changeDisplayName = SpellEffectInterpreter.Interpret(info).ChangeDisplayName;
+            if (changeDisplayName == null || changeDisplayName.TextId == 0u)
+                return;
+
+            string name = GetGameTableManager().GetTextTable(NexusForever.Game.Static.Language.English)?.GetEntry(changeDisplayName.TextId);
+            if (string.IsNullOrEmpty(name))
+                return;
+
+            target.AddDisplayName(
+                info.EffectId,
+                spell.Parameters.SpellInfo.Entry.Id,
+                spell.CastingId,
+                name,
+                info.Entry.DurationTime > 0u);
+        }
+
         [SpellEffectHandler(SpellEffectType.UnitStateSet)]
         public static void HandleEffectUnitStateSet(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
