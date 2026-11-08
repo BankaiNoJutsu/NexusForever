@@ -52,6 +52,65 @@ public class ChallengeManagerTests
         Assert.Equal(300_000u, row.TimeTotalActive);
     }
 
+    // Challenges whose start timer was read in dated retail footage get that limit as their timer and as TimeTotalActive (Decomp/Analysis/CHALLENGE_TIME_TIERED_OCR_PASS2_20261108.md);
+    // every other challenge keeps the 300 s default.
+    [Theory]
+    [InlineData((ushort)1002, 120_000u)] // Thayd Sprint
+    [InlineData((ushort)956, 65_000u)]   // Back to Basic
+    [InlineData((ushort)979, 1_200_000u)] // Doing Things The Hard Way
+    [InlineData((ushort)273, 360_000u)]  // Bringin' the Bingberries
+    [InlineData((ushort)753, 80_000u)]   // Top of the World
+    [InlineData((ushort)511, 60_000u)]   // Ravenok Racer
+    [InlineData((ushort)481, 120_000u)]  // Up the Falls
+    [InlineData((ushort)1001, 300_000u)] // no observed limit
+    public void Activate_UsesTheObservedTimeLimitWhenOneIsKnown(ushort challengeId, uint expectedMs)
+    {
+        GameTableManager gameTables = CreateGameTablesWithMultipleTypes((challengeId, ChallengeType.General));
+        IPlayer player = CreatePlayer(RecipientGuid, out RecordingDispatchProxy<IGameSession> sessionProxy, gameTables);
+        IChallengeManager manager = new ChallengeManager(player, gameTables);
+
+        manager.HandleChoice(challengeId, ChallengeChoice.Activate);
+
+        ServerChallengeUpdate.Challenge row = Assert.Single(Assert.Single(GetMessages<ServerChallengeUpdate>(sessionProxy)).ActiveChallenges);
+        Assert.Equal(expectedMs, row.TimeTotalActive);
+        Assert.Equal(expectedMs, row.TimeActivatedDt);
+    }
+
+    [Fact]
+    public void ObservedTimeLimitsListOnlyExactReadings()
+    {
+        Assert.Equal(120d, ChallengeTimeLimits.GetSeconds(1002u));
+        Assert.Null(ChallengeTimeLimits.GetSeconds(67u));   // Windspire Ascent: about 45 s, probable only
+        Assert.Null(ChallengeTimeLimits.GetSeconds(923u));  // Entrance Exam: at least 598 s
+        Assert.Null(ChallengeTimeLimits.GetSeconds(609u));  // Rock Climber: at least 28 s
+        Assert.Null(ChallengeTimeLimits.GetSeconds(680u));  // Race to the Unknown: at least 111 s
+        Assert.Null(ChallengeTimeLimits.GetSeconds(743u));  // Grounding the Storm: about 120 s
+        Assert.Null(ChallengeTimeLimits.GetSeconds(981u));  // the second Doing Things The Hard Way row was not read
+    }
+
+    // A tier with goal g is lost once elapsed >= limit - g (the client's tier counter is the main timer minus the goal, confirmed in a 2016 retail clip).
+    [Theory]
+    [InlineData(120_000u, 0u, 3u)]        // Thayd Sprint goals 1 / 60000 / 70000 ms: at the start every tier is still reachable
+    [InlineData(120_000u, 49_999u, 3u)]   // elapsed < 120000 - 70000 = 50000: gold kept
+    [InlineData(120_000u, 50_000u, 2u)]   // gold lost exactly at limit - goal
+    [InlineData(120_000u, 59_999u, 2u)]
+    [InlineData(120_000u, 60_000u, 1u)]   // silver lost
+    [InlineData(120_000u, 119_998u, 1u)]  // bronze (goal 1 ms) kept while elapsed < 119999
+    [InlineData(120_000u, 119_999u, 0u)]
+    [InlineData(120_000u, 120_000u, 0u)]
+    public void AchievedTierCountLosesATierAtLimitMinusGoal(uint limitMs, uint elapsedMs, uint expected)
+    {
+        Assert.Equal(expected, ChallengeTimeTiers.AchievedTierCount(limitMs, elapsedMs, [1u, 60_000u, 70_000u]));
+    }
+
+    [Fact]
+    public void AchievedTierCountKeepsAZeroGoalWhileTheTimerRunsAndNeverAchievesAGoalBeyondTheLimit()
+    {
+        Assert.Equal(1u, ChallengeTimeTiers.AchievedTierCount(80_000u, 79_999u, [0u]));
+        Assert.Equal(0u, ChallengeTimeTiers.AchievedTierCount(80_000u, 80_000u, [0u]));
+        Assert.Equal(1u, ChallengeTimeTiers.AchievedTierCount(30_000u, 0u, [0u, 30_000u, 40_000u])); // goals at or beyond the limit can never be met
+    }
+
     [Fact]
     public void Activate_WhenChallengeTableMissing_SendsGenericFail()
     {

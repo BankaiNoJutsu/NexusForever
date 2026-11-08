@@ -327,7 +327,7 @@ namespace NexusForever.Game.Challenges
             state.CurrentCount  = goalCount == 0u ? 0u : Math.Min(initialProgress, goalCount);
             state.CurrentTier   = 0u;
             state.LastRewardTier = 0u;
-            state.ActiveTimer   = DefaultActiveSeconds;
+            state.ActiveTimer   = ChallengeTimeLimits.GetSeconds(challengeId) ?? DefaultActiveSeconds;
             state.AreaFailTimer = 0d;
             MarkDirty(challengeId);
             if (durable && !QueueProducerActivation(state, entry, previousAttempt, legacyPredecessor)) return;
@@ -834,7 +834,7 @@ namespace NexusForever.Game.Challenges
                     OnCooldown            = state.OnCooldown,
                     LeftArea              = leftArea,
                     TimeActivatedDt       = state.Activated ? ToTimerMilliseconds(state.ActiveTimer) : 0u,
-                    TimeTotalActive       = ToTimerMilliseconds(DefaultActiveSeconds),
+                    TimeTotalActive       = ToTimerMilliseconds(ChallengeTimeLimits.GetSeconds(state.ChallengeId) ?? DefaultActiveSeconds),
                     TimeCooldownDt        = state.OnCooldown ? ToTimerMilliseconds(state.CooldownTimer) : 0u,
                     TimeTotalCooldown     = ToTimerMilliseconds(DefaultCooldownSeconds),
                     TimeAreaFailDt        = leftArea ? ToTimerMilliseconds(state.AreaFailTimer) : 0u,

@@ -77,6 +77,7 @@ the completion triggers are missing: the census found 0 of 80 with a producer an
 [CHALLENGE_TIME_TIERED_TRIGGER_CENSUS_20261108.md](CHALLENGE_TIME_TIERED_TRIGGER_CENSUS_20261108.md). Work in two parts: (a) the server side that is independent of footage, the progress producers
 per `ChallengeType` (and the ten single-tier rows that can never complete), implemented and tested; (b) the limits, by finishing the unread OCR cue windows (about 400 later 2014 to 2015 windows
 plus 2013 and 2016 to 2018) or recording the exact missing clips. Do not implement the tier selection until a limit source exists for the challenge it applies to.
+Status (2026-11-08): the seven exact limits are wired in and the tier rule exists as a pure function; completion, raw-goal publication and finish detection wait for decisions and more limits, see [RESTORATION_GAP4_TIME_TIERED_CHALLENGES_20261108.md](RESTORATION_GAP4_TIME_TIERED_CHALLENGES_20261108.md); an OCR agent is harvesting more limits.
 
 ## 5. Taxi debit timing
 Retail debits the fare per leg near take-off (four dated clips, [VIDEO_WITNESS_TAXI_DEBIT_20261108.md](VIDEO_WITNESS_TAXI_DEBIT_20261108.md)); the server settles all legs atomically at arrival
