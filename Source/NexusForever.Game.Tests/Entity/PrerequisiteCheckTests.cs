@@ -2058,37 +2058,7 @@ public class PrerequisiteCheckTests
         Assert.Equal(expected, result);
     }
 
-    [Theory]
-    [InlineData(PrerequisiteComparison.Equal, 3u, true)]
-    [InlineData(PrerequisiteComparison.Equal, 2u, false)]
-    [InlineData(PrerequisiteComparison.NotEqual, 3u, false)]
-    public void InPhase_ComparesPublicEventPhase(PrerequisiteComparison comparison, uint requiredPhase, bool expected)
-    {
-        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
-        playerProxy.SetProperty(nameof(IWorldEntity.PublicEventPhase), 3u);
-
-        var check = new PrerequisiteCheckInPhase();
-        bool result = check.Meets(player, comparison, requiredPhase, objectId: 0u, new PrerequisiteParameters());
-
-        Assert.Equal(expected, result);
-    }
-
-    [Theory]
-    [InlineData(PrerequisiteComparison.Equal, 1u, true)]
-    [InlineData(PrerequisiteComparison.Equal, 0u, false)]
-    public void CanSeePhase_ComparesPlayerAndTargetPhase(PrerequisiteComparison comparison, uint required, bool expected)
-    {
-        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
-        playerProxy.SetProperty(nameof(IWorldEntity.PublicEventPhase), 5u);
-        IUnitEntity target = RecordingDispatchProxy<IUnitEntity>.Create(out var targetProxy);
-        targetProxy.SetProperty(nameof(IWorldEntity.PublicEventPhase), 5u);
-
-        var check = new PrerequisiteCheckCanSeePhase();
-        var parameters = new PrerequisiteParameters { Target = target };
-        bool result = check.Meets(player, comparison, required, objectId: 0u, parameters);
-
-        Assert.Equal(expected, result);
-    }
+    // InPhase (24) and CanSeePhase (25) test the player's PhasesIPerceive mask now; see PhaseMaskPrerequisiteTests (the old tests here compared WorldEntity.PublicEventPhase).
 
     [Fact]
     public void Distance_ComparesPlayerToTargetPosition()

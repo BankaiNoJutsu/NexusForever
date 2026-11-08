@@ -57,6 +57,21 @@ namespace NexusForever.Game.Abstract.Entity
         /// </summary>
         Static.PublicEvent.PublicEventRemoveReason? GetPublicEventEndReason(uint publicEventId);
 
+        /// <summary>
+        /// Phase bits this player perceives, the second dword of <c>ServerPhaseVisibilityWorldLocation</c> (0x0171). Prerequisites 24 and 25 test bit (Value &amp; 31) of it. Defaults to 1.
+        /// </summary>
+        uint PhasesIPerceive { get; }
+
+        /// <summary>
+        /// Phase bits in which other players perceive this player, the first dword of <c>ServerPhaseVisibilityWorldLocation</c> (0x0171). Defaults to 1.
+        /// </summary>
+        uint PhasesThatPerceiveMe { get; }
+
+        /// <summary>
+        /// Replace both phase masks and send <c>ServerPhaseVisibilityWorldLocation</c> to the client when either changed.
+        /// </summary>
+        void SetPhaseVisibility(uint phasesIPerceive, uint phasesThatPerceiveMe);
+
         bool DisableOtherPlayersCombatLogs { get; set; }
         CombatLogOptions CombatLogDisableFlags { get; set; }
         AccountPresenceState PresenceState { get; set; }

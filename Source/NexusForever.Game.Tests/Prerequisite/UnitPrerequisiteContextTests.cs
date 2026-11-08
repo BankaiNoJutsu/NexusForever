@@ -91,7 +91,7 @@ public sealed class UnitPrerequisiteContextTests
     }
 
     [Theory]
-    [InlineData(24, 7u)]
+    // Type 24 is no longer here: it tests the player's PhasesIPerceive mask, not the unit's PublicEventPhase (see PhaseMaskPrerequisiteTests).
     [InlineData(78, (uint)ModeType.Swim)]
     [InlineData(79, 1u)]
     [InlineData(80, 50u)]

@@ -26,8 +26,8 @@
         TradeSkillSchematicLevel    = 21, // Incorrect schematic level
         QuestObjective0             = 22, // Quest objective requirements not met
         QuestObjective1             = 23, // Quest objective requirements not met
-        InPhase                     = 24, // You cannot do that - handler table[24] Prerequisite_CheckInPhase 14049db50; NF compares IWorldEntity.PublicEventPhase on target/player
-        CanSeePhase                 = 25, // You cannot do that - handler table[25] Prerequisite_CheckCanSeePhase 14049db90; NF compares player vs target PublicEventPhase match (1/0)
+        InPhase                     = 24, // You cannot do that - handler table[24] Prerequisite_CheckInPhase 14049db50; tests bit (Value & 31) of the player's PhasesIPerceive mask (packet 0x0171), shared with 25
+        CanSeePhase                 = 25, // You cannot do that - handler table[25] Prerequisite_CheckCanSeePhase 14049db90; same function as 24 (bit Value & 31 of PhasesIPerceive, target ignored)
         InSubZone                   = 26, // Incorrect zone
         InTriggerVolume             = 27, // You are out of bounds - handler table[27] Prerequisite_CheckInTriggerVolume 14049dc50; NF WorldLocation2 radius+vertical proxy for objectId0 volume id
         InCombat                    = 28, // You must be in combat - handler table[28] Prerequisite_CheckInCombat 14049dcb0; NF compares IUnitEntity.InCombat to value0

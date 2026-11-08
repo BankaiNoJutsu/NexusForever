@@ -318,6 +318,28 @@ namespace NexusForever.Game.Entity
         public Static.PublicEvent.PublicEventRemoveReason? GetPublicEventEndReason(uint publicEventId)
             => publicEventEndReasons != null && publicEventEndReasons.TryGetValue(publicEventId, out Static.PublicEvent.PublicEventRemoveReason reason) ? reason : null;
 
+        public uint PhasesIPerceive { get; private set; } = 1u;
+        public uint PhasesThatPerceiveMe { get; private set; } = 1u;
+
+        public void SetPhaseVisibility(uint phasesIPerceive, uint phasesThatPerceiveMe)
+        {
+            if (PhasesIPerceive == phasesIPerceive && PhasesThatPerceiveMe == phasesThatPerceiveMe)
+                return;
+
+            PhasesIPerceive = phasesIPerceive;
+            PhasesThatPerceiveMe = phasesThatPerceiveMe;
+            SendPhaseVisibility();
+        }
+
+        private void SendPhaseVisibility()
+        {
+            Session?.EnqueueMessageEncrypted(new ServerPhaseVisibilityWorldLocation
+            {
+                PhasesIPerceive      = PhasesIPerceive,
+                PhasesThatPerceiveMe = PhasesThatPerceiveMe
+            });
+        }
+
         public bool DisableOtherPlayersCombatLogs
         {
             get => disableOtherPlayersCombatLogs;
@@ -1679,11 +1701,7 @@ namespace NexusForever.Game.Entity
                 InnateIndex = InnateIndex
             });
 
-            Session.EnqueueMessageEncrypted(new ServerPhaseVisibilityWorldLocation
-            {
-                PhasesIPerceive = 1,
-                PhasesThatPerceiveMe = 1
-            });
+            SendPhaseVisibility();
 
             // Do not send 0988/098B/0987 in the same enqueue pass as ServerPlayerCreate and the rest of the
             // login burst; the client can drop or mis-apply store payloads while applying create data.
