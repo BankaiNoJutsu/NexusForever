@@ -41,3 +41,13 @@ for example on death or dispel); a recast of the same effect instance replaces i
 `PhaseChange` record and `IPlayer.AddPhaseChange` / `RemovePhaseChange` / `GetPhaseChanges`; `PhaseChangeRules.Fold`; `SpellEffectChangePhaseSemantics`; `SpellHandler.HandleEffectChangePhase`;
 lifetime removal in `Spell.BuildLifetimeRemovalAction`; `SpellStateRemovalKind.PhaseChange` removed by `UnitEntity.RemoveTrackedSpellStates`. Tests: `ChangePhaseSpellEffectTests` (17 cases).
 The tests were written before the production code but were first run after it (one harness fixture error fixed on the way), not red. Filter ChangePhase|Spell|Prerequisite|Phase|Player: 3,864 cases pass.
+
+## Added caveats (same day, after review)
+* **Which data word feeds which packet dword is an assumption.** The packet order is (`PhasesThatPerceiveMe`, `PhasesIPerceive`); the implementation maps DataBits00 to `PhasesIPerceive` (the word prerequisites
+  24/25 read) and DataBits01 to `PhasesThatPerceiveMe`, by analogy with the name order of the data words, not from evidence. 138 rows have equal words and cannot tell the two mappings apart, but the
+  rows with unequal words can: 61285 (`5` / `1`), 62696 (`1` / `4`), 62920 (`1` / `0`), 72278 (`0` / `2`), 75501 (`33` / `32`), 45279 (`0x8001` / `0`), 63307 and 63369 (`4` / `13`, `4` / `12`). With the
+  opposite mapping those spells would move the other word, so the prerequisite 24/25 answers for them would differ.
+* The generic executor decides when and on whom the effect runs (`TargetFlags` 1, 2 or 4, `DelayTime`, the prerequisite columns); the handler was not tested through a full cast for these rows, only through
+  the handler, the interpretation and the lifetime path.
+* The spell-state removal path (`RemoveTrackedSpellStates`) for phase changes has no direct test.
+

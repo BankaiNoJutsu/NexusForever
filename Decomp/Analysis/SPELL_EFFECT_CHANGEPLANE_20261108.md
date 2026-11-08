@@ -37,3 +37,9 @@ That is the client's own rule, but the Equal-1/2 gates have no known producer (o
 `PlaneChange`, `IPlayer.PlanesCanSee` / `PlanesCanBeSeen` / `AddPlaneChange` / `RemovePlaneChange` / `GetPlaneChanges`, `PlaneChangeRules.Fold`, `SpellEffectChangePlaneSemantics`, `SpellHandler.HandleEffectChangePlane`,
 lifetime removal in `Spell.BuildLifetimeRemovalAction`, `SpellStateRemovalKind.PlaneChange`, `PrerequisiteCheckPlane`. Tests: `ChangePlaneSpellEffectTests` (9 cases, all green on first run) and
 `PlaneMaskPrerequisiteTests` (9 cases; 8 failed against the old always-true check, then passed). Filter Plane|Phase|Spell|Prerequisite|Player|Mount: 3,935 cases pass (Source/SQLite scope).
+
+## Added caveats (same day, after review)
+* The generic executor decides when and on whom the effect runs (`TargetFlags`, the 200 ms `DelayTime` on 11 rows, the prerequisite columns); the handler was tested directly, not through a full cast.
+* The spell-state removal path (`RemoveTrackedSpellStates`) for plane changes has no direct test, and neither has the resend after add-to-map.
+* The client's reaction to a changed plane word beyond prerequisite 232 (for example `Spell4Visual` or target group evaluation being re-run when the packet arrives) is not known.
+
