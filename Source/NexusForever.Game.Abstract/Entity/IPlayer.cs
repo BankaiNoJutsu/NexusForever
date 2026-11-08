@@ -72,6 +72,22 @@ namespace NexusForever.Game.Abstract.Entity
         /// </summary>
         void SetPhaseVisibility(uint phasesIPerceive, uint phasesThatPerceiveMe);
 
+        /// <summary>
+        /// Apply a <c>ChangePhase</c> spell effect: record it (replacing an earlier record of the same effect instance), recompute both phase words from the default mask and every active change,
+        /// and send the packet when they changed.
+        /// </summary>
+        void AddPhaseChange(PhaseChange change);
+
+        /// <summary>
+        /// Remove the change owned by the spell effect instance and recompute the phase words. Returns false when none was recorded.
+        /// </summary>
+        bool RemovePhaseChange(uint effectId);
+
+        /// <summary>
+        /// Active <c>ChangePhase</c> records in the order they were applied.
+        /// </summary>
+        IReadOnlyList<PhaseChange> GetPhaseChanges();
+
         bool DisableOtherPlayersCombatLogs { get; set; }
         CombatLogOptions CombatLogDisableFlags { get; set; }
         AccountPresenceState PresenceState { get; set; }

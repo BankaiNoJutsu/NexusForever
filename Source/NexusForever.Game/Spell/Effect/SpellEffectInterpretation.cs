@@ -665,6 +665,16 @@ namespace NexusForever.Game.Spell.Effect
         uint DataBits04,
         uint DataBits05);
 
+    /// <summary>
+    /// <c>ChangePhase</c> (0x22): no client handler exists, so this reading is inferred from the shipped rows (Decomp/Analysis/SPELL_EFFECT_CHANGEPHASE_20261108.md).
+    /// DataBits00/01 are phase bits added to the player's <c>PhasesIPerceive</c> / <c>PhasesThatPerceiveMe</c> and DataBits02/03 bits cleared from the same two words.
+    /// </summary>
+    public sealed record SpellEffectChangePhaseSemantics(
+        uint AddIPerceive,
+        uint AddPerceiveMe,
+        uint ClearIPerceive,
+        uint ClearPerceiveMe);
+
     public sealed record SpellEffectUnitPropertyModifierSemantics(
         Property Property,
         uint Priority,
@@ -772,6 +782,7 @@ namespace NexusForever.Game.Spell.Effect
         public SpellEffectStateSemantics Stealth { get; internal set; }
         public SpellEffectStateSemantics RemoveStealth { get; internal set; }
         public SpellEffectStateSemantics AggroImmune { get; internal set; }
+        public SpellEffectChangePhaseSemantics ChangePhase { get; internal set; }
         public SpellEffectUnitPropertyModifierSemantics UnitPropertyModifier { get; internal set; }
         public SpellEffectPersonalDmgHealModSemantics PersonalDmgHealMod { get; internal set; }
         public SpellEffectUnitPropertyConversionSemantics UnitPropertyConversion { get; internal set; }
@@ -852,6 +863,7 @@ namespace NexusForever.Game.Spell.Effect
             || Stealth != null
             || RemoveStealth != null
             || AggroImmune != null
+            || ChangePhase != null
             || UnitPropertyModifier != null
             || PersonalDmgHealMod != null
             || UnitPropertyConversion != null;
@@ -1673,6 +1685,13 @@ namespace NexusForever.Game.Spell.Effect
                     break;
                 case SpellEffectType.AggroImmune:
                     interpretation.AggroImmune = CreateStateSemantics(entry);
+                    break;
+                case SpellEffectType.ChangePhase:
+                    interpretation.ChangePhase = new SpellEffectChangePhaseSemantics(
+                        entry.DataBits00,
+                        entry.DataBits01,
+                        entry.DataBits02,
+                        entry.DataBits03);
                     break;
             }
 

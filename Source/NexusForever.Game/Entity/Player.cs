@@ -331,6 +331,35 @@ namespace NexusForever.Game.Entity
             SendPhaseVisibility();
         }
 
+        // Created on first use: some tests build a Player without running field initialisers.
+        private List<PhaseChange> phaseChanges;
+
+        public void AddPhaseChange(PhaseChange change)
+        {
+            phaseChanges ??= [];
+            phaseChanges.RemoveAll(c => c.EffectId == change.EffectId);
+            phaseChanges.Add(change);
+            ApplyPhaseChanges();
+        }
+
+        public bool RemovePhaseChange(uint effectId)
+        {
+            if (phaseChanges == null || phaseChanges.RemoveAll(c => c.EffectId == effectId) == 0)
+                return false;
+
+            ApplyPhaseChanges();
+            return true;
+        }
+
+        public IReadOnlyList<PhaseChange> GetPhaseChanges()
+            => phaseChanges?.ToArray() ?? [];
+
+        private void ApplyPhaseChanges()
+        {
+            PhaseChangeRules.Fold(phaseChanges ?? [], out uint phasesIPerceive, out uint phasesThatPerceiveMe);
+            SetPhaseVisibility(phasesIPerceive, phasesThatPerceiveMe);
+        }
+
         private void SendPhaseVisibility()
         {
             Session?.EnqueueMessageEncrypted(new ServerPhaseVisibilityWorldLocation

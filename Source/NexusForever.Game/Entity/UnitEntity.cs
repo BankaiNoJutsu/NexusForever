@@ -1840,6 +1840,12 @@ namespace NexusForever.Game.Entity
                         AddRemoval(new SpellStateRemoval(SpellStateRemovalKind.CooldownModifier,
                             modifier.Spell4Id, modifier.CastingId, modifier.EffectId));
 
+            if (this is IPlayer phasePlayer)
+                foreach (PhaseChange change in phasePlayer.GetPhaseChanges())
+                    if (CanRemove(change.Spell4Id) && phasePlayer.RemovePhaseChange(change.EffectId))
+                        AddRemoval(new SpellStateRemoval(SpellStateRemovalKind.PhaseChange,
+                            change.Spell4Id, change.CastingId, change.EffectId));
+
             return removals;
         }
 

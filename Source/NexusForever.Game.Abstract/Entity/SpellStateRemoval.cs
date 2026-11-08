@@ -23,7 +23,8 @@ namespace NexusForever.Game.Abstract.Entity
         DisguiseOutfit,
         MimicDisguise,
         HealingAbsorption,
-        CooldownModifier
+        CooldownModifier,
+        PhaseChange
     }
 
     public sealed record SpellStateRemoval(

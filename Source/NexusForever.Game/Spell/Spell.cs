@@ -2474,6 +2474,15 @@ namespace NexusForever.Game.Spell
                         if (target.RemoveAggroImmune(info.EffectId))
                             SendRemoveBuff(target.Guid);
                     };
+                case SpellEffectType.ChangePhase:
+                    if (effect.ChangePhase == null || target is not IPlayer phasePlayer)
+                        return null;
+
+                    return () =>
+                    {
+                        if (phasePlayer.RemovePhaseChange(info.EffectId))
+                            SendRemoveBuff(target.Guid);
+                    };
                 case SpellEffectType.SpellEffectImmunity:
                     if (effect.SpellEffectImmunity == null)
                         return null;

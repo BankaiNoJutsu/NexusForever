@@ -2590,6 +2590,27 @@ namespace NexusForever.Game.Spell
             SpellEffectDiagnostics.TraceAggroImmune(spell, target, aggroImmune, changed);
         }
 
+        /// <summary>
+        /// ChangePhase (0x22): adds and clears phase bits in the target player's two phase words (packet 0x0171). The client has no handler for this effect; the data layout is inferred from
+        /// the shipped rows, see Decomp/Analysis/SPELL_EFFECT_CHANGEPHASE_20261108.md. Only players have phase masks; other targets are ignored.
+        /// </summary>
+        [SpellEffectHandler(SpellEffectType.ChangePhase)]
+        public static void HandleEffectChangePhase(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
+        {
+            SpellEffectChangePhaseSemantics changePhase = SpellEffectInterpreter.Interpret(info).ChangePhase;
+            if (changePhase == null || target is not IPlayer player)
+                return;
+
+            player.AddPhaseChange(new PhaseChange(
+                info.EffectId,
+                spell.Parameters.SpellInfo.Entry.Id,
+                spell.CastingId,
+                changePhase.AddIPerceive,
+                changePhase.AddPerceiveMe,
+                changePhase.ClearIPerceive,
+                changePhase.ClearPerceiveMe));
+        }
+
         [SpellEffectHandler(SpellEffectType.UnitStateSet)]
         public static void HandleEffectUnitStateSet(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
