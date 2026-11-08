@@ -79,3 +79,5 @@ Update: 114 is implemented ([PREREQUISITE_VITAL_COMPARE_20261107.md](PREREQUISIT
 Update: 115 is implemented ([PREREQUISITE_UNIT_PROPERTY_COMPARE_20261107.md](PREREQUISITE_UNIT_PROPERTY_COMPARE_20261107.md)).
 
 Corrections (same day): types 64 and 55 were mapped wrongly before ([PREREQUISITE_RESOURCE_SLOT_20261107.md](PREREQUISITE_RESOURCE_SLOT_20261107.md), [PREREQUISITE_UNIT_PROPERTY_VALUE_20261107.md](PREREQUISITE_UNIT_PROPERTY_VALUE_20261107.md)); they are now native-body implementations. Method for any further inline type: dump the evaluator jump table (int32 entries at `1404a4848`, index type-1, base `140000000`) and read the target block.
+
+Update (2026-11-08): 9, 107, 119, 122, 146, 149, 199 and 200 are implemented; 226 (Entitlement), 244 (really HasBindPoint, not OwnsAccountItem) and 239 (ActionBar) are implemented from an agent-written native read. The corrected census is 52 types and 2,497 slots; see [RESTORATION_GAP2_REMAINING_PREREQUISITES_20261108.md](RESTORATION_GAP2_REMAINING_PREREQUISITES_20261108.md). The statement above that the type 47 Value is a QuestObjective id is not supported by the data.

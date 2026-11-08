@@ -249,7 +249,7 @@
         HousingResidenceLoaded      = 241, // Exists without description - live case 0xf1 vtable +0x638 -> Prerequisite_CheckHousingResidenceLoaded 1404a11e0; NPC gate + active housing TargetResidence identity at world client +0x7500/+0x7508
         LiveEvent242                = 242, // Live event not complete
         Faction243                  = 243, // Faction requirement not met
-        OwnsAccountItem               = 244, // Requirements not met - one retail row Equal with objectId0 Item2 id; client case 0xf4 vtable +0xc0 (raw 0x140b67800 -> 14049ca70) Prerequisite_CheckOwnsAccountItem; FUN_1401ed460 account Item2 lookup; NPC entity types 0x14/0x17 only
+        HasBindPoint                = 244, // Requirements not met - client case 0xf4 vtable +0xc0 (14049ca70) looks the player's current bind point (player+0x1694) up in BindPoint.tbl (FUN_1401ed460), same as Lua HasBindPoint; ObjectId and Value unread; player units only. Formerly named OwnsAccountItem.
         Unknown245                  = 245, // Exists without description - live case 0xf5 vtable +0x698 -> Prerequisite_CheckItemTradeSkill 1404a1790; duplicate-body alias, no semantic rename; accountitem rows use objectId dye colour ramp in claim context
         DoesNotOwnAccountItemOnCharacter = 246, // Requirements not met - 53 retail rows all NotEqual with value0 Item2 id; client case 0xf6 vtable +0x130 (raw 0x140b67870 -> 14049d240) Prerequisite_CheckDoesNotOwnAccountItemOnCharacter; FUN_1403ac590 mode 0x707
         // 247 is unused in PrerequisiteType.tbl

@@ -24,6 +24,13 @@ namespace NexusForever.Game.Prerequisite.Check
         }
 
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
+            => PrerequisiteCompare.Compare(comparison, GetCount(player, gameTableManager, objectId), value);
+
+        /// <summary>
+        /// The client's <c>FUN_1403d2140</c>: the character amount plus the account amount of the entitlement, capped at the Entitlement row's <c>MaxCount</c> (0, or no row, means no cap).
+        /// Shared by types 273 and 226.
+        /// </summary>
+        internal static uint GetCount(IPlayer player, IGameTableManager gameTableManager, uint objectId)
         {
             var type = (EntitlementType)objectId;
 
@@ -34,8 +41,7 @@ namespace NexusForever.Game.Prerequisite.Check
             if (maxCount != 0u && total > maxCount)
                 total = maxCount;
 
-            uint count = (uint)Math.Min(total, uint.MaxValue);
-            return PrerequisiteCompare.Compare(comparison, count, value);
+            return (uint)Math.Min(total, uint.MaxValue);
         }
     }
 }

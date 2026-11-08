@@ -30,7 +30,7 @@ public class PrerequisiteTypeNamingTests
     [InlineData(56, nameof(PrerequisiteType.DifficultyRankSlotAssigned))]
     [InlineData(60, nameof(PrerequisiteType.SpellTierOnTarget))]
     [InlineData(106, nameof(PrerequisiteType.TargetEntityLookupHit))]
-    [InlineData(244, nameof(PrerequisiteType.OwnsAccountItem))]
+    [InlineData(244, nameof(PrerequisiteType.HasBindPoint))]
     [InlineData(248, nameof(PrerequisiteType.NpcInventoryItemCount))]
     [InlineData(55, nameof(PrerequisiteType.UnitPropertyValue))]
     [InlineData(180, nameof(PrerequisiteType.CreatureDifficultyRank))]
