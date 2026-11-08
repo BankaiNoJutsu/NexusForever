@@ -26,3 +26,13 @@ In the same video (about 96 s) the completion card shows four loot icons labelle
 
 ## Remaining harvest
 17 of the 18 footage-bearing challenges still need their start timers (Doing Things The Hard Way, Top of the World, Powering Down, Race to the Top, Race to the Unknown, Rock Climber, Stairway to Heaven, Windrunner, Windwalker and others; the dedicated challenge videos are the ones worth reading, e.g. the 2014 "Doing Things The Hard Way" Gold videos and the Shardspire Canyon "Top of the World" clips). Several of the footage name hits were common phrases (for example "The Grid", "To the Roof") and are not challenge footage.
+
+## Harvest result 2 (same day): limits for two more flagged challenges (dated retail)
+| Challenge | Table goals (ms) | Observed start timer | Footage |
+|---|---|---|---|
+| Thayd Sprint (1002) | 1 / 60000 / 70000 | 2:00 | 2014-06-05 (earlier) |
+| Back to Basic (956) | 0 / 18000 / 25000 | about 1:05 | 2015-01-25 (earlier) |
+| Doing Things The Hard Way (979) | 0 / 180000 / 360000 | about 20:00 (19:49 at 45 s, 18:06 at 175 s of the video; Gold finish needs 6:00 left) | 2014-06-16 `bBkwIIZu4xw` |
+| Top of the World (753) | 0 | about 1:30 (1:17 at 12 s, 0:48 at 42 s; Bronze finish) | 2014-06-16 `Top of The World Challenge Easy Way` |
+Limits therefore range from about 65 s to 20 minutes, against the server's single 300 s default: the packet limit must be per challenge. Four of the 80 flagged challenges now have an observed limit. The video clocks of 2014 uploads run a little faster than real time in places, so each limit is approximate (about 5 percent); an exact figure needs the first visible timer value at activation.
+Remaining flagged challenges with dedicated footage still to read: Race to the Top, Rock Climber, Stairway to Heaven, Powering Down, Windrunner, Windwalker, Race to the Unknown, Bringin' the Bingberries, Diabolic Drift Dash, Entrance Exam, Treeclimber, plus the other Hard Way videos (the Whitevale Gold one is an independent check of 979).
