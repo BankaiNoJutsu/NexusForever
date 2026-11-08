@@ -49,7 +49,7 @@ Created 2026-11-08 after [LEDGER_GATE_PASS_20261107E.md](LEDGER_GATE_PASS_202611
 2. **V2 leftover**: retail login value after a newer no-medal attempt (needs a retail clip that relogs between attempts; likely unobtainable, record the exact missing clip).
 3. **V1 follow-up**: a dated Free-to-Play era clip of claiming a zone/challenge reward track milestone and the counter afterwards (07CE reset rules).
 4. **V3 public events, V4 telegraphs, V6 Hycrest/taxi, V7**: unchanged, see the status table.
-5. **Challenge points per tier** ([VIDEO_WITNESS_REWARD_TRACK_PASS3_20261108.md](VIDEO_WITNESS_REWARD_TRACK_PASS3_20261108.md)): dated clips show Bronze 100/125/150, Silver 200, Gold 375 while the server credits 100 per medal; read the native `GetRewardTrackPoints`/`GetRewardTrackInfo` first, then decide.
+5. **Challenge points per tier**: resolved, no divergence ([REWARD_TRACK_POINTS_NATIVE_READ_20261108.md](REWARD_TRACK_POINTS_NATIVE_READ_20261108.md): base 100 per medal from GameFormula 1268 times a premium multiplier; banner totals are cumulative).
 6. After each slice, add the dated note to `ASSESSMENT_REMAINING_WORK.md` and push.
 
 ## V8: challenge reward chooser (closed 2026-11-08)
