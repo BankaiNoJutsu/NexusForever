@@ -1117,7 +1117,7 @@ Houston64.exe,1400eed00,ClientDB_RegisterRewardRotationItem,Registers the Reward
 Houston64.exe,1400ef140,ClientDB_RegisterRewardRotationEssence,Registers the RewardRotationEssence client DB table using the RewardRotationEssence and DB\\RewardRotationEssence.tbl descriptors.
 Houston64.exe,1400ef580,ClientDB_RegisterRewardRotationModifier,Registers the RewardRotationModifier client DB table using the RewardRotationModifier and DB\\RewardRotationModifier.tbl descriptors.
 Houston64.exe,1400c3c80,ClientDB_RegisterHousingContributionInfo,Registers the HousingContributionInfo client DB table using the HousingContributionInfo and DB\\HousingContributionInfo.tbl descriptors.
-WildStar64.exe,1406b1300,Entity_ExecuteSpellEffectLowRange,Handles spell effectTypes 0x01-0x60; dispatch at +0x207; two-level byte+int32 table; only types 4/5/6/8/27 have unique handlers; RavelSignal(0x51) and most others fall through to epilogue at 0x1406b321e; signature: rcx=entity rbx edx=effectType r13d r8d=flags r9=wide-string.
+WildStar64.exe,1406b1300,SystemMessage_BuildTypedParams,Switch on a message type building wide-string parameter tables with price/reservePrice/total/buyout/purchase/gifter/existing/name; not a spell-effect executor. SUPERSEDES Entity_ExecuteSpellEffectLowRange (lead re-decompiled 2026-11-08).
 WildStar64.exe,140236970,Spell4Base_GetAllRows,ClientDB query thunk for Spell4Base; sibling accessor cluster rooted at 140236ba0 where Spell4Base and DB\Spell4Base.tbl strings are registered.
 WildStar64.exe,1402369c0,Spell4Base_GetById,ClientDB query thunk for Spell4Base id lookup; sibling accessor cluster rooted at 140236ba0 where Spell4Base and DB\Spell4Base.tbl strings are registered.
 WildStar64.exe,140236a20,Spell4Base_GetByIndex,ClientDB query thunk for Spell4Base index lookup; sibling accessor cluster rooted at 140236ba0 where Spell4Base and DB\Spell4Base.tbl strings are registered.
@@ -2530,7 +2530,7 @@ WildStar64.exe,14039df50,Player_GetActiveVanityPetEntity,Returns local player va
 WildStar64.exe,1404695e0,Prerequisite_ResolveSpellOnPetEntity,Inline helper for prerequisite type 191 case 0xbf: SpellService resolve loop on player/pet entity+0x1600.
 WildStar64.exe,14049ebf0,Prerequisite_CheckWarplotCirclePerk,Prerequisite type 188 handler (+0x340): circle guild type 3 perk bitmask; fallback DAT_140c65b98+400.
 WildStar64.exe,14047a940,Entity_GetHealthScaleFactor,Returns health scale multiplier for prerequisite type 172 case 0xac: mount/pet/creature-aware factor from entity+0xcc0 and Creature2 row +0x70/+0x74; product with health component +0x8c compared via PrerequisiteManager_ApplyComparison.
-WildStar64.exe,14022d500,Creature2_GetRowByUnitId,Resolves Creature2 table row by unit id (entity+0xd8); prerequisite type 172 fallback when entity+0xd08 health component is null.
+WildStar64.exe,14022d500,ClientDB_GetRace,Race table row getter: dispatches &PTR_u_Race_140a6c938 and falls back to ClientDB_RegisterRace. SUPERSEDES Creature2_GetRowByUnitId (lead re-decompiled 2026-11-08); the earlier note about entity+0xd8 and prerequisite 172 was not re-derived.
 WildStar64.exe,14046a110,Prerequisite_GetSpellTierOnTargetUnit,Reads spell tier rank for Spell4 id on a target unit id; used by type 60 case 0x3c.
 Houston64.exe,1400f8a40,ClientDB_RegisterSpell4Prerequisites,Registers client DB table loader for DB\Spell4Prerequisites.tbl; table path string xref at 140789478.
 Houston64.exe,1400f8e80,ClientDB_RegisterSpell4Reagent,Registers client DB table loader for DB\Spell4Reagent.tbl; table path string xref at 1407895c0.

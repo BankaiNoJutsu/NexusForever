@@ -89,15 +89,18 @@ Status (2026-11-08): closed as a recorded decision without a code change, see [R
 Open: the final-build zone track scale (6,000,000 in 16042 tables against 600,000 in the 2016 PTR), a Free-to-Play era clip of claiming a zone or challenge milestone and the counter afterwards,
 and the public 07CE reset/unclaimed/excess policy (do not expose a partial set of 726 choices). Records: [VIDEO_WITNESS_REWARD_TRACK_PASS3_20261108.md](VIDEO_WITNESS_REWARD_TRACK_PASS3_20261108.md),
 [REWARD_TRACK_POINTS_NATIVE_READ_20261108.md](REWARD_TRACK_POINTS_NATIVE_READ_20261108.md). Use the corpus tooling in the video witness goal; wire nothing until the scale question is answered.
+Status (2026-11-08): scale answered for the denominator (client shows the raw table threshold), no server change; see [RESTORATION_GAP6_REWARD_TRACK_FOLLOWUPS_20261108.md](RESTORATION_GAP6_REWARD_TRACK_FOLLOWUPS_20261108.md).
 
 ## 7. Telegraph shape 6
 Megalith Rockfall is the candidate ([VIDEO_WITNESS_TELEGRAPH_20261108.md](VIDEO_WITNESS_TELEGRAPH_20261108.md)); nothing is measured. Needs a retail top-down clip with the spell named on screen and a
 measurable area. Record the clip or the exact reason none exists; implement the shape only with a measurement.
+Status (2026-11-08): no measurable clip exists in the library, shape stays unimplemented; see [RESTORATION_GAP7_TELEGRAPH_SHAPE6_20261108.md](RESTORATION_GAP7_TELEGRAPH_SHAPE6_20261108.md).
 
 ## 8. Remaining spell-effect rows
 1,752 rows over 26 types ([SPELL_EFFECT_REMAINING_20261108.md](SPELL_EFFECT_REMAINING_20261108.md)). Do not write handlers from row shape alone. Candidates that need only a native read:
 ForcedAction (95), ModifyCreatureFlags (75, the flag word `DataBits03`), RestedXpDecorBonus (25). Candidates that need a server system first: UnlockActionBar (action-set unlock state),
 HousingPlantSeed (garden plot and plant lifecycle), SharedHealthPool (encounter group state). The large inconclusive types (FacilityModification 771, SpellCounter 200) stay held.
+Status (2026-11-08): the three native-read candidates have no client consumer and get no handler; see [RESTORATION_GAP8_SPELL_EFFECT_NATIVE_READS_20261108.md](RESTORATION_GAP8_SPELL_EFFECT_NATIVE_READS_20261108.md).
 
 ## By-product rule for labels
 Add durable labels only as a by-product of a read for one of the gaps above (name what you read, add the evidence row). The two open label conflicts from pass 1 (`140001ba0`, `1400d7b40` and
