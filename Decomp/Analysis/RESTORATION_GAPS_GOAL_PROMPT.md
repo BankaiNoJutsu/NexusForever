@@ -53,6 +53,7 @@ These are code already pushed whose consequences or paths were not checked. Do t
 * **Untested paths.** Add tests for `UnitEntity.RemoveTrackedSpellStates` with phase, plane and display-name changes, the display-name resend in `Player.Visibility`, and the plane resend after
   add-to-map; test the three effects through a full cast, not only the handler.
 Acceptance: each item has a test or a recorded finding with the evidence tier.
+Status (2026-11-08): done except three untested paths and the unverifiable mapping, see [RESTORATION_GAP1_VERIFICATION_20261108.md](RESTORATION_GAP1_VERIFICATION_20261108.md); it adds a sub-gap, achievement type 33 (44 achievements, 18 gated by 146) has no server producer.
 
 ## 2. Remaining prerequisite types without a handler
 A rough census (name match between `Prerequisite.tbl` and the `[PrerequisiteCheck]` attributes) shows 56 types and about 2,900 of 49,184 slots (5.8%) without a handler. The count is not clean:
