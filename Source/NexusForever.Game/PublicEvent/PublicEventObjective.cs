@@ -25,6 +25,8 @@ namespace NexusForever.Game.PublicEvent
         public bool IsBusy { get; private set; }
 
         private uint objectiveData;
+
+        public uint ObjectiveData => objectiveData;
         private IReadOnlyCollection<NetworkPublicEventObjectiveStatus.VirtualItem> virtualItems
             = Array.Empty<NetworkPublicEventObjectiveStatus.VirtualItem>();
 

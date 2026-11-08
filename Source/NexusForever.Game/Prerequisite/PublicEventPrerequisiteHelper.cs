@@ -49,6 +49,48 @@ namespace NexusForever.Game.Prerequisite
             return required == 0u ? 0f : objective.Count * 100f / required;
         }
 
+        /// <summary>
+        /// The objective with the supplied id together with its parent event when that event has started and not finished on the supplied map, or null.
+        /// When <paramref name="characterId"/> is not zero the character must be a member of the event (the client only treats an event as active after it received
+        /// its Start) and the objective of the character's own team is preferred; with zero any team's objective is used (a creature subject has no player).
+        /// </summary>
+        public static (IPublicEvent Event, IPublicEventObjective Objective)? FindActiveObjective(Abstract.Map.IBaseMap map, ulong characterId, uint objectiveId)
+        {
+            IPublicEventManager manager = map?.PublicEventManager;
+            if (manager == null)
+                return null;
+
+            foreach (IPublicEvent publicEvent in manager.GetEvents())
+            {
+                if (publicEvent.IsFinalised)
+                    continue;
+
+                IPublicEventObjective own = null;
+                IPublicEventObjective other = null;
+                bool joined = characterId == 0ul;
+                foreach (IPublicEventTeam team in publicEvent.GetTeams())
+                {
+                    bool onTeam = characterId != 0ul && team.GetMembers().Any(member => member.CharacterId == characterId);
+                    joined |= onTeam;
+
+                    IPublicEventObjective objective = team.GetObjectives().FirstOrDefault(o => o.Entry?.Id == objectiveId);
+                    if (objective == null)
+                        continue;
+
+                    if (onTeam)
+                        own ??= objective;
+                    else
+                        other ??= objective;
+                }
+
+                IPublicEventObjective found = own ?? other;
+                if (joined && found != null)
+                    return (publicEvent, found);
+            }
+
+            return null;
+        }
+
         private static IPublicEventObjective FindObjective(IPlayer player, uint objectiveId)
         {
             IPublicEventManager manager = player.Map?.PublicEventManager;

@@ -17,6 +17,11 @@ namespace NexusForever.Game.Abstract.PublicEvent
         bool IsBusy { get; }
 
         /// <summary>
+        /// Checklist bitfield of the objective (bit n set when checklist index n is complete), as sent in the objective status.
+        /// </summary>
+        uint ObjectiveData { get; }
+
+        /// <summary>
         /// Initialise <see cref="IPublicEventObjective"/> with suppled <see cref="IPublicEventTeam"/> and <see cref="PublicEventObjectiveEntry"/>.
         /// </summary>
         void Initialise(

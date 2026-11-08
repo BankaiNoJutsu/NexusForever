@@ -124,10 +124,10 @@
         Stealth                     = 116, // Stealth property requirement not met
         PublicEvent117              = 117, // Public event requirement not met
         PublicEventObjective188     = 118, // Public event objective requirement not met 
-        PublicEventObjectiveObject  = 119, // Public event objective object requirement not met
+        PublicEventObjectiveObject  = 119, // objective ObjectiveData checklist bit of the target creature's QuestChecklistIdx (native FUN_1404a0650)
         PublicEvent120              = 120, // Public event requirement not met
         PublicEvent121              = 121, // Public event requirement not met.
-        PublicEventObjective122     = 122, // Public event objective not objective spawn
+        PublicEventObjective122     = 122, // dead in the client: per-unit map never filled, Equal false / NotEqual true (native FUN_1404a08f0)
         PublicEventObjective123     = 123, // Public event objective requirement not met - ObjectId is PublicEventObjective id
         ChallengeCompletionCount    = 124, // Invalid challenge completion count
         Challenge125                = 125, // Challenge requirement not met
@@ -205,7 +205,7 @@
         GliderUsage                 = 197, // Gliders cannot be used in this area
         SpaceshipUsage              = 198, // Spaceships cannot be used in this area
         PublicEvent199              = 199, // Public event requirement not met
-        PublicEventObjective200     = 200, // Public event objective requirement not met
+        PublicEventObjective200     = 200, // (objective or event Busy) & Value (native FUN_1404a0bf0)
         AchievementObject           = 201, // Achievement object requirement not met
         // 202 is unused in PrerequisiteType.tbl
         Unknown203                  = 203, // Exist in PrerequisiteType.tbl but does not have a description - rows exist, but live case 0xcb dispatches vtable +0x348 no-op stub; no semantic rename
