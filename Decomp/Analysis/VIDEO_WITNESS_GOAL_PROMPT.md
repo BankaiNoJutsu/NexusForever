@@ -49,7 +49,8 @@ Created 2026-11-08 after [LEDGER_GATE_PASS_20261107E.md](LEDGER_GATE_PASS_202611
 2. **V2 leftover**: retail login value after a newer no-medal attempt (needs a retail clip that relogs between attempts; likely unobtainable, record the exact missing clip).
 3. **V1 follow-up**: a dated Free-to-Play era clip of claiming a zone/challenge reward track milestone and the counter afterwards (07CE reset rules).
 4. **V3 public events, V4 telegraphs, V6 Hycrest/taxi, V7**: unchanged, see the status table.
-5. After each slice, add the dated note to `ASSESSMENT_REMAINING_WORK.md` and push.
+5. **Challenge points per tier** ([VIDEO_WITNESS_REWARD_TRACK_PASS3_20261108.md](VIDEO_WITNESS_REWARD_TRACK_PASS3_20261108.md)): dated clips show Bronze 100/125/150, Silver 200, Gold 375 while the server credits 100 per medal; read the native `GetRewardTrackPoints`/`GetRewardTrackInfo` first, then decide.
+6. After each slice, add the dated note to `ASSESSMENT_REMAINING_WORK.md` and push.
 
 ## V8: challenge reward chooser (closed 2026-11-08)
 Closed: the chooser is a 2013 to 2015 feature retired before build 16042 (no native code raises its events, the addon's Loot Rewards button is disabled and the reward is reward-track points), so the server needs nothing; historical multipliers Bronze 2x, Gold 10x. See [VIDEO_WITNESS_CHALLENGE_REWARD_CHOOSER_20261108.md](VIDEO_WITNESS_CHALLENGE_REWARD_CHOOSER_20261108.md).
