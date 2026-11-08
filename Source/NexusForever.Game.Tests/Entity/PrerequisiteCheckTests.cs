@@ -1964,8 +1964,15 @@ public class PrerequisiteCheckTests
         IDatacube datacube = RecordingDispatchProxy<IDatacube>.Create(out _);
         datacubeProxy.SetMethodReturn(nameof(IDatacubeManager.GetDatacube), datacube);
         playerProxy.SetProperty(nameof(IPlayer.DatacubeManager), datacubeManager);
+        playerProxy.SetProperty(nameof(IPlayer.Faction1), Faction.Exile);
 
-        var check = new PrerequisiteCheckVolume();
+        // The volume needs its datacube count first (native FUN_1404a8430): one kept datacube for either faction.
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out var tablesProxy);
+        tablesProxy.SetProperty(nameof(IGameTableManager.DatacubeVolume), Transport.PlayerBindPointTests.Table(new DatacubeVolumeEntry { Id = 5u, DatacubeId00 = 1u }));
+        tablesProxy.SetProperty(nameof(IGameTableManager.Datacube), Transport.PlayerBindPointTests.Table(new DatacubeEntry { Id = 1u, WorldZoneId = 10u }));
+        tablesProxy.SetProperty(nameof(IGameTableManager.WorldZone), Transport.PlayerBindPointTests.Table(new WorldZoneEntry { Id = 10u }));
+
+        var check = new PrerequisiteCheckVolume(tables);
         check.Meets(player, PrerequisiteComparison.Equal, value: 0u, objectId: 5u, new PrerequisiteParameters());
 
         RecordingDispatchProxy<IDatacubeManager>.Invocation call =
