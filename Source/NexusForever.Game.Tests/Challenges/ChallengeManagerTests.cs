@@ -232,6 +232,49 @@ public class ChallengeManagerTests
         Assert.Equal(1u, questUpdate.Arguments[2]);
     }
 
+    // Retail's client keeps CurrentTier as the number of tiers achieved: the addon pursues GetCurrentTier()+1 and the
+    // completion card and the Challenge Log use it directly as the medal index (VIDEO_WITNESS_CHALLENGE_TIERS_20261108.md,
+    // VIDEO_WITNESS_CHALLENGE_PERSISTED_TIER_20261108.md). The persisted state keeps the last medal index, so the published
+    // value is derived: a terminal state whose last tier's goal was reached counts that tier too.
+    [Theory]
+    [InlineData(1u, 0u, 1u)]
+    [InlineData(1u, 1u, 2u)]
+    public void CompletingTheFinalTierPublishesTheAchievedTierCount(uint tierOne, uint tierTwo, uint expected)
+    {
+        GameTableManager gameTables = CreateGameTables(tierOneCount: tierOne, tierTwoCount: tierTwo);
+        IPlayer player = CreatePlayer(RecipientGuid, out RecordingDispatchProxy<IGameSession> sessionProxy, gameTables, out _);
+        var manager = new ChallengeManager(player, gameTables);
+
+        manager.HandleChoice(ChallengeId, ChallengeChoice.Activate);
+        for (uint i = 0; i < expected; i++)
+            Assert.True(manager.TryAdvanceProgress(ChallengeId));
+
+        ServerChallengeUpdate.Challenge row = Assert.Single(GetMessages<ServerChallengeUpdate>(sessionProxy).Last().ActiveChallenges);
+        Assert.False(row.Activated);
+        Assert.Equal(expected, row.CurrentTier);
+        Assert.Equal(expected, manager.GetCurrentTier(ChallengeId));
+    }
+
+    [Theory]
+    [InlineData(false, 0u)]
+    [InlineData(true, 1u)]
+    public void AbandoningKeepsTheTiersActuallyAchieved(bool achieveFirstTier, uint expected)
+    {
+        GameTableManager gameTables = CreateGameTables(tierOneCount: 1, tierTwoCount: 5);
+        IPlayer player = CreatePlayer(RecipientGuid, out RecordingDispatchProxy<IGameSession> sessionProxy, gameTables, out _);
+        var manager = new ChallengeManager(player, gameTables);
+
+        manager.HandleChoice(ChallengeId, ChallengeChoice.Activate);
+        if (achieveFirstTier)
+            Assert.True(manager.TryAdvanceProgress(ChallengeId));
+        manager.HandleChoice(ChallengeId, ChallengeChoice.Abandon);
+
+        ServerChallengeUpdate.Challenge row = Assert.Single(GetMessages<ServerChallengeUpdate>(sessionProxy).Last().ActiveChallenges);
+        Assert.False(row.Activated);
+        Assert.Equal(expected, row.CurrentTier);
+        Assert.Equal(expected, manager.GetCurrentTier(ChallengeId));
+    }
+
     [Theory]
     [InlineData("combat-new")]
     [InlineData("activation-new")]

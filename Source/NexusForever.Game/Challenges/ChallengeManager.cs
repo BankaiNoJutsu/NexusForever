@@ -826,7 +826,7 @@ namespace NexusForever.Game.Challenges
                     CurrentCount          = state.CurrentCount,
                     GoalCount             = goalCount,
                     ObjectiveCompletion   = CalculateSingleTierMaxScoreCompletionPercentage(entry, state, goalCount, tierGoals),
-                    CurrentTier           = state.CurrentTier,
+                    CurrentTier           = AchievedTierCount(state, tierGoals),
                     LastRewardTier        = state.LastRewardTier,
                     CompletionCount       = state.CompletionCount,
                     Unlocked              = true,
@@ -947,9 +947,29 @@ namespace NexusForever.Game.Challenges
 
         public uint GetCurrentTier(ushort challengeId)
         {
-            return activeChallenges.TryGetValue(challengeId, out ChallengeRuntimeState state)
-                ? state.CurrentTier
-                : 0u;
+            if (!activeChallenges.TryGetValue(challengeId, out ChallengeRuntimeState state))
+                return 0u;
+
+            ChallengeEntry entry = gameTableManager.Challenge?.GetEntry(state.ChallengeId);
+            return AchievedTierCount(state, entry == null ? [] : GetTierGoalCounts(entry));
+        }
+
+        /// <summary>
+        /// The client's CurrentTier is the number of tiers achieved (the addon pursues <c>GetCurrentTier() + 1</c> and the
+        /// completion card and Challenge Log use it as the medal index). The runtime and persisted state keep the index of the
+        /// tier being pursued, which for a finished challenge is the last medal, so a terminal state whose last tier goal was
+        /// reached counts that final tier as well. The count is capped at the goal and only a completion leaves it there:
+        /// reactivation resets it and abandonment keeps a partial value below the goal.
+        /// </summary>
+        private static uint AchievedTierCount(ChallengeRuntimeState state, uint[] tierGoals)
+        {
+            if (state.Activated || tierGoals.Length == 0)
+                return state.CurrentTier;
+
+            uint lastTier = (uint)tierGoals.Length - 1;
+            return state.CurrentTier == lastTier && state.CurrentCount >= tierGoals[lastTier]
+                ? (uint)tierGoals.Length
+                : state.CurrentTier;
         }
 
         public bool IsChallengeUnlocked(ushort challengeId)
