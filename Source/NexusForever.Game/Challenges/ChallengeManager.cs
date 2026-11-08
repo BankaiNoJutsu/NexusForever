@@ -701,8 +701,63 @@ namespace NexusForever.Game.Challenges
             SendChallengeUpdate(tolerateSendFailure: true);
         }
 
+        public bool TryCompleteTimeTiered(ushort challengeId)
+        {
+            if (!CharacterRewardsReady) return false;
+            if (!activeChallenges.TryGetValue(challengeId, out ChallengeRuntimeState state) || !state.Activated)
+                return false;
+
+            ChallengeEntry entry = gameTableManager.Challenge?.GetEntry(challengeId);
+            // A tier computed from the default 300 s timer would be wrong, so a limit must have been observed.
+            if (!ChallengeTimeTiers.IsTimeTiered(entry) || ChallengeTimeLimits.GetSeconds(challengeId) is not double limitSeconds)
+                return false;
+
+            // Time-tiered rows are excluded from the durable producer, so there is no attempt id to settle.
+            if (ProducerMode(state) != null)
+                return false;
+
+            uint[] goals = ChallengeTimeTiers.RawGoals(entry, gameTableManager.ChallengeTier);
+            if (goals.Length == 0)
+                return false;
+
+            uint limitMs = ToTimerMilliseconds(limitSeconds);
+            uint remainingMs = ToTimerMilliseconds(state.ActiveTimer);
+            if (remainingMs == 0u)
+                return false; // at or past expiry: the timer expiry owns this case
+
+            uint elapsedMs = limitMs - Math.Min(remainingMs, limitMs);
+            uint tiers = ChallengeTimeTiers.AchievedTierCount(limitMs, elapsedMs, goals);
+
+            // CurrentTier holds the tiers earned for a time-tiered attempt; LastRewardTier is the medal index. Zero tiers is a completion without medal or reward.
+            state.CurrentTier = tiers;
+            state.CurrentCount = 0u;
+            state.LastRewardTier = tiers == 0u ? 0u : tiers - 1u;
+            CompleteChallenge(state, entry, noMedal: tiers == 0u);
+            return true;
+        }
+
+        public void OnPlayerRelocated(uint worldId, System.Numerics.Vector3 position)
+        {
+            if (!CharacterRewardsReady) return;
+            foreach (ChallengeRuntimeState state in activeChallenges.Values.ToList())
+            {
+                if (!state.Activated || !ChallengeTimeTiers.FinishesByReachingIndicator(state.ChallengeId))
+                    continue;
+
+                ChallengeEntry entry = gameTableManager.Challenge?.GetEntry(state.ChallengeId);
+                if (!ChallengeTimeTiers.IsTimeTiered(entry) || entry.WorldLocation2IdIndicator == 0u)
+                    continue;
+
+                WorldLocation2Entry indicator = gameTableManager.WorldLocation2?.GetEntry(entry.WorldLocation2IdIndicator);
+                if (indicator == null || indicator.WorldId != worldId || !Prerequisite.WorldLocationPrerequisiteHelper.IsInside(position, indicator))
+                    continue;
+
+                TryCompleteTimeTiered((ushort)state.ChallengeId);
+            }
+        }
+
         private void CompleteChallenge(ChallengeRuntimeState state, ChallengeEntry entry, byte? medal = null,
-            NexusForever.Game.Abstract.Account.Reward.ChallengeRewardModifierSnapshot modifier = default)
+            NexusForever.Game.Abstract.Account.Reward.ChallengeRewardModifierSnapshot modifier = default, bool noMedal = false)
         {
             Deactivate(state);
             state.OnCooldown = HasCooldownType(state.ChallengeId);
@@ -722,11 +777,15 @@ namespace NexusForever.Game.Challenges
                 var session = player.Session;
                 uint tier = state.LastRewardTier;
                 bool OwnsResults() => state.ActivationGeneration == activation && ReferenceEquals(player.Session, session);
-                GrantRewardTrackItem(entry, tier);
+                if (!noMedal)
+                    GrantRewardTrackItem(entry, tier);
                 player.QuestManager.ObjectiveUpdate(QuestObjectiveType.CompleteChallenge, 0u, 1u);
                 if (!OwnsResults()) return;
-                SendResult((ushort)state.ChallengeId, ChallengeResult.TierAchieved, (int)tier, tolerateSendFailure: true);
-                if (!OwnsResults()) return;
+                if (!noMedal)
+                {
+                    SendResult((ushort)state.ChallengeId, ChallengeResult.TierAchieved, (int)tier, tolerateSendFailure: true);
+                    if (!OwnsResults()) return;
+                }
                 SendResult((ushort)state.ChallengeId, ChallengeResult.Completed, (int)tier, tolerateSendFailure: true);
                 if (!OwnsResults()) return;
             }
@@ -826,7 +885,7 @@ namespace NexusForever.Game.Challenges
                     CurrentCount          = state.CurrentCount,
                     GoalCount             = goalCount,
                     ObjectiveCompletion   = CalculateSingleTierMaxScoreCompletionPercentage(entry, state, goalCount, tierGoals),
-                    CurrentTier           = AchievedTierCount(state, tierGoals),
+                    CurrentTier           = PublishedTierCount(state, entry, tierGoals),
                     LastRewardTier        = state.LastRewardTier,
                     CompletionCount       = state.CompletionCount,
                     Unlocked              = true,
@@ -839,7 +898,10 @@ namespace NexusForever.Game.Challenges
                     TimeTotalCooldown     = ToTimerMilliseconds(DefaultCooldownSeconds),
                     TimeAreaFailDt        = leftArea ? ToTimerMilliseconds(state.AreaFailTimer) : 0u,
                     TimeTotalAreaFail     = ToTimerMilliseconds(DefaultAreaFailSeconds),
-                    TierGoalCount         = PadTierGoals(tierGoals)
+                    // A time-tiered row carries its unfiltered millisecond goals so the client's tier counters match the tables.
+                    TierGoalCount         = PadTierGoals(ChallengeTimeTiers.IsTimeTiered(entry)
+                        ? ChallengeTimeTiers.RawGoals(entry, gameTableManager.ChallengeTier)
+                        : tierGoals)
                 });
             }
 
@@ -951,8 +1013,14 @@ namespace NexusForever.Game.Challenges
                 return 0u;
 
             ChallengeEntry entry = gameTableManager.Challenge?.GetEntry(state.ChallengeId);
-            return AchievedTierCount(state, entry == null ? [] : GetTierGoalCounts(entry));
+            return PublishedTierCount(state, entry, entry == null ? [] : GetTierGoalCounts(entry));
         }
+
+        /// <summary>
+        /// A completed time-tiered attempt stores the number of tiers it earned in <c>CurrentTier</c> (the tier achieved by elapsed time, not by a count); the count-tier derivation does not apply.
+        /// </summary>
+        private static uint PublishedTierCount(ChallengeRuntimeState state, ChallengeEntry entry, uint[] tierGoals)
+            => ChallengeTimeTiers.IsTimeTiered(entry) ? state.CurrentTier : AchievedTierCount(state, tierGoals);
 
         /// <summary>
         /// The client's CurrentTier is the number of tiers achieved (the addon pursues <c>GetCurrentTier() + 1</c> and the

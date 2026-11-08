@@ -32,6 +32,16 @@ namespace NexusForever.Game.Abstract.Challenges
         bool TryAdvanceProgress(ushort challengeId, uint progress = 1u);
 
         /// <summary>
+        /// Complete an active time-tiered challenge now: the tiers earned are those still open at the elapsed time. Needs an observed time limit; false otherwise.
+        /// </summary>
+        bool TryCompleteTimeTiered(ushort challengeId) => false;
+
+        /// <summary>
+        /// Called when the player's position changed; finishes time-tiered challenges that finish by reaching an indicator location.
+        /// </summary>
+        void OnPlayerRelocated(uint worldId, System.Numerics.Vector3 position) { }
+
+        /// <summary>
         /// Returns the number of recorded completions for the supplied challenge.
         /// </summary>
         uint GetCompletionCount(ushort challengeId);

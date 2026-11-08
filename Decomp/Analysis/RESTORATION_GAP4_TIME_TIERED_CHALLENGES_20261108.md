@@ -34,3 +34,8 @@ Nothing here was guessed into the server: with no completion path, a flagged cha
 four single-clip rows became probable values and Race to the Unknown is now about 112 s. 69 of the 80 flagged challenges have no retail footage in the library, so the footage lane is close to exhausted at this
 library: only second clips of the probable rows could add exact limits, and the library appears not to contain them. The table therefore stays at the seven exact readings, which means the finish-detection phase
 can enable Thayd Sprint (and Ravenok Racer with a mount check) and nothing else until limits arrive from another source.
+
+## Phase 1 of completion implemented (2026-11-08)
+See [CHALLENGE_TIME_TIERED_PHASE1_20261108.md](CHALLENGE_TIME_TIERED_PHASE1_20261108.md): raw goals published, `TryCompleteTimeTiered` and reach-detection for Thayd Sprint only. Items 1 and 2 of "What is deliberately not done"
+are now done for that one challenge (legacy reward path); items 3 and 4 and every other challenge are unchanged.
+

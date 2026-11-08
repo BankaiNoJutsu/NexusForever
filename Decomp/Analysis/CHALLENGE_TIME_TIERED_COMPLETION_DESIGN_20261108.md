@@ -1,6 +1,6 @@
 # Time-tiered challenge completion: design (2026-11-08)
 
-Part of restoration gap 4 ([RESTORATION_GAP4_TIME_TIERED_CHALLENGES_20261108.md](RESTORATION_GAP4_TIME_TIERED_CHALLENGES_20261108.md)). **Design only; no code changed by this document.** Inputs:
+Part of restoration gap 4 ([RESTORATION_GAP4_TIME_TIERED_CHALLENGES_20261108.md](RESTORATION_GAP4_TIME_TIERED_CHALLENGES_20261108.md)). **Design only; no code changed by this document.** Phase 1 was implemented afterwards: see [CHALLENGE_TIME_TIERED_PHASE1_20261108.md](CHALLENGE_TIME_TIERED_PHASE1_20261108.md) (D1 to D3, D5 to D7 as recommended; D4 still deferred). Inputs:
 [CHALLENGE_TIME_TIERED_20261108.md](CHALLENGE_TIME_TIERED_20261108.md), [CHALLENGE_TIME_TIERED_TRIGGER_CENSUS_20261108.md](CHALLENGE_TIME_TIERED_TRIGGER_CENSUS_20261108.md),
 [CHALLENGE_TIME_TIERED_OCR_PASS2_20261108.md](CHALLENGE_TIME_TIERED_OCR_PASS2_20261108.md), the persisted-tier work in [VIDEO_WITNESS_CHALLENGE_PERSISTED_TIER_20261108.md](VIDEO_WITNESS_CHALLENGE_PERSISTED_TIER_20261108.md).
 Evidence tiers: the tier rule is native plus a retail clip; "finish = indicator location" is **inferred**; the limits are agent-read footage. Each decision below says what it rests on.

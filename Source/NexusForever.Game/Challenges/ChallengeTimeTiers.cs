@@ -1,4 +1,5 @@
 using NexusForever.GameTable.Model;
+using ChallengeTierTable = NexusForever.GameTable.GameTable<NexusForever.GameTable.Model.ChallengeTierEntry>;
 
 namespace NexusForever.Game.Challenges
 {
@@ -12,6 +13,36 @@ namespace NexusForever.Game.Challenges
 
         public static bool IsTimeTiered(ChallengeEntry entry)
             => entry != null && (entry.ChallengeFlags & TimeTieredFlag) != 0u;
+
+        /// <summary>
+        /// Challenges that finish by reaching their indicator location. Only Thayd Sprint is enabled: it is the only reach-challenge with an exact limit and no extra rule. Ravenok Racer (511)
+        /// has an exact limit too but is a mount race and needs a mount check first. The finish rule itself is inferred (indicator = finish), see CHALLENGE_TIME_TIERED_COMPLETION_DESIGN_20261108.md.
+        /// </summary>
+        public static bool FinishesByReachingIndicator(uint challengeId)
+            => challengeId == 1002u;
+
+        /// <summary>
+        /// The tier goals of a time-tiered row in order, millisecond values unfiltered: a goal of 0 is a real first tier, only tier ids that are unset or missing from the table are skipped.
+        /// (The count-tier path drops zero counts, which would lose the first tier of 51 rows.)
+        /// </summary>
+        public static uint[] RawGoals(ChallengeEntry entry, ChallengeTierTable tierTable)
+        {
+            var goals = new List<uint>(3);
+            if (entry == null || tierTable == null)
+                return [];
+
+            foreach (uint tierId in new[] { entry.ChallengeTierId00, entry.ChallengeTierId01, entry.ChallengeTierId02 })
+            {
+                if (tierId == 0u)
+                    continue;
+
+                ChallengeTierEntry tier = tierTable.GetEntry(tierId);
+                if (tier != null)
+                    goals.Add(tier.Count);
+            }
+
+            return goals.ToArray();
+        }
 
         /// <summary>
         /// Number of tiers a completion at <paramref name="elapsedMs"/> earns: a tier with goal <c>g</c> is lost once <c>elapsed &gt;= limit - g</c> (the client's counter for a tier is the main timer

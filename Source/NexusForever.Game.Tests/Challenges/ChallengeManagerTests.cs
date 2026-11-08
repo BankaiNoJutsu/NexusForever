@@ -18,7 +18,7 @@ using NexusForever.Network.World.Message.Model.Challenges;
 
 namespace NexusForever.Game.Tests.Challenges;
 
-public class ChallengeManagerTests
+public partial class ChallengeManagerTests
 {
     private const ushort ChallengeId = 1001;
     private const uint SharerGuid = 5001u;

@@ -1597,6 +1597,7 @@ namespace NexusForever.Game.Entity
 
             ZoneMapManager.OnRelocate(vector);
             PathManager.CompleteCurrentExplorerExploreZoneMission();
+            ChallengeManager?.OnPlayerRelocated(Map?.Entry?.Id ?? 0u, vector);
             ClearSelectedVendorIfOutOfRange();
             TryRecoverStarterTutorialOnRelocate();
 
