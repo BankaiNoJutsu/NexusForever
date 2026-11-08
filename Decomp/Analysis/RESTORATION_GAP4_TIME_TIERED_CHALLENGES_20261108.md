@@ -29,6 +29,8 @@ These touch the persisted medal logic built earlier (terminal tier == medal, der
 4. **Hazard, waypoint and carry rules (18 rows)** and the text-less QA rows: no data.
 Nothing here was guessed into the server: with no completion path, a flagged challenge can still be activated and shown with the right timer for the seven known ones, but it cannot be completed.
 
-## Footage part
-A background agent is extending the limit harvest (unread subtitle-cue windows, challenges with cue hits but unread widgets, cross-checks of the probable rows); its record will be
-`CHALLENGE_TIME_TIERED_OCR_PASS3_20261108.md`. New exact limits go into `ChallengeTimeLimits` with the same provenance rule (exact readings only).
+## Footage part (pass 3 done)
+[CHALLENGE_TIME_TIERED_OCR_PASS3_20261108.md](CHALLENGE_TIME_TIERED_OCR_PASS3_20261108.md) (agent-written, not re-viewed): the remaining 413 cue windows (all 1,163 now swept) and a name search found **no new challenge limit**;
+four single-clip rows became probable values and Race to the Unknown is now about 112 s. 69 of the 80 flagged challenges have no retail footage in the library, so the footage lane is close to exhausted at this
+library: only second clips of the probable rows could add exact limits, and the library appears not to contain them. The table therefore stays at the seven exact readings, which means the finish-detection phase
+can enable Thayd Sprint (and Ravenok Racer with a mount check) and nothing else until limits arrive from another source.
