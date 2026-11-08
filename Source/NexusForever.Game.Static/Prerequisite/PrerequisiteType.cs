@@ -109,7 +109,7 @@
         SpellCooldownNodeInServiceSet = 104, // Spell effect requirements not met - live 14046a210; table[104] 14049fc70; value0=cooldown-node id; NF checks spell-book membership referencing node
         SpellEffectTypeOnUnit         = 105, // Spell effect requirements not met - handler table[105] 14049fd50; value0=SpellEffectType; NF checks persistent lifetime effects on unit pending spells
         TargetEntityLookupHit         = 106, // Requirements not met - live Prerequisite_CheckTargetEntityLookupHit 14049e900 (+0x318); table[106] 14049fd80; NF resolves target on player.Map
-        QuestObjective7             = 107, // Quest object requirement not met
+        QuestObjective7             = 107, // path mission progress word bit of the target creature's QuestChecklistIdx (native FUN_14049fff0)
         /// <summary>
         /// Checks to see if a PositionalRequirement Entry is met.
         /// </summary>
