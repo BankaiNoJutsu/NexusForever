@@ -83,6 +83,7 @@ Status (2026-11-08): the seven exact limits are wired in and the tier rule exist
 Retail debits the fare per leg near take-off (four dated clips, [VIDEO_WITNESS_TAXI_DEBIT_20261108.md](VIDEO_WITNESS_TAXI_DEBIT_20261108.md)); the server settles all legs atomically at arrival
 (`ClientFlightPathPurchaseHandler`). What retail does when a later leg cannot be paid, and the refund rule, are unwitnessed. Either find a retail clip of a failed or interrupted multi-leg flight
 or record that none exists; restructure the debit only with a decided failure rule. The fare itself is done ([TAXI_FARE_NATIVE_READ_20261108.md](TAXI_FARE_NATIVE_READ_20261108.md)).
+Status (2026-11-08): closed as a recorded decision without a code change, see [RESTORATION_GAP5_TAXI_DEBIT_20261108.md](RESTORATION_GAP5_TAXI_DEBIT_20261108.md).
 
 ## 6. Reward track follow-ups
 Open: the final-build zone track scale (6,000,000 in 16042 tables against 600,000 in the 2016 PTR), a Free-to-Play era clip of claiming a zone or challenge milestone and the counter afterwards,
