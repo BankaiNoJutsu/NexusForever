@@ -45,3 +45,16 @@ Filter Prerequisite|Entitlement|Bind|ActionSet: 2,090 cases pass (Source/SQLite)
 1. If an action-set lock is ever modelled (the `UnlockActionBar` spell effect, rows "Action Set 2 / 3 / 4 Unlock"), prerequisite 239 and `ServerActionSet.Unlocked` must read it; today both are unconditional.
 2. The 161 type 47 spells need a decision or a witness.
 3. 0x036F and the scheduled-event ids are a candidate for a future live-event pass.
+
+## Type 47 trace (same day): the blocked gates are inert today
+Question: does the failing type 47 cast gate actually stop anything? Result of a trace over the server source and tables:
+* `Spell.CheckPrerequisites` (`Spell.cs:503`) runs for every cast and evaluates the caster and target gates with `MeetsUnit`; there is no skip flag. So a type 47 gate does fail a cast.
+* **No server code casts any of the 161 gated spells.** A search of the non-test source for the 161 ids found two numeric hits (26363, 48499), both unrelated constants (a creature id in `SpaceMadnessEventScript`,
+  a creature/trigger id in the Gauntlet and Hall of the Hundred scripts). The server has no creature spell AI of its own (no AI folder, `Creature2` carries only activation spell columns), so nothing selects
+  these creature attack spells.
+* **None of the gated spells is a player class spell.** Of 163 type 47 cast-gate references and 334 effect-gate references (`Spell4Effects`), 0 belong to the 192 spell bases in `SpellLevel` (the class spellbook).
+  `SpellLevel` does not cover items, path abilities, mounts or quest-item spells, so a player-cast quest or item spell with a type 47 gate is not excluded.
+* Consequence: the pass-through policy would change nothing observable today; it matters only once creature AI or an event script casts such a spell. Decision: **do not add it now**; add it together with the
+  first creature-casting feature, behind a named, logged, switchable policy. The type 47 gates that can be reached today are the 7 `CommunicatorMessages` slots (evaluated by `CommunicatorMessage`), which
+  stay false (those messages are not shown); `GossipEntry`, `StoryPanel` and `Creature2Action` evaluations were not found on the server.
+
