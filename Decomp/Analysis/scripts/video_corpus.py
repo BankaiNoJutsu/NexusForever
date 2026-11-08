@@ -14,7 +14,9 @@ import csv, os, re, sqlite3, subprocess, sys
 ROOT = r"I:\Videos"
 DB_DIR = r"I:\tools\video_index"
 DB = os.path.join(DB_DIR, "corpus.db")
-FFMPEG = r"C:\Panda3D-1.10.16-x64\bin\ffmpeg.exe"
+# The 2013 Panda3D ffmpeg cannot decode some files (pix_fmt errors); use the winget Gyan build.
+FFMPEG = (r"C:\Users\Bankai\AppData\Local\Microsoft\WinGet\Packages"
+          r"\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\ffmpeg-8.1.1-full_build\bin\ffmpeg.exe")
 
 TS = re.compile(r"(\d+):(\d+):(\d+)[,.](\d+)\s*-->")
 
@@ -111,6 +113,7 @@ def frame(rel, sec, out=None):
 
 
 if __name__ == "__main__":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # -I ignores PYTHONIOENCODING
     cmd = sys.argv[1]
     if cmd == "build":
         build()

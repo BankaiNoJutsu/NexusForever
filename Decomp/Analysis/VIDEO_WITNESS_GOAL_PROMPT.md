@@ -9,7 +9,7 @@ Created 2026-11-08 after [LEDGER_GATE_PASS_20261107E.md](LEDGER_GATE_PASS_202611
 - A video moment is **Observed** at most. It becomes **Correlated** only when it agrees with a client-binary read or a table row; **Mapped/Verified** needs the usual independent corroboration (a second video from a different uploader and build era counts as one more Observed, not as Verified).
 - Never implement a server behaviour from one video. Videos can: (a) falsify an inference (cheap and decisive), (b) supply a number or ordering that a client read or table row then confirms, (c) turn a "no witness" gate into "Observed, awaiting correlation".
 - Build applicability: record the upload date and the patch era visible on screen. Videos older than the final build (16042) can show behaviour that later changed; say so. Commentary speech and descriptions are leads, not evidence; on-screen UI and combat/event behaviour is the evidence.
-- No Computer Use, no native client launch. Frame extraction is `ffmpeg` (Panda3D 2013 build at `C:\Panda3D-1.10.16-x64\bin\ffmpeg.exe`, enough for `-ss -i -frames:v 1`), viewed with the image reader.
+- No Computer Use, no native client launch. Frame extraction is `ffmpeg` (the winget Gyan ffmpeg 8.1.1 path is recorded in the script; the 2013 Panda3D build cannot decode some files), viewed with the image reader.
 - Do not copy videos or frames into the repository; records carry file name, upload date, URL (from the index), timestamp and a prose description of what is seen.
 
 ## Tooling (built)
@@ -36,3 +36,16 @@ Created 2026-11-08 after [LEDGER_GATE_PASS_20261107E.md](LEDGER_GATE_PASS_202611
 
 ## Stop condition
 Every row V1 to V7 has either a record with a concrete finding, or an exact statement of what footage would be needed and why the 6,878 videos do not contain it (with the queries tried). Not completion of retail restoration, and not a parity claim.
+
+## Status (2026-11-08)
+| Row | State | Record |
+|---|---|---|
+| V1 reward track | Worked: Observed + 2 Correlated; excess display above 100% seen, reset/carry-over timing not visible; needs a later-era claim/reset clip | [VIDEO_WITNESS_REWARD_TRACK_20261108.md](VIDEO_WITNESS_REWARD_TRACK_20261108.md) |
+| V2 challenge tiers | Worked for the single-tier case (Correlated with Challenge 410 / ChallengeTier 929); multi-tier transition still needed. Lead: a Dec 2013 beta stream (Medic Review Level 3-6, `_Additional/Medic Review ... [iCK-wRpkiak].mp4`, about 1556 s) shows a post-challenge "select your desired reward to increase your chances by 2x" chooser; beta era and 550x360, so a lead for 5b only | [VIDEO_WITNESS_CHALLENGE_20261108.md](VIDEO_WITNESS_CHALLENGE_20261108.md) |
+| V3 public events | Open. Footage shows the event tracker (V1 video, 70 to 76 s) but the prerequisite field meaning (`+0x1d0`, `unit+0x35f8`) is a client-binary question, not a visual one; use footage only to falsify participation/state wording | none yet |
+| V4 telegraphs | Open; 594 videos mention telegraphs, needs a top-down boss clip with a measurable shape-6 area | none yet |
+| V5 quest reward type 10 / Q5597 | Open. Type 10 is not rendered by the client quest reward UI, so footage cannot show it directly; Q5597 "Chua explosives" has 5 videos with cue hits | none yet |
+| V6 taxi / Hycrest | Open; Hycrest has 41 title/description hits (Hycrest Insurrection adventure), taxi 180 videos | none yet |
+| V7 AMP/healing/piercing | Open; low expected yield | none yet |
+
+Tooling notes: `find` matches conjunctions inside one subtitle cue, so use single phrases and then read the surrounding cues (`frame`/SRT) rather than AND queries; the 2013 Panda3D ffmpeg fails on some files, the script now uses the winget ffmpeg 8.1.1; `-I` ignores `PYTHONIOENCODING`, so the script reconfigures stdout itself.
