@@ -11,7 +11,7 @@
         QuestState                  = 6, // Quest requirement not met
         AchievementState            = 7, // Achievement requirement not met
         ItemProficiency             = 8, // Item proficiency requirement not met
-        EpisodeState                = 9, // Episode requirement not met
+        EpisodeState                = 9, // Episode requirement not met - episode state (0 unknown, 1 mentioned, 2 active, 3 complete) aggregated over quest categories equals Value; see PREREQUISITE_9_149_WRITERS_NATIVE_READ_20261108.md
         Gender                      = 10, // Gender requirement not met - client enum PrerequisiteComp_Sex
         OtherPrerequisite           = 11, // Other requirement not met
         DeadState                   = 12, // Player death state not correct - live case 0x0c vtable +0x80 -> Prerequisite_CheckDeadState 14049c800; native tests entity+0x250/+0x254/type 0x17, NF uses IsAlive proxy
@@ -154,7 +154,7 @@
         ItemTradeSkillLevel         = 146, // Item tradeskill level requirement not met
         PlayersInWorld              = 147, // There are no players in the world who meet the requirement
         InfrastructureState         = 148, // The infrastructure state requirement is not met - client case 0x94 via Prerequisite_CheckInfrastructureState 1404a0150 (+0x4e8); FUN_1403d2d60 lookup then value0 vs state +0x10; NF maps PathMissionTypeEnum 0x15 (21) ObjectId = PathSettlerInfrastructure.Id
-        State                       = 149, // State requirement not met - live case 0x95 vtable +0x88 -> Prerequisite_CheckEntityStateFlags_Table149 14049c840; tests entity+0x1e4/+0x2ac presence, row/use-site semantics blocked
+        State                       = 149, // State requirement not met - live case 0x95 vtable +0x88 -> Prerequisite_CheckEntityStateFlags_Table149 14049c840; state = (in-use flag from ServerUnitInUse at +0x1e4) || (in-combat at +0x2ac) compared with Value; see PREREQUISITE_9_149_WRITERS_NATIVE_READ_20261108.md
         HubEconomyProgress          = 150, // Hub economy progress requirement not met
         HubQualityOfLife            = 151, // Hub quality of life progress requirement not met
         HubSecurity                 = 152, // Hub security progress requirement not met
