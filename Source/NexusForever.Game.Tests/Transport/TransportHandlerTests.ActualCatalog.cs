@@ -41,6 +41,7 @@ public partial class TransportHandlerTests
             tables.SetProperty(nameof(IGameTableManager.TaxiNode), nodes);
             tables.SetProperty(nameof(IGameTableManager.WorldLocation2), locations);
             tables.SetProperty(nameof(IGameTableManager.World), worlds);
+            tables.SetProperty(nameof(IGameTableManager.GameFormula), CreateGameTable(new GameFormulaEntry { Id = 952u, Datafloat0 = 132.75f }));
             owner.SetProperty(nameof(IPlayer.Faction1), faction);
             var session = CreateSession(player, out _);
             handler.HandleMessage(session, BuildFlightPathPurchase(route.Id));
@@ -57,7 +58,7 @@ public partial class TransportHandlerTests
             if (expected)
             {
                 var quote = Assert.Single(quotes);
-                Assert.Equal((ulong)route.Price, quote.Arguments[4]);
+                Assert.Equal((ulong)(float)(destination.ContentTier * 132.75f * destination.ContentTier), quote.Arguments[4]); // retail fare, not the raw Price column
                 Assert.Equal(destination.Id, quote.Arguments[3]);
                 Assert.Equal(location.WorldId, Assert.IsType<WorldEntry>(quote.Arguments[0]).Id);
                 Assert.Equal(new System.Numerics.Vector3(location.Position0, location.Position1, location.Position2), quote.Arguments[1]);

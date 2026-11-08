@@ -114,7 +114,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity.Player
                 return;
             }
 
-            ulong totalPrice = routes.Aggregate(0ul, (price, route) => price + route.Price);
+            // Retail charges trunc(T * F * T) per hop from the destination node's ContentTier, never the raw Price column (TAXI_FARE_NATIVE_READ_20261108.md).
+            ulong totalPrice = TaxiFare.Calculate(gameTableManager, routes);
             if (!player.CurrencyManager.CanAfford(CurrencyType.Credits, totalPrice))
             {
                 player.SendGenericError(GenericError.VendorNotEnoughCash);

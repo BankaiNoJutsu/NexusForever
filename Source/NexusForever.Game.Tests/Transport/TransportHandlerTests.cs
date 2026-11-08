@@ -796,12 +796,49 @@ public partial class TransportHandlerTests
     public void FlightPathPurchase_SumsFaresWithoutUIntOverflow()
     {
         var handler = CreateFlightPathHandler(out var tables, out var player, out var currency, out var pp);
-        tables.SetProperty(nameof(IGameTableManager.TaxiRoute), CreateGameTable(
-            new TaxiRouteEntry { Id = 1, TaxiNodeIdSource = 10, TaxiNodeIdDestination = 20, Price = uint.MaxValue },
-            new TaxiRouteEntry { Id = 2, TaxiNodeIdSource = 20, TaxiNodeIdDestination = 30, Price = uint.MaxValue }));
+        // Each hop is 2^32 (a float formula of 4294967295 rounds to 4294967296), so the total exceeds what a uint can hold.
+        tables.SetProperty(nameof(IGameTableManager.GameFormula), CreateGameTable(new GameFormulaEntry { Id = 952u, Datafloat0 = 4294967295f }));
         handler.HandleMessage(CreateSession(player, out _), BuildFlightPathPurchase(1, 2));
         Assert.Empty(currency.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
-        Assert.Equal(2ul * uint.MaxValue, Assert.Single(pp.GetInvocations(nameof(IPlayer.QueueTaxiFlight))).Arguments[4]);
+        Assert.Equal(2ul * 4294967296ul, Assert.Single(pp.GetInvocations(nameof(IPlayer.QueueTaxiFlight))).Arguments[4]);
+    }
+
+    // The client never reads TaxiRoute.Price on its fare path: per hop trunc((float)T * F * (float)T), T the destination node's ContentTier, F = GameFormula 952
+    // Datafloat0 (132.75 in the table and as the compiled-in fallback). Observed fares in dated retail footage: Mistymurk Camp to Illium (tier 1) 1s32c, Illium to Hycrest
+    // (tier 3) 11s94c, two such hops 23s88c, Bloodfire Village (tier 2) 5s31c.
+    [Theory]
+    [InlineData(1u, 1u, 132ul + 132ul)]
+    [InlineData(1u, 3u, 132ul + 1194ul)]
+    [InlineData(2u, 2u, 531ul + 531ul)]
+    [InlineData(3u, 3u, 1194ul + 1194ul)]
+    [InlineData(0u, 0u, 0ul)]
+    public void FlightPathPurchase_ChargesTheRetailFareFormulaPerDestinationTier(uint tierOfFirstHop, uint tierOfSecondHop, ulong expected)
+    {
+        var handler = CreateFlightPathHandler(out var tables, out var player, out _, out var pp);
+        tables.SetProperty(nameof(IGameTableManager.GameFormula), CreateGameTable(new GameFormulaEntry { Id = 952u, Datafloat0 = 132.75f }));
+        tables.SetProperty(nameof(IGameTableManager.TaxiNode), CreateGameTable(
+            new TaxiNodeEntry { Id = 10u },
+            new TaxiNodeEntry { Id = 20u, ContentTier = tierOfFirstHop },
+            new TaxiNodeEntry { Id = 30u, WorldLocation2Id = 3003u, ContentTier = tierOfSecondHop }));
+
+        handler.HandleMessage(CreateSession(player, out _), BuildFlightPathPurchase(1u, 2u));
+
+        Assert.Equal(expected, Assert.Single(pp.GetInvocations(nameof(IPlayer.QueueTaxiFlight))).Arguments[4]);
+    }
+
+    [Fact]
+    public void FlightPathPurchase_UsesTheCompiledInFormulaWhenTheTableRowIsMissing()
+    {
+        var handler = CreateFlightPathHandler(out var tables, out var player, out _, out var pp);
+        tables.SetProperty(nameof(IGameTableManager.GameFormula), CreateGameTable<GameFormulaEntry>());
+        tables.SetProperty(nameof(IGameTableManager.TaxiNode), CreateGameTable(
+            new TaxiNodeEntry { Id = 10u },
+            new TaxiNodeEntry { Id = 20u, ContentTier = 1u },
+            new TaxiNodeEntry { Id = 30u, WorldLocation2Id = 3003u, ContentTier = 3u }));
+
+        handler.HandleMessage(CreateSession(player, out _), BuildFlightPathPurchase(1u, 2u));
+
+        Assert.Equal(132ul + 1194ul, Assert.Single(pp.GetInvocations(nameof(IPlayer.QueueTaxiFlight))).Arguments[4]);
     }
 
     [Fact]
@@ -917,10 +954,13 @@ public partial class TransportHandlerTests
         tableProxy.SetProperty(nameof(IGameTableManager.TaxiRoute), CreateGameTable(
             new TaxiRouteEntry { Id = 1u, TaxiNodeIdSource = 10u, TaxiNodeIdDestination = 20u, Price = 5u },
             new TaxiRouteEntry { Id = 2u, TaxiNodeIdSource = 20u, TaxiNodeIdDestination = 30u, Price = 7u }));
+        // Retail fare per hop is trunc(T * F * T) with T the destination node's ContentTier and F = GameFormula 952 Datafloat0 (TAXI_FARE_NATIVE_READ_20261108.md);
+        // tier 1 and F = 6 keep this fixture's two hops at 6 + 6 = 12.
         tableProxy.SetProperty(nameof(IGameTableManager.TaxiNode), CreateGameTable(
             new TaxiNodeEntry { Id = 10u },
-            new TaxiNodeEntry { Id = 20u },
-            new TaxiNodeEntry { Id = 30u, WorldLocation2Id = 3003u }));
+            new TaxiNodeEntry { Id = 20u, ContentTier = 1u },
+            new TaxiNodeEntry { Id = 30u, WorldLocation2Id = 3003u, ContentTier = 1u }));
+        tableProxy.SetProperty(nameof(IGameTableManager.GameFormula), CreateGameTable(new GameFormulaEntry { Id = 952u, Datafloat0 = 6f }));
         tableProxy.SetProperty(nameof(IGameTableManager.World), CreateGameTable(new WorldEntry { Id = 7 }));
         tableProxy.SetProperty(nameof(IGameTableManager.WorldLocation2), CreateGameTable(
             new WorldLocation2Entry

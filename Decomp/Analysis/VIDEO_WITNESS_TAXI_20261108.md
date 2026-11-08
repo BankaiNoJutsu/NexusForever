@@ -54,3 +54,5 @@ Ride is a visible flight with camera, not a loading screen: high (3 clips, 3 era
 Queries tried: `taxi` (892 cues), `taxi ride`, `taxi driver`, `taxi kiosk`, `taxi vendor`, `taxi network`, `flight path`, `fly to`; `taxi fare`, `taxi cost`, `taxi route` have zero cue hits.
 
 Review note (lead, 2026-11-08): written by a research subagent; the lead has not re-viewed the clips or re-derived the table comparisons. Treat the debit-timing (retail debits at purchase) and fare observations as Observed leads until a second clip or the native fare function (`GetFlightPathToPoint`) confirms them.
+
+Update (same day): the fare question is resolved by a native read, see [TAXI_FARE_NATIVE_READ_20261108.md](TAXI_FARE_NATIVE_READ_20261108.md) (per hop trunc(T * 132.75 * T), T the destination ContentTier) and is implemented; the debit-at-purchase observation is still unimplemented.
