@@ -24,3 +24,6 @@ Status of [INSTANCE_ENCOUNTER_VIDEO_GOAL_PROMPT.md](INSTANCE_ENCOUNTER_VIDEO_GOA
 * Lead verification of the agent-written packets.
 * Missing-input statements per row exist inside each packet's "Open inputs" section; none is lead-verified.
 * A native read or packet capture of the creature spell list and AI (no table links creatures to spells) is the one source that could supply cast order and intervals; it has not been commissioned.
+
+## Update (2026-11-09, after the user authorised provisional encounters)
+Provisional, disabled-by-default boss scripts now exist for Stormtalon's Lair (3 bosses), Ruins of Kel Voreth (3), Skullcano (4), Sanctuary of the Swordmaiden (4), Protogames Academy (Wrathbone), Coldblood Citadel (4), Genetic Archives (3) and Datascape (3): see [INSTANCE_PROVISIONAL_ENCOUNTERS_20261109.md](INSTANCE_PROVISIONAL_ENCOUNTERS_20261109.md). Every other row has an exact stated missing input in that record or in the `ProvisionalEncounterSkipped.md` files. All behaviour is Source-tier over Observed/Mapped inputs with estimated intervals; none is retail parity, and none has been run in a client.
