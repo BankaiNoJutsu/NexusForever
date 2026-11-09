@@ -27,3 +27,38 @@ Status of [INSTANCE_ENCOUNTER_VIDEO_GOAL_PROMPT.md](INSTANCE_ENCOUNTER_VIDEO_GOA
 
 ## Update (2026-11-09, after the user authorised provisional encounters)
 Provisional, disabled-by-default boss scripts now exist for Stormtalon's Lair (3 bosses), Ruins of Kel Voreth (3), Skullcano (4), Sanctuary of the Swordmaiden (4), Protogames Academy (Wrathbone), Coldblood Citadel (4), Genetic Archives (3) and Datascape (3): see [INSTANCE_PROVISIONAL_ENCOUNTERS_20261109.md](INSTANCE_PROVISIONAL_ENCOUNTERS_20261109.md). Every other row has an exact stated missing input in that record or in the `ProvisionalEncounterSkipped.md` files. All behaviour is Source-tier over Observed/Mapped inputs with estimated intervals; none is retail parity, and none has been run in a client.
+
+## Closure table, all 27 rows (2026-11-09, final state of this goal)
+The prompt's stop condition per row is "implemented to its evidence tier, or an exact statement of the missing input and why nothing available supplies it". Evidence tier of everything below: Source/Observed/Mapped inputs, no retail parity, nothing run in a client; packets and scripts are agent-written and only partly lead-verified (see [INSTANCE_LEAD_VERIFICATION_20261109.md](INSTANCE_LEAD_VERIFICATION_20261109.md)).
+
+| Row (world) | Outcome | Where stated |
+|---|---|---|
+| Stormtalon's Lair (382) | provisional scripts for 3 bosses; the rest missing input (adds, disciples, cast order/intervals) | PROVISIONAL, packets |
+| Infestation (1232) | missing input: no spell row tied to a verified boss, no packet-reported ability | Expedition/ProvisionalEncounterSkipped.md |
+| Skullcano (1263) | provisional scripts for 4 bosses | PROVISIONAL |
+| Sanctuary of the Swordmaiden (1271) | provisional scripts for 4 bosses; Shallaos missing input | PROVISIONAL |
+| Outpost M-13 (1319) | missing input | Expedition/ProvisionalEncounterSkipped.md |
+| Datascape (1333) | provisional scripts for 3 bosses; others missing input | PROVISIONAL, script header |
+| Ruins of Kel Voreth (1336) | provisional scripts for 3 bosses; Gurka, Blood Pit not scripted | PROVISIONAL |
+| Genetic Archives (1462) | provisional scripts for 3 bosses; Prototypes, Convergence, Ohmna missing input | PROVISIONAL, script header |
+| Rage Logic (1627) | missing input: Axiom has no creature id, no packet-reported matching ability | Expedition/ProvisionalEncounterSkipped.md |
+| Space Madness (2149) | missing input | Expedition/ProvisionalEncounterSkipped.md |
+| Gauntlet (2183) | missing input: only deprecated rows | Expedition/ProvisionalEncounterSkipped.md |
+| Deep Space Exploration (2188) | missing input | Expedition/ProvisionalEncounterSkipped.md |
+| Ultimate Protogames (2980) | no boss script justified (minigames, state-driven fights); missing input | INSTANCE_ULTIMATE_PROTOGAMES_PACKET |
+| Vault of the Archon (3009) | missing input: the one boss clip never names its boss, spell ids unreliable | Raid/ProvisionalEncounterSkipped.md |
+| Red Moon Terror (3032) | missing input: no readable clip for Engineers or Star-Eater | Raid/ProvisionalEncounterSkipped.md |
+| Augmentor's Raid / Initialization Core Y-83 (3040) | script removed by lead; missing input: creature-to-spell binding | Raid/ProvisionalEncounterSkipped.md |
+| Ultimate Protogames raid (3041) | missing input: zero footage, text or strings | INSTANCE_ULTIMATE_PROTOGAMES_PACKET |
+| BAD (3042) | missing input: placeholder (no event, map entry or script) | INSTANCE_RAIDS_EVENTS_PACKET section 5 |
+| Shade's Eve (3044) | missing input: no clip shows an ability | Raid/ProvisionalEncounterSkipped.md |
+| Journey into OMNICore-1 (3045) | missing input: no verifiable spell rows | Raid/ProvisionalEncounterSkipped.md |
+| Protostar Winterfest (3094) | missing input: no boss (event instance) | Raid/ProvisionalEncounterSkipped.md |
+| Red Moon Terror 40-man (3102) | missing input: no footage | INSTANCE_RAIDS_EVENTS_PACKET |
+| Protogames Academy (3173) | provisional script for Wrathbone; six other bosses missing input (no creature id in the repo, a guessed binding) | PROVISIONAL, script header |
+| Fragment Zero (3180) | missing input | Expedition/ProvisionalEncounterSkipped.md |
+| Evil from the Ether (3404) | existing Katja script (55% enrage, 20 s casts) unchanged; no clip agrees or disagrees; other bosses missing input | INSTANCE_EXPEDITIONS_PACKET |
+| Coldblood Citadel (3522) | provisional scripts for 4 bosses; Risen Harizog missing input | PROVISIONAL |
+| Red Moon Terror (3524) | missing input: no footage | INSTANCE_RAIDS_EVENTS_PACKET |
+
+Reading this table against the stop condition: 8 rows have provisional (not retail) behaviour plus stated missing inputs for what is not modelled, and 19 rows have only the stated missing input. Phase A items still open: invulnerable adds and shield removal, spawn/door/platform restore on a wipe.
