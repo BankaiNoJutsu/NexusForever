@@ -131,7 +131,6 @@ public class StormtalonsLairEventScriptTests
         script.OnPublicEventPhase((uint)PublicEventPhase.Enter);
 
         AssertObjectiveActivated(eventProxy, PublicEventObjective.SurviveTheThundercallPellZealots);
-        AssertObjectiveActivated(eventProxy, PublicEventObjective.EliminateThundercallPell);
         AssertObjectiveActivated(eventProxy, PublicEventObjective.KillThundercallPellBeforeTimeExpires);
         AssertObjectiveActivated(eventProxy, PublicEventObjective.GatherTaintedStemSamples);
         AssertObjectiveActivated(eventProxy, PublicEventObjective.ActivateImprovementConstructionPlatform);
@@ -186,8 +185,10 @@ public class StormtalonsLairEventScriptTests
     }
 
     [Fact]
-    public void OnPublicEventPhase_Enter_ActivatesPellKillTargetGroupObjective()
+    public void OnPublicEventPhase_Enter_ActivatesZealotRushAndTimedPellChallenge()
     {
+        // 2015 veteran guide (60 s tracker) and 2015 normal guide (100 s) both list the timed Pell challenge
+        // from the first phase; "Eliminate Thundercall Pell" is not in that first-phase tracker.
         var script = new NoOptionalStormtalonsLairEventScript();
         IPublicEvent publicEvent = CreatePublicEvent(1u, out RecordingDispatchProxy<IPublicEvent> eventProxy);
         script.OnLoad(publicEvent);
@@ -195,11 +196,103 @@ public class StormtalonsLairEventScriptTests
         script.OnPublicEventPhase((uint)PublicEventPhase.Enter);
 
         AssertObjectiveActivated(eventProxy, PublicEventObjective.SurviveTheThundercallPellZealots);
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.KillThundercallPellBeforeTimeExpires);
+        AssertObjectiveNotActivated(eventProxy, PublicEventObjective.EliminateThundercallPell);
+        AssertObjectiveNotActivated(eventProxy, PublicEventObjective.EnableInvokersHolocrypt);
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_Enter_ActivatesDeathlessAndTimerBonus()
+    {
+        var script = new NoOptionalStormtalonsLairEventScript();
+        IPublicEvent publicEvent = CreatePublicEvent(1u, out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.Enter);
+
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.FinishTheEntireDungeonWithoutAnyoneDying);
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.CompleteStormtalonsLairWithin40Minutes);
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_BladeWind_ActivatesEliminateThundercallPell()
+    {
+        var script = new NoOptionalStormtalonsLairEventScript();
+        IPublicEvent publicEvent = CreatePublicEventWithBladeWind(1u, out RecordingDispatchProxy<IPublicEvent> eventProxy, out _, out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.DefeatBladeWindTheInvoker);
+
         AssertObjectiveActivated(eventProxy, PublicEventObjective.EliminateThundercallPell);
-        Assert.DoesNotContain(eventProxy.GetInvocations(nameof(IPublicEvent.ActivateObjective)),
-            i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.KillThundercallPellBeforeTimeExpires);
-        Assert.DoesNotContain(eventProxy.GetInvocations(nameof(IPublicEvent.ActivateObjective)),
-            i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.EnableInvokersHolocrypt);
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_Aethros_ActivatesTornadoChasing()
+    {
+        var script = new NoOptionalStormtalonsLairEventScript();
+        IPublicEvent publicEvent = CreatePublicEventWithAethros(1u, out RecordingDispatchProxy<IPublicEvent> eventProxy, out _, out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.EliminateAethros);
+
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.TornadoChasing);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_FinalBoss_CreditsDeathlessAndTimerBonusWhenClean()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEvent(1u, out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+        script.Update(39d * 60d);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(PublicEventObjective.DestroyStormtalon, PublicEventStatus.Succeeded));
+
+        AssertObjectiveUpdated(eventProxy, PublicEventObjective.FinishTheEntireDungeonWithoutAnyoneDying);
+        AssertObjectiveUpdated(eventProxy, PublicEventObjective.CompleteStormtalonsLairWithin40Minutes);
+        Assert.Single(eventProxy.GetInvocations(nameof(IPublicEvent.Finish)));
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_FinalBoss_DoesNotCreditDeathlessAfterAPlayerDied()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEvent(1u, out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+        script.OnDeath(RecordingDispatchProxy<IPlayer>.Create(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(PublicEventObjective.DestroyStormtalon, PublicEventStatus.Succeeded));
+
+        AssertObjectiveNotUpdated(eventProxy, PublicEventObjective.FinishTheEntireDungeonWithoutAnyoneDying);
+        AssertObjectiveUpdated(eventProxy, PublicEventObjective.CompleteStormtalonsLairWithin40Minutes);
+    }
+
+    [Fact]
+    public void OnDeath_NonPlayerDoesNotBreakDeathless()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEvent(1u, out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+        script.OnDeath(RecordingDispatchProxy<INonPlayerEntity>.Create(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(PublicEventObjective.DestroyStormtalon, PublicEventStatus.Succeeded));
+
+        AssertObjectiveUpdated(eventProxy, PublicEventObjective.FinishTheEntireDungeonWithoutAnyoneDying);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_FinalBoss_DoesNotCreditTimerBonusAfterFortyMinutes()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEvent(1u, out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+        script.Update(40d * 60d + 1d);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(PublicEventObjective.DestroyStormtalon, PublicEventStatus.Succeeded));
+
+        AssertObjectiveNotUpdated(eventProxy, PublicEventObjective.CompleteStormtalonsLairWithin40Minutes);
+        AssertObjectiveUpdated(eventProxy, PublicEventObjective.FinishTheEntireDungeonWithoutAnyoneDying);
+        Assert.Single(eventProxy.GetInvocations(nameof(IPublicEvent.Finish)));
     }
 
     [Fact]
@@ -992,6 +1085,24 @@ public class StormtalonsLairEventScriptTests
     {
         Assert.Contains(eventProxy.GetInvocations(nameof(IPublicEvent.ActivateObjective)),
             i => (PublicEventObjective)i.Arguments[0] == objective);
+    }
+
+    private static void AssertObjectiveNotActivated(RecordingDispatchProxy<IPublicEvent> eventProxy, PublicEventObjective objective)
+    {
+        Assert.DoesNotContain(eventProxy.GetInvocations(nameof(IPublicEvent.ActivateObjective)),
+            i => (PublicEventObjective)i.Arguments[0] == objective);
+    }
+
+    private static void AssertObjectiveUpdated(RecordingDispatchProxy<IPublicEvent> eventProxy, PublicEventObjective objective)
+    {
+        Assert.Contains(eventProxy.GetInvocations(nameof(IPublicEvent.UpdateObjective)),
+            i => i.Arguments[0] is PublicEventObjective o && o == objective && (int)i.Arguments[1] == 1);
+    }
+
+    private static void AssertObjectiveNotUpdated(RecordingDispatchProxy<IPublicEvent> eventProxy, PublicEventObjective objective)
+    {
+        Assert.DoesNotContain(eventProxy.GetInvocations(nameof(IPublicEvent.UpdateObjective)),
+            i => i.Arguments[0] is PublicEventObjective o && o == objective);
     }
 
     private static void AssertTriggerInitialised(CreatedTrigger trigger, uint worldLocationId, uint objectId)

@@ -27,6 +27,14 @@ namespace NexusForever.Script.Instance.Dungeon.StormtalonsLair
         private bool thundercallDataAltarPlacementsSpawned;
         private bool thundercallStormTotemPlacementsSpawned;
         private bool launchPadPlacementsSpawned;
+        private bool playerDied;
+        private double elapsedSeconds;
+
+        /// <summary>
+        /// Seconds allowed for the "Timer Bonus" row (3201, "Complete Stormtalon's Lair within 40 minutes for bonus points").
+        /// The objective row carries no failure time, so the limit is tracked here.
+        /// </summary>
+        private const double TimerBonusSeconds = 40d * 60d;
 
         private const uint HighPriestWorldLocationId = 12736u;
         private const uint HighPriestObjectId = 1831u;
@@ -218,6 +226,25 @@ namespace NexusForever.Script.Instance.Dungeon.StormtalonsLair
             thundercallDataAltarPlacementsSpawned = false;
             thundercallStormTotemPlacementsSpawned = false;
             launchPadPlacementsSpawned = false;
+            playerDied = false;
+            elapsedSeconds = 0d;
+        }
+
+        /// <summary>
+        /// Invoked each world tick; tracks the elapsed run time for the Timer Bonus row.
+        /// </summary>
+        public void Update(double lastTick)
+        {
+            elapsedSeconds += lastTick;
+        }
+
+        /// <summary>
+        /// Invoked when a unit dies on the map; any player death fails "Deathless in the Dungeon".
+        /// </summary>
+        public void OnDeath(IUnitEntity entity)
+        {
+            if (entity is IPlayer)
+                playerDied = true;
         }
 
         /// <summary>
@@ -248,9 +275,14 @@ namespace NexusForever.Script.Instance.Dungeon.StormtalonsLair
             switch ((PublicEventPhase)phase)
             {
                 case PublicEventPhase.Enter:
+                    // Tracker rows below were read from two 2015 clips, one veteran and one normal (see
+                    // INSTANCE_STORMTALON_TRACKER_PASS_20261109.md): Observed ordering only, no retail parity claim.
+                    // "Deathless in the Dungeon" and "Timer Bonus" are listed from the first phase; the timed
+                    // "Kill as many Thundercall Pell" challenge started with the first phase in both runs.
                     publicEvent.ActivateObjective(PublicEventObjective.SurviveTheThundercallPellZealots);
-                    publicEvent.ActivateObjective(PublicEventObjective.EliminateThundercallPell);
-                    ActivateWipOptionalObjective(PublicEventObjective.KillThundercallPellBeforeTimeExpires);
+                    publicEvent.ActivateObjective(PublicEventObjective.FinishTheEntireDungeonWithoutAnyoneDying);
+                    publicEvent.ActivateObjective(PublicEventObjective.CompleteStormtalonsLairWithin40Minutes);
+                    publicEvent.ActivateObjective(PublicEventObjective.KillThundercallPellBeforeTimeExpires);
                     if (ActivateWipOptionalObjective(PublicEventObjective.GatherTaintedStemSamples))
                         SpawnReviewedTaintedFlowerStems();
                     bool platformObjectiveActive = ActivateWipOptionalObjective(PublicEventObjective.ActivateImprovementConstructionPlatform);
@@ -260,6 +292,9 @@ namespace NexusForever.Script.Instance.Dungeon.StormtalonsLair
                     break;
                 case PublicEventPhase.DefeatBladeWindTheInvoker:
                     publicEvent.ActivateObjective(PublicEventObjective.DefeatBladeWindTheInvoker);
+                    // "Eliminate Thundercall Pell" is absent from the first-phase tracker and appears at 0/19
+                    // together with the Blade-Wind row in both runs (the timed Pell challenge was already at 12/27).
+                    publicEvent.ActivateObjective(PublicEventObjective.EliminateThundercallPell);
                     SpawnBladeWindTheInvoker();
                     if (ActivateWipOptionalObjective(PublicEventObjective.ObtainDataFromTheThundercallDataAltar))
                         SpawnReviewedThundercallDataAltars();
@@ -270,6 +305,9 @@ namespace NexusForever.Script.Instance.Dungeon.StormtalonsLair
                     break;
                 case PublicEventPhase.EliminateAethros:
                     publicEvent.ActivateObjective(PublicEventObjective.EliminateAethros);
+                    // "Tornado Chasing" (challenge) is listed from the start of this phase in both runs. Display only:
+                    // no tornado-hit detection exists, so the row is never credited.
+                    publicEvent.ActivateObjective(PublicEventObjective.TornadoChasing);
                     SpawnAethros();
                     if (ActivateWipOptionalObjective(PublicEventObjective.FreeTheThundercallSacrificialPrisoners))
                         SpawnReviewedThundercallCages();
@@ -312,6 +350,14 @@ namespace NexusForever.Script.Instance.Dungeon.StormtalonsLair
                     publicEvent.SetPhase(PublicEventPhase.DestroyStormtalon);
                     break;
                 case PublicEventObjective.DestroyStormtalon:
+                    // The engine has no script-side way to fail an objective, so the challenge rows are credited
+                    // only when their condition held; a failed row simply never completes.
+                    if (!playerDied)
+                        publicEvent.UpdateObjective(PublicEventObjective.FinishTheEntireDungeonWithoutAnyoneDying, 1);
+
+                    if (elapsedSeconds <= TimerBonusSeconds)
+                        publicEvent.UpdateObjective(PublicEventObjective.CompleteStormtalonsLairWithin40Minutes, 1);
+
                     publicEvent.Finish(PublicEventTeam.PublicTeam);
                     break;
             }
@@ -676,9 +722,10 @@ namespace NexusForever.Script.Instance.Dungeon.StormtalonsLair
 
         private bool ActivateWipOptionalObjective(PublicEventObjective objective)
         {
-            // WIP-guessed from LaughingWS Instances-and-more. The branch randomly
-            // includes these optional objectives in the Stormtalon's Lair route; exact
-            // retail route weights, trigger placement, and objective availability remain blocked.
+            // Provisional random pool. Two 2015 tracker reads (one veteran, one normal) show the optional rows
+            // differ from run to run (Gather Tainted Stem samples only in the veteran run, Free the Sacrificial
+            // Prisoners only in the normal run), so a random choice is kept. Weights, per-phase counts and the
+            // availability of the hidden-flag rows (558, 559, 4867) are NOT known; none of those was seen.
             if (!ShouldActivateWipOptionalObjective(objective))
                 return false;
 
