@@ -1,0 +1,49 @@
+instance,plan_constant,spell4_id,keyword,retail_videos_with_phrase,channels
+ColdbloodCitadel,HailstoneIceSpikesAura,88129,Howling Winds,0,0
+ColdbloodCitadel,UlfridSeekingShadow,88336,Seeking Shadow,0,0
+ColdbloodCitadel,KatlaBloodTornadoAura,88107,Blood Tornado,1,1
+ColdbloodCitadel,GolagSoulfrostTrail,88328,Soulfrost Trail,0,0
+ProtogamesAcademy,WrathboneRockCast,77086,Boss,9,7
+RuinsOfKelVoreth,TrogunVolcanicStrike,52059,Volcanic Strike,5,5
+RuinsOfKelVoreth,TrogunForgemastersCall,52639,Forgemaster Trogun,0,0
+RuinsOfKelVoreth,TrogunExaniteWeapon,38882,Exanite Weapon,0,0
+RuinsOfKelVoreth,GrondThrash,37376,Thrash,9,9
+RuinsOfKelVoreth,GrondHeadbutt,40176,Headbutt,0,0
+RuinsOfKelVoreth,DrokkHomingBarrage,39422,Homing Barrage,1,1
+SanctuaryOfTheSwordmaiden,OnduRootPhase,42526,PBAE Root 1,0,0
+SanctuaryOfTheSwordmaiden,OnduCloverBase,43253,Clover,4,4
+SanctuaryOfTheSwordmaiden,SkashSummonTheSwarm,42135,Summon the Swarm,0,0
+SanctuaryOfTheSwordmaiden,RaynaFlameLeash,42171,Flame Leash,0,0
+SanctuaryOfTheSwordmaiden,RaynaMoltenWave1,42264,Molten Wave 1,0,0
+SanctuaryOfTheSwordmaiden,RaynaSmolderingPool,42418,Smoldering Pool,0,0
+SanctuaryOfTheSwordmaiden,SeleneShadowMeld,42880,Shadow Meld,0,0
+SanctuaryOfTheSwordmaiden,SeleneLightsOut,42757,Lights Out!,0,0
+SanctuaryOfTheSwordmaiden,SeleneShadePrison,42386,Shade Prison,2,2
+Skullcano,TuggaMoltenRain,41088,Molten Rain,2,2
+Skullcano,TuggaMagmaTotemPair,41052,Magma Totem Pair,0,0
+Skullcano,TuggaIntoTheStew,63378,Into the Stew,1,1
+Skullcano,ThunderfootThunderPound,36437,Thunder Pound,1,1
+Skullcano,ThunderfootPulverize,36385,Pulverize,2,2
+Skullcano,OctogHarpoon,31352,Harpoon,0,0
+Skullcano,OctogInkTwoTargets,52872,Ink,6,6
+Skullcano,MordechaiMoltenTorrent,39469,Terraformer,7,7
+Skullcano,MordechaiDisperseGrenades,39566,Disperse Grenades,0,0
+StormtalonsLair,BladeWindThunderCross,38868,Thunder Cross,1,1
+StormtalonsLair,BladeWindLightningStrike,38836,Lightning Strike,8,6
+StormtalonsLair,AethrosTorrent,36104,Torrent,1,1
+StormtalonsLair,StormtalonStaticCharge,39696,Static Charge,3,3
+StormtalonsLair,StormtalonStaticWave,39717,Static Wave,1,1
+StormtalonsLair,StormtalonLightningRod,39852,Lightning Rod,2,2
+Datascape,SystemDaemonsPurge,44099,Purge,17,10
+Datascape,SystemDaemonsMemoryWipe,43454,Memory Wipe,3,3
+Datascape,MaelstromLightningRod,44437,Lightning Rod,1,1
+Datascape,AvatusSummonHoloHands,44860,Summon Holo Hands,0,0
+Datascape,AvatusSummonHoloCannons,44876,Summon Holo Cannons,0,0
+GeneticArchives,X89StrainBomb,47353,Strain Bomb,1,1
+GeneticArchives,KuralakPutridDischarge,57923,Putrid Discharge,1,1
+GeneticArchives,KuralakTaintedVentilation,60454,Tainted Ventilation,1,1
+GeneticArchives,KuralakChromosomeCorruption,56737,Chromosome Corruption,2,2
+GeneticArchives,KuralakDnaSiphon,56660,DNA Siphon Base,0,0
+GeneticArchives,KuralakOutbreak,60715,Outbreak,4,4
+GeneticArchives,PhageMawDetonationBombs,60702,Detonation Bombs,0,0
+GeneticArchives,PhageMawAerialBombardment,57306,Aerial Bombardment,0,0
