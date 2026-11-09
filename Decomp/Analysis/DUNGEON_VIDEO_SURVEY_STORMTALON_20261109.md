@@ -50,3 +50,12 @@ Stormtalon (veteran): cone auto attack chaining lightning, slows by 90%; Static 
 
 ## Decision and next step
 Video can supply the ordering and phase skeleton for Stormtalon; it cannot supply the exact cast timers or the spell-row binding. A first implementation could stay at Observed tier: phase transitions by health and a fixed cast order, with cast rows chosen only where a clip shows the cast name and a matching telegraph. Recommended first target: Blade-Wind (fewest hidden inputs). The next step is a frame pass on 2-3 full-run clips to read cast-bar names and measure the gap between casts at 0.5 s resolution, then a failing phase-transition test. Not started.
+
+## Frame pass, Blade-Wind (2026-11-09, lead viewed, Observed)
+Clip `https://www.youtube.com/watch?v=P7eQtXKxVlM` (2014-06-09, post-launch, 1280x720). A 12-frame sheet at 4 s spacing (20 to 68 s) and one full frame at 24 s, with a 3x crop of the target frame, were viewed.
+* **Cast names are not readable.** The target frame shows the boss health bar, the interrupt-armor shield counter ("0" at 24 s) and a red-bordered frame, but no cast-bar name. All 21 candidate Stormtalon clips I probed are 1280x720 (one 640x360), so this is a property of the library, not of one clip. Binding casts to Spell4 rows by reading cast names off video is therefore not possible here.
+* **What is readable:** the boss yell lines in the chat log and top banner ("Kneel before the soon-born god" at 24 s), the Events panel (optional objectives "Gather Corrupted Stem samples 0/15", "Eliminate Thundercall Pell 9/20", challenge "Stormchaser"), telegraph shapes (red cone/line and blue circle at 4 s spacing), and the number of players alive.
+* **Telegraph timing is the only cast-timing signal** (red/blue area appearing and ending). Measuring gaps from it needs frame diffing at about 0.5 s and was not done; the 4 s sheet only shows that a red telegraph and a blue circle overlap in phase 1.
+
+## Decision
+No phase-transition test was written. The phase thresholds are single-source (one guide per boss), the server has no health-threshold or scripted-cast framework for these scripts, and a test would encode an invented cast order. Two evidence routes remain that can bind casts to rows: (a) the boss yell strings, which can be matched to `Creature2ActionText`/text rows and may be tied to phase changes; (b) a packet or native source for the creature spell list. Telegraph-gap measurement from video is possible but only gives Observed timing, not rows.
