@@ -19,8 +19,11 @@ namespace NexusForever.Script.Instance.Dungeon.StormtalonsLair.Script
         public const uint BladeWindLightningStrike  = 38836u; // [STL] e312 Invoker Lightning Strike Base
         public const uint AethrosTorrent            = 36104u; // [STL] e313 Aethros Torrent Special 4 Base, CastTime 2000 ms
         public const uint StormtalonStaticCharge    = 39696u; // [STL] e314 Stormtalon Static Charge
-        public const uint StormtalonStaticWave      = 39717u; // [STL] e314 Stormtalon Static Wave Base
-        public const uint StormtalonLightningRod    = 39852u; // [STL] e314 Stormtalon Lightning Rod Base
+        // Rebound 2026-11-09 after the Jabbithole creature_spells check (INSTANCE_JABBITHOLE_SQL_CHECK_20261109.md): the tag rows
+        // 39717 (one 10 s stat buff) and 39852 (twelve stat modifiers, 30 min) are not ability-shaped, while these rows are the
+        // Stormtalon creature's own client-named spells (same name in the 16042 table, damage effects, cast bar as named).
+        public const uint StormtalonStaticWave      = 39681u; // Jabbithole creature_spells Stormtalon "Static Wave", CastTime 10000 ms (tag row was 39717)
+        public const uint StormtalonLightningRod    = 63110u; // Jabbithole creature_spells Stormtalon "Lightning Rod" tier 2, CastTime 15000 ms (tag row was 39852)
 
         public static ProvisionalEncounterPlan BladeWind() => new(
         [

@@ -30,6 +30,26 @@ namespace NexusForever.Game.Tests.Instances
             Assert.Contains(veteranId, attribute.CreatureId);
         }
 
+        /// <summary>
+        /// 2026-11-09: the Static Wave and Lightning Rod tag rows (39717, 39852) were buff and stat-holder rows, so the plan
+        /// uses the rows Jabbithole links to the Stormtalon creature (same names in the 16042 table, damage effects).
+        /// Other rebound rows: X-89 Strain Bomb 47286 and Maelstrom Lightning Rod 44325 (see INSTANCE_JABBITHOLE_SQL_CHECK_20261109.md).
+        /// </summary>
+        [Fact]
+        public void StormtalonPlanCastsTheJabbitholeLinkedStaticWaveAndLightningRodRows()
+        {
+            Type type = typeof(StormtalonProvisionalEncounterScript).Assembly
+                .GetType("NexusForever.Script.Instance.Dungeon.StormtalonsLair.Script.StormtalonProvisionalPlans");
+            var plan = (ProvisionalEncounterPlan)type.GetMethod("Stormtalon").Invoke(null, null);
+
+            uint[] casts = plan.Phases.SelectMany(p => p.Casts).Select(c => c.SpellId).Distinct().ToArray();
+
+            Assert.Contains(39681u, casts);
+            Assert.Contains(63110u, casts);
+            Assert.DoesNotContain(39717u, casts);
+            Assert.DoesNotContain(39852u, casts);
+        }
+
         [Fact]
         public void ScriptsAreDisabledByDefaultAndDoNotCredit()
         {

@@ -1,0 +1,455 @@
+boss,jabbithole_creature_id,zone,health_max,level_max,is_veteran,difficulty,spell4_game_id,spell_name,tier,castinfo,target,check_16042_name,cast_time_ms_16042,enabled
+Aethros,3077,15,1089659,50,true,4,70404,Swing,1,Instant,Targeted,name_match,0,true
+Aethros,3077,15,1089659,50,true,4,70405,Swipe,1,Instant,Targeted,name_match,0,true
+Aethros,3077,15,1089659,50,true,4,63114,Tempest,2,15 sec cast,Self,name_match,15000,true
+Aethros,3077,15,1089659,50,true,4,39662,Thunderbolt,1,0.5 sec cast,Self,name_match,500,true
+Aethros,3077,15,1089659,50,true,4,39730,Thunderbolt,1,Instant,Targeted,name_match,0,true
+Aethros,3077,15,1089659,50,true,4,36042,Torrent,1,2 sec cast,Targeted,name_match,2000,true
+Aethros,720,15,137250,20,false,4,35474,Swing,1,Instant,Targeted,name_match,0,true
+Aethros,720,15,137250,20,false,4,70404,Swing,1,Instant,Targeted,name_match,0,true
+Aethros,720,15,137250,20,false,4,35475,Swipe,1,Instant,Targeted,name_match,0,true
+Aethros,720,15,137250,20,false,4,70405,Swipe,1,Instant,Targeted,name_match,0,true
+Aethros,720,15,137250,20,false,4,39682,Tempest,1,30 sec cast,Self,name_match,30000,true
+Aethros,720,15,137250,20,false,4,39662,Thunderbolt,1,0.5 sec cast,Self,name_match,500,true
+Aethros,720,15,137250,20,false,4,39730,Thunderbolt,1,Instant,Targeted,name_match,0,true
+Aethros,720,15,137250,20,false,4,36042,Torrent,1,2 sec cast,Targeted,name_match,2000,true
+Avatus,25690,132,,,false,0,69579,Disintegration Sector,1,Instant,Targeted,name_match,0,true
+Avatus,25690,132,,,false,0,46727,Disintegration Sequence,1,Instant,Targeted,name_match,0,true
+Avatus,25690,132,,,false,0,47023,Format C:\,1,15 sec cast,Targeted,name_match,15000,true
+Avatus,25690,132,,,false,0,46870,Obliterate,1,15 sec channel,Targeted,name_match,5000,true
+Avatus,25690,132,,,false,0,72778,Obliterate,2,25 sec channel,Targeted,name_match,5000,true
+Avatus,25845,57,72000016,50,false,0,44785,Annihilation,1,2.8 sec cast,Targeted,name_match,2800,true
+Avatus,25845,57,72000016,50,false,0,45055,Binding Strike,1,Instant,Targeted,name_match,0,true
+Avatus,25845,57,72000016,50,false,0,44726,Burning Exhaust,1,Instant,Self,name_match,0,true
+Avatus,25845,57,72000016,50,false,0,44727,Burning Exhaust,1,Instant,Self,name_match,0,true
+Avatus,25845,57,72000016,50,false,0,69579,Disintegration Sector,1,Instant,Targeted,name_match,0,true
+Avatus,25845,57,72000016,50,false,0,46727,Disintegration Sequence,1,Instant,Targeted,name_match,0,true
+Avatus,25845,57,72000016,50,false,0,44546,Disruption Beam,1,Instant,Self,name_match,0,true
+Avatus,25845,57,72000016,50,false,0,44451,Holo-Swipe,1,Instant,Self,name_match,0,true
+Avatus,25845,57,72000016,50,false,0,44655,Nullifying Rays,1,Instant,Self,name_match,0,true
+Avatus,25845,57,72000016,50,false,0,44703,Nullifying Rays,1,Instant,Self,name_match,0,true
+Avatus,25845,57,72000016,50,false,0,46870,Obliterate,1,15 sec channel,Targeted,name_match,5000,true
+Avatus,25845,57,72000016,50,false,0,45892,Obliteration Beam,1,12 sec channel,Self,name_match,0,true
+Avatus,25845,57,72000016,50,false,0,69858,Phase Punch,1,3.3 sec cast,Targeted,name_match,3300,true
+Avatus,25845,57,72000016,50,false,0,44710,Swipe,1,Instant,Targeted,name_match,0,true
+Avatus,25845,57,72000016,50,false,0,44711,Swipe,1,Instant,Targeted,name_match,0,true
+Avatus,27356,136,,,false,0,78363,Obliteration,1,3 sec cast,Self,name_match,3000,true
+Avatus,27356,136,,,false,0,78370,Obliteration,2,3 sec cast,Self,name_match,3000,true
+Avatus,27356,136,,,false,0,78371,Obliteration,3,3 sec cast,Self,name_match,3000,true
+Avatus,27356,136,,,false,0,78372,Obliteration,4,3 sec cast,Self,name_match,3000,true
+Avatus,27356,136,,,false,0,78373,Obliteration,5,3 sec cast,Self,name_match,3000,true
+Avatus,27356,136,,,false,0,78374,Obliteration,6,3 sec cast,Self,name_match,3000,true
+Avatus,27356,136,,,false,0,78375,Obliteration,7,3 sec cast,Self,name_match,3000,true
+Avatus,27371,133,,,false,0,78363,Obliteration,1,3 sec cast,Self,name_match,3000,true
+Avatus,27371,133,,,false,0,78370,Obliteration,2,3 sec cast,Self,name_match,3000,true
+Avatus,27371,133,,,false,0,78371,Obliteration,3,3 sec cast,Self,name_match,3000,true
+Avatus,27371,133,,,false,0,78372,Obliteration,4,3 sec cast,Self,name_match,3000,true
+Avatus,27371,133,,,false,0,78373,Obliteration,5,3 sec cast,Self,name_match,3000,true
+Avatus,27371,133,,,false,0,78374,Obliteration,6,3 sec cast,Self,name_match,3000,true
+Avatus,27371,133,,,false,0,78375,Obliteration,7,3 sec cast,Self,name_match,3000,true
+Avatus,27408,134,72000016,50,false,7,44785,Annihilation,1,2.8 sec cast,Targeted,name_match,2800,true
+Avatus,27408,134,72000016,50,false,7,45055,Binding Strike,1,Instant,Targeted,name_match,0,true
+Avatus,27408,134,72000016,50,false,7,44726,Burning Exhaust,1,Instant,Self,name_match,0,true
+Avatus,27408,134,72000016,50,false,7,44727,Burning Exhaust,1,Instant,Self,name_match,0,true
+Avatus,27408,134,72000016,50,false,7,44545,Disruption Beam,1,Instant,Self,name_match,0,true
+Avatus,27408,134,72000016,50,false,7,44546,Disruption Beam,1,Instant,Self,name_match,0,true
+Avatus,27408,134,72000016,50,false,7,44452,Holo-Crush,1,Instant,Self,name_match,0,true
+Avatus,27408,134,72000016,50,false,7,44299,Holo-Swipe,1,Instant,Self,name_match,0,true
+Avatus,27408,134,72000016,50,false,7,44451,Holo-Swipe,1,Instant,Self,name_match,0,true
+Avatus,27408,134,72000016,50,false,7,75097,Holo-Swipe,1,Instant,Self,name_match,0,true
+Avatus,27408,134,72000016,50,false,7,75098,Holo-Swipe,1,Instant,Self,name_match,0,true
+Avatus,27408,134,72000016,50,false,7,44913,Invalidate,1,3 sec channel,Targeted,name_match,1000,true
+Avatus,27408,134,72000016,50,false,7,44655,Nullifying Rays,1,Instant,Self,name_match,0,true
+Avatus,27408,134,72000016,50,false,7,44703,Nullifying Rays,1,Instant,Self,name_match,0,true
+Avatus,27408,134,72000016,50,false,7,45892,Obliteration Beam,1,12 sec channel,Self,name_match,0,true
+Avatus,27408,134,72000016,50,false,7,45371,Phase Punch,1,1.8 sec cast,Targeted,name_match,1800,true
+Avatus,27408,134,72000016,50,false,7,69858,Phase Punch,1,3.3 sec cast,Targeted,name_match,3300,true
+Avatus,27408,134,72000016,50,false,7,47290,Spell Name Missing,1,Instant,Targeted,not_in_16042,0,true
+Avatus,27408,134,72000016,50,false,7,44710,Swipe,1,Instant,Targeted,name_match,0,true
+Avatus,27408,134,72000016,50,false,7,44711,Swipe,1,Instant,Targeted,name_match,0,true
+Avatus,28982,141,,,false,0,78370,Obliteration,2,3 sec cast,Self,name_match,3000,true
+Avatus,28982,141,,,false,0,78374,Obliteration,6,3 sec cast,Self,name_match,3000,true
+Avatus,30665,59,9342307,50,false,6,70511,Dimensional Rift,1,Instant,Targeted,name_match,0,true
+Avatus,30665,59,9342307,50,false,6,70483,Energized Bombardment,1,Instant,Targeted,name_match,0,true
+Avatus,30665,59,9342307,50,false,6,70870,Energized Bombardment,1,Instant,Targeted,name_match,0,true
+Avatus,30665,59,9342307,50,false,6,70462,Holo-Swipe,1,Instant,Self,name_match,0,true
+Avatus,30665,59,9342307,50,false,6,70463,Holo-Swipe,1,Instant,Self,name_match,0,true
+Avatus,30665,59,9342307,50,false,6,70493,Obliteration Beam,1,Instant,Self,name_match,0,true
+Avatus,30665,59,9342307,50,false,6,70576,Obliteration Beam,1,15 sec channel,Self,name_match,0,true
+Avatus,30665,59,9342307,50,false,6,70567,Summon Dimensional Rifts,1,2 sec cast,Self,name_match,2000,true
+Avatus,8704,10,9342307,50,false,0,70483,Energized Bombardment,1,Instant,Targeted,name_match,0,true
+Avatus,8704,10,9342307,50,false,0,70870,Energized Bombardment,1,Instant,Targeted,name_match,0,true
+Avatus,8704,10,9342307,50,false,0,70462,Holo-Swipe,1,Instant,Self,name_match,0,true
+Avatus,8704,10,9342307,50,false,0,70463,Holo-Swipe,1,Instant,Self,name_match,0,true
+Avatus,8704,10,9342307,50,false,0,70493,Obliteration Beam,1,Instant,Self,name_match,0,true
+Avatus,8704,10,9342307,50,false,0,70576,Obliteration Beam,1,15 sec channel,Self,name_match,0,true
+Avatus,8704,10,9342307,50,false,0,70567,Summon Dimensional Rifts,1,2 sec cast,Self,name_match,2000,true
+Avatus,8789,46,9342307,50,false,0,70511,Dimensional Rift,1,Instant,Targeted,name_match,0,true
+Avatus,8789,46,9342307,50,false,0,70483,Energized Bombardment,1,Instant,Targeted,name_match,0,true
+Avatus,8789,46,9342307,50,false,0,70870,Energized Bombardment,1,Instant,Targeted,name_match,0,true
+Avatus,8789,46,9342307,50,false,0,70462,Holo-Swipe,1,Instant,Self,name_match,0,true
+Avatus,8789,46,9342307,50,false,0,70463,Holo-Swipe,1,Instant,Self,name_match,0,true
+Avatus,8789,46,9342307,50,false,0,70493,Obliteration Beam,1,Instant,Self,name_match,0,true
+Avatus,8789,46,9342307,50,false,0,70576,Obliteration Beam,1,15 sec channel,Self,name_match,0,true
+Avatus,8789,46,9342307,50,false,0,70567,Summon Dimensional Rifts,1,2 sec cast,Self,name_match,2000,true
+Avatus,8799,24,9342307,50,false,0,70483,Energized Bombardment,1,Instant,Targeted,name_match,0,true
+Avatus,8799,24,9342307,50,false,0,70870,Energized Bombardment,1,Instant,Targeted,name_match,0,true
+Avatus,8799,24,9342307,50,false,0,70462,Holo-Swipe,1,Instant,Self,name_match,0,true
+Avatus,8799,24,9342307,50,false,0,70463,Holo-Swipe,1,Instant,Self,name_match,0,true
+Avatus,8799,24,9342307,50,false,0,70493,Obliteration Beam,1,Instant,Self,name_match,0,true
+Avatus,9209,2,9342307,50,false,7,70493,Obliteration Beam,1,Instant,Self,name_match,0,true
+Blade-Wind the Invoker,109,15,117590,20,false,4,38818,Arcane Bolt,1,Instant,Targeted,name_match,0,true
+Blade-Wind the Invoker,109,15,117590,20,false,4,39074,Electrostatic Pulse,1,2.5 sec cast,Self,name_match,2500,true
+Blade-Wind the Invoker,109,15,117590,20,false,4,39935,Lightning Strike,1,1.5 sec cast,Targeted,name_match,1500,true
+Blade-Wind the Invoker,109,15,117590,20,false,4,40599,Shock,1,Instant,Self,name_match,0,true
+Blade-Wind the Invoker,109,15,117590,20,false,4,38786,Thunder Cross,1,2 sec cast,Self,name_match,2000,true
+Blade-Wind the Invoker,109,15,117590,20,false,4,63231,Thunder Cross,1,1.5 sec cast,Self,name_match,1500,true
+Blade-Wind the Invoker,109,15,117590,20,false,4,63525,Thunder Cross,1,1.5 sec cast,Self,name_match,1500,true
+Blade-Wind the Invoker,3068,15,1000014,50,true,4,38818,Arcane Bolt,1,Instant,Targeted,name_match,0,true
+Blade-Wind the Invoker,3068,15,1000014,50,true,4,39074,Electrostatic Pulse,1,2.5 sec cast,Self,name_match,2500,true
+Blade-Wind the Invoker,3068,15,1000014,50,true,4,39935,Lightning Strike,1,1.5 sec cast,Targeted,name_match,1500,true
+Blade-Wind the Invoker,3068,15,1000014,50,true,4,40599,Shock,1,Instant,Self,name_match,0,true
+Blade-Wind the Invoker,3068,15,1000014,50,true,4,63231,Thunder Cross,1,1.5 sec cast,Self,name_match,1500,true
+Blade-Wind the Invoker,3068,15,1000014,50,true,4,63525,Thunder Cross,1,1.5 sec cast,Self,name_match,1500,true
+Bosun Octog,6837,16,1064444,50,true,4,31283,Hookshot,1,1.5 sec cast,Self,name_match,1500,true
+Bosun Octog,6837,16,1064444,50,true,4,41455,Monkey Drop Pod,1,11.2 sec channel,Targeted,name_match,0,true
+Bosun Octog,6837,16,1064444,50,true,4,36614,Noxious Ink,1,10 sec channel,Targeted,name_match,0,true
+Bosun Octog,6837,16,1064444,50,true,4,41443,Scab Stab,1,Instant,Targeted,name_match,0,true
+Bosun Octog,6837,16,1064444,50,true,4,41850,Shred,1,2.5 sec cast,Self,name_match,2500,true
+Bosun Octog,6837,16,1064444,50,true,4,36628,Swipe,1,Instant,Targeted,name_match,0,true
+Bosun Octog,6837,16,1064444,50,true,4,36650,Swipe,1,Instant,Targeted,name_match,0,true
+Bosun Octog,7084,16,327049,35,false,4,31283,Hookshot,1,1.5 sec cast,Self,name_match,1500,true
+Bosun Octog,7084,16,327049,35,false,4,41455,Monkey Drop Pod,1,11.2 sec channel,Targeted,name_match,0,true
+Bosun Octog,7084,16,327049,35,false,4,36614,Noxious Ink,1,10 sec channel,Targeted,name_match,0,true
+Bosun Octog,7084,16,327049,35,false,4,41443,Scab Stab,1,Instant,Targeted,name_match,0,true
+Bosun Octog,7084,16,327049,35,false,4,41850,Shred,1,2.5 sec cast,Self,name_match,2500,true
+Bosun Octog,7084,16,327049,35,false,4,36628,Swipe,1,Instant,Targeted,name_match,0,true
+Bosun Octog,7084,16,327049,35,false,4,36650,Swipe,1,Instant,Targeted,name_match,0,true
+Bosun Octog,8687,10,327049,35,false,0,36614,Noxious Ink,1,10 sec channel,Targeted,name_match,0,true
+Bosun Octog,8687,10,327049,35,false,0,41443,Scab Stab,1,Instant,Targeted,name_match,0,true
+Bosun Octog,8687,10,327049,35,false,0,36650,Swipe,1,Instant,Targeted,name_match,0,true
+Experiment X-89,18315,122,23170014,50,false,6,47319,Corruption Globule,1,1 sec cast,Targeted,name_match,1000,true
+Experiment X-89,18315,122,23170014,50,false,6,47269,Deadly Bite,1,Instant,Targeted,name_match,0,true
+Experiment X-89,18315,122,23170014,50,false,6,47270,Forceful Smash,1,Instant,Targeted,name_match,0,true
+Experiment X-89,18315,122,23170014,50,false,6,58707,Mighty Leap,1,0.63 sec cast,Targeted,name_match,634,true
+Experiment X-89,18315,122,23170014,50,false,6,70043,Mighty Leap,1,0.5 sec cast,Targeted,name_match,500,true
+Experiment X-89,18315,122,23170014,50,false,6,47332,Repugnant Spew,1,Instant,Targeted,name_match,0,true
+Experiment X-89,18315,122,23170014,50,false,6,47350,Repugnant Spew,1,6 sec channel,Self,name_match,0,true
+Experiment X-89,18315,122,23170014,50,false,6,47279,Resounding Shout,1,2.75 sec cast,Self,name_match,2750,true
+Experiment X-89,18315,122,23170014,50,false,6,47271,Shattering Shockwave,1,2 sec cast,Self,name_match,2000,true
+Experiment X-89,18315,122,23170014,50,false,6,47286,Strain Bomb,1,Instant,Targeted,name_match,0,true
+Experiment X-89,8821,24,20160014,50,false,0,47279,Resounding Shout,1,2.75 sec cast,Self,name_match,2750,true
+Experiment X-89,8821,24,20160014,50,false,0,47271,Shattering Shockwave,1,2 sec cast,Self,name_match,2000,true
+Experiment X-89,8821,24,20160014,50,false,0,47286,Strain Bomb,1,Instant,Targeted,name_match,0,true
+Experiment X-89,8977,89,20160014,50,false,0,47279,Resounding Shout,1,2.75 sec cast,Self,name_match,2750,true
+Experiment X-89,8977,89,20160014,50,false,0,47271,Shattering Shockwave,1,2 sec cast,Self,name_match,2000,true
+Experiment X-89,8977,89,20160014,50,false,0,47286,Strain Bomb,1,Instant,Targeted,name_match,0,true
+Forgemaster Trogun,1929,17,185200,20,false,4,38793,Clobber,1,Instant,Targeted,name_match,0,true
+Forgemaster Trogun,1929,17,185200,20,false,4,51860,Exanite Shards,1,Instant,Targeted,name_match,0,true
+Forgemaster Trogun,1929,17,185200,20,false,4,52521,Exanite Weapon,1,14 sec channel,Self,name_match,0,true
+Forgemaster Trogun,1929,17,185200,20,false,4,52512,Forgemaster's Call,1,7 sec cast,Self,name_match,7000,true
+Forgemaster Trogun,1929,17,185200,20,false,4,38794,Smash,1,Instant,Targeted,name_match,0,true
+Forgemaster Trogun,1929,17,185200,20,false,4,58767,Surge of Primal Fire,1,Instant,Self,name_match,0,true
+Forgemaster Trogun,1929,17,185200,20,false,4,51970,Volcanic Strike,1,2 sec cast,Self,name_match,2000,true
+Forgemaster Trogun,1929,17,185200,20,false,4,63106,Volcanic Strike,1,2 sec cast,Self,name_match,2000,true
+Forgemaster Trogun,7822,17,1159209,50,true,4,38793,Clobber,1,Instant,Targeted,name_match,0,true
+Forgemaster Trogun,7822,17,1159209,50,true,4,63107,Exanite Cuts,1,Instant multi-tap,Targeted,name_match,0,true
+Forgemaster Trogun,7822,17,1159209,50,true,4,51860,Exanite Shards,1,Instant,Targeted,name_match,0,true
+Forgemaster Trogun,7822,17,1159209,50,true,4,52521,Exanite Weapon,1,14 sec channel,Self,name_match,0,true
+Forgemaster Trogun,7822,17,1159209,50,true,4,52512,Forgemaster's Call,1,7 sec cast,Self,name_match,7000,true
+Forgemaster Trogun,7822,17,1159209,50,true,4,38794,Smash,1,Instant,Targeted,name_match,0,true
+Forgemaster Trogun,7822,17,1159209,50,true,4,58767,Surge of Primal Fire,1,Instant,Self,name_match,0,true
+Forgemaster Trogun,7822,17,1159209,50,true,4,63106,Volcanic Strike,1,2 sec cast,Self,name_match,2000,true
+Forgemaster Trogun,8657,10,9342307,50,false,0,58871,Clobber,1,Instant,Self,name_match,0,true
+Forgemaster Trogun,8657,10,9342307,50,false,0,58986,Exanite Shards,1,Instant,Self,name_match,0,true
+Forgemaster Trogun,8657,10,9342307,50,false,0,63156,Exanite Shards,1,Instant,Targeted,name_match,0,true
+Forgemaster Trogun,8657,10,9342307,50,false,0,59397,Meteor,1,Instant,Targeted,name_match,0,true
+Forgemaster Trogun,8657,10,9342307,50,false,0,59463,Meteor,1,Instant,Targeted,name_match,0,true
+Forgemaster Trogun,8657,10,9342307,50,false,0,70422,Meteor Hammer,1,Instant,Self,name_match,0,true
+Forgemaster Trogun,8657,10,9342307,50,false,0,58829,Volcanic Strike,1,2 sec cast,Self,name_match,2000,true
+Forgemaster Trogun,8657,10,9342307,50,false,0,58848,Volcano,1,Instant,Targeted,name_match,0,true
+Forgemaster Trogun,8657,10,9342307,50,false,0,58854,Volcano,1,Instant,Targeted,name_match,0,true
+Forgemaster Trogun,8858,46,9342307,50,false,0,58871,Clobber,1,Instant,Self,name_match,0,true
+Forgemaster Trogun,8858,46,9342307,50,false,0,58986,Exanite Shards,1,Instant,Self,name_match,0,true
+Forgemaster Trogun,8858,46,9342307,50,false,0,63156,Exanite Shards,1,Instant,Targeted,name_match,0,true
+Forgemaster Trogun,8858,46,9342307,50,false,0,59397,Meteor,1,Instant,Targeted,name_match,0,true
+Forgemaster Trogun,8858,46,9342307,50,false,0,59463,Meteor,1,Instant,Targeted,name_match,0,true
+Forgemaster Trogun,8858,46,9342307,50,false,0,70422,Meteor Hammer,1,Instant,Self,name_match,0,true
+Forgemaster Trogun,8858,46,9342307,50,false,0,58872,Smash,1,Instant,Self,name_match,0,true
+Forgemaster Trogun,8858,46,9342307,50,false,0,58829,Volcanic Strike,1,2 sec cast,Self,name_match,2000,true
+Forgemaster Trogun,8858,46,9342307,50,false,0,58848,Volcano,1,Instant,Targeted,name_match,0,true
+Forgemaster Trogun,8858,46,9342307,50,false,0,58854,Volcano,1,Instant,Targeted,name_match,0,true
+Forgemaster Trogun,9604,24,9342307,50,false,0,63156,Exanite Shards,1,Instant,Targeted,name_match,0,true
+Forgemaster Trogun,9604,24,9342307,50,false,0,59463,Meteor,1,Instant,Targeted,name_match,0,true
+Forgemaster Trogun,9604,24,9342307,50,false,0,70422,Meteor Hammer,1,Instant,Self,name_match,0,true
+Forgemaster Trogun,9604,24,9342307,50,false,0,58848,Volcano,1,Instant,Targeted,name_match,0,true
+Forgemaster Trogun,9604,24,9342307,50,false,0,58854,Volcano,1,Instant,Targeted,name_match,0,true
+Forgemaster Trogun,9694,4,9342307,50,false,0,63156,Exanite Shards,1,Instant,Targeted,name_match,0,true
+Forgemaster Trogun,9694,4,9342307,50,false,0,70422,Meteor Hammer,1,Instant,Self,name_match,0,true
+Gloomclaw,25826,131,21000014,50,false,7,43976,Blight Blast,1,Instant,Targeted,name_match,0,true
+Gloomclaw,25826,131,21000014,50,false,7,44318,Blight Blast,1,Instant,Targeted,name_match,0,true
+Gloomclaw,25826,131,21000014,50,false,7,44322,Corruption Pool,1,30 sec channel,Targeted,name_match,0,true
+Gloomclaw,25826,131,21000014,50,false,7,44043,Plague Smash,1,1.5 sec cast,Self,name_match,1500,true
+Gloomclaw,25826,131,21000014,50,false,7,44171,Rupture,1,4 sec cast,Self,name_match,4000,true
+Gloomclaw,25826,131,21000014,50,false,7,66628,Rupture,2,4 sec cast,Self,name_match,4000,true
+Gloomclaw,25891,57,21000014,50,false,7,43976,Blight Blast,1,Instant,Targeted,name_match,0,true
+Gloomclaw,25891,57,21000014,50,false,7,44318,Blight Blast,1,Instant,Targeted,name_match,0,true
+Gloomclaw,25891,57,21000014,50,false,7,44322,Corruption Pool,1,30 sec channel,Targeted,name_match,0,true
+Gloomclaw,25891,57,21000014,50,false,7,44043,Plague Smash,1,1.5 sec cast,Self,name_match,1500,true
+Gloomclaw,25891,57,21000014,50,false,7,44171,Rupture,1,4 sec cast,Self,name_match,4000,true
+Grond the Corpsemaker,1315,17,274190,20,false,4,37585,Bellow,1,2 sec cast,Self,name_match,2000,true
+Grond the Corpsemaker,1315,17,274190,20,false,4,63109,Bellow,2,1 sec cast,Self,name_match,1000,true
+Grond the Corpsemaker,1315,17,274190,20,false,4,37281,Bite,1,Instant,Self,name_match,0,true
+Grond the Corpsemaker,1315,17,274190,20,false,4,40118,Buck,1,0.4 sec cast,Self,name_match,400,true
+Grond the Corpsemaker,1315,17,274190,20,false,4,37282,Chomp,1,Instant,Self,name_match,0,true
+Grond the Corpsemaker,1315,17,274190,20,false,4,40117,Headbutt,1,0.67 sec cast,Targeted,name_match,667,true
+Grond the Corpsemaker,1315,17,274190,20,false,4,37223,Mutilate,1,4.25 sec cast,Targeted,name_match,4250,true
+Grond the Corpsemaker,1315,17,274190,20,false,4,48829,Sand Blast,1,0.4 sec cast,Self,name_match,400,true
+Grond the Corpsemaker,1315,17,274190,20,false,4,40109,Thrash,1,5.5 sec cast,Self,name_match,5500,true
+Grond the Corpsemaker,1315,17,274190,20,false,4,63123,Thrash,2,5.5 sec cast,Self,name_match,5500,true
+Grond the Corpsemaker,5553,17,1017589,50,true,4,63109,Bellow,2,1 sec cast,Self,name_match,1000,true
+Grond the Corpsemaker,5553,17,1017589,50,true,4,37281,Bite,1,Instant,Self,name_match,0,true
+Grond the Corpsemaker,5553,17,1017589,50,true,4,40118,Buck,1,0.4 sec cast,Self,name_match,400,true
+Grond the Corpsemaker,5553,17,1017589,50,true,4,37282,Chomp,1,Instant,Self,name_match,0,true
+Grond the Corpsemaker,5553,17,1017589,50,true,4,40117,Headbutt,1,0.67 sec cast,Targeted,name_match,667,true
+Grond the Corpsemaker,5553,17,1017589,50,true,4,37223,Mutilate,1,4.25 sec cast,Targeted,name_match,4250,true
+Grond the Corpsemaker,5553,17,1017589,50,true,4,48829,Sand Blast,1,0.4 sec cast,Self,name_match,400,true
+Grond the Corpsemaker,5553,17,1017589,50,true,4,63123,Thrash,2,5.5 sec cast,Self,name_match,5500,true
+Kuralak the Defiler,18294,122,29001722,50,false,6,56652,Chromosome Corruption,1,Instant,Targeted,name_match,0,true
+Kuralak the Defiler,18294,122,29001722,50,false,6,56473,Corruption Shock,1,0.63 sec cast,Targeted,name_match,633,true
+Kuralak the Defiler,18294,122,29001722,50,false,6,60623,Outbreak,1,8 sec cast,Self,name_match,8000,true
+Kuralak the Defiler,18294,122,29001722,50,false,6,60965,Overload,1,5 sec cast,Self,name_match,5000,true
+Kuralak the Defiler,18294,122,29001722,50,false,6,64902,Overload,2,2.5 sec cast,Self,name_match,2500,true
+Kuralak the Defiler,18294,122,29001722,50,false,6,64903,Overload,3,2.5 sec cast,Self,name_match,2500,true
+Kuralak the Defiler,18294,122,29001722,50,false,6,64918,Swirling Corruption,1,Instant,Self,name_match,0,true
+Kuralak the Defiler,18294,122,29001722,50,false,6,57729,Vileness,1,1.5 sec cast,Targeted,name_match,1500,true
+Maelstrom Authority,25641,135,28350000,50,false,0,66413,Conduction,1,Instant,Targeted,name_match,0,true
+Maelstrom Authority,25641,135,28350000,50,false,0,44504,Crystallize,1,Instant,Targeted,name_match,0,true
+Maelstrom Authority,25641,135,28350000,50,false,0,45071,Freeze,1,1 sec cast,Targeted,name_match,1000,true
+Maelstrom Authority,25641,135,28350000,50,false,0,44496,Ice Breath,1,Instant,Self,name_match,0,true
+Maelstrom Authority,25641,135,28350000,50,false,0,44325,Lightning Rod,1,20 sec channel,Targeted,name_match,0,true
+Maelstrom Authority,25641,135,28350000,50,false,0,44362,Lightning Strike,1,1.5 sec cast,Targeted,name_match,1500,true
+Maelstrom Authority,25641,135,28350000,50,false,0,64943,Maelstrom Bolt,1,Instant,Targeted,name_match,0,true
+Maelstrom Authority,25641,135,28350000,50,false,0,73291,Maelstrom Bolt,1,Instant,Targeted,name_match,0,true
+Maelstrom Authority,25641,135,28350000,50,false,0,45506,Shifting Currents,1,Instant,Targeted,name_match,0,true
+Maelstrom Authority,25641,135,28350000,50,false,0,69073,Shifting Currents,1,Instant,Self,name_match,0,true
+Maelstrom Authority,25641,135,28350000,50,false,0,44392,Static Bombshell,1,2 sec cast,Self,name_match,2000,true
+Maelstrom Authority,25641,135,28350000,50,false,0,44394,Static Fallout,1,10 sec channel,Self,name_match,0,true
+Maelstrom Authority,25641,135,28350000,50,false,0,44395,Typhoon,1,Instant,Self,name_match,0,true
+Maelstrom Authority,25641,135,28350000,50,false,0,44526,Typhoon,2,Instant,Self,name_match,0,true
+Maelstrom Authority,25641,135,28350000,50,false,0,44527,Typhoon,3,Instant,Self,name_match,0,true
+Maelstrom Authority,25641,135,28350000,50,false,0,69065,Typhoon,4,Instant,Self,name_match,0,true
+Maelstrom Authority,25641,135,28350000,50,false,0,72934,Typhoon,5,Instant,Self,name_match,0,true
+Maelstrom Authority,25641,135,28350000,50,false,0,72935,Typhoon,6,Instant,Self,name_match,0,true
+Maelstrom Authority,26749,57,52800016,50,false,7,66413,Conduction,1,Instant,Targeted,name_match,0,true
+Maelstrom Authority,26749,57,52800016,50,false,7,44325,Lightning Rod,1,20 sec channel,Targeted,name_match,0,true
+Maelstrom Authority,26749,57,52800016,50,false,7,64943,Maelstrom Bolt,1,Instant,Targeted,name_match,0,true
+Maelstrom Authority,26749,57,52800016,50,false,7,73291,Maelstrom Bolt,1,Instant,Targeted,name_match,0,true
+Maelstrom Authority,26749,57,52800016,50,false,7,45506,Shifting Currents,1,Instant,Targeted,name_match,0,true
+Moldwood Overlord Skash,6864,53,1622659,50,false,4,63469,Corrupting Revolver,1,5 sec channel,Self,name_match,0,true
+Moldwood Overlord Skash,6864,53,1622659,50,false,4,63474,Corrupting Revolver,2,5 sec channel,Self,name_match,0,true
+Moldwood Overlord Skash,6864,53,1622659,50,false,4,63475,Corrupting Revolver,3,5 sec channel,Self,name_match,0,true
+Moldwood Overlord Skash,6864,53,1622659,50,false,4,63476,Corrupting Revolver,4,5 sec channel,Self,name_match,0,true
+Moldwood Overlord Skash,6864,53,1622659,50,false,4,42149,Corruption Heartseeker,1,1.5 sec cast,Targeted,name_match,1500,true
+Moldwood Overlord Skash,6864,53,1622659,50,false,4,42064,Crush,1,Instant,Targeted,name_match,0,true
+Moldwood Overlord Skash,6864,53,1622659,50,false,4,42063,Smash,1,Instant,Targeted,name_match,0,true
+Moldwood Overlord Skash,6864,53,1622659,50,false,4,42070,Tentacle Wrath,1,2 sec cast,Self,name_match,2000,true
+Moldwood Overlord Skash,6871,53,1622659,50,true,4,63469,Corrupting Revolver,1,5 sec channel,Self,name_match,0,true
+Moldwood Overlord Skash,6871,53,1622659,50,true,4,42149,Corruption Heartseeker,1,1.5 sec cast,Targeted,name_match,1500,true
+Moldwood Overlord Skash,6871,53,1622659,50,true,4,42064,Crush,1,Instant,Targeted,name_match,0,true
+Moldwood Overlord Skash,6871,53,1622659,50,true,4,42063,Smash,1,Instant,Targeted,name_match,0,true
+Moldwood Overlord Skash,6871,53,1622659,50,true,4,42070,Tentacle Wrath,1,2 sec cast,Self,name_match,2000,true
+Mordechai Redmoon,23604,59,9342307,50,false,0,54709,Cross Shot,1,Instant,Self,name_match,0,true
+Mordechai Redmoon,23604,59,9342307,50,false,0,54704,Terraformer Flash,1,2 sec cast,Self,name_match,2000,true
+Mordechai Redmoon,23604,59,9342307,50,false,0,54707,Terraformer Flash,1,Instant,Targeted,name_match,0,true
+Mordechai Redmoon,23604,59,9342307,50,false,0,54739,Terraformer Flash,1,Instant,Self,name_match,0,true
+Mordechai Redmoon,23604,59,9342307,50,false,0,54645,Turret Grenade,1,Instant,Targeted,name_match,0,true
+Mordechai Redmoon,23604,59,9342307,50,false,0,54638,Vicious Barrage,1,Instant,Self,name_match,0,true
+Mordechai Redmoon,23604,59,9342307,50,false,0,54778,X Marks the Spot,1,Instant,Targeted,name_match,0,true
+Mordechai Redmoon,23604,59,9342307,50,false,0,54807,X Marks the Spot,1,Instant,Targeted,name_match,0,true
+Mordechai Redmoon,6838,16,1077659,50,true,4,39491,Big Bang,1,3 sec cast,Self,name_match,3000,true
+Mordechai Redmoon,6838,16,1077659,50,true,4,38458,Cross Shot,1,Instant,Self,name_match,0,true
+Mordechai Redmoon,6838,16,1077659,50,true,4,39481,Pin,1,Instant,Targeted,name_match,0,true
+Mordechai Redmoon,6838,16,1077659,50,true,4,39493,Turret Grenade,1,Instant,Targeted,name_match,0,true
+Mordechai Redmoon,6838,16,1077659,50,true,4,38461,Vicious Barrage,1,Instant,Self,name_match,0,true
+Mordechai Redmoon,6907,107,1077659,50,true,4,39491,Big Bang,1,3 sec cast,Self,name_match,3000,true
+Mordechai Redmoon,6907,107,1077659,50,true,4,38458,Cross Shot,1,Instant,Self,name_match,0,true
+Mordechai Redmoon,6907,107,1077659,50,true,4,39481,Pin,1,Instant,Targeted,name_match,0,true
+Mordechai Redmoon,6907,107,1077659,50,true,4,39493,Turret Grenade,1,Instant,Targeted,name_match,0,true
+Mordechai Redmoon,6907,107,1077659,50,true,4,38461,Vicious Barrage,1,Instant,Self,name_match,0,true
+Mordechai Redmoon,7003,107,354679,35,false,4,39491,Big Bang,1,3 sec cast,Self,name_match,3000,true
+Mordechai Redmoon,7003,107,354679,35,false,4,38458,Cross Shot,1,Instant,Self,name_match,0,true
+Mordechai Redmoon,7003,107,354679,35,false,4,39481,Pin,1,Instant,Targeted,name_match,0,true
+Mordechai Redmoon,7003,107,354679,35,false,4,39493,Turret Grenade,1,Instant,Targeted,name_match,0,true
+Mordechai Redmoon,7069,16,354679,35,false,4,39491,Big Bang,1,3 sec cast,Self,name_match,3000,true
+Mordechai Redmoon,7069,16,354679,35,false,4,38458,Cross Shot,1,Instant,Self,name_match,0,true
+Mordechai Redmoon,7069,16,354679,35,false,4,39481,Pin,1,Instant,Targeted,name_match,0,true
+Mordechai Redmoon,7069,16,354679,35,false,4,39493,Turret Grenade,1,Instant,Targeted,name_match,0,true
+Mordechai Redmoon,7069,16,354679,35,false,4,38461,Vicious Barrage,1,Instant,Self,name_match,0,true
+Mordechai Redmoon,8689,10,9342307,50,false,0,54709,Cross Shot,1,Instant,Self,name_match,0,true
+Mordechai Redmoon,8689,10,9342307,50,false,0,54704,Terraformer Flash,1,2 sec cast,Self,name_match,2000,true
+Mordechai Redmoon,8689,10,9342307,50,false,0,54739,Terraformer Flash,1,Instant,Self,name_match,0,true
+Mordechai Redmoon,8689,10,9342307,50,false,0,54645,Turret Grenade,1,Instant,Targeted,name_match,0,true
+Mordechai Redmoon,8689,10,9342307,50,false,0,54638,Vicious Barrage,1,Instant,Self,name_match,0,true
+Mordechai Redmoon,8689,10,9342307,50,false,0,54778,X Marks the Spot,1,Instant,Targeted,name_match,0,true
+Mordechai Redmoon,8689,10,9342307,50,false,0,54807,X Marks the Spot,1,Instant,Targeted,name_match,0,true
+Mordechai Redmoon,8793,24,9342307,50,false,0,54704,Terraformer Flash,1,2 sec cast,Self,name_match,2000,true
+Mordechai Redmoon,8793,24,9342307,50,false,0,54638,Vicious Barrage,1,Instant,Self,name_match,0,true
+Mordechai Redmoon,8793,24,9342307,50,false,0,54778,X Marks the Spot,1,Instant,Targeted,name_match,0,true
+Mordechai Redmoon,8793,24,9342307,50,false,0,54807,X Marks the Spot,1,Instant,Targeted,name_match,0,true
+Mordechai Redmoon,8886,46,9342307,50,false,0,54709,Cross Shot,1,Instant,Self,name_match,0,true
+Mordechai Redmoon,8886,46,9342307,50,false,0,54704,Terraformer Flash,1,2 sec cast,Self,name_match,2000,true
+Mordechai Redmoon,8886,46,9342307,50,false,0,54739,Terraformer Flash,1,Instant,Self,name_match,0,true
+Mordechai Redmoon,8886,46,9342307,50,false,0,54645,Turret Grenade,1,Instant,Targeted,name_match,0,true
+Mordechai Redmoon,8886,46,9342307,50,false,0,54638,Vicious Barrage,1,Instant,Self,name_match,0,true
+Mordechai Redmoon,8886,46,9342307,50,false,0,54778,X Marks the Spot,1,Instant,Targeted,name_match,0,true
+Mordechai Redmoon,8886,46,9342307,50,false,0,54807,X Marks the Spot,1,Instant,Targeted,name_match,0,true
+Ondu - Plague Splatter,20056,53,,,true,0,42424,Plague Splatter,1,1.5 sec cast,Self,name_match,1500,true
+Ondu - Plague Splatter,20056,53,,,true,0,43316,Plague Splatter,1,10 sec channel,Self,name_match,1500,true
+Ondu - Plague Splatter,20056,53,,,true,0,63321,Plague Splatter,2,60 sec channel,Self,name_match,1500,true
+Ondu - Plague Splatter,20056,53,,,true,0,63362,Plague Splatter,2,1.5 sec cast,Self,name_match,1500,true
+Ondu - Plague Splatter,6814,53,,,false,0,42424,Plague Splatter,1,1.5 sec cast,Self,name_match,1500,true
+Ondu - Plague Splatter,6814,53,,,false,0,43316,Plague Splatter,1,10 sec channel,Self,name_match,1500,true
+Ondu - Plague Splatter,6814,53,,,false,0,63321,Plague Splatter,2,60 sec channel,Self,name_match,1500,true
+Ondu - Plague Splatter,6814,53,,,false,0,63362,Plague Splatter,2,1.5 sec cast,Self,name_match,1500,true
+Ondu Lifeweaver,15660,53,1147252,50,false,4,43372,Corrupting Shout,1,Instant,Self,name_match,0,true
+Ondu Lifeweaver,15660,53,1147252,50,false,4,42420,Plague Smash,1,1.5 sec cast,Self,name_match,1500,true
+Ondu Lifeweaver,15660,53,1147252,50,false,4,34235,Swipe,1,Instant,Targeted,name_match,0,true
+Ondu Lifeweaver,15660,53,1147252,50,false,4,34236,Swipe,1,Instant,Targeted,name_match,0,true
+Ondu Lifeweaver,6786,53,2432659,50,true,4,43372,Corrupting Shout,1,Instant,Self,name_match,0,true
+Ondu Lifeweaver,6786,53,2432659,50,true,4,63384,Plague Smash,2,1.5 sec cast,Self,name_match,1500,true
+Ondu Lifeweaver,6786,53,2432659,50,true,4,34235,Swipe,1,Instant,Targeted,name_match,0,true
+Ondu Lifeweaver,6786,53,2432659,50,true,4,34236,Swipe,1,Instant,Targeted,name_match,0,true
+Phage Maw,20793,123,18351722,50,false,6,57662,Bombardment,1,Instant,Targeted,name_match,0,true
+Phage Maw,20793,123,18351722,50,false,6,60442,Crater,1,7.5 sec cast,Self,name_match,7500,true
+Phage Maw,20793,123,18351722,50,false,6,60437,Laser Blast,1,2 sec cast,Self,name_match,2000,true
+Phage Maw,20793,123,18351722,50,false,6,60835,Laser Blast,1,0.5 sec cast,Self,name_match,500,true
+Phage Maw,20793,123,18351722,50,false,6,56532,Plasma Flower,1,Instant,Targeted,name_match,0,true
+Rayna Darkspeaker,6759,53,1332659,50,false,4,42051,Fireball,1,Instant,Targeted,name_match,0,true
+Rayna Darkspeaker,6759,53,1332659,50,false,4,42125,Flame Geyser,1,Instant,Targeted,name_match,0,true
+Rayna Darkspeaker,6759,53,1332659,50,false,4,54394,Molten Wave,1,20 sec channel,Self,name_match,0,true
+Rayna Darkspeaker,6759,53,1332659,50,false,4,54401,Molten Wave,1,20 sec channel,Self,name_match,0,true
+Rayna Darkspeaker,6759,53,1332659,50,false,4,54402,Molten Wave,1,20 sec channel,Self,name_match,0,true
+Rayna Darkspeaker,6759,53,1332659,50,false,4,54403,Molten Wave,1,20 sec channel,Self,name_match,0,true
+Rayna Darkspeaker,6759,53,1332659,50,false,4,54404,Molten Wave,1,20 sec channel,Self,name_match,0,true
+Rayna Darkspeaker,6759,53,1332659,50,false,4,42059,Raging Lava,1,1.3 sec cast,Self,name_match,1300,true
+Rayna Darkspeaker,6759,53,1332659,50,false,4,42322,Smoldering,1,Instant,Targeted,name_match,0,true
+Rayna Darkspeaker,6759,53,1332659,50,false,4,63319,Smoldering,2,Instant,Targeted,name_match,0,true
+Rayna Darkspeaker,6858,53,1332659,50,true,4,42051,Fireball,1,Instant,Targeted,name_match,0,true
+Rayna Darkspeaker,6858,53,1332659,50,true,4,42125,Flame Geyser,1,Instant,Targeted,name_match,0,true
+Rayna Darkspeaker,6858,53,1332659,50,true,4,54394,Molten Wave,1,20 sec channel,Self,name_match,0,true
+Rayna Darkspeaker,6858,53,1332659,50,true,4,54401,Molten Wave,1,20 sec channel,Self,name_match,0,true
+Rayna Darkspeaker,6858,53,1332659,50,true,4,54403,Molten Wave,1,20 sec channel,Self,name_match,0,true
+Rayna Darkspeaker,6858,53,1332659,50,true,4,54404,Molten Wave,1,20 sec channel,Self,name_match,0,true
+Rayna Darkspeaker,6858,53,1332659,50,true,4,42059,Raging Lava,1,1.3 sec cast,Self,name_match,1300,true
+Rayna Darkspeaker,6858,53,1332659,50,true,4,63319,Smoldering,2,Instant,Targeted,name_match,0,true
+Slavemaster Drokk,1933,17,150330,20,false,4,39184,Bash,1,Instant,Targeted,name_match,0,true
+Slavemaster Drokk,1933,17,150330,20,false,4,39201,Enslave,1,2 sec cast,Self,name_match,2000,true
+Slavemaster Drokk,1933,17,150330,20,false,4,39342,Homing Barrage,1,Instant,Targeted,name_match,0,true
+Slavemaster Drokk,1933,17,150330,20,false,4,63143,Lockdown,1,Instant,Targeted,name_match,0,true
+Slavemaster Drokk,1933,17,150330,20,false,4,39183,Smash,1,Instant,Targeted,name_match,0,true
+Slavemaster Drokk,1933,17,150330,20,false,4,63131,Suppression Field,1,Instant,Self,name_match,0,true
+Slavemaster Drokk,1933,17,150330,20,false,4,51563,Suppression Wave,1,Instant,Self,name_match,0,true
+Slavemaster Drokk,1933,17,150330,20,false,4,63120,Suppression Wave,2,Instant,Self,name_match,0,true
+Slavemaster Drokk,1933,17,150330,20,false,4,39293,Tracking Beacon,1,Instant,Targeted,name_match,0,true
+Slavemaster Drokk,3041,17,1232659,50,true,4,39184,Bash,1,Instant,Targeted,name_match,0,true
+Slavemaster Drokk,3041,17,1232659,50,true,4,39201,Enslave,1,2 sec cast,Self,name_match,2000,true
+Slavemaster Drokk,3041,17,1232659,50,true,4,39342,Homing Barrage,1,Instant,Targeted,name_match,0,true
+Slavemaster Drokk,3041,17,1232659,50,true,4,63143,Lockdown,1,Instant,Targeted,name_match,0,true
+Slavemaster Drokk,3041,17,1232659,50,true,4,39183,Smash,1,Instant,Targeted,name_match,0,true
+Slavemaster Drokk,3041,17,1232659,50,true,4,63131,Suppression Field,1,Instant,Self,name_match,0,true
+Slavemaster Drokk,3041,17,1232659,50,true,4,63120,Suppression Wave,2,Instant,Self,name_match,0,true
+Slavemaster Drokk,3041,17,1232659,50,true,4,39293,Tracking Beacon,1,Instant,Targeted,name_match,0,true
+Spiritmother Selene the Corrupted,15680,53,887659,50,false,4,42540,Blackout,1,9 sec cast,Targeted,name_match,9000,true
+Spiritmother Selene the Corrupted,15680,53,887659,50,false,4,42434,Creeping Shadows,1,Instant,Targeted,name_match,0,true
+Spiritmother Selene the Corrupted,15680,53,887659,50,false,4,42675,Lights Out!,1,Instant,Targeted,name_match,0,true
+Spiritmother Selene the Corrupted,15680,53,887659,50,false,4,42378,Malevolent Slash,1,Instant,Targeted,name_match,0,true
+Spiritmother Selene the Corrupted,15680,53,887659,50,false,4,63437,Nightmare Ripple,1,Instant,Targeted,name_match,0,true
+Spiritmother Selene the Corrupted,15680,53,887659,50,false,4,63463,Nightmare Ripple,2,Instant,Targeted,name_match,0,true
+Spiritmother Selene the Corrupted,15680,53,887659,50,false,4,72839,Nightmare Ripple,3,Instant,Targeted,name_match,0,true
+Spiritmother Selene the Corrupted,15680,53,887659,50,false,4,42290,Shade Prison,1,2 sec cast,Targeted,name_match,2000,true
+Spiritmother Selene the Corrupted,15680,53,887659,50,false,4,42379,Vicious Rend,1,Instant,Targeted,name_match,0,true
+Spiritmother Selene the Corrupted,6833,53,887659,50,true,4,42540,Blackout,1,9 sec cast,Targeted,name_match,9000,true
+Spiritmother Selene the Corrupted,6833,53,887659,50,true,4,42434,Creeping Shadows,1,Instant,Targeted,name_match,0,true
+Spiritmother Selene the Corrupted,6833,53,887659,50,true,4,42675,Lights Out!,1,Instant,Targeted,name_match,0,true
+Spiritmother Selene the Corrupted,6833,53,887659,50,true,4,42378,Malevolent Slash,1,Instant,Targeted,name_match,0,true
+Spiritmother Selene the Corrupted,6833,53,887659,50,true,4,63463,Nightmare Ripple,2,Instant,Targeted,name_match,0,true
+Spiritmother Selene the Corrupted,6833,53,887659,50,true,4,72839,Nightmare Ripple,3,Instant,Targeted,name_match,0,true
+Spiritmother Selene the Corrupted,6833,53,887659,50,true,4,42290,Shade Prison,1,2 sec cast,Targeted,name_match,2000,true
+Spiritmother Selene the Corrupted,6833,53,887659,50,true,4,42379,Vicious Rend,1,Instant,Targeted,name_match,0,true
+Stew-Shaman Tugga,6486,16,883349,50,true,4,36172,Blast Force,1,2 sec cast,Self,name_match,2000,true
+Stew-Shaman Tugga,6486,16,883349,50,true,4,72508,Burning,2,Instant,Targeted,name_match,0,true
+Stew-Shaman Tugga,6486,16,883349,50,true,4,36097,Fiery Bolt,1,0.33 sec cast,Targeted,name_match,333,true
+Stew-Shaman Tugga,6486,16,883349,50,true,4,63344,Molten Rain,2,1.5 sec cast,Targeted,name_match,1500,true
+Stew-Shaman Tugga,7049,16,349569,35,false,4,36172,Blast Force,1,2 sec cast,Self,name_match,2000,true
+Stew-Shaman Tugga,7049,16,349569,35,false,4,63270,Burning,1,Instant,Targeted,name_match,0,true
+Stew-Shaman Tugga,7049,16,349569,35,false,4,72508,Burning,2,Instant,Targeted,name_match,0,true
+Stew-Shaman Tugga,7049,16,349569,35,false,4,36097,Fiery Bolt,1,0.33 sec cast,Targeted,name_match,333,true
+Stew-Shaman Tugga,7049,16,349569,35,false,4,41016,Molten Rain,1,2 sec cast,Targeted,name_match,2000,true
+Stew-Shaman Tugga,7049,16,349569,35,false,4,63344,Molten Rain,2,1.5 sec cast,Targeted,name_match,1500,true
+Stew-Shaman Tugga,8891,46,349569,35,false,0,63270,Burning,1,Instant,Targeted,name_match,0,true
+Stew-Shaman Tugga,8891,46,349569,35,false,0,36097,Fiery Bolt,1,0.33 sec cast,Targeted,name_match,333,true
+Stew-Shaman Tugga,8891,46,349569,35,false,0,41016,Molten Rain,1,2 sec cast,Targeted,name_match,2000,true
+Stormtalon,269,15,225000,20,false,4,39580,Chomp,1,0.48 sec cast,Self,name_match,483,true
+Stormtalon,269,15,225000,20,false,4,70501,Electric Charge,1,Instant,Targeted,name_match,0,true
+Stormtalon,269,15,225000,20,false,4,39796,Lightning Rod,1,15 sec cast,Targeted,name_match,15000,true
+Stormtalon,269,15,225000,20,false,4,63110,Lightning Rod,2,15 sec cast,Targeted,name_match,15000,true
+Stormtalon,269,15,225000,20,false,4,39826,Lightning Storm,1,10 sec channel,Targeted,name_match,1500,true
+Stormtalon,269,15,225000,20,false,4,63441,Lightning Storm,2,11.25 sec channel,Targeted,name_match,1500,true
+Stormtalon,269,15,225000,20,false,4,63442,Lightning Storm,3,12.5 sec channel,Targeted,name_match,1500,true
+Stormtalon,269,15,225000,20,false,4,63443,Lightning Storm,4,13.75 sec channel,Targeted,name_match,1500,true
+Stormtalon,269,15,225000,20,false,4,63444,Lightning Storm,5,15 sec channel,Targeted,name_match,1500,true
+Stormtalon,269,15,225000,20,false,4,39596,Lightning Strike,1,1.5 sec cast,Targeted,name_match,1500,true
+Stormtalon,269,15,225000,20,false,4,63252,Lightning Strike,2,1.5 sec cast,Targeted,name_match,1500,true
+Stormtalon,269,15,225000,20,false,4,63257,Lightning Strike,3,1.5 sec cast,Targeted,name_match,1500,true
+Stormtalon,269,15,225000,20,false,4,63258,Lightning Strike,4,1.5 sec cast,Targeted,name_match,1500,true
+Stormtalon,269,15,225000,20,false,4,63259,Lightning Strike,5,1.5 sec cast,Targeted,name_match,1500,true
+Stormtalon,269,15,225000,20,false,4,39681,Static Wave,1,10 sec cast,Self,name_match,10000,true
+Stormtalon,269,15,225000,20,false,4,40014,Static Wave,1,0.5 sec cast,Self,name_match,500,true
+Stormtalon,269,15,225000,20,false,4,39633,Thunder Call,1,Instant,Self,name_match,0,true
+Stormtalon,269,15,225000,20,false,4,39639,Thunder Call,1,1 sec cast,Targeted,name_match,1000,true
+Stormtalon,269,15,225000,20,false,4,39641,Thunder Call,1,1.5 sec cast,Targeted,name_match,1500,true
+Stormtalon,269,15,225000,20,false,4,39800,Thunder Call,1,Instant,Self,name_match,0,true
+Stormtalon,3082,15,1115109,50,true,4,39580,Chomp,1,0.48 sec cast,Self,name_match,483,true
+Stormtalon,3082,15,1115109,50,true,4,70501,Electric Charge,1,Instant,Targeted,name_match,0,true
+Stormtalon,3082,15,1115109,50,true,4,63110,Lightning Rod,2,15 sec cast,Targeted,name_match,15000,true
+Stormtalon,3082,15,1115109,50,true,4,39826,Lightning Storm,1,10 sec channel,Targeted,name_match,1500,true
+Stormtalon,3082,15,1115109,50,true,4,63441,Lightning Storm,2,11.25 sec channel,Targeted,name_match,1500,true
+Stormtalon,3082,15,1115109,50,true,4,63442,Lightning Storm,3,12.5 sec channel,Targeted,name_match,1500,true
+Stormtalon,3082,15,1115109,50,true,4,63443,Lightning Storm,4,13.75 sec channel,Targeted,name_match,1500,true
+Stormtalon,3082,15,1115109,50,true,4,63444,Lightning Storm,5,15 sec channel,Targeted,name_match,1500,true
+Stormtalon,3082,15,1115109,50,true,4,39596,Lightning Strike,1,1.5 sec cast,Targeted,name_match,1500,true
+Stormtalon,3082,15,1115109,50,true,4,63252,Lightning Strike,2,1.5 sec cast,Targeted,name_match,1500,true
+Stormtalon,3082,15,1115109,50,true,4,63257,Lightning Strike,3,1.5 sec cast,Targeted,name_match,1500,true
+Stormtalon,3082,15,1115109,50,true,4,63258,Lightning Strike,4,1.5 sec cast,Targeted,name_match,1500,true
+Stormtalon,3082,15,1115109,50,true,4,63259,Lightning Strike,5,1.5 sec cast,Targeted,name_match,1500,true
+Stormtalon,3082,15,1115109,50,true,4,39681,Static Wave,1,10 sec cast,Self,name_match,10000,true
+Stormtalon,3082,15,1115109,50,true,4,40014,Static Wave,1,0.5 sec cast,Self,name_match,500,true
+Stormtalon,3082,15,1115109,50,true,4,39633,Thunder Call,1,Instant,Self,name_match,0,true
+Stormtalon,3082,15,1115109,50,true,4,39639,Thunder Call,1,1 sec cast,Targeted,name_match,1000,true
+Stormtalon,3082,15,1115109,50,true,4,39641,Thunder Call,1,1.5 sec cast,Targeted,name_match,1500,true
+Stormtalon,3082,15,1115109,50,true,4,39800,Thunder Call,1,Instant,Self,name_match,0,true
+Thunderfoot,6492,16,1562659,50,true,4,36283,Pulverize,1,1.5 sec cast,Targeted,name_match,1500,true
+Thunderfoot,6492,16,1562659,50,true,4,36437,Seismic Tremor,1,Instant,Self,name_match,0,true
+Thunderfoot,6492,16,1562659,50,true,4,36309,Swipe,1,1.4 sec cast,Self,name_match,1400,true
+Thunderfoot,6492,16,1562659,50,true,4,36310,Swipe,1,1.5 sec cast,Self,name_match,1500,true
+Thunderfoot,6492,16,1562659,50,true,4,36341,Thunder Pound,1,1.5 sec cast,Self,name_match,1500,true
+Thunderfoot,6492,16,1562659,50,true,4,40909,Thunder Pound,1,1 sec cast,Self,name_match,1000,true
+Thunderfoot,7007,16,355709,35,false,4,36283,Pulverize,1,1.5 sec cast,Targeted,name_match,1500,true
+Thunderfoot,7007,16,355709,35,false,4,36437,Seismic Tremor,1,Instant,Self,name_match,0,true
+Thunderfoot,7007,16,355709,35,false,4,36309,Swipe,1,1.4 sec cast,Self,name_match,1400,true
+Thunderfoot,7007,16,355709,35,false,4,36310,Swipe,1,1.5 sec cast,Self,name_match,1500,true
+Thunderfoot,7007,16,355709,35,false,4,36341,Thunder Pound,1,1.5 sec cast,Self,name_match,1500,true
+Thunderfoot,7007,16,355709,35,false,4,40909,Thunder Pound,1,1 sec cast,Self,name_match,1000,true
+Thunderfoot,8804,24,1153659,50,false,0,36437,Seismic Tremor,1,Instant,Self,name_match,0,true
+Thunderfoot,8804,24,1153659,50,false,0,36309,Swipe,1,1.4 sec cast,Self,name_match,1400,true
+Thunderfoot,9277,46,1153659,50,false,0,36309,Swipe,1,1.4 sec cast,Self,name_match,1400,true
+Thunderfoot,9277,46,1153659,50,false,0,36310,Swipe,1,1.5 sec cast,Self,name_match,1500,true
+Wrathbone,28226,400,130690,10,false,4,76994,Detonate,1,Instant,Targeted,name_match,0,true
+Wrathbone,28226,400,130690,10,false,4,76762,Flame Breath,1,3.37 sec cast,Self,name_match,3366,true
+Wrathbone,28226,400,130690,10,false,4,76742,Ground and Pound,1,30 sec channel,Self,name_match,0,true
+Wrathbone,28226,400,130690,10,false,4,77003,Magma Rock,1,Instant,Targeted,name_match,0,true
+Wrathbone,28226,400,130690,10,false,4,77006,Magma Shard,1,Instant,Targeted,name_match,0,true
+Wrathbone,28226,400,130690,10,false,4,76820,Meteor Strike,1,1.5 sec cast,Self,name_match,1500,true
+Wrathbone,28226,400,130690,10,false,4,76740,Smack,1,Instant,Targeted,name_match,0,true
+Wrathbone,28226,400,130690,10,false,4,76741,Smack,1,Instant,Targeted,name_match,0,true

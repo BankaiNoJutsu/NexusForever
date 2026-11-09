@@ -37,7 +37,9 @@ namespace NexusForever.Script.Instance.Raid.Datascape.Script
     {
         public const uint SystemDaemonsPurge        = 44099u; // [DS] e385 Eldan Sentinels - Purge - Base
         public const uint SystemDaemonsMemoryWipe   = 43454u; // [DS] e385 Eldan Sentinels - Memory Wipe - Base
-        public const uint MaelstromLightningRod     = 44437u; // [DS] e390 Air Boss - Lightning Rod - Base
+        // Rebound 2026-11-09 (INSTANCE_JABBITHOLE_SQL_CHECK_20261109.md): the tag row 44437 is named "Jetpack" with jetpack effects;
+        // Jabbithole links "Lightning Rod" 44325 (20 s channel, one damage effect) to Maelstrom Authority (two creature rows).
+        public const uint MaelstromLightningRod     = 44325u; // Jabbithole creature_spells Maelstrom Authority "Lightning Rod" (tag row was 44437)
         public const uint AvatusSummonHoloHands     = 44860u; // [DS] e399 Avatus - Summon Holo Hands - Base n
         public const uint AvatusSummonHoloCannons   = 44876u; // [DS] e399 Avatus - Summon Holo Cannons - Base n
 

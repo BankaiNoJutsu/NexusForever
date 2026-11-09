@@ -32,7 +32,9 @@ namespace NexusForever.Script.Instance.Raid.GeneticArchives.Script
     /// </summary>
     internal static class GeneticArchivesProvisionalPlans
     {
-        public const uint X89StrainBomb                 = 47353u; // [GA] e410 Strain Mauler Strain Bomb Base, CastTime 2000 ms
+        // Rebound 2026-11-09 (INSTANCE_JABBITHOLE_SQL_CHECK_20261109.md): the tag row 47353 is named "Activate Life Support Consoles" with
+        // console effects; Jabbithole links "Strain Bomb" 47286 to Experiment X-89 (three creature rows), with damage effects.
+        public const uint X89StrainBomb                 = 47286u; // Jabbithole creature_spells Experiment X-89 "Strain Bomb", instant (tag row was 47353)
         public const uint KuralakPutridDischarge        = 57923u; // [GA] e412 Genetic Architect Putrid Discharge
         public const uint KuralakCultivate              = 60546u; // [GA] e412 Genetic Architect Cultivate Base (the "Cultivate Corruption" egg cast the guide names)
         public const uint KuralakDnaSiphon              = 56660u; // [GA] e412 Genetic Architect DNA Siphon (Tank) Base, CastTime 2000 ms
