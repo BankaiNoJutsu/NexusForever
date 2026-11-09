@@ -89,3 +89,9 @@ Method: counted boss and ability words in the subtitles of every retail-dated, s
 * **Gauntlet (15 clips):** Shock King and Brick are named only in walkthrough commentary (two to three mentions); no ability named. Consistent.
 * **Red Moon Terror:** corrected (see the previous section): Star-Eater has an official clip.
 Net: one packet claim was wrong (Star-Eater); the others were not refuted by the counts and the passages read, but none was proven by reading every clip end to end, so they stay agent-written, partly lead-checked.
+
+## Lead re-check of the expedition footage claims, second pass (2026-11-09; Observed)
+Same method (word counts per retail subtitled clip, then reading the richest ones):
+* **Space Madness (5 clips), Infestation (5), Outpost M-13 (3), Rage Logic (2), Deep Space Exploration (7):** the word counts show boss and ability vocabulary only as general walkthrough talk ("interrupt", "boss", "parasite", "rocket", "captain"). The richest clips were read: Deep Space part 2 (InTheLittleWood, https://www.youtube.com/watch?v=yOkrR0Xy0O8) is group chatter about interrupting "his next cast" and a "Captain Tyrannia" with no ability name; the Infestation veteran walkthrough (Maximus Grahamicus, https://www.youtube.com/watch?v=3iDn5vuWiLo) is a tutorial on how interrupts work, not a description of a boss ability; Rage Logic's two walkthroughs mention rockets 15 and 4 times and "ragebot" 7 and 3 times, which fits the packet's "Axiom fires rockets" line.
+* Outpost M-13 has three clips, one of which is the 2014 Algoroc event series (Hive Queen mentioned twice); the others do not mention its bosses at all.
+Net: none of the expedition missing-input statements is refuted by the counts or the passages read; none is proven, since only the richest clips were read. Combined with the earlier pass, the only packet claim shown wrong is Star-Eater (corrected with a script).
