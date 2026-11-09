@@ -25,6 +25,22 @@ namespace NexusForever.Script.Instance.Dungeon.Skullcano.Script
         public const uint MordechaiMoltenTorrent = 39469u; // [SK] e324 Mordechai Terraformer Molten Torrent Base, CastTime 1500 ms
         public const uint MordechaiDisperseGrenades = 39566u; // [SK] e324 Mordechai Disperse Grenades Base
 
+        // Quartermaster Gruh'ar (Creature2 24490 word 9 = 1, 24896 word 9 = 5). Added 2026-11-09 after the Jabbithole creature_spells check
+        // (INSTANCE_JABBITHOLE_SQL_CHECK_20261109.md). The Skullcano packet reads a 2014-09-29 guide: Kneecap on a player, repeated Dead Eye
+        // shots, then "Fatal Shot" which must be interrupted. Jabbithole lists Kneecap 41901 (1 s cast) on both Gruh'ar rows and Fatal Shot 63677
+        // (3 s cast) on the veteran row only; the Dead Eye rows (41899, 63663) do not match by id in the 16042 table and are not used.
+        public const uint GruharKneecap  = 41901u; // Jabbithole Gruh'ar, CastTime 1000 ms
+        public const uint GruharFatalShot = 63677u; // Jabbithole Gruh'ar (veteran row), CastTime 3000 ms
+
+        public static ProvisionalEncounterPlan Gruhar(bool high) => new(
+        [
+            new ProvisionalPhase(null,
+            high
+                ? [new ProvisionalCast(GruharKneecap, 6d, 25d, targetCurrentTarget: true), new ProvisionalCast(GruharFatalShot, 20d, 35d, targetCurrentTarget: true)]
+                : [new ProvisionalCast(GruharKneecap, 6d, 25d, targetCurrentTarget: true)],
+            "Kneecap (and Fatal Shot on the second row) from one 2014 guide and Jabbithole's creature spell list; intervals ESTIMATED, row set per creature id is a GUESS")
+        ]);
+
         public static ProvisionalEncounterPlan Tugga() => new(
         [
             new ProvisionalPhase(null,
@@ -95,6 +111,30 @@ namespace NexusForever.Script.Instance.Dungeon.Skullcano.Script
     {
         public OctogProvisionalEncounterScript(IFactory<ISpellParameters> spellParametersFactory)
             : base(spellParametersFactory, SkullcanoProvisionalPlans.Octog())
+        {
+        }
+    }
+
+    /// <summary>
+    /// Provisional Quartermaster Gruh'ar casts (Creature2 word 9 = 1 row); see <see cref="SkullcanoProvisionalPlans"/>.
+    /// </summary>
+    [ScriptFilterCreatureId(24490u)]
+    public class GruharProvisionalEncounterScript : ProvisionalEncounterEntityScript
+    {
+        public GruharProvisionalEncounterScript(IFactory<ISpellParameters> spellParametersFactory)
+            : base(spellParametersFactory, SkullcanoProvisionalPlans.Gruhar(false))
+        {
+        }
+    }
+
+    /// <summary>
+    /// Provisional Quartermaster Gruh'ar casts (Creature2 word 9 = 5 row); see <see cref="SkullcanoProvisionalPlans"/>.
+    /// </summary>
+    [ScriptFilterCreatureId(24896u)]
+    public class GruharVeteranProvisionalEncounterScript : ProvisionalEncounterEntityScript
+    {
+        public GruharVeteranProvisionalEncounterScript(IFactory<ISpellParameters> spellParametersFactory)
+            : base(spellParametersFactory, SkullcanoProvisionalPlans.Gruhar(true))
         {
         }
     }

@@ -45,6 +45,25 @@ namespace NexusForever.Script.Instance.Dungeon.RuinsOfKelVoreth.Script
             ], "Thrash and Headbutt periodically (guides), intervals ESTIMATED; Bellow and Mutilate unlock thresholds are unconfirmed and not modelled")
         ]);
 
+        // Darkwitch Gurka (Creature2 33049 word 9 = 1, 33050 word 9 = 5). Added 2026-11-09 after the Jabbithole creature_spells check
+        // (INSTANCE_JABBITHOLE_SQL_CHECK_20261109.md): it lists both abilities on Gurka, which upgrades the second-source packet's weak
+        // name correlation (Deadly Defilement and Blinding Dark are spoken in the SywoGG clip at about 619 s and 666 s). Which row set belongs
+        // to which creature id is a GUESS: the lower Jabbithole creature (hp 128375, level 20) lists 44304/44315, the veteran (hp 626329, level 50)
+        // lists 63510/63508, and Creature2 word 9 = 1 is taken as the first and 5 as the second.
+        public const uint GurkaDeadlyDefilementLow  = 44304u; // Jabbithole Gurka (level 20), CastTime 1500 ms
+        public const uint GurkaBlindingDarkLow      = 44315u; // Jabbithole Gurka (level 20), CastTime 4000 ms
+        public const uint GurkaDeadlyDefilementHigh = 63510u; // Jabbithole Gurka (veteran), CastTime 1000 ms
+        public const uint GurkaBlindingDarkHigh     = 63508u; // Jabbithole Gurka (veteran), CastTime 4000 ms
+
+        public static ProvisionalEncounterPlan Gurka(bool high) => new(
+        [
+            new ProvisionalPhase(null,
+            [
+                new ProvisionalCast(high ? GurkaDeadlyDefilementHigh : GurkaDeadlyDefilementLow, 8d, 20d),
+                new ProvisionalCast(high ? GurkaBlindingDarkHigh : GurkaBlindingDarkLow, 18d, 30d, targetCurrentTarget: true)
+            ], "Deadly Defilement chasing telegraphs and Blinding Dark (interrupt) named in one clip and listed on Gurka by Jabbithole; intervals ESTIMATED, row set per creature id is a GUESS")
+        ]);
+
         public static ProvisionalEncounterPlan Drokk() => new(
         [
             new ProvisionalPhase(null,
@@ -74,6 +93,30 @@ namespace NexusForever.Script.Instance.Dungeon.RuinsOfKelVoreth.Script
     {
         public GrondProvisionalEncounterScript(IFactory<ISpellParameters> spellParametersFactory)
             : base(spellParametersFactory, KelVorethProvisionalPlans.Grond())
+        {
+        }
+    }
+
+    /// <summary>
+    /// Provisional Darkwitch Gurka casts (Creature2 word 9 = 1 row); see <see cref="KelVorethProvisionalPlans"/>.
+    /// </summary>
+    [ScriptFilterCreatureId(33049u)]
+    public class GurkaProvisionalEncounterScript : ProvisionalEncounterEntityScript
+    {
+        public GurkaProvisionalEncounterScript(IFactory<ISpellParameters> spellParametersFactory)
+            : base(spellParametersFactory, KelVorethProvisionalPlans.Gurka(false))
+        {
+        }
+    }
+
+    /// <summary>
+    /// Provisional Darkwitch Gurka casts (Creature2 word 9 = 5 row); see <see cref="KelVorethProvisionalPlans"/>.
+    /// </summary>
+    [ScriptFilterCreatureId(33050u)]
+    public class GurkaVeteranProvisionalEncounterScript : ProvisionalEncounterEntityScript
+    {
+        public GurkaVeteranProvisionalEncounterScript(IFactory<ISpellParameters> spellParametersFactory)
+            : base(spellParametersFactory, KelVorethProvisionalPlans.Gurka(true))
         {
         }
     }

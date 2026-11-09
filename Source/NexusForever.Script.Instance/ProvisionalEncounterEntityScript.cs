@@ -66,6 +66,10 @@ namespace NexusForever.Script.Instance
         public void OnLeaveCombat()
         {
             runner.Reset();
+
+            // A wipe (the boss left combat alive) also undoes what the fight changed; a kill does not.
+            if (entity != null)
+                EncounterWipeReset.Run(entity);
         }
     }
 }

@@ -53,6 +53,44 @@ namespace NexusForever.Game.Tests.Instances
         }
     }
 
+    /// <summary>
+    /// Gruh'ar was added after the Jabbithole check: Kneecap on both rows, Fatal Shot only on the second (word 9 = 5) row.
+    /// </summary>
+    public class GruharProvisionalEncounterTests
+    {
+        [Theory]
+        [InlineData(typeof(GruharProvisionalEncounterScript), 24490u)]
+        [InlineData(typeof(GruharVeteranProvisionalEncounterScript), 24896u)]
+        public void ScriptsAttachToTheVerifiedCreatureRows(Type scriptType, uint creatureId)
+        {
+            ScriptFilterCreatureIdAttribute attribute = scriptType.GetCustomAttribute<ScriptFilterCreatureIdAttribute>();
+
+            Assert.NotNull(attribute);
+            Assert.Equal([creatureId], attribute.CreatureId);
+        }
+
+        [Fact]
+        public void ScriptsAreDisabledByDefault()
+        {
+            IFactory<ISpellParameters> factory = RecordingDispatchProxy<IFactory<ISpellParameters>>.Create(out _);
+
+            Assert.False(new GruharProvisionalEncounterScript(factory).Enabled);
+            Assert.False(new GruharVeteranProvisionalEncounterScript(factory).Enabled);
+        }
+
+        [Fact]
+        public void FatalShotIsOnlyInTheSecondRowPlan()
+        {
+            Type type = typeof(TuggaProvisionalEncounterScript).Assembly
+                .GetType("NexusForever.Script.Instance.Dungeon.Skullcano.Script.SkullcanoProvisionalPlans");
+            var low = (ProvisionalEncounterPlan)type.GetMethod("Gruhar").Invoke(null, [false]);
+            var high = (ProvisionalEncounterPlan)type.GetMethod("Gruhar").Invoke(null, [true]);
+
+            Assert.Equal([41901u], low.Phases[0].Casts.Select(c => c.SpellId));
+            Assert.Equal([41901u, 63677u], high.Phases[0].Casts.Select(c => c.SpellId));
+        }
+    }
+
     internal static class SkullcanoProvisionalPlansAccessor
     {
         // The plans class is internal to the script assembly; reach it by reflection to keep it non-public.
