@@ -17,3 +17,6 @@ A native read of the client cannot supply cast order or intervals: boss AI runs 
 
 ## Consequence for Phase C
 Implementable now without invented values: nothing beyond disabled placeholders. Candidate placeholders (thresholds from agreed clips only): Trogun forge phase at 50% (four clips); other thresholds stay out until two clips agree. A tag-derived per-boss ability list could be embedded as data once an encounter needs it, but it has no ordering.
+
+## Phase C slice done: Trogun forge phase placeholder (Source tier)
+`ForgemasterTrogunEntityScript` now holds a `TrogunPhase` (Opening, ForgeRetreat) driven by `EncounterHealthPhases` at `ForgeRetreatHealthFraction = 0.5f`, disabled by default and with no gameplay effect (same pattern as Blade-Wind). The 50% forge phase is the only threshold in the instance packets reported by several independent clips (four, agent-read, not re-viewed by the lead). Tests: `TrogunPhaseTrackingTests` 3 cases, 3 passed (including `IUnitScript` dispatch and leave-combat reset); the wider filter covering `PublicEventObjectiveCreditEntityScriptTests` and the Kel Voreth tests ran 629 passed, 0 failed (different scope, not added). The tests and code were written together and not run red first. No other boss has an agreed threshold, so no further placeholder was added.
