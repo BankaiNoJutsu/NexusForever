@@ -39,3 +39,5 @@ the rejection stays as it is until a clip or a native read of the taxi purchase 
 ## Evidence tier and limits
 Server facts: read directly this session. Footage facts: agent-read (W1 re-viewed by the lead); the multi-hop stepping was not re-checked. Lua facts: read directly (Observed, static). The equivalence argument in
 point 1 is reasoning over those facts, not a test; no test was added because no behaviour changed.
+
+Corpus id warning (2026-11-09): `corpus.db` was rebuilt and the video ids were renumbered (old 5613 is now 7037, old 5657 is now 7091, old 5744 is now 7202, old 426 is now a different video). Every corpus id written in records dated 2026-11-08 or earlier, and in the `ocr` and `ocr2` outputs, uses the old numbering. Resolve a video by its URL or YouTube id, never by the numeric id. The pre-rebuild database is kept as `I:\tools\video_index\corpus_20261108_before_rebuild.db`.

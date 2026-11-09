@@ -95,3 +95,5 @@ Not re-derived: the agent's clip readings and table values. Done by the lead: th
 * Limit: this is one accessor plus the Lua that prints it; the array's fill path (where the integers are copied from the table row) was not read. No post-launch footage exists, so 6,000,000 is the shipped value by table, not by video.
 * Effect on the server: using the table threshold unscaled matches the client's reading. This answers the scale question for the denominator only. The zone-track earning producer (type 4 point amounts for public events, quests, kills)
   remains unwitnessed, so type 4 and public 07CE stay disabled; no code change.
+
+Corpus id warning (2026-11-09): `corpus.db` was rebuilt and the video ids were renumbered (old 5613 is now 7037, old 5657 is now 7091, old 5744 is now 7202, old 426 is now a different video). Every corpus id written in records dated 2026-11-08 or earlier, and in the `ocr` and `ocr2` outputs, uses the old numbering. Resolve a video by its URL or YouTube id, never by the numeric id. The pre-rebuild database is kept as `I:\tools\video_index\corpus_20261108_before_rebuild.db`.

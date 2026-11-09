@@ -105,3 +105,7 @@ Status (2026-11-08): the three native-read candidates have no client consumer an
 ## By-product rule for labels
 Add durable labels only as a by-product of a read for one of the gaps above (name what you read, add the evidence row). The two open label conflicts from pass 1 (`140001ba0`, `1400d7b40` and
 `1400da180`) are resolved only if a gap's read passes through them.
+
+Update (2026-11-09): the video corpus had been built before 1,589 videos were added to `I:\Videos`; it was rebuilt (8,448 videos, 4,882 with subtitles) and gaps 5 to 7 were re-searched on the new videos with no change of outcome:
+[RESTORATION_GAPS_5_6_NEW_VIDEOS_20261109.md](RESTORATION_GAPS_5_6_NEW_VIDEOS_20261109.md), [RESTORATION_GAP7_NEW_VIDEOS_20261109.md](RESTORATION_GAP7_NEW_VIDEOS_20261109.md). Corpus ids were renumbered by the rebuild; resolve videos by URL.
+

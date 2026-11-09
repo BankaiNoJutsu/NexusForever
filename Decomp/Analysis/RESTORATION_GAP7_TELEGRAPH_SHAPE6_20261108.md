@@ -61,3 +61,5 @@ Library limit: subtitle cues rarely name spells (queries this pass: "falling roc
 ## Lead review (2026-11-08)
 Not re-viewed: the clip readings are the agent's. The record's conclusion (nothing measurable, no name on screen, do not implement shape 6) is consistent with its own evidence and the earlier witness record. No server change.
 The cheapest remaining try is the targeted Body Slam pass at the listed cue times in the Ohmna streams; it was not run.
+
+Corpus id warning (2026-11-09): `corpus.db` was rebuilt and the video ids were renumbered (old 5613 is now 7037, old 5657 is now 7091, old 5744 is now 7202, old 426 is now a different video). Every corpus id written in records dated 2026-11-08 or earlier, and in the `ocr` and `ocr2` outputs, uses the old numbering. Resolve a video by its URL or YouTube id, never by the numeric id. The pre-rebuild database is kept as `I:\tools\video_index\corpus_20261108_before_rebuild.db`.

@@ -70,3 +70,5 @@ Every row V1 to V7 has either a record with a concrete finding, or an exact stat
 | V7 AMP/healing/piercing | Open; low expected yield | none yet |
 
 Tooling notes: `find` matches conjunctions inside one subtitle cue, so use single phrases and then read the surrounding cues (`frame`/SRT) rather than AND queries; the 2013 Panda3D ffmpeg fails on some files, the script now uses the winget ffmpeg 8.1.1; `-I` ignores `PYTHONIOENCODING`, so the script reconfigures stdout itself.
+
+Corpus id warning (2026-11-09): `corpus.db` was rebuilt and the video ids were renumbered (old 5613 is now 7037, old 5657 is now 7091, old 5744 is now 7202, old 426 is now a different video). Every corpus id written in records dated 2026-11-08 or earlier, and in the `ocr` and `ocr2` outputs, uses the old numbering. Resolve a video by its URL or YouTube id, never by the numeric id. The pre-rebuild database is kept as `I:\tools\video_index\corpus_20261108_before_rebuild.db`.
