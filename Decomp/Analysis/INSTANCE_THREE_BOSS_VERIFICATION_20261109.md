@@ -52,3 +52,26 @@ Searched 39 retail subtitled clips with the boss and ability names, and looked u
 * **X-89 (Strain Bomb 47353):** commentators call the mechanic a "big bomb" and "small bomb" (Zybak https://www.youtube.com/watch?v=no2K8V1ZhwU at 40 s and 2014-06-25 at 84 s, spythe, klorinator); mapping the developers' Strain Bomb row to these is a name inference (Correlated).
 * **Phage Maw (Detonation Bombs 60702, Aerial Bombardment 57306):** Zybak https://www.youtube.com/watch?v=vnlONelOB7U at 29 s ("transition into the bomb phase") and a 2014-01 beta clip ("it's going to bombard you", pre-launch); row-to-phrase mapping is a name inference.
 No code change. All of these rest on one or two narrators, and every interval remains an estimate.
+
+## Lead check of the missing-input statements (2026-11-09, script `scripts/instance_verify_missing_inputs.py`)
+For each unscripted row the script lists the `PublicEventObjective` ids in the repo enum, how many of those numbers appear as `[TAG] eNNN`/`wNNN` encounter numbers in `coverage/spell4_internal_tags_20261109.csv`, and the number of retail-dated subtitled clips (title or description naming the instance) with their distinct channels.
+
+| Row | Objective ids | Ids with tag rows | Tag rows | Retail subtitled clips (channels) |
+|---|---|---|---|---|
+| Infestation | 12 | 0 | 0 | 5 (3) |
+| Outpost M-13 | 19 | 0 | 0 | 3 (3) |
+| Rage Logic | 15 | 0 | 0 | 2 (1) |
+| Space Madness | 26 | 0 | 0 | 5 (5) |
+| Gauntlet | 29 | 0 | 0 | 15 (10) |
+| Deep Space Exploration | 27 | 0 | 0 | 7 (4) |
+| Fragment Zero | 38 | 0 | 0 | 12 (8) |
+| Evil from the Ether | 31 | 0 | 0 | 1 (1) |
+| Vault of the Archon / Hall of the Hundred | 73 | 0 | 0 | 3 (2) |
+| Journey into OMNICore-1 | 5 | 0 | 0 | 7 (6) |
+| Protostar Winterfest / Super Mall | 63 | 0 | 0 | 17 (7) |
+| Initialization Core Y-83 | 7 | 1 | 79 | 15 (8) |
+| Red Moon Terror | 60 | 3 | 220 | 7 (6) |
+| Shade's Eve | 92 | 1 | 8 | 16 (11) |
+| Ultimate Protogames | 113 | 7 | 531 | 5 (4) |
+
+What this confirms (lead-run, mechanical): the statement "no spell row is tied to a boss" holds for the eleven rows with zero matching tag numbers (the ten above plus Evil from the Ether), so a provisional script there would have to bind rows by name only, which the rules forbid; the existing Evil from the Ether Katja script's Spell4 ids therefore have no tag binding either. It also shows that the footage-poor statements are broadly right for Rage Logic (2 clips, one channel), Outpost M-13 and Evil from the Ether. What it does not confirm: the claims that depend on clip content (Red Moon Terror's Engineers and Star-Eater "no readable clip", Shade's Eve "no clip shows a Jack Shade ability", the Vault boss clip never naming its boss, Y-83's creature binding) and the creature-id claims; those remain agent-written. Y-83, Red Moon Terror, Shade's Eve and Ultimate Protogames do have tag rows, so for those rows the missing input is the creature-to-spell binding and a readable boss clip, not the absence of rows.
