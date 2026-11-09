@@ -25,3 +25,10 @@ Event types register by reflection (`AddScriptTemplateEvent`), so the new yell e
 * A shared wipe/reset helper that restores spawns, doors and platforms (item 5); today only per-script event cancellation exists.
 * Any wiring of `EncounterHealthPhases` into `UnitEntity.OnHealthChange` handlers: scripts must call `Update` from their own `OnHealthChange`; no script uses it yet.
 These are the next engine slices, to be built against the first boss that needs each (Blade-Wind needs the invulnerable disciples and shield removal).
+
+## Update (2026-11-09, after the provisional encounter work)
+* **Item 1 (health thresholds) closed:** `EncounterHealthPhases` is now used by `ProvisionalEncounterRunner` (every provisional boss script) and by the disabled Blade-Wind and Trogun phase placeholders, with tests.
+* **Item 2 (scheduled casts) closed for provisional use:** `ProvisionalEncounterRunner` plus `ProvisionalEncounterEntityScript` cast spells on estimated delays and intervals through `entity.CastSpell`, optionally at the current target; see [INSTANCE_PROVISIONAL_ENCOUNTERS_20261109.md](INSTANCE_PROVISIONAL_ENCOUNTERS_20261109.md).
+* **Item 3 (interrupt versus a pending cast) verified by code and an existing test, not newly built:** `UnitEntity.AddCCState` cancels the entity's active casting spells with `CastResult.SpellInterrupted` when the state interrupts casting (`CrowdControlStateRules.InterruptsActiveCasting`: Interrupt and Knockdown), and the existing test `UnitEntityDamageResultTests.AddCCState_WhenStateInterruptsActiveCasting_CancelsActiveCastingSpells` covers it. A scripted cast goes through the same spell objects, so an interrupt cancels it. The provisional runner does not change its schedule after an interrupt (the next cast still fires on its interval); whether retail delayed the next cast is unknown.
+* **Item 5 (wipe reset) partly done:** `OnLeaveCombat` resets the runner to the opening phase (tested). Restoring spawns, doors and platforms on a wipe is not implemented.
+* **Item 4 (invulnerable-until-condition adds, shield removal) still open:** no provisional plan models adds or shields.
