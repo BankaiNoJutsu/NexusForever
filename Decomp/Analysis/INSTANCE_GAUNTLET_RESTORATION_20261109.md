@@ -1,0 +1,23 @@
+# The Gauntlet (world 2183, public event 446): restoration assessment (2026-11-09)
+
+Asked by the user: "can we restore The Gauntlet?". Evidence: Mapped (client `PublicEventObjective` table, read by the lead with `scripts/instance_public_event_objectives.py`), Observed (video, from the expeditions packet) and Source (repo). No retail parity claim; nothing run in a client.
+
+## What the repo already has
+`Source/NexusForever.Script.Instance/Expedition/Gauntlet` (737 lines): `GauntletEventScript` drives the whole objective chain (Pilot Taboro, airlock, what-happened cinematic, switches and golden skulls, swarm pit, first arena, chamber of choices, the Splorg phase, the two branch arenas, main event, Goon Squad, Slice and Dice, Shock King, Brick Braggor, the final NPC talk, then `Finish`), boss kill-credit scripts, talk and product-endorsement scripts, and `GauntletEventScriptTests` covering the phases and transitions. The airlock and swarm-pit trigger positions are marked work-in-progress guesses in the code.
+
+## What the client table says (the packet listed these as missing input)
+Rows of public event 446 (lead-read): Activate Switches 1837 count 3; Golden Skulls 1957 count 10; Survive the Splorg 1967 type TimedWin, count 1, **failure time 132,000 ms (2 min 12 s)**; Collect Gauntlet Score Tokens 1974 type VirtualCollect count 100 and a second row 4670 type Script **count 20** with the same text; "Current Scoring" 1942 count 100; **"Complete Expedition: The Gauntlet within the time remaining" 4707, type ScriptWithoutMax, failure time 1,200,000 ms (20 minutes)**; Survive the First Arena 1854 count 3; Survive the Main Event 1875 count 3; Save Contestants from the Darkspur 1951 count 3; "Clear the second and third Arenas" 1896 count 2; Bash Brothers 1822 count 2; Voodoo Kin 1866 count 2; Brick Braggor 4671 count 1.
+These agree with the video (10 skulls, 3 switches, 20 tokens, a timer that runs during cinematics) and replace the packet's "total timer not stated" and "swarm-pit timer unknown": the swarm-pit (Splorg) timer is 132 s and the expedition timer is 20 minutes.
+
+## What the script and engine do with it
+* The engine already enforces an objective's `FailureTimeMs` (`PublicEventObjective` creates a failure `UpdateTimer` from the table), so the 132 s Splorg limit applies once objective 1967 is active, which the script does.
+* The script activates `CollectGauntletScoreTokens` 1974 (the virtual count-100 gauge) but **not objective 4670** (the count-20 script objective the video's "20 tokens" matches), **not 4707** (the 20-minute expedition timer, which no other instance script uses either) and **not 1942** (scoring). Whether retail showed 4670 and 4707 as separate tracker lines, and how tokens credit them, is not established by anything the lead has, so the script was not changed.
+* Rows 1822, 1834, 1896 and 1951 (Bash Brothers, Handler and pets, second and third arenas, Darkspur) are partly wired (1951 and the Handler pair are activated in the chamber phase and main event); 1822 and 1896 are not used by the script.
+
+## What cannot be restored from the available evidence
+The arena bosses' ability lists (Shock King, Brick Braggor, Slice and Dice, Pyro and Maniac, Showtime, Championator and the others) have no named abilities in the 15 retail clips (second check pass); their Spell4 rows are `[DEPRECATE]` or untagged and the objective numbers match no tag family; the random arena pool order and per-run encounters are unknown. A provisional boss script would have to bind rows by name only, which the rules forbid.
+
+## Possible next slices (not started)
+1. Activate 4670 in the Splorg phase and 4707 at event start, with tests, after deciding the tracker semantics (open question: do they replace or sit beside 1974 and the medal rows).
+2. Read the unread clips (the three 2017 class playthroughs, a 2014 Esper run) for arena encounters and any timing numbers.
+3. Replace the guessed swarm-pit and airlock trigger positions if a clip or table row supplies them.
