@@ -30,3 +30,11 @@ After the change the filter covering all provisional encounter tests plus the Bl
 
 ## Still unverified for these bosses
 Every cast interval and first delay (estimates); which creature casts which row; Blade-Wind's phase 3 and disciples; Trogun's orbs and volcanoes; Kuralak's egg counts, pillar geometry and enrage; frame-level confirmation of anything; behaviour in a client.
+
+## Extension: Skullcano abilities (2026-11-09, lead read, Observed)
+Searched 36 retail subtitled Skullcano clips and read the Vhalor Gaming veteran guide https://www.youtube.com/watch?v=Om4KvjGMxeo (2014-06-23) myself:
+* **Tugga (plan: Molten Rain 41088, Magma Totem Pair 41052, Into the Stew 63378):** at 52 to 70 s the guide names exactly these three phase 1 abilities: a totem that tethers someone and shoots cross-shaped telegraphs, Molten Rain (many circular telegraphs) and Into the Stew (one player thrown into the pot); phase 2 at 90 to 95 s he walks to food on the floor with no interrupt armor. Single guide for the ability list (a second channel's overview says "four abilities"), so the three casts are single-source; the Magma Totem Pair row binding is by name.
+* **Thunderfoot (plan: Thunder Pound 36437, Pulverize 36385):** same guide at 312 to 374 s names "Thunder slam"/"Thunder pound" (everyone jumps) and Pulverize (a very large circular telegraph around one targeted player, preceded by his enrage). Pulverize is also in a second clip per the exact-name check; single narrator for the rest.
+* **Octog (plan: Harpoon 31352, Ink 52872):** the guide's hook shot and ink are echoed by two more channels: Argick 2014-09-29 https://www.youtube.com/watch?v=-QvVjBUQW2Q at 40 s ("after hook shot") and 168 to 170 s ("ink"), and the 2015-04-28 overview https://www.youtube.com/watch?v=5MPHtAxjsi8 at 136 to 141 s ("the boss will try to hook you"). Hook shot is the commentators' name for the Harpoon row (name mapping, Correlated).
+* **Mordechai (plan: Molten Torrent 39469, Disperse Grenades 39566):** lasers are named by several channels (Zybak 2014-03-31, Yogscast, the Argick clip) and a "terraformer" by seven channels in the exact-name check; Disperse Grenades was not found by name. The 33% and 10% thresholds were not found by the lead in these clips and stay out of the plan.
+No code changed: the Skullcano plan already used only these abilities and no thresholds.
