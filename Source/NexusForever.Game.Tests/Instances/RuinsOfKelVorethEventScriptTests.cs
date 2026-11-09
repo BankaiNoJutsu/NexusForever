@@ -37,8 +37,9 @@ public class RuinsOfKelVorethEventScriptTests
 
         script.OnPublicEventPhase((uint)PublicEventPhase.FightInBloodPit);
 
-        RecordingDispatchProxy<IPublicEvent>.Invocation activation = Assert.Single(eventProxy.GetInvocations(nameof(IPublicEvent.ActivateObjective)));
-        Assert.Equal(PublicEventObjective.FightYourWayThroughTheBloodPit, activation.Arguments[0]);
+        RecordingDispatchProxy<IPublicEvent>.Invocation activation = Assert.Single(
+            eventProxy.GetInvocations(nameof(IPublicEvent.ActivateObjective)),
+            i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.FightYourWayThroughTheBloodPit);
         Assert.Equal(3u, activation.Arguments[1]);
     }
 
@@ -55,8 +56,21 @@ public class RuinsOfKelVorethEventScriptTests
             .GetInvocations(nameof(IPublicEvent.ActivateObjective))
             .ToList();
         Assert.Contains(activations, i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.DefeatSlavemasterDrokk);
-        Assert.Contains(activations, i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.DefeatDarkwitchGurka);
         Assert.Contains(activations, i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.DodgingTheDefense);
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_SlaveMaster_DoesNotAlwaysActivateGurka()
+    {
+        // The 2014-06-16 veteran guide shows only the data storage optional plus Dodging the Defense in
+        // this section, so "Find and defeat Darkwitch Gurka" is part of the random optional pool.
+        var script = new NoOptionalRuinsOfKelVorethEventScript();
+        IPublicEvent publicEvent = CreatePublicEvent(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.SlaveMasterDrokk);
+
+        AssertObjectiveNotActivated(eventProxy, PublicEventObjective.DefeatDarkwitchGurka);
     }
 
     [Fact]
@@ -70,8 +84,22 @@ public class RuinsOfKelVorethEventScriptTests
 
         AssertObjectiveActivated(eventProxy, PublicEventObjective.KillMechanoSlaversAndEldanConstructs);
         AssertObjectiveActivated(eventProxy, PublicEventObjective.PutTheKelVorethSlavesOutOfTheirMisery);
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.DefeatDarkwitchGurka);
         AssertObjectiveActivated(eventProxy, PublicEventObjective.AccessTheHiddenEldanDataStorageDevices);
-        AssertObjectiveActivated(eventProxy, PublicEventObjective.DisableTheExoLabDefenses);
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_SlaveMaster_DoesNotRandomlyActivateExoLabDefenses()
+    {
+        // 459 never appears in any of the four Drokk-section tracker reads (2014 Carbine stream, 2014 and
+        // 2015 veteran guides, 2015 normal run); its flags also differ from the seven optional rows.
+        var script = new AllOptionalRuinsOfKelVorethEventScript();
+        IPublicEvent publicEvent = CreatePublicEvent(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.SlaveMasterDrokk);
+
+        AssertObjectiveNotActivated(eventProxy, PublicEventObjective.DisableTheExoLabDefenses);
     }
 
     [Fact]
@@ -87,6 +115,106 @@ public class RuinsOfKelVorethEventScriptTests
         AssertObjectiveActivated(eventProxy, PublicEventObjective.DestroyKelVorethForges);
         AssertObjectiveActivated(eventProxy, PublicEventObjective.KillBattleswornAndDarkwitchOsun);
         AssertObjectiveActivated(eventProxy, PublicEventObjective.BurnKelVorethWarSupplies);
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_ForgeMaster_AlwaysActivatesBattleswornAndDarkwitchOsun()
+    {
+        // Seen in all four reads of this section (2014 Carbine stream, 2014 and 2015 veteran guides, 2015 normal run).
+        var script = new NoOptionalRuinsOfKelVorethEventScript();
+        IPublicEvent publicEvent = CreatePublicEvent(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.ForgeMasterTrogun);
+
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.KillBattleswornAndDarkwitchOsun);
+        AssertObjectiveNotActivated(eventProxy, PublicEventObjective.DestroyKelVorethForges);
+        AssertObjectiveNotActivated(eventProxy, PublicEventObjective.BurnKelVorethWarSupplies);
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_ForgeMaster_DoesNotStartOsunEliminationYet()
+    {
+        // Osun elimination (10 minute timer) shows up later, at the Exanite Forges, not when the phase starts.
+        var script = new AllOptionalRuinsOfKelVorethEventScript();
+        IPublicEvent publicEvent = CreatePublicEvent(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.ForgeMasterTrogun);
+
+        AssertObjectiveNotActivated(eventProxy, PublicEventObjective.KillAsManyVorethOsunAsYouCanBeforeTimeExpires);
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_BloodPit_ActivatesDeathlessAndTimerBonus()
+    {
+        // 2015 normal run (tracker at 180 s) and 2015 veteran guide (150 s) both list these from the first phase.
+        var script = new RuinsOfKelVorethEventScript();
+        IPublicEvent publicEvent = CreatePublicEvent(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.FightInBloodPit);
+
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.FinishTheEntireDungeonWithoutAnyoneDying);
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.CompleteTheRuinsOfKelVorethWithin40Minutes);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_FinalBoss_CreditsDeathlessAndTimerBonusWhenClean()
+    {
+        var script = new RuinsOfKelVorethEventScript();
+        IPublicEvent publicEvent = CreatePublicEvent(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+        script.Update(39d * 60d);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(PublicEventObjective.DefeatForgemasterTrogun, PublicEventStatus.Succeeded));
+
+        AssertObjectiveUpdated(eventProxy, PublicEventObjective.FinishTheEntireDungeonWithoutAnyoneDying);
+        AssertObjectiveUpdated(eventProxy, PublicEventObjective.CompleteTheRuinsOfKelVorethWithin40Minutes);
+        Assert.Single(eventProxy.GetInvocations(nameof(IPublicEvent.Finish)));
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_FinalBoss_DoesNotCreditDeathlessAfterAPlayerDied()
+    {
+        var script = new RuinsOfKelVorethEventScript();
+        IPublicEvent publicEvent = CreatePublicEvent(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+        script.OnDeath(RecordingDispatchProxy<IPlayer>.Create(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(PublicEventObjective.DefeatForgemasterTrogun, PublicEventStatus.Succeeded));
+
+        AssertObjectiveNotUpdated(eventProxy, PublicEventObjective.FinishTheEntireDungeonWithoutAnyoneDying);
+        AssertObjectiveUpdated(eventProxy, PublicEventObjective.CompleteTheRuinsOfKelVorethWithin40Minutes);
+    }
+
+    [Fact]
+    public void OnDeath_NonPlayerDoesNotBreakDeathless()
+    {
+        var script = new RuinsOfKelVorethEventScript();
+        IPublicEvent publicEvent = CreatePublicEvent(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+        script.OnDeath(RecordingDispatchProxy<INonPlayerEntity>.Create(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(PublicEventObjective.DefeatForgemasterTrogun, PublicEventStatus.Succeeded));
+
+        AssertObjectiveUpdated(eventProxy, PublicEventObjective.FinishTheEntireDungeonWithoutAnyoneDying);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_FinalBoss_DoesNotCreditTimerBonusAfterFortyMinutes()
+    {
+        // 2015 normal run: the Timer Bonus row is gone by the 40:56 mark.
+        var script = new RuinsOfKelVorethEventScript();
+        IPublicEvent publicEvent = CreatePublicEvent(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+        script.Update(40d * 60d + 1d);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(PublicEventObjective.DefeatForgemasterTrogun, PublicEventStatus.Succeeded));
+
+        AssertObjectiveNotUpdated(eventProxy, PublicEventObjective.CompleteTheRuinsOfKelVorethWithin40Minutes);
+        AssertObjectiveUpdated(eventProxy, PublicEventObjective.FinishTheEntireDungeonWithoutAnyoneDying);
+        Assert.Single(eventProxy.GetInvocations(nameof(IPublicEvent.Finish)));
     }
 
     [Theory]
@@ -334,6 +462,24 @@ public class RuinsOfKelVorethEventScriptTests
     {
         Assert.Contains(eventProxy.GetInvocations(nameof(IPublicEvent.ActivateObjective)),
             i => (PublicEventObjective)i.Arguments[0] == objective);
+    }
+
+    private static void AssertObjectiveNotActivated(RecordingDispatchProxy<IPublicEvent> eventProxy, PublicEventObjective objective)
+    {
+        Assert.DoesNotContain(eventProxy.GetInvocations(nameof(IPublicEvent.ActivateObjective)),
+            i => (PublicEventObjective)i.Arguments[0] == objective);
+    }
+
+    private static void AssertObjectiveUpdated(RecordingDispatchProxy<IPublicEvent> eventProxy, PublicEventObjective objective)
+    {
+        Assert.Contains(eventProxy.GetInvocations(nameof(IPublicEvent.UpdateObjective)),
+            i => i.Arguments[0] is PublicEventObjective o && o == objective && (int)i.Arguments[1] == 1);
+    }
+
+    private static void AssertObjectiveNotUpdated(RecordingDispatchProxy<IPublicEvent> eventProxy, PublicEventObjective objective)
+    {
+        Assert.DoesNotContain(eventProxy.GetInvocations(nameof(IPublicEvent.UpdateObjective)),
+            i => i.Arguments[0] is PublicEventObjective o && o == objective);
     }
 
     private static CreatedNpc CreateNpc()

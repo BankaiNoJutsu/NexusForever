@@ -80,6 +80,35 @@ public class RuinsOfKelVorethTriggerScriptTests
     }
 
     [Fact]
+    public void TheExaniteForgesTrigger_PlayerEnterDuringTrogunPhase_StartsOsunElimination()
+    {
+        // Osun elimination (10 minute challenge) appears on the tracker when the group reaches the Exanite Forges:
+        // absent at 1850 s and present at 1900 s in the 2014 Carbine stream, started about 15 s after the last
+        // phase optionals in the 2015 veteran guide.
+        IPlayer enteringPlayer = RecordingDispatchProxy<IPlayer>.Create(out _);
+        var script = CreateExaniteForgesTrigger(PublicEventPhase.ForgeMasterTrogun, out IGridTriggerEntity trigger, out RecordingDispatchProxy<IPublicEvent> eventProxy);
+
+        script.OnLoad(trigger);
+        script.OnEnterRange(enteringPlayer);
+        script.OnEnterRange(enteringPlayer);
+
+        RecordingDispatchProxy<IPublicEvent>.Invocation activation = Assert.Single(eventProxy.GetInvocations(nameof(IPublicEvent.ActivateObjective)));
+        Assert.Equal(PublicEventObjective.KillAsManyVorethOsunAsYouCanBeforeTimeExpires, activation.Arguments[0]);
+    }
+
+    [Fact]
+    public void TheExaniteForgesTrigger_PlayerEnterBeforeTrogunPhase_DoesNotStartOsunElimination()
+    {
+        IPlayer enteringPlayer = RecordingDispatchProxy<IPlayer>.Create(out _);
+        var script = CreateExaniteForgesTrigger(PublicEventPhase.SlaveMasterDrokk, out IGridTriggerEntity trigger, out RecordingDispatchProxy<IPublicEvent> eventProxy);
+
+        script.OnLoad(trigger);
+        script.OnEnterRange(enteringPlayer);
+
+        Assert.Empty(eventProxy.GetInvocations(nameof(IPublicEvent.ActivateObjective)));
+    }
+
+    [Fact]
     public void MessageTrigger_NonPlayerEnter_DoesNotBroadcast()
     {
         IGridEntity entity = RecordingDispatchProxy<IGridEntity>.Create(out _);
@@ -149,6 +178,29 @@ public class RuinsOfKelVorethTriggerScriptTests
         RecordingDispatchProxy<ICinematicManager>.Invocation queue = Assert.Single(
             cinematicManagerProxy.GetInvocations(nameof(ICinematicManager.QueueCinematic)));
         Assert.Same(cinematic, queue.Arguments[0]);
+    }
+
+    private static TheExaniteForgesMessageTriggerScript CreateExaniteForgesTrigger(
+        PublicEventPhase phase,
+        out IGridTriggerEntity trigger,
+        out RecordingDispatchProxy<IPublicEvent> eventProxy)
+    {
+        ICommunicatorMessage message = RecordingDispatchProxy<ICommunicatorMessage>.Create(out _);
+        IGlobalQuestManager globalQuestManager = CreateGlobalQuestManager((CommunicatorMessage.AvraDarkos8, message));
+
+        IPublicEvent publicEvent = RecordingDispatchProxy<IPublicEvent>.Create(out eventProxy);
+        eventProxy.SetProperty(nameof(IPublicEvent.Phase), (uint)phase);
+
+        IPublicEventManager publicEventManager = RecordingDispatchProxy<IPublicEventManager>.Create(out RecordingDispatchProxy<IPublicEventManager> managerProxy);
+        managerProxy.SetMethodReturn(nameof(IPublicEventManager.GetEvent), publicEvent);
+
+        trigger = RecordingDispatchProxy<IGridTriggerEntity>.Create(out RecordingDispatchProxy<IGridTriggerEntity> triggerProxy);
+        IMapInstance map = RecordingDispatchProxy<IMapInstance>.Create(out RecordingDispatchProxy<IMapInstance> mapProxy);
+        mapProxy.SetMethodReturn(nameof(IMapInstance.GetPlayers), (IReadOnlyList<IPlayer>)[]);
+        mapProxy.SetProperty(nameof(IBaseMap.PublicEventManager), publicEventManager);
+        triggerProxy.SetProperty(nameof(IGridEntity.Map), map);
+
+        return new TheExaniteForgesMessageTriggerScript(globalQuestManager);
     }
 
     private static IPlayer CreatePlayer(Faction faction, out IGameSession session)

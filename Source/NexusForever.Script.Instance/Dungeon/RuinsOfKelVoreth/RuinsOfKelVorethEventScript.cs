@@ -42,6 +42,14 @@ namespace NexusForever.Script.Instance.Dungeon.RuinsOfKelVoreth
         private bool grondTheCorpsemakerSpawned;
         private bool slavemasterDrokkSpawned;
         private bool forgemasterTrogunSpawned;
+        private bool playerDied;
+        private double elapsedSeconds;
+
+        /// <summary>
+        /// Seconds allowed for the "Timer Bonus" row (3202, "Complete the Ruins of Kel Voreth within 40 minutes for bonus").
+        /// The objective row carries no failure time, so the limit is tracked here.
+        /// </summary>
+        private const double TimerBonusSeconds = 40d * 60d;
 
         /// <summary>
         /// Invoked when <see cref="IScript"/> is loaded.
@@ -55,7 +63,26 @@ namespace NexusForever.Script.Instance.Dungeon.RuinsOfKelVoreth
             grondTheCorpsemakerSpawned = false;
             slavemasterDrokkSpawned = false;
             forgemasterTrogunSpawned = false;
+            playerDied = false;
+            elapsedSeconds = 0d;
             publicEvent.SetPhase(PublicEventPhase.FightInBloodPit);
+        }
+
+        /// <summary>
+        /// Invoked each world tick; tracks the elapsed run time for the Timer Bonus row.
+        /// </summary>
+        public void Update(double lastTick)
+        {
+            elapsedSeconds += lastTick;
+        }
+
+        /// <summary>
+        /// Invoked when a unit dies on the map; any player death fails "Deathless in the Dungeon".
+        /// </summary>
+        public void OnDeath(IUnitEntity entity)
+        {
+            if (entity is IPlayer)
+                playerDied = true;
         }
 
         /// <summary>
@@ -63,10 +90,16 @@ namespace NexusForever.Script.Instance.Dungeon.RuinsOfKelVoreth
         /// </summary>
         public void OnPublicEventPhase(uint phase)
         {
+            // Tracker rows below were read from retail-era clips (see INSTANCE_KELVORETH_TRACKER_PASS_20261109.md):
+            // Observed ordering only, no retail parity claim. The random optional pool is provisional.
             switch ((PublicEventPhase)phase)
             {
                 case PublicEventPhase.FightInBloodPit:
                     publicEvent.ActivateObjective(PublicEventObjective.FightYourWayThroughTheBloodPit, 3u);
+                    // "Deathless in the Dungeon" and "Timer Bonus" are listed from the first phase onward in
+                    // both the 2015 normal run and the 2015 veteran guide.
+                    publicEvent.ActivateObjective(PublicEventObjective.FinishTheEntireDungeonWithoutAnyoneDying);
+                    publicEvent.ActivateObjective(PublicEventObjective.CompleteTheRuinsOfKelVorethWithin40Minutes);
                     break;
                 case PublicEventPhase.GrondTheCorpsemaker:
                     publicEvent.ActivateObjective(PublicEventObjective.DefeatGrondTheCorpsemaker);
@@ -75,18 +108,20 @@ namespace NexusForever.Script.Instance.Dungeon.RuinsOfKelVoreth
                 case PublicEventPhase.SlaveMasterDrokk:
                     publicEvent.ActivateObjective(PublicEventObjective.DefeatSlavemasterDrokk);
                     SpawnSlavemasterDrokk();
-                    publicEvent.ActivateObjective(PublicEventObjective.DefeatDarkwitchGurka);
+                    // "Dodging the Defense" is listed in every read of this section; the optional rows vary per run
+                    // (one to three of them seen), so they stay a random pool.
                     publicEvent.ActivateObjective(PublicEventObjective.DodgingTheDefense);
                     ActivateWipOptionalObjective(PublicEventObjective.KillMechanoSlaversAndEldanConstructs);
                     ActivateWipOptionalObjective(PublicEventObjective.PutTheKelVorethSlavesOutOfTheirMisery);
+                    ActivateWipOptionalObjective(PublicEventObjective.DefeatDarkwitchGurka);
                     ActivateWipOptionalObjective(PublicEventObjective.AccessTheHiddenEldanDataStorageDevices);
-                    ActivateWipOptionalObjective(PublicEventObjective.DisableTheExoLabDefenses);
                     break;
                 case PublicEventPhase.ForgeMasterTrogun:
                     publicEvent.ActivateObjective(PublicEventObjective.DefeatForgemasterTrogun);
                     SpawnForgemasterTrogun();
+                    // "Kill Battlesworn and Darkwitch Osun" was listed in every read of this section.
+                    publicEvent.ActivateObjective(PublicEventObjective.KillBattleswornAndDarkwitchOsun);
                     ActivateWipOptionalObjective(PublicEventObjective.DestroyKelVorethForges);
-                    ActivateWipOptionalObjective(PublicEventObjective.KillBattleswornAndDarkwitchOsun);
                     ActivateWipOptionalObjective(PublicEventObjective.BurnKelVorethWarSupplies);
                     break;
             }
@@ -112,6 +147,14 @@ namespace NexusForever.Script.Instance.Dungeon.RuinsOfKelVoreth
                     publicEvent.SetPhase(PublicEventPhase.ForgeMasterTrogun);
                     break;
                 case PublicEventObjective.DefeatForgemasterTrogun:
+                    // The engine has no script-side way to fail an objective, so the challenge rows are credited
+                    // only when their condition held; a failed row simply never completes.
+                    if (!playerDied)
+                        publicEvent.UpdateObjective(PublicEventObjective.FinishTheEntireDungeonWithoutAnyoneDying, 1);
+
+                    if (elapsedSeconds <= TimerBonusSeconds)
+                        publicEvent.UpdateObjective(PublicEventObjective.CompleteTheRuinsOfKelVorethWithin40Minutes, 1);
+
                     publicEvent.Finish(PublicEventTeam.PublicTeam);
                     break;
             }
@@ -207,9 +250,9 @@ namespace NexusForever.Script.Instance.Dungeon.RuinsOfKelVoreth
 
         private void ActivateWipOptionalObjective(PublicEventObjective objective)
         {
-            // WIP-guessed from LaughingWS Instances-and-more. The branch randomly
-            // activates these Ruins optional objectives, but exact route weights,
-            // trigger placement, door timing, and objective availability remain blocked.
+            // Provisional random pool. Retail-era tracker reads show the optional rows differ from run to run
+            // (Drokk section: 448/450/453 in one run, only 456 in another, 448/453/456 in two more), so a random
+            // choice is kept. The selection distribution, per-section counts and trigger placement are NOT known.
             if (ShouldActivateWipOptionalObjective(objective))
                 publicEvent.ActivateObjective(objective);
         }

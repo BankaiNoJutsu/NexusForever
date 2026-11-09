@@ -50,6 +50,15 @@ namespace NexusForever.Script.Instance.Dungeon.RuinsOfKelVoreth.Script
             // players to Toric only where the branch supplied a paired message.
             foreach (IPlayer player in mapInstance.GetPlayers())
                 Send(player, SelectMessage(player));
+
+            OnPlayerEnter(mapInstance);
+        }
+
+        /// <summary>
+        /// Invoked after the message has been sent when a player enters the trigger range.
+        /// </summary>
+        protected virtual void OnPlayerEnter(IMapInstance mapInstance)
+        {
         }
 
         private CommunicatorMessage SelectMessage(IPlayer player)
