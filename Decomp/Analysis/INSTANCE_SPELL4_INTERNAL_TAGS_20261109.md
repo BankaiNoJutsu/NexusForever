@@ -1,0 +1,21 @@
+# Spell4 internal description tags bind spells to encounters (2026-11-09)
+
+Part of [INSTANCE_ENCOUNTER_VIDEO_GOAL_PROMPT.md](INSTANCE_ENCOUNTER_VIDEO_GOAL_PROMPT.md). Evidence tier: Mapped-level input from client tables (developer-authored, read by the lead with the helper scripts and spot-checked), not a retail-behaviour claim. Which version casts which row and in what order is still open.
+
+## Finding
+The `Spell4` description column (word 2 of the row is a string offset; the Spell4 entry model calls it `Description`) holds developer tags such as `[STL] e312 - Invoker - Thunder Cross - Veteran - Tier 1`. The `eNNN` number equals the public-event objective id of the encounter: in Stormtalon's Lair `e312` Blade-Wind, `e313` Aethros, `e314` Stormtalon (repo enum `PublicEventObjective`); in Kel Voreth `e444` Grond, `e446` Drokk, `e449` Trogun (same enum). `(N)`, `(V)` and `(N/V)` mark normal, veteran or both. So a spell row can be tied to a boss and an ability by the developers' own naming, which replaces the "name-only, Correlated (weak)" binding used in the earlier packets for every tagged row.
+The earlier packets (and an agent report saying "no [KV] tag exists") searched the spell name column, which is a different string; both the `[KV]` and `[STL]` tags are in the description column.
+
+## Counts (`coverage/spell4_internal_tags_20261109.csv`, 37,724 tagged rows; columns spell4_id, tag, encounter, description, base_spell_id, tier, cast_time_ms)
+`[STL]` 148 (e312 30, e313 23, e314 45); `[KV]` 183 (e444 20, e446 34, e449 31); `[SK]` 246 (e321 to e329); `[CBC]` 167 (e5313 25, e5314 21); `[GA]` 870 (e410 to e415); `[DS]` 1862 (e385 to e399); `[RMT]` 920 (e4550, e4556, e4558); `[IC]` 110 (e2681); `[UP]` 699 (e2673 to e2680, w2980); `[UPJ]` 229 (e4342 to e4499); `[TS]` 467 (e480 to e497). Most other tags are class or deprecated markers and are not encounter data.
+
+## Examples (Stormtalon's Lair, from the table)
+* Blade-Wind: Thunder Cross 38868 (CastTime 1500 ms), Thunder Cross Veteran 63302, Thunder Cross Messaging 45658; Electrostatic Pulse 39165 and Messaging 45678/45679 (so the phase 3 attack has rows, in the e312 set, not in the 63xxx name block); Lightning Strike Base 38836, Proxy (Player) 40022, Proxy (NPC) 63407 (2000 ms), Challenge 63412; Static Barrier MOO 63233 and Absorb Proxy 63252 (the disciple shield); Static Field Base 40682 (3000 ms); Jolt, Grounded, Channeler.
+* Aethros: Torrent 36104/36105/36120, Tempest 39756 (tier 1) and 63178 (tier 2), `MOO Tempest Interrupted` 39757, Twister 39739, Thunderbolt (Gauntlet) 39745, Gust of Aethros Static Shock/Field rows, Air Shift 70632, Phase Transition 26754.
+* Stormtalon: Static Charge 39696, Static Wave 39717 with Interrupt/Start/Damage rows, Lightning Rod base 39852 and proxies, Lightning Storm 39900 (3000 ms), Lightning Strike(s) several tiers, Thunder Call, Electric Charge, `Sets Interrupt Armor to 3 for 16 seconds` 40082/40094 (an interrupt-armor rule in the tag text; compare the guide's four armor for Static Wave, not agreed).
+Note the Spell4 raw words: word 4 is the base spell id, word 5 `TierIndex`, word 7 `CastTime` in ms (`SpellCoolDown` is 0); earlier "cast/cd" labels were wrong, see the correction in [DUNGEON_VIDEO_SURVEY_STORMTALON_20261109.md](DUNGEON_VIDEO_SURVEY_STORMTALON_20261109.md).
+
+## What this changes and what it does not
+* Binding: the per-boss, per-version ability inventory is now readable from the table for every dungeon and raid that has a tag. Packets should be re-run against the CSV; rows previously "Correlated (weak)" can be upgraded where a tag names the boss and ability.
+* Still open: cast order, intervals and phase thresholds (the tags carry no timing beyond `CastTime`, plus occasional rules such as the interrupt armor note), which creature casts a row (the tag gives an encounter number, not a creature id), which tier a version uses, and anything that only video can show.
+* Not verified: that the tag's encounter number equals the objective id for every tag family (confirmed for `[STL]` and `[KV]` by name; the others are inferred from the numbers matching objective ids in the enums).

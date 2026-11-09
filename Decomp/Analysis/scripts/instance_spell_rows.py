@@ -12,6 +12,6 @@ for i in range(n4):
     r = struct.unpack_from('<%dI' % (rs4//4), s4, base)
     if lo <= r[0] <= hi:
         nm = spname(r[0])
-        try: desc = s(s4, r[1])
-        except Exception: desc = '?'
-        print(r[0], repr(nm), '| desc:', desc[:60], '| cast', r[5], 'dur', r[6], 'cd', r[7], 'rng', [round(struct.unpack('<f', struct.pack('<I', x))[0],1) for x in r[8:11]])
+        # Raw row layout (verified 2026-11-09 against Tempest 63114 CastTime 15000): r[2] description string offset,
+        # r[4] Spell4BaseIdBaseSpell, r[5] TierIndex, r[6] RavelInstanceId, r[7] CastTime (ms).
+        print(r[0], repr(nm), '| base', r[4], 'tier', r[5], 'castTimeMs', r[7])
