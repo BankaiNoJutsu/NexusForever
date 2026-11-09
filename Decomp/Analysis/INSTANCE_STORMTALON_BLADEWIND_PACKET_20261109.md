@@ -38,3 +38,10 @@ None measured. An attempt to read boss health from the target-frame bar by pixel
 
 ## Verdict
 Blade-Wind has an agreed phase skeleton but no agreed cast order, interval or complete row binding, so per the prompt no encounter code is justified yet. Allowed next slices that need no unobserved value: (a) wire `EncounterHealthPhases` to Blade-Wind with the 60% threshold as a disabled, documented single-source placeholder; (b) the phase 2 disciple shield using rows 63171/63183 once creature ids for the disciples are found; (c) a timing pass on two clips. None started.
+
+## Timing pass attempt (2026-11-09, lead ran it, inconclusive, Observed at most)
+Method: a red-telegraph area detector over the central game area (crop 740x420 at 260,60 of the 1280x720 frame, downscaled to 370x210; a pixel counts as red when R>140 and R>2G and R>2B), sampled at 1 frame per second with ffmpeg raw output.
+* 2014-06-09 guide (`P7eQtXKxVlM`), 20 to 79 s: large red spikes (13 to 18% of the area) at 21, 33 and 61 s and a smaller one at 66 s. The three big spikes are 12 s and 28 s apart. This clip is an edited narrated guide with cuts, so gaps between spikes are not cast intervals.
+* 2014-06-18 Engineer-tank run (`CGni_NgcyeA`), continuous footage, 150 to 250 s: red area stays below about 7% with scattered 1 to 3% peaks and one 5% and one 7% peak (214 s, 236 s); no Thundercross-sized spike is separable from noise. The first 100 s are commentary with no combat.
+Result: no cast gap is recorded. The detector mixes player-ability effects, the boss frame and terrain with real telegraphs, the sample rate is 1 Hz (a telegraph can last about 2 s), and I did not verify any spike against a viewed frame. A usable measurement needs (a) a telegraph classifier checked against viewed frames, (b) 2 Hz or better, and (c) unedited footage with the boss selected. Scripts: scratchpad `telets.py`, not committed.
+Consequence: Blade-Wind timing stays an open input; nothing was added to the server.
