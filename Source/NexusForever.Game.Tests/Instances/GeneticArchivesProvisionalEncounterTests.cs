@@ -38,7 +38,7 @@ namespace NexusForever.Game.Tests.Instances
         }
 
         [Fact]
-        public void OnlyKuralakHasAHealthPhaseAndItIsTheTwoClipEggPhase()
+        public void OnlyKuralakHasAHealthPhaseAndItIsTheEggPhase()
         {
             ProvisionalEncounterPlan x89 = GeneticArchivesProvisionalPlansAccessor.ExperimentX89();
             ProvisionalEncounterPlan kuralak = GeneticArchivesProvisionalPlansAccessor.Kuralak();
@@ -47,8 +47,8 @@ namespace NexusForever.Game.Tests.Instances
             Assert.Single(x89.Phases);
             Assert.Single(phageMaw.Phases);
             Assert.Equal(2, kuralak.Phases.Count);
-            Assert.Equal(0.72f, kuralak.Phases[1].HealthFraction);
-            Assert.All(new[] { x89, kuralak, phageMaw }, plan => Assert.All(plan.Phases, phase => Assert.InRange(phase.Casts.Count, 1, 3)));
+            Assert.Equal(0.73f, kuralak.Phases[1].HealthFraction);
+            Assert.All(new[] { x89, kuralak, phageMaw }, plan => Assert.All(plan.Phases, phase => Assert.InRange(phase.Casts.Count, 1, 4)));
         }
     }
 

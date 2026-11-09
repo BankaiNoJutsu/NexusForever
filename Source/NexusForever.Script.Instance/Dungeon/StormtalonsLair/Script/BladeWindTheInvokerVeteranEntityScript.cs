@@ -23,7 +23,7 @@ namespace NexusForever.Script.Instance.Dungeon.StormtalonsLair.Script
     /// Build 16042 maps public-event objective 312 to TargetGroup 2585,
     /// whose Creature2 members are Blade-Wind the Invoker 17160 and 33405.
     /// Phase tracking is a disabled placeholder: the 60% phase 2 threshold comes from one 2015
-    /// guide only (Observed, single-source, see INSTANCE_STORMTALON_BLADEWIND_PACKET_20261109.md),
+    /// guide and a 2014 clip (Observed, two clips read by the lead, see INSTANCE_THREE_BOSS_VERIFICATION_20261109.md),
     /// so <see cref="PhaseTrackingEnabled"/> defaults to false and the phase has no gameplay effect.
     /// </summary>
     [ScriptFilterCreatureId(17160u, 33405u)]

@@ -9,7 +9,7 @@ namespace NexusForever.Script.Instance.Dungeon.RuinsOfKelVoreth.Script
     /// Spell ids come from the Spell4 internal description tags (`[KV] e449/e444/e446`, see
     /// INSTANCE_BOSS_ABILITY_CATALOG_20261109.md). Creature ids were verified by name against Creature2.
     /// Delays and intervals are ESTIMATES. Only thresholds that the second-source packet confirms are used:
-    /// Trogun at 50% (four clips). Grond's 75% and 50% unlocks and Drokk's 85/65/45/25 were not confirmed
+    /// Trogun at 50% (two clips read by the lead, two more agent-read). Grond's 75% and 50% unlocks and Drokk's 85/65/45/25 were not confirmed
     /// by other clips and are not modelled. Not modelled: orbs, volcanoes, fleas, traps, constructs, tethers.
     /// </summary>
     internal static class KelVorethProvisionalPlans
@@ -33,7 +33,7 @@ namespace NexusForever.Script.Instance.Dungeon.RuinsOfKelVoreth.Script
                 new ProvisionalCast(TrogunExaniteWeapon, 1d, 0d),
                 new ProvisionalCast(TrogunVolcanicStrike, 15d, 25d, targetCurrentTarget: true),
                 new ProvisionalCast(TrogunForgemastersCall, 25d, 40d)
-            ], "At 50% (agreed by four clips, agent-read): back to the forge channelling Exanite Weapon, then the opening casts continue; timing ESTIMATED")
+            ], "At 50% (lead read two clips: the 2015-10-13 guide https://www.youtube.com/watch?v=_K6WIpU09G4 at about 80 s and the 2014-05-25 beta run https://www.youtube.com/watch?v=K4_L4d4kl0s at about 593 s 'about fifty percent you will again return to the forge'; two more clips agent-read): back to the forge channelling Exanite Weapon, then the opening casts continue; timing ESTIMATED")
         ]);
 
         public static ProvisionalEncounterPlan Grond() => new(

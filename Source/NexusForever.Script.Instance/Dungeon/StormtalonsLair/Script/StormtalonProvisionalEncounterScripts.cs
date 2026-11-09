@@ -8,7 +8,7 @@ namespace NexusForever.Script.Instance.Dungeon.StormtalonsLair.Script
     /// PROVISIONAL boss behaviour for Stormtalon's Lair, disabled by default and never retail parity.
     /// Spell ids come from the Spell4 internal description tags (`[STL] e312/e313/e314`, see
     /// INSTANCE_BOSS_ABILITY_CATALOG_20261109.md): developer-authored names tying each row to a boss and ability.
-    /// Phase thresholds come from the observed guides (single-source or disputed where noted).
+    /// Phase thresholds come from the observed guides (Blade-Wind 60% lead-verified in two clips; the others single-source, see the per-phase notes).
     /// First delays and intervals are ESTIMATES: the guides say "periodically" and no source here gives retail timing.
     /// Not modelled: disciples, wisps, adds, tornadoes, interrupt-armor rules and the tank/target rules of each cast.
     /// </summary>
@@ -32,7 +32,7 @@ namespace NexusForever.Script.Instance.Dungeon.StormtalonsLair.Script
             [
                 new ProvisionalCast(BladeWindLightningStrike, 6d, 12d),
                 new ProvisionalCast(BladeWindThunderCross, 14d, 30d)
-            ], "Phase 2 at 60% (single source, disputed: two clips say about 50%); two Lightning Strikes per Thundercross, timing ESTIMATED")
+            ], "Phase 2 at 60% (lead read two independent clips: 2014-06-09 https://www.youtube.com/watch?v=P7eQtXKxVlM at about 66 s 'about sixty percent' and the 2015-09-28 guide https://www.youtube.com/watch?v=8M53-Kf90a4 at about 36 s; the 50% reported by an agent was not found); two Lightning Strikes per Thundercross (one guide), timing ESTIMATED")
         ]);
 
         public static ProvisionalEncounterPlan Aethros() => new(

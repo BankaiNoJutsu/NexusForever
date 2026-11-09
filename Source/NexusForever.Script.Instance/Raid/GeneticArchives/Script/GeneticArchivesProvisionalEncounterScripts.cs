@@ -34,8 +34,7 @@ namespace NexusForever.Script.Instance.Raid.GeneticArchives.Script
     {
         public const uint X89StrainBomb                 = 47353u; // [GA] e410 Strain Mauler Strain Bomb Base, CastTime 2000 ms
         public const uint KuralakPutridDischarge        = 57923u; // [GA] e412 Genetic Architect Putrid Discharge
-        public const uint KuralakTaintedVentilation     = 60454u; // [GA] e412 Genetic Architect Tainted Ventilation
-        public const uint KuralakChromosomeCorruption   = 56737u; // [GA] e412 Genetic Architect Chromosome Corruption Base
+        public const uint KuralakCultivate              = 60546u; // [GA] e412 Genetic Architect Cultivate Base (the "Cultivate Corruption" egg cast the guide names)
         public const uint KuralakDnaSiphon              = 56660u; // [GA] e412 Genetic Architect DNA Siphon (Tank) Base, CastTime 2000 ms
         public const uint KuralakOutbreak               = 60715u; // [GA] e412 Genetic Architect Outbreak, CastTime 30000 ms
         public const uint PhageMawDetonationBombs       = 60702u; // [GA] e411 Metal Maw Detonation Bombs
@@ -53,15 +52,15 @@ namespace NexusForever.Script.Instance.Raid.GeneticArchives.Script
         [
             new ProvisionalPhase(null,
             [
-                new ProvisionalCast(KuralakPutridDischarge, 10d, 25d),
-                new ProvisionalCast(KuralakTaintedVentilation, 15d, 30d),
-            ], "Phase 1 hide-and-seek: Putrid Discharge circles and ventilation; the Vanish row (Hide 60215) was dropped by the lead as name-only (agreed by four narrations; Vanish repeat 45 s vs 50 s disagrees), intervals ESTIMATED"),
-            new ProvisionalPhase(0.72f,
+                new ProvisionalCast(KuralakPutridDischarge, 10d, 25d)
+            ], "Phase 1: Putrid Discharge on three random players, frequently (lead read the 2015-11-13 raid guide https://www.youtube.com/watch?v=qVzVREgWB7A at 68 to 81 s); the Vanish row (Hide 60215) and Tainted Ventilation 60454 are not used (name-only, not found in that guide); interval ESTIMATED"),
+            new ProvisionalPhase(0.73f,
             [
-                new ProvisionalCast(KuralakChromosomeCorruption, 5d, 35d),
+                new ProvisionalCast(KuralakPutridDischarge, 10d, 25d),
+                new ProvisionalCast(KuralakCultivate, 5d, 40d),
                 new ProvisionalCast(KuralakDnaSiphon, 20d, 45d, targetCurrentTarget: true),
-                new ProvisionalCast(KuralakOutbreak, 10d, 60d)
-            ], "Phase 2 egg phase from about 72% (73% in another clip; the threshold is a documented ESTIMATE of the lower-confidence wording), intervals ESTIMATED")
+                new ProvisionalCast(KuralakOutbreak, 30d, 60d)
+            ], "Phase 2 at 73% (lead read the same guide at 81 s: 'Phase 2 begins at 73%'; a second clip reportedly says 72%, not found by the lead): Putrid Discharge continues, Cultivate Corruption egg cast, DNA Siphon on the tank, Outbreak occasionally (guide 133 to 143 s); intervals ESTIMATED")
         ]);
 
         public static ProvisionalEncounterPlan PhageMaw() => new(
