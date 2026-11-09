@@ -58,7 +58,103 @@ public class SanctuaryOfTheSwordmaidenEventScriptTests
             .GetInvocations(nameof(IPublicEvent.ActivateObjective))
             .ToList();
         Assert.Contains(activations, i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.DefeatDeadringerShallaos);
-        Assert.Contains(activations, i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.EliminateZealousTorine);
+        AssertObjectiveNotActivated(eventProxy, PublicEventObjective.EliminateZealousTorine);
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_Enter_ActivatesZealousTorineOnlyFromTheOptionalPool()
+    {
+        // Listed in the May 2015 run, absent from every frame of the November 2015 run.
+        var script = CreateScriptWithOptionalObjectives([PublicEventObjective.EliminateZealousTorine]);
+        IPublicEvent publicEvent = CreatePublicEvent(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.Enter);
+
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.EliminateZealousTorine);
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_Enter_ActivatesDeathlessAndTimerBonus()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEvent(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.Enter);
+
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.DeathlessInTheDungeon);
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.TimerBonus);
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_Enter_DoesNotActivateLifeweaverTechClusters()
+    {
+        var script = CreateScriptWithOptionalObjectives([PublicEventObjective.SabotageLifeweaverTechClusters]);
+        IPublicEvent publicEvent = CreatePublicEvent(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.Enter);
+
+        AssertObjectiveNotActivated(eventProxy, PublicEventObjective.SabotageLifeweaverTechClusters);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_FinalBoss_CreditsDeathlessAndTimerBonusWhenClean()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEvent(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+        script.Update(59d * 60d);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(PublicEventObjective.DefeatSpiritmotherSeleneTheCorrupted, PublicEventStatus.Succeeded));
+
+        AssertObjectiveUpdated(eventProxy, PublicEventObjective.DeathlessInTheDungeon);
+        AssertObjectiveUpdated(eventProxy, PublicEventObjective.TimerBonus);
+        Assert.Single(eventProxy.GetInvocations(nameof(IPublicEvent.Finish)));
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_FinalBoss_DoesNotCreditDeathlessAfterAPlayerDied()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEvent(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+        script.OnDeath(RecordingDispatchProxy<IPlayer>.Create(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(PublicEventObjective.DefeatSpiritmotherSeleneTheCorrupted, PublicEventStatus.Succeeded));
+
+        AssertObjectiveNotUpdated(eventProxy, PublicEventObjective.DeathlessInTheDungeon);
+        AssertObjectiveUpdated(eventProxy, PublicEventObjective.TimerBonus);
+    }
+
+    [Fact]
+    public void OnDeath_NonPlayerDoesNotBreakDeathless()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEvent(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+        script.OnDeath(RecordingDispatchProxy<INonPlayerEntity>.Create(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(PublicEventObjective.DefeatSpiritmotherSeleneTheCorrupted, PublicEventStatus.Succeeded));
+
+        AssertObjectiveUpdated(eventProxy, PublicEventObjective.DeathlessInTheDungeon);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_FinalBoss_UsesSixtyMinuteTimerBonusLimit()
+    {
+        // The 16042 row text says 60 minutes (Kel Voreth and Stormtalon 40, Skullcano 45).
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEvent(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+        script.Update(60d * 60d + 1d);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(PublicEventObjective.DefeatSpiritmotherSeleneTheCorrupted, PublicEventStatus.Succeeded));
+
+        AssertObjectiveNotUpdated(eventProxy, PublicEventObjective.TimerBonus);
+        AssertObjectiveUpdated(eventProxy, PublicEventObjective.DeathlessInTheDungeon);
+        Assert.Single(eventProxy.GetInvocations(nameof(IPublicEvent.Finish)));
     }
 
     [Fact]
@@ -106,13 +202,14 @@ public class SanctuaryOfTheSwordmaidenEventScriptTests
     }
 
     [Fact]
-    public void OnPublicEventPhase_Enter_ActivatesLifeweaverTechClusterOptionalObjective()
+    public void OnPublicEventPhase_Ondu_ActivatesLifeweaverTechClusterOptionalObjective()
     {
+        // The 2015-11-29 veteran run first lists "[1/3] Sabotage Lifeweaver Tech Clusters" in the Ondu phase.
         var script = CreateScriptWithOptionalObjectives([PublicEventObjective.SabotageLifeweaverTechClusters]);
         IPublicEvent publicEvent = CreatePublicEvent(out RecordingDispatchProxy<IPublicEvent> eventProxy);
         script.OnLoad(publicEvent);
 
-        script.OnPublicEventPhase((uint)PublicEventPhase.Enter);
+        script.OnPublicEventPhase((uint)PublicEventPhase.OnduLifeWeaver);
 
         AssertObjectiveActivated(eventProxy, PublicEventObjective.SabotageLifeweaverTechClusters);
     }
@@ -490,6 +587,24 @@ public class SanctuaryOfTheSwordmaidenEventScriptTests
     {
         Assert.Contains(eventProxy.GetInvocations(nameof(IPublicEvent.ActivateObjective)),
             i => (PublicEventObjective)i.Arguments[0] == objective);
+    }
+
+    private static void AssertObjectiveNotActivated(RecordingDispatchProxy<IPublicEvent> eventProxy, PublicEventObjective objective)
+    {
+        Assert.DoesNotContain(eventProxy.GetInvocations(nameof(IPublicEvent.ActivateObjective)),
+            i => (PublicEventObjective)i.Arguments[0] == objective);
+    }
+
+    private static void AssertObjectiveUpdated(RecordingDispatchProxy<IPublicEvent> eventProxy, PublicEventObjective objective)
+    {
+        Assert.Contains(eventProxy.GetInvocations(nameof(IPublicEvent.UpdateObjective)),
+            i => i.Arguments[0] is PublicEventObjective o && o == objective && (int)i.Arguments[1] == 1);
+    }
+
+    private static void AssertObjectiveNotUpdated(RecordingDispatchProxy<IPublicEvent> eventProxy, PublicEventObjective objective)
+    {
+        Assert.DoesNotContain(eventProxy.GetInvocations(nameof(IPublicEvent.UpdateObjective)),
+            i => i.Arguments[0] is PublicEventObjective o && o == objective);
     }
 
     private static void AssertGridEntityAddedToMap(

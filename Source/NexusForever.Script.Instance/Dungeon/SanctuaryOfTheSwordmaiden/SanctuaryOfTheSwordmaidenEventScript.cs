@@ -28,9 +28,17 @@ namespace NexusForever.Script.Instance.Dungeon.SanctuaryOfTheSwordmaiden
 
         private readonly IGlobalQuestManager globalQuestManager;
 
+        /// <summary>
+        /// Seconds allowed for the "Timer Bonus" row (3204, "Complete the Sanctuary of the Swordmaiden within 60 minutes for bonus points towards a medal").
+        /// The objective row carries no failure time, so the limit is tracked here.
+        /// </summary>
+        private const double TimerBonusSeconds = 60d * 60d;
+
         private IPublicEvent publicEvent;
         private IMapInstance mapInstance;
         private PublicEventPhase? wipRandomPathPhase;
+        private bool playerDied;
+        private double elapsedSeconds;
 
         public SanctuaryOfTheSwordmaidenEventScript(
             IGlobalQuestManager globalQuestManager)
@@ -47,7 +55,26 @@ namespace NexusForever.Script.Instance.Dungeon.SanctuaryOfTheSwordmaiden
             mapInstance = publicEvent.Map as IMapInstance
                 ?? throw new InvalidOperationException("Sanctuary of the Swordmaiden requires a map instance.");
 
+            playerDied = false;
+            elapsedSeconds = 0d;
             publicEvent.SetPhase(PublicEventPhase.Enter);
+        }
+
+        /// <summary>
+        /// Invoked each world tick; tracks the elapsed run time for the Timer Bonus row.
+        /// </summary>
+        public void Update(double lastTick)
+        {
+            elapsedSeconds += lastTick;
+        }
+
+        /// <summary>
+        /// Invoked when a unit dies on the map; any player death fails "Deathless in the Dungeon".
+        /// </summary>
+        public void OnDeath(IUnitEntity entity)
+        {
+            if (entity is IPlayer)
+                playerDied = true;
         }
 
         /// <summary>
@@ -58,9 +85,15 @@ namespace NexusForever.Script.Instance.Dungeon.SanctuaryOfTheSwordmaiden
             switch ((PublicEventPhase)phase)
             {
                 case PublicEventPhase.Enter:
+                    // Tracker rows below were read from retail-era clips (see INSTANCE_SANCTUARY_TRACKER_PASS_20261109.md):
+                    // Observed ordering only, no retail parity claim. The 2015-11-29 veteran run lists only the boss row,
+                    // "Deathless in the Dungeon" and "Timer Bonus" in this phase.
                     publicEvent.ActivateObjective(PublicEventObjective.DefeatDeadringerShallaos);
-                    publicEvent.ActivateObjective(PublicEventObjective.EliminateZealousTorine);
-                    ActivateWipOptionalObjective(PublicEventObjective.SabotageLifeweaverTechClusters);
+                    publicEvent.ActivateObjective(PublicEventObjective.DeathlessInTheDungeon);
+                    publicEvent.ActivateObjective(PublicEventObjective.TimerBonus);
+                    // "Eliminate the Zealous Torine" was listed in the May 2015 run ([7/8] on the Moldwood route) but
+                    // in no frame of the November 2015 run, so it is part of the provisional random pool.
+                    ActivateWipOptionalObjective(PublicEventObjective.EliminateZealousTorine);
                     ActivateWipOptionalObjective(PublicEventObjective.KillCorruptedDeathbringerDareia);
                     break;
                 case PublicEventPhase.RandomPath:
@@ -111,6 +144,9 @@ namespace NexusForever.Script.Instance.Dungeon.SanctuaryOfTheSwordmaiden
                 case PublicEventPhase.OnduLifeWeaver:
                     publicEvent.ActivateObjective(PublicEventObjective.DefeatOnduLifeweaver);
                     publicEvent.ActivateObjective(PublicEventObjective.KillTheLifeweaverGuardian);
+                    // "[1/3] Sabotage Lifeweaver Tech Clusters" first appears in this phase in the 2015-11-29 run
+                    // (absent from the earlier phases' trackers), not in the first phase.
+                    ActivateWipOptionalObjective(PublicEventObjective.SabotageLifeweaverTechClusters);
                     ActivateWipOptionalObjective(PublicEventObjective.DestroyDeathstingSwarms);
                     ActivateWipOptionalObjective(PublicEventObjective.KillCorruptedVeteranSwordmaidens);
                     ActivateWipOptionalObjective(PublicEventObjective.KillTheCorruptedTerrorantulas);
@@ -176,6 +212,14 @@ namespace NexusForever.Script.Instance.Dungeon.SanctuaryOfTheSwordmaiden
                     publicEvent.SetPhase(PublicEventPhase.SpiritmotherSeleneTheCorrupted);
                     break;
                 case PublicEventObjective.DefeatSpiritmotherSeleneTheCorrupted:
+                    // The engine has no script-side way to fail an objective, so the challenge rows are credited
+                    // only when their condition held; a failed row simply never completes.
+                    if (!playerDied)
+                        publicEvent.UpdateObjective(PublicEventObjective.DeathlessInTheDungeon, 1);
+
+                    if (elapsedSeconds <= TimerBonusSeconds)
+                        publicEvent.UpdateObjective(PublicEventObjective.TimerBonus, 1);
+
                     publicEvent.Finish(PublicEventTeam.PublicTeam);
                     break;
             }
@@ -240,9 +284,9 @@ namespace NexusForever.Script.Instance.Dungeon.SanctuaryOfTheSwordmaiden
 
         private void ActivateWipOptionalObjective(PublicEventObjective objective)
         {
-            // WIP-guessed from LaughingWS Instances-and-more. The branch randomly
-            // activates these Sanctuary optional objectives, but exact route weights,
-            // path availability, trigger placement, and door timing remain blocked.
+            // Provisional random pool. The two veteran runs read (May 2015 and November 2015) list different
+            // optional rows, so a random choice is kept. Weights, per-phase counts, path availability and trigger
+            // placement are NOT known.
             if (ShouldActivateWipOptionalObjective(objective))
                 publicEvent.ActivateObjective(objective);
         }
