@@ -1,5 +1,7 @@
 # Assessment follow-through goal
 
+[Instance encounters, Phase A](INSTANCE_PHASE_A_ENGINE_FACILITIES_20261109.md) (2026-11-09): goal prompt [INSTANCE_ENCOUNTER_VIDEO_GOAL_PROMPT.md](INSTANCE_ENCOUNTER_VIDEO_GOAL_PROMPT.md) started. Inventoried the script engine (timed events, cast, summon and say events, interrupt armor vital already exist); added `EncounterHealthPhases` and `EntityYellEvent` with 15 focused tests (Source tier, not run red first). Interrupt effect on pending casts, invulnerable adds, wipe reset and script wiring are open. No boss logic and no retail parity claim.
+
 > Evidence discipline: "complete", "qualified" and "implemented" in these records
 > carry an evidence tier (see Reverse-Engineering Discipline in `AGENTS.md` and the
 > Evidence Ladder in `CONTINUATION_GUIDE.md`). Code built on an inferred reading of
