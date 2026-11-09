@@ -28,6 +28,10 @@ namespace NexusForever.Script.Instance.Expedition.Gauntlet
         CollectGoldenSkulls                    = 1957,
         SurviveTheSplorg                       = 1967,
         CollectGauntletScoreTokens             = 1974,
+        // Optional tracker rows seen in the veteran clips (see INSTANCE_GAUNTLET_VIDEO_ANALYSIS_20261109.md): "[x/20] Collect Gauntlet Score
+        // Tokens" is 4670 (Script, count 20), "[mm:ss] Remaining for Gold medal" is 4707 (ScriptWithoutMax, 20 minutes).
+        CollectTwentyGauntletScoreTokens       = 4670,
+        CompleteWithinGoldMedalTime            = 4707,
         EnterTheChamberOfChoices               = 1977,
         EndorseAProduct                        = 2001,
         DefeatBrickBraggor                     = 4671

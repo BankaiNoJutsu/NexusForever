@@ -8,6 +8,7 @@ using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.PublicEvent;
+using NexusForever.Game.Static.Setting;
 using NexusForever.Script.Template;
 using NexusForever.Script.Template.Filter;
 
@@ -21,6 +22,7 @@ namespace NexusForever.Script.Instance.Expedition.Gauntlet
         private IPublicEvent publicEvent;
         private IMapInstance mapInstance;
         private bool airlockGatherMarkerSpawned;
+        private bool goldMedalTimerActivated;
 
         private const uint AirlockWorldLocationId = 38909u;
         private const uint AirlockObjectiveObjectId = 5735u;
@@ -76,13 +78,16 @@ namespace NexusForever.Script.Instance.Expedition.Gauntlet
                 case PublicEventPhase.TalkToPilotTaboro:
                     publicEvent.ActivateObjective(PublicEventObjective.TalkToPilotTaboro);
                     SpawnPilotTaboro();
+                    TryActivateGoldMedalTimer();
                     break;
                 case PublicEventPhase.GetIntoAirlock:
+                    TryActivateGoldMedalTimer();
                     publicEvent.ActivateObjective(PublicEventObjective.GetIntoAirlock, mapInstance.PlayerCount);
                     SpawnReviewedAirlockGatherMarker();
                     SpawnWipGuessedWorldLocationTrigger(AirlockWorldLocationId, AirlockObjectiveObjectId, AirlockTriggerPosition);
                     break;
                 case PublicEventPhase.WhatHappened:
+                    TryActivateGoldMedalTimer();
                     publicEvent.ActivateObjective(PublicEventObjective.FindOutWhatHappenedToYou);
                     QueueWipGuessedCinematic<IGauntletFindOutWhatHappened>();
                     // Build 16042 objective 1819 is ScriptWithoutCount. Credit the
@@ -90,6 +95,7 @@ namespace NexusForever.Script.Instance.Expedition.Gauntlet
                     publicEvent.UpdateObjective(PublicEventObjective.FindOutWhatHappenedToYou, 1);
                     break;
                 case PublicEventPhase.ActivateSwitches:
+                    TryActivateGoldMedalTimer();
                     publicEvent.ActivateObjective(PublicEventObjective.ActivateSwitches);
                     publicEvent.ActivateObjective(PublicEventObjective.CollectGoldenSkulls);
                     break;
@@ -104,8 +110,21 @@ namespace NexusForever.Script.Instance.Expedition.Gauntlet
                     publicEvent.ActivateObjective(PublicEventObjective.EnterTheChamberOfChoices, mapInstance.PlayerCount);
                     break;
                 case PublicEventPhase.SurviveTheSplorg:
+                    // Survive the Splorg is a TimedWin row: the event moves on when its 132 s timer ends, so the timer expiry must count as
+                    // success (without this opt-in the objective fails at expiry and the script, which only advances on success, would stall).
+                    // The retail tracker lists it as Optional with a countdown and the run continues after the Splorg despawns.
+                    foreach (IPublicEventObjective objective in (publicEvent.GetTeams() ?? []).SelectMany(t => t.GetObjectives()))
+                    {
+                        if (objective.Entry.Id == (uint)PublicEventObjective.SurviveTheSplorg)
+                            objective.EnableTimedWinCompletion();
+                    }
+
                     publicEvent.ActivateObjective(PublicEventObjective.SurviveTheSplorg);
-                    publicEvent.ActivateObjective(PublicEventObjective.CollectGauntletScoreTokens);
+
+                    // Veteran only: the veteran tracker shows one "[x/20] Collect Gauntlet Score Tokens" line (4670) during the Splorg, the normal
+                    // run shows none, and no separate 100-count gauge (1974) is shown in either, so 1974 is no longer activated.
+                    if (IsVeteran())
+                        publicEvent.ActivateObjective(PublicEventObjective.CollectTwentyGauntletScoreTokens);
                     break;
                 case PublicEventPhase.ChamberOfChoices:
                     publicEvent.ActivateObjective(PublicEventObjective.EnterTheFactionFrictionArena, mapInstance.PlayerCount);
@@ -302,9 +321,36 @@ namespace NexusForever.Script.Instance.Expedition.Gauntlet
                     break;
                 case PublicEventObjective.TalkToJudgeKain:
                 case PublicEventObjective.TalkToAgentLex:
+                    // Finishing inside the 20 minutes completes the gold medal row; once its timer has expired the row is no longer
+                    // active and this update is ignored by the engine.
+                    if (goldMedalTimerActivated)
+                        publicEvent.UpdateObjective(PublicEventObjective.CompleteWithinGoldMedalTime, 1);
+
                     publicEvent.Finish(PublicEventTeam.PublicTeam);
                     break;
             }
+        }
+
+        /// <summary>
+        /// The veteran tracker (and not the normal one) shows the "Remaining for Gold medal" countdown from the start of the run and the
+        /// score token line during the Splorg; the engine exposes the difficulty only on the players.
+        /// </summary>
+        private bool IsVeteran()
+        {
+            return mapInstance.GetPlayers()?.Any(p => p.InstanceDifficulty == WorldDifficulty.Veteran) == true;
+        }
+
+        /// <summary>
+        /// Start the 20 minute gold medal row (4707) once, veteran only. It is tried at each early phase because no player may be in
+        /// the instance yet when the event loads.
+        /// </summary>
+        private void TryActivateGoldMedalTimer()
+        {
+            if (goldMedalTimerActivated || !IsVeteran())
+                return;
+
+            goldMedalTimerActivated = true;
+            publicEvent.ActivateObjective(PublicEventObjective.CompleteWithinGoldMedalTime);
         }
     }
 }

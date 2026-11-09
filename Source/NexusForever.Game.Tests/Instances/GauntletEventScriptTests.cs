@@ -8,6 +8,7 @@ using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.PublicEvent;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.PublicEvent;
+using NexusForever.Game.Static.Setting;
 using NexusForever.Game.Tests.TestSupport;
 using NexusForever.GameTable.Model;
 using NexusForever.Script.Instance.Expedition.Gauntlet;
@@ -462,6 +463,134 @@ public class GauntletEventScriptTests
         Assert.Equal(PublicEventObjectiveType.ActivateTargetGroup, update.Arguments[0]);
         Assert.Equal(6831u, update.Arguments[1]);
         Assert.Equal(1, update.Arguments[2]);
+    }
+
+    private static IPlayer CreatePlayer(WorldDifficulty difficulty)
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.InstanceDifficulty), difficulty);
+        return player;
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_SurviveTheSplorg_NormalRunActivatesOnlyTheSplorgTimer()
+    {
+        // Observed: the normal run's tracker (2016-06-12 Maximus walkthrough) lists Survive the Splorg with a countdown and no token line.
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEvent(1u, [CreatePlayer(WorldDifficulty.Normal)], out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.SurviveTheSplorg);
+
+        Assert.Equal(
+            [PublicEventObjective.SurviveTheSplorg],
+            eventProxy.GetInvocations(nameof(IPublicEvent.ActivateObjective)).Select(i => (PublicEventObjective)i.Arguments[0]));
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_SurviveTheSplorg_VeteranRunAlsoActivatesTheTwentyTokenRowNotTheGauge()
+    {
+        // Observed: the veteran tracker shows "[x/20] Collect Gauntlet Score Tokens" (4670) and no separate 100-count gauge (1974).
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEvent(1u, [CreatePlayer(WorldDifficulty.Veteran)], out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.SurviveTheSplorg);
+
+        List<PublicEventObjective> activated = eventProxy
+            .GetInvocations(nameof(IPublicEvent.ActivateObjective))
+            .Select(i => (PublicEventObjective)i.Arguments[0])
+            .ToList();
+        Assert.Contains(PublicEventObjective.SurviveTheSplorg, activated);
+        Assert.Contains(PublicEventObjective.CollectTwentyGauntletScoreTokens, activated);
+        Assert.DoesNotContain(PublicEventObjective.CollectGauntletScoreTokens, activated);
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_SurviveTheSplorg_OptsTheTimedWinRowIntoCompletionOnExpiry()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEvent(1u, out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        IPublicEventObjective splorg = CreateObjective(PublicEventObjective.SurviveTheSplorg, PublicEventStatus.Inactive);
+        IPublicEventObjective other = CreateObjective(PublicEventObjective.ActivateSwitches, PublicEventStatus.Inactive);
+        IPublicEventTeam team = RecordingDispatchProxy<IPublicEventTeam>.Create(out RecordingDispatchProxy<IPublicEventTeam> teamProxy);
+        teamProxy.SetMethodReturn(nameof(IPublicEventTeam.GetObjectives), new List<IPublicEventObjective> { other, splorg });
+        eventProxy.SetMethodReturn(nameof(IPublicEvent.GetTeams), new List<IPublicEventTeam> { team });
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.SurviveTheSplorg);
+
+        Assert.Single(((RecordingDispatchProxy<IPublicEventObjective>)(object)splorg).GetInvocations(nameof(IPublicEventObjective.EnableTimedWinCompletion)));
+        Assert.Empty(((RecordingDispatchProxy<IPublicEventObjective>)(object)other).GetInvocations(nameof(IPublicEventObjective.EnableTimedWinCompletion)));
+    }
+
+    [Fact]
+    public void GoldMedalTimer_IsVeteranOnlyAndStartsOnce()
+    {
+        // Observed: the veteran tracker shows "[19:01] Remaining for Gold medal" from the first room; the normal tracker never does.
+        var vetScript = CreateScript();
+        IPublicEvent vet = CreatePublicEvent(1u, [CreatePlayer(WorldDifficulty.Veteran)], out RecordingDispatchProxy<IPublicEvent> vetProxy);
+        vetScript.OnLoad(vet);
+        vetScript.OnPublicEventPhase((uint)PublicEventPhase.ActivateSwitches);
+        vetScript.OnPublicEventPhase((uint)PublicEventPhase.ActivateSwitches);
+
+        Assert.Single(
+            vetProxy.GetInvocations(nameof(IPublicEvent.ActivateObjective)),
+            i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.CompleteWithinGoldMedalTime);
+
+        var normalScript = CreateScript();
+        IPublicEvent normal = CreatePublicEvent(1u, [CreatePlayer(WorldDifficulty.Normal)], out RecordingDispatchProxy<IPublicEvent> normalProxy);
+        normalScript.OnLoad(normal);
+        normalScript.OnPublicEventPhase((uint)PublicEventPhase.ActivateSwitches);
+
+        Assert.DoesNotContain(
+            normalProxy.GetInvocations(nameof(IPublicEvent.ActivateObjective)),
+            i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.CompleteWithinGoldMedalTime);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_FinalNpc_VeteranCreditsTheGoldMedalRowBeforeFinishing()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEvent(1u, [CreatePlayer(WorldDifficulty.Veteran)], out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+        script.OnPublicEventPhase((uint)PublicEventPhase.ActivateSwitches);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(PublicEventObjective.TalkToJudgeKain, PublicEventStatus.Succeeded));
+
+        RecordingDispatchProxy<IPublicEvent>.Invocation credit = Assert.Single(
+            eventProxy.GetInvocations(nameof(IPublicEvent.UpdateObjective)),
+            i => i.Arguments[0] is PublicEventObjective o && o == PublicEventObjective.CompleteWithinGoldMedalTime);
+        Assert.Equal(1, credit.Arguments[1]);
+        Assert.Single(eventProxy.GetInvocations(nameof(IPublicEvent.Finish)));
+    }
+
+    [Fact]
+    public void GauntletScoreTokenScript_IsBoundToTheMappedCreature()
+    {
+        ScriptFilterCreatureIdAttribute attribute = Assert.Single(
+            typeof(GauntletScoreTokenEntityScript).GetCustomAttributes(typeof(ScriptFilterCreatureIdAttribute), inherit: false)
+                .Cast<ScriptFilterCreatureIdAttribute>());
+
+        Assert.Equal(new[] { 49577u }, attribute.CreatureId);
+    }
+
+    [Fact]
+    public void GauntletScoreToken_OnActivateSuccess_CreditsTheTwentyTokenRowOnceAndRemovesTheToken()
+    {
+        var script = new GauntletScoreTokenEntityScript();
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+        RecordingDispatchProxy<IPublicEventManager> managerProxy = CreateWorldEntityWithPublicEventManager(out IWorldEntity token);
+
+        script.OnLoad(token);
+        script.OnActivateSuccess(player);
+        script.OnActivateSuccess(player);
+
+        RecordingDispatchProxy<IPublicEventManager>.Invocation update = Assert.Single(
+            managerProxy.GetInvocations(nameof(IPublicEventManager.UpdateObjective)));
+        Assert.Equal(PublicEventObjective.CollectTwentyGauntletScoreTokens, update.Arguments[0]);
+        Assert.Equal(1, update.Arguments[1]);
+        Assert.Single(((RecordingDispatchProxy<IWorldEntity>)(object)token).GetInvocations(nameof(IGridEntity.RemoveFromMap)));
     }
 
     public static IEnumerable<object[]> GauntletTalkObjectiveFilterCases()
