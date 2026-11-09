@@ -1,5 +1,7 @@
 # Assessment follow-through goal
 
+[Kel Voreth packet](INSTANCE_KELVORETH_PACKET_20261109.md) (2026-11-09): single-source (moepork 2015 guides) skeletons and seven health thresholds for Trogun, Grond and Drokk; Spell4 names matched by name only. Also corrects the Stormtalon survey: Spell4 ids 63090 to 63260 are a shared level-20 dungeon batch, not a Stormtalon block. Observed/Correlated, no code, no retail parity claim.
+
 [Blade-Wind packet and phase placeholder](INSTANCE_STORMTALON_BLADEWIND_PACKET_20261109.md) (2026-11-09): evidence packet for Stormtalon's Lair boss 1 (skeleton agreed by two clips, 60% and interrupt armor single-source, row binding Correlated, timing pass inconclusive). Added a disabled-by-default phase tracking placeholder with 4 focused tests (Source tier, not run red first). No cast logic; no retail parity claim.
 
 [Instance encounters, Phase A](INSTANCE_PHASE_A_ENGINE_FACILITIES_20261109.md) (2026-11-09): goal prompt [INSTANCE_ENCOUNTER_VIDEO_GOAL_PROMPT.md](INSTANCE_ENCOUNTER_VIDEO_GOAL_PROMPT.md) started. Inventoried the script engine (timed events, cast, summon and say events, interrupt armor vital already exist); added `EncounterHealthPhases` and `EntityYellEvent` with 15 focused tests (Source tier, not run red first). Interrupt effect on pending casts, invulnerable adds, wipe reset and script wiring are open. No boss logic and no retail parity claim.

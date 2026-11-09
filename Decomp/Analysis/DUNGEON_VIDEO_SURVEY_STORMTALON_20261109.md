@@ -70,3 +70,6 @@ Scripts (scratchpad, not committed): text search on `en-US.bin`, a column scan o
 
 ## Updated decision
 The yells and the Tempest row give two table anchors, but still no cast list and no phase framework. The remaining route to a first encounter slice is a clip-side measurement (telegraph appearance gaps at 0.5 s) against these candidate rows, or a native or packet read of the creature spell list; neither was run.
+
+## Correction (2026-11-09): the 63090 to 63260 block is shared
+The Spell4 id block 63090 to 63260 also contains Kel Voreth abilities (Volcanic Strike 63106, Bellow 63109, Thrash 63121/63123, Scratch Itch 63129, Lockdown 63143, Mutilate 63209 and others, see [INSTANCE_KELVORETH_PACKET_20261109.md](INSTANCE_KELVORETH_PACKET_20261109.md)). The id range is therefore a shared batch of level-20 dungeon spells, not a Stormtalon block. The Stormtalon candidate list above is valid only by name, the two `[STL]` rows and the Tempest text anchor, not by id adjacency.
