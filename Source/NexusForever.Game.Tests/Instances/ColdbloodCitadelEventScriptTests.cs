@@ -501,6 +501,69 @@ public class ColdbloodCitadelEventScriptTests
     }
 
     [Fact]
+    public void OnPublicEventPhase_Enter_ActivatesDeathlessAndTimerBonus()
+    {
+        ColdbloodCitadelEventScript script = CreateScriptWithGatherRing(
+            out RecordingDispatchProxy<IPublicEvent> eventProxy,
+            out _,
+            out _,
+            out _);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.Enter);
+
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.DeathlessInTheDungeon);
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.TimerBonus);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_FinalBoss_NoDeathWithinLimit_CreditsDeathlessAndTimerBonus()
+    {
+        ColdbloodCitadelEventScript script = CreateScript(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.Update(40d * 60d);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(PublicEventObjective.DefeatTheRisenHarizog, PublicEventStatus.Succeeded));
+
+        AssertObjectiveUpdated(eventProxy, PublicEventObjective.DeathlessInTheDungeon);
+        AssertObjectiveUpdated(eventProxy, PublicEventObjective.TimerBonus);
+        Assert.Single(eventProxy.GetInvocations(nameof(IPublicEvent.Finish)));
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_FinalBoss_AfterPlayerDeath_DoesNotCreditDeathless()
+    {
+        ColdbloodCitadelEventScript script = CreateScript(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnDeath(RecordingDispatchProxy<IPlayer>.Create(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(PublicEventObjective.DefeatTheRisenHarizog, PublicEventStatus.Succeeded));
+
+        AssertObjectiveNotUpdated(eventProxy, PublicEventObjective.DeathlessInTheDungeon);
+        AssertObjectiveUpdated(eventProxy, PublicEventObjective.TimerBonus);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_FinalBoss_AfterNonPlayerDeath_StillCreditsDeathless()
+    {
+        ColdbloodCitadelEventScript script = CreateScript(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnDeath(RecordingDispatchProxy<ICreatureEntity>.Create(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(PublicEventObjective.DefeatTheRisenHarizog, PublicEventStatus.Succeeded));
+
+        AssertObjectiveUpdated(eventProxy, PublicEventObjective.DeathlessInTheDungeon);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_FinalBoss_AfterTimeLimit_DoesNotCreditTimerBonus()
+    {
+        ColdbloodCitadelEventScript script = CreateScript(out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.Update((40d * 60d) + 1d);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(PublicEventObjective.DefeatTheRisenHarizog, PublicEventStatus.Succeeded));
+
+        AssertObjectiveNotUpdated(eventProxy, PublicEventObjective.TimerBonus);
+        AssertObjectiveUpdated(eventProxy, PublicEventObjective.DeathlessInTheDungeon);
+    }
+
+    [Fact]
     public void OnPublicEventObjectiveStatus_Incomplete_DoesNotAdvance()
     {
         ColdbloodCitadelEventScript script = CreateScript(out RecordingDispatchProxy<IPublicEvent> eventProxy);
@@ -841,6 +904,18 @@ public class ColdbloodCitadelEventScriptTests
     private static void AssertObjectiveActivated(RecordingDispatchProxy<IPublicEvent> eventProxy, PublicEventObjective objective)
     {
         Assert.Contains(eventProxy.GetInvocations(nameof(IPublicEvent.ActivateObjective)),
+            i => (PublicEventObjective)i.Arguments[0] == objective);
+    }
+
+    private static void AssertObjectiveUpdated(RecordingDispatchProxy<IPublicEvent> eventProxy, PublicEventObjective objective)
+    {
+        Assert.Contains(eventProxy.GetInvocations(nameof(IPublicEvent.UpdateObjective)),
+            i => (PublicEventObjective)i.Arguments[0] == objective && Convert.ToInt32(i.Arguments[1]) == 1);
+    }
+
+    private static void AssertObjectiveNotUpdated(RecordingDispatchProxy<IPublicEvent> eventProxy, PublicEventObjective objective)
+    {
+        Assert.DoesNotContain(eventProxy.GetInvocations(nameof(IPublicEvent.UpdateObjective)),
             i => (PublicEventObjective)i.Arguments[0] == objective);
     }
 

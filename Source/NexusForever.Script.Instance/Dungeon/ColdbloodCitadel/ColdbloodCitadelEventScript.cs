@@ -49,8 +49,16 @@ namespace NexusForever.Script.Instance.Dungeon.ColdbloodCitadel
         private static readonly Vector3 ColdbloodGatePosition = new(371f, -456.92f, -592.31f);
         private static readonly Vector3 ColdbloodGateRotation = new(1.570796327f, 0f, 0f);
 
+        /// <summary>
+        /// Seconds allowed for the "Timer Bonus" row (5322, "Complete Coldblood Citadel within 40 minutes for bonus points towards a medal").
+        /// The objective row carries no failure time, so the limit is tracked here.
+        /// </summary>
+        private const double TimerBonusSeconds = 40d * 60d;
+
         private IPublicEvent publicEvent;
         private IMapInstance mapInstance;
+        private bool playerDied;
+        private double elapsedSeconds;
 
         private uint gatherRingGuid;
         private uint gatherRingTriggerGuid;
@@ -82,8 +90,27 @@ namespace NexusForever.Script.Instance.Dungeon.ColdbloodCitadel
             gatherRingTriggerGuid = 0;
             gatherRingPlacementSpawned = false;
             coldbloodGateSpawned = false;
+            playerDied = false;
+            elapsedSeconds = 0d;
 
             publicEvent.SetPhase(PublicEventPhase.Enter);
+        }
+
+        /// <summary>
+        /// Invoked each world tick; tracks the elapsed run time for the Timer Bonus row.
+        /// </summary>
+        public void Update(double lastTick)
+        {
+            elapsedSeconds += lastTick;
+        }
+
+        /// <summary>
+        /// Invoked when a unit dies on the map; any player death fails "Deathless in the Dungeon".
+        /// </summary>
+        public void OnDeath(IUnitEntity entity)
+        {
+            if (entity is IPlayer)
+                playerDied = true;
         }
 
         /// <summary>
@@ -156,6 +183,12 @@ namespace NexusForever.Script.Instance.Dungeon.ColdbloodCitadel
 
         private void OnPhaseEnter()
         {
+            // Observed in the official 2017-01-23 developer livestream (see INSTANCE_COLDBLOOD_TRACKER_PASS_20261109.md):
+            // the first tracker frame lists "Timer Bonus" and "Deathless in the Dungeon" with the "Find the Pell" row.
+            // ActivateObjective is idempotent, so a repeated Enter phase is harmless.
+            publicEvent.ActivateObjective(PublicEventObjective.DeathlessInTheDungeon);
+            publicEvent.ActivateObjective(PublicEventObjective.TimerBonus);
+
             if (gatherRingPlacementSpawned)
                 return;
 
@@ -374,6 +407,14 @@ namespace NexusForever.Script.Instance.Dungeon.ColdbloodCitadel
                     publicEvent.SetPhase(PublicEventPhase.RisenHarizog);
                     break;
                 case PublicEventObjective.DefeatTheRisenHarizog:
+                    // The engine has no script-side way to fail an objective, so the challenge rows are credited
+                    // only when their condition held; a failed row simply never completes.
+                    if (!playerDied)
+                        publicEvent.UpdateObjective(PublicEventObjective.DeathlessInTheDungeon, 1);
+
+                    if (elapsedSeconds <= TimerBonusSeconds)
+                        publicEvent.UpdateObjective(PublicEventObjective.TimerBonus, 1);
+
                     publicEvent.Finish(PublicEventTeam.PublicTeam);
                     break;
             }
