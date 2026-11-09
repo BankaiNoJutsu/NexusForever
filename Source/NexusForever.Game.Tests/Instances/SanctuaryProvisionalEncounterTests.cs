@@ -56,10 +56,10 @@ namespace NexusForever.Game.Tests.Instances
         [Fact]
         public void PlansCastTheDocumentedSpellRows()
         {
-            Assert.Equal([43253u, 42526u], SpellIds(SanctuaryProvisionalPlansAccessor.Ondu()));
-            Assert.Equal([42135u], SpellIds(SanctuaryProvisionalPlansAccessor.Skash()));
-            Assert.Equal([42171u, 42418u, 42264u], SpellIds(SanctuaryProvisionalPlansAccessor.Rayna()));
-            Assert.Equal([42880u, 42757u, 42386u], SpellIds(SanctuaryProvisionalPlansAccessor.Selene()));
+            Assert.Equal([43253u], SpellIds(SanctuaryProvisionalPlansAccessor.Ondu()));
+            Assert.Equal([45081u], SpellIds(SanctuaryProvisionalPlansAccessor.Skash()));
+            Assert.Equal([42171u, 42264u], SpellIds(SanctuaryProvisionalPlansAccessor.Rayna()));
+            Assert.Equal([42757u, 42386u], SpellIds(SanctuaryProvisionalPlansAccessor.Selene()));
         }
 
         private static uint[] SpellIds(ProvisionalEncounterPlan plan)

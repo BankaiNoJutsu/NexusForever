@@ -20,13 +20,10 @@ namespace NexusForever.Script.Instance.Dungeon.SanctuaryOfTheSwordmaiden.Script
     /// </summary>
     internal static class SanctuaryProvisionalPlans
     {
-        public const uint OnduRootPhase           = 42526u; // [TS] e480 Ondu PBAE Root 1 Root Phase, CastTime 2000 ms
         public const uint OnduCloverBase          = 43253u; // [TS] e480 Ondu Clover Base
-        public const uint SkashSummonTheSwarm     = 42135u; // [TS] e483 Skash Summon the Swarm Base
+        public const uint SkashCorruptionHeartseeker = 45081u; // [TS] e483 Skash Corruption Heartseeker Base, "heart seeker" is said in two retail clips read by the lead
         public const uint RaynaFlameLeash         = 42171u; // [TS] e486 Rayna Flame Leash Base, CastTime 2567 ms
         public const uint RaynaMoltenWave1        = 42264u; // [TS] e486 Rayna Molten Wave 1 Base, CastTime 3000 ms
-        public const uint RaynaSmolderingPool     = 42418u; // [TS] e486 Rayna Smoldering Pool Base, CastTime 2000 ms
-        public const uint SeleneShadowMeld        = 42880u; // [TS] e492 Selene Shadow Meld Base
         public const uint SeleneLightsOut         = 42757u; // [TS] e492 Selene Lights Out! Base
         public const uint SeleneShadePrison       = 42386u; // [TS] e492 Selene Shade Prison Base, CastTime 3000 ms
 
@@ -34,17 +31,16 @@ namespace NexusForever.Script.Instance.Dungeon.SanctuaryOfTheSwordmaiden.Script
         [
             new ProvisionalPhase(null,
             [
-                new ProvisionalCast(OnduCloverBase, 10d, 20d),
-                new ProvisionalCast(OnduRootPhase, 40d, 60d)
-            ], "Clover Leaf ground pools and the root phase from two agreeing guides and the Plague Splatter challenge text, intervals ESTIMATED")
+                new ProvisionalCast(OnduCloverBase, 10d, 20d)
+            ], "Clover Leaf ground pools (named by one guide, https://www.youtube.com/watch?v=8lJX5YzUk8c at about 1078 s, and by the Plague Splatter challenge text); the root phase row 42526 was dropped by the lead as not confirmed, interval ESTIMATED")
         ]);
 
         public static ProvisionalEncounterPlan Skash() => new(
         [
             new ProvisionalPhase(null,
             [
-                new ProvisionalCast(SkashSummonTheSwarm, 15d, 45d)
-            ], "Spider swarm adds from two agreeing guides (spell chosen by name, adds themselves not modelled), interval ESTIMATED")
+                new ProvisionalCast(SkashCorruptionHeartseeker, 15d, 45d)
+            ], "Corruption Heartseeker (named in two retail clips read by the lead); the Summon the Swarm row 42135 was dropped as not confirmed, interval ESTIMATED")
         ]);
 
         public static ProvisionalEncounterPlan Rayna() => new(
@@ -52,19 +48,17 @@ namespace NexusForever.Script.Instance.Dungeon.SanctuaryOfTheSwordmaiden.Script
             new ProvisionalPhase(null,
             [
                 new ProvisionalCast(RaynaFlameLeash, 8d, 30d, targetCurrentTarget: true),
-                new ProvisionalCast(RaynaSmolderingPool, 12d, 25d),
                 new ProvisionalCast(RaynaMoltenWave1, 25d, 45d)
-            ], "Tether, lava pools and fire waves from two agreeing guides and the Molten Wave challenge text (pool spell chosen by name), intervals ESTIMATED")
+            ], "Flame leash ('leash' said by three channels) and Molten Wave (the Prime challenge text); the Smoldering Pool row 42418 was dropped by the lead as not confirmed, intervals ESTIMATED")
         ]);
 
         public static ProvisionalEncounterPlan Selene() => new(
         [
             new ProvisionalPhase(null,
             [
-                new ProvisionalCast(SeleneShadowMeld, 10d, 60d),
                 new ProvisionalCast(SeleneLightsOut, 30d, 60d),
                 new ProvisionalCast(SeleneShadePrison, 45d, 60d, targetCurrentTarget: true)
-            ], "Shadow Meld, Lights Out! and Shade Prison from one guide (Lights Out! and Shade Prison also named by challenge text); phase order and thresholds are single-source and unused, intervals ESTIMATED")
+            ], "Lights Out! and Shade Prison (both named by client text, Shade Prison also said in one clip); Shadow Meld 42880 was dropped by the lead as not confirmed; original note: from one guide (Lights Out! and Shade Prison also named by challenge text); phase order and thresholds are single-source and unused, intervals ESTIMATED")
         ]);
     }
 
