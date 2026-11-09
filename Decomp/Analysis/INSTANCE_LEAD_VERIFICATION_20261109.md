@@ -1,0 +1,19 @@
+# Lead verification of the instance packets (2026-11-09)
+
+What the lead checked (tables, repo code, the catalog) versus what remains agent-written. Companion to [INSTANCE_GOAL_STATUS_20261109.md](INSTANCE_GOAL_STATUS_20261109.md) and [INSTANCE_BOSS_ABILITY_CATALOG_20261109.md](INSTANCE_BOSS_ABILITY_CATALOG_20261109.md). No retail parity claim.
+
+## Verified by the lead
+* **Tag-to-objective join (Mapped-level, table plus repo enum):** the `eNNN` number in a Spell4 description tag equals the repo `PublicEventObjective` id by name for every encounter family that has an enum: Stormtalon (312/313/314), Kel Voreth (444/446/449/453), Skullcano (321 to 329), Coldblood (5313 to 5318), Genetic Archives (410 to 415), Datascape (385 to 399, 1888), Red Moon Terror (4550, 4556, 4558), Initialization Core Y-83 (2681), Ultimate Protogames (2673 to 2680), Protogames Academy (4342 to 4499), Sanctuary (479 to 499). The only unmatched number in those families is Sanctuary e489. This upgrades the tag finding from "inferred" to "confirmed by name" for these families and gives a per-boss, per-version ability inventory (see the catalog).
+* **Text anchors:** Spell4 36324 -> text 292911 "Thunderfoot's Rage increases all Damage Dealt..."; Spell4 81706 -> texts 690850 and 690851 "Katja Zarkhov has turned ravenous...".
+* **Spell4 column layout:** word 4 base spell, word 5 TierIndex, word 7 CastTime ms (Tempest 63114 = 15000, matches the Aethros guide's 15 s).
+* **Catalog cross-checks against the packets:** Drokk has a `Select Bombshell Targets - Phase 4` row (agrees with the guide's four phases) and `Sets Interrupt Armor to 2` rows (the guide says nothing about his armor); Trogun's catalog matches the guide's abilities (Volcanic Strike, Forgemaster's Call, Exanite Weapon and Shards, Fireball, Flame Sphere); Grond has Thrash, Bellow, Headbutt, Buck, Scratch Itch, Mutilate target selection and Blood Frenzy; Stormtalon has `Sets Interrupt Armor to 3 for 16 seconds` rows, which differs from the single guide's "four interrupt armor" on Static Wave (disputed); Blade-Wind has Electrostatic Pulse rows (the phase 3 attack exists as `[STL] e312` rows).
+* **Engine check:** interrupts and interrupt armor are already modelled (`CCState.Interrupt`, `ModifyInterruptArmor` effect handling, `CombatAI` special-attack interrupt mask). Whether an interrupt cancels a pending scripted `IEntityCastEvent` was not tested.
+
+## Not verified (agent-written, not re-derived or re-viewed)
+Every footage list, skeleton, threshold, timer and "agreed" claim in the packets for Stormtalon bosses 2 and 3, Kel Voreth second sources, Skullcano, Sanctuary, Protogames Academy, Ultimate Protogames, Coldblood Citadel, Genetic Archives, Datascape, the expeditions and the raids/events packet; the claimed text anchors other than the two above (Sanctuary 42041 and 42024, Ragebot Driller 43616, Deep Space boss rows 48703/48704/49404, Tracking Beacon 63237, RMT challenge anchors); all video-derived numbers.
+
+## Decision on the native read
+A native read of the client cannot supply cast order or intervals: boss AI runs on the server and the client only holds the spell data already in the tables. The creature-to-spell mapping and timing would need a server-side source (packet capture or the original scripts), neither of which is in this environment. Cast order and intervals therefore remain Observed-from-video only, and per the prompt no boss slice that needs them is implemented. The earlier suggestion to commission a native read for this purpose is withdrawn.
+
+## Consequence for Phase C
+Implementable now without invented values: nothing beyond disabled placeholders. Candidate placeholders (thresholds from agreed clips only): Trogun forge phase at 50% (four clips); other thresholds stay out until two clips agree. A tag-derived per-boss ability list could be embedded as data once an encounter needs it, but it has no ordering.
