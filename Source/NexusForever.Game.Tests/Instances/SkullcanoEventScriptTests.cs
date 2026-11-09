@@ -124,8 +124,98 @@ public class SkullcanoEventScriptTests
             (PublicEventObjective)i.Arguments[0] == PublicEventObjective.CrossTheLavaFilledChasm &&
             (uint)i.Arguments[1] == 5u);
         Assert.Contains(activations, i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.FindAWayAcrossTheLava);
-        Assert.Contains(activations, i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.GatherPrimalFireEssences);
         Assert.Contains(activations, i => (PublicEventObjective)i.Arguments[0] == PublicEventObjective.DontGetStruckByLaveka);
+        AssertObjectiveNotActivated(eventProxy, PublicEventObjective.GatherPrimalFireEssences);
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_Chasm_ActivatesPrimalFireEssencesOnlyFromTheOptionalPool()
+    {
+        // The 2015-09-04 gold run lists no Primal Fire Essences row in the chasm phase (300 s tracker).
+        var script = CreateScriptWithOptionalObjectives([PublicEventObjective.GatherPrimalFireEssences]);
+        IPublicEvent publicEvent = CreatePublicEvent(5u, out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.RandomPathChasm);
+
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.GatherPrimalFireEssences);
+    }
+
+    [Fact]
+    public void OnPublicEventPhase_Enter_ActivatesDeathlessAndTimerBonus()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEventWithOpeningBosses(
+            1u,
+            out RecordingDispatchProxy<IPublicEvent> eventProxy,
+            out _,
+            out _,
+            out _);
+        script.OnLoad(publicEvent);
+
+        script.OnPublicEventPhase((uint)PublicEventPhase.Enter);
+
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.DeathlessInSkullcano);
+        AssertObjectiveActivated(eventProxy, PublicEventObjective.TimerBonus);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_FinalBoss_CreditsDeathlessAndTimerBonusWhenClean()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEvent(1u, out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+        script.Update(44d * 60d);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(PublicEventObjective.DefeatMordechaiRedmoon, PublicEventStatus.Succeeded));
+
+        AssertObjectiveUpdated(eventProxy, PublicEventObjective.DeathlessInSkullcano);
+        AssertObjectiveUpdated(eventProxy, PublicEventObjective.TimerBonus);
+        Assert.Single(eventProxy.GetInvocations(nameof(IPublicEvent.Finish)));
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_FinalBoss_DoesNotCreditDeathlessAfterAPlayerDied()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEvent(1u, out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+        script.OnDeath(RecordingDispatchProxy<IPlayer>.Create(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(PublicEventObjective.DefeatMordechaiRedmoon, PublicEventStatus.Succeeded));
+
+        AssertObjectiveNotUpdated(eventProxy, PublicEventObjective.DeathlessInSkullcano);
+        AssertObjectiveUpdated(eventProxy, PublicEventObjective.TimerBonus);
+    }
+
+    [Fact]
+    public void OnDeath_NonPlayerDoesNotBreakDeathless()
+    {
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEvent(1u, out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+        script.OnDeath(RecordingDispatchProxy<INonPlayerEntity>.Create(out _));
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(PublicEventObjective.DefeatMordechaiRedmoon, PublicEventStatus.Succeeded));
+
+        AssertObjectiveUpdated(eventProxy, PublicEventObjective.DeathlessInSkullcano);
+    }
+
+    [Fact]
+    public void OnPublicEventObjectiveStatus_FinalBoss_UsesFortyFiveMinuteTimerBonusLimit()
+    {
+        // The row text says 45 minutes (the Stormtalon and Kel Voreth rows say 40); the 2015-09-04 gold run
+        // counts down from 45:00.
+        var script = CreateScript();
+        IPublicEvent publicEvent = CreatePublicEvent(1u, out RecordingDispatchProxy<IPublicEvent> eventProxy);
+        script.OnLoad(publicEvent);
+        script.Update(45d * 60d + 1d);
+
+        script.OnPublicEventObjectiveStatus(CreateObjective(PublicEventObjective.DefeatMordechaiRedmoon, PublicEventStatus.Succeeded));
+
+        AssertObjectiveNotUpdated(eventProxy, PublicEventObjective.TimerBonus);
+        AssertObjectiveUpdated(eventProxy, PublicEventObjective.DeathlessInSkullcano);
+        Assert.Single(eventProxy.GetInvocations(nameof(IPublicEvent.Finish)));
     }
 
     [Theory]
@@ -634,6 +724,24 @@ public class SkullcanoEventScriptTests
     {
         Assert.Contains(eventProxy.GetInvocations(nameof(IPublicEvent.ActivateObjective)),
             i => (PublicEventObjective)i.Arguments[0] == objective);
+    }
+
+    private static void AssertObjectiveNotActivated(RecordingDispatchProxy<IPublicEvent> eventProxy, PublicEventObjective objective)
+    {
+        Assert.DoesNotContain(eventProxy.GetInvocations(nameof(IPublicEvent.ActivateObjective)),
+            i => (PublicEventObjective)i.Arguments[0] == objective);
+    }
+
+    private static void AssertObjectiveUpdated(RecordingDispatchProxy<IPublicEvent> eventProxy, PublicEventObjective objective)
+    {
+        Assert.Contains(eventProxy.GetInvocations(nameof(IPublicEvent.UpdateObjective)),
+            i => i.Arguments[0] is PublicEventObjective o && o == objective && (int)i.Arguments[1] == 1);
+    }
+
+    private static void AssertObjectiveNotUpdated(RecordingDispatchProxy<IPublicEvent> eventProxy, PublicEventObjective objective)
+    {
+        Assert.DoesNotContain(eventProxy.GetInvocations(nameof(IPublicEvent.UpdateObjective)),
+            i => i.Arguments[0] is PublicEventObjective o && o == objective);
     }
 
     private static void AssertOpeningBossModel(
