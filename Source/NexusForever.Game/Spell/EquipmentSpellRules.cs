@@ -23,6 +23,7 @@ namespace NexusForever.Game.Spell
     public static class EquipmentSpellRules
     {
         private static readonly ConditionalWeakTable<GameTable<Spell4EffectsEntry>, Dictionary<uint, bool>> supportedCache = new();
+        private static readonly ConditionalWeakTable<GameTable<Spell4EffectsEntry>, Dictionary<uint, bool>> stanceSupportedCache = new();
         private static readonly ConditionalWeakTable<GameTable<Spell4EffectsEntry>, Dictionary<uint, bool>> persistentCache = new();
 
         /// <summary>
@@ -94,7 +95,28 @@ namespace NexusForever.Game.Spell
         /// either tracked on the unit by spell id (and removed by <see cref="IUnitEntity.RemoveTrackedSpellStates"/>) or rows that live with the running spell (ended by
         /// <see cref="IUnitEntity.EndSpellLifetimes"/>). Anything else is left alone rather than granted without a way to revoke it.
         /// </remarks>
-        public static bool IsSupported(uint spell4Id, IGameTableManager tables)
+        public static bool IsSupported(uint spell4Id, IGameTableManager tables) => IsSupported(spell4Id, tables, false);
+
+        /// <summary>
+        /// Return the passive spell of the stance the player is in, or 0.
+        /// </summary>
+        /// <remarks>
+        /// <c>Class.spell4IdInnateAbilityPassive00..02</c> runs parallel to <c>spell4IdInnateAbilityActive00..02</c>, the list the stance index selects from, and the spells are
+        /// named "... - Stance - Passive" (Warrior Onslaught 44926 and Juggernaut 44932, Engineer Eradicate 45000 and Provoke 41504, three Stalker Nano Skins). They share one
+        /// exclusive stack group per class. Read as "the passive of the current stance is in effect while the player is in it"; inferred from the table layout and the names.
+        /// A stance passive also carries one-off rows (a resource reset, a SpellForceRemove), so those are allowed here. A class is served only when every one of its stance
+        /// passives can be revoked, so that changing stance never leaves one behind. No retail parity claim.
+        /// </remarks>
+        public static uint GetStancePassive(ClassEntry classEntry, byte innateIndex, IGameTableManager tables)
+        {
+            uint[] passives = classEntry?.Spell4IdInnateAbilityPassive;
+            if (passives == null || innateIndex >= passives.Length || passives[innateIndex] == 0u)
+                return 0u;
+
+            return passives.Where(id => id != 0u).All(id => IsSupported(id, tables, true)) ? passives[innateIndex] : 0u;
+        }
+
+        private static bool IsSupported(uint spell4Id, IGameTableManager tables, bool allowOneOffRows)
         {
             Spell4Entry spell = tables?.Spell4?.GetEntry(spell4Id);
             GameTable<Spell4EffectsEntry> effects = tables?.Spell4Effects;
@@ -103,13 +125,13 @@ namespace NexusForever.Game.Spell
                 || (spell.SpellDuration != 0u && spell.SpellDuration != uint.MaxValue))
                 return false;
 
-            Dictionary<uint, bool> cache = supportedCache.GetValue(effects, _ => []);
+            Dictionary<uint, bool> cache = (allowOneOffRows ? stanceSupportedCache : supportedCache).GetValue(effects, _ => []);
             lock (cache)
             {
                 if (!cache.TryGetValue(spell4Id, out bool supported))
                 {
                     Spell4EffectsEntry[] rows = effects.Entries.Where(e => e.SpellId == spell4Id).ToArray();
-                    supported = rows.Length != 0 && rows.All(IsSupportedRow);
+                    supported = rows.Length != 0 && rows.All(row => IsSupportedRow(row) || allowOneOffRows && IsOneOffRow(row));
                     cache[spell4Id] = supported;
                 }
 
@@ -138,6 +160,15 @@ namespace NexusForever.Game.Spell
 
                 return persistent;
             }
+        }
+
+        /// <summary>
+        /// A row that acts once when the spell is cast and leaves nothing to take away: a resource change or a removal of another spell.
+        /// </summary>
+        private static bool IsOneOffRow(Spell4EffectsEntry row)
+        {
+            return row.DurationTime == 0u && row.TickTime == 0u
+                && row.EffectType is SpellEffectType.VitalModifier or SpellEffectType.SpellForceRemove;
         }
 
         private static bool IsSupportedRow(Spell4EffectsEntry row)

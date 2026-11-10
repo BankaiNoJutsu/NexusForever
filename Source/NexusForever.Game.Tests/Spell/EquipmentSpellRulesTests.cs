@@ -78,6 +78,31 @@ public class EquipmentSpellRulesTests
         Assert.False(EquipmentSpellRules.LeavesPresence(70002u, tables));    // a visual only
     }
 
+    // Class.spell4IdInnateAbilityPassive runs parallel to the stance list. Retail shapes: Warrior Juggernaut (44932) is property modifiers, a one-off resource reset,
+    // a SpellForceRemove and a Proxy ticking every 5000 ms; Engineer Eradicate (45000) carries a UnitPropertyConversion row, which cannot be revoked by spell.
+    [Theory]
+    [InlineData(new uint[] { 80000u, 80001u, 0u }, (byte)0, 80000u)]
+    [InlineData(new uint[] { 80000u, 80001u, 0u }, (byte)1, 80001u)]
+    [InlineData(new uint[] { 80000u, 80001u, 0u }, (byte)2, 0u)]          // no passive for that stance
+    [InlineData(new uint[] { 80000u, 80002u, 0u }, (byte)0, 0u)]          // one passive of the class cannot be revoked: the class is not served at all
+    [InlineData(new uint[] { 0u, 0u, 0u }, (byte)0, 0u)]
+    public void TheStancePassiveIsThePassiveOfTheCurrentStanceWhenTheWholeClassCanBeRevoked(uint[] passives, byte innateIndex, uint expected)
+    {
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out var proxy);
+        proxy.SetProperty(nameof(IGameTableManager.Spell4), CreateGameTable(
+            new Spell4Entry { Id = 80000u }, new Spell4Entry { Id = 80001u }, new Spell4Entry { Id = 80002u }));
+        proxy.SetProperty(nameof(IGameTableManager.Spell4Effects), CreateGameTable(
+            new Spell4EffectsEntry { Id = 1u, SpellId = 80000u, EffectType = SpellEffectType.UnitPropertyModifier, Flags = 2u },
+            new Spell4EffectsEntry { Id = 2u, SpellId = 80000u, EffectType = SpellEffectType.VitalModifier },
+            new Spell4EffectsEntry { Id = 3u, SpellId = 80000u, EffectType = SpellEffectType.SpellForceRemove },
+            new Spell4EffectsEntry { Id = 4u, SpellId = 80001u, EffectType = SpellEffectType.Proxy, Flags = 2u, TickTime = 5000u, DataBits01 = 83330u },
+            new Spell4EffectsEntry { Id = 5u, SpellId = 80002u, EffectType = SpellEffectType.UnitPropertyConversion, Flags = 2u }));
+
+        Assert.Equal(expected, EquipmentSpellRules.GetStancePassive(new ClassEntry { Id = 1u, Spell4IdInnateAbilityPassive = passives }, innateIndex, tables));
+        // an item special with the same one-off rows is still not granted: those rows are only accepted for stance passives
+        Assert.False(EquipmentSpellRules.IsSupported(80000u, tables));
+    }
+
     private static IItem Item(uint item2Id, params uint[] runeItem2Ids)
     {
         IItem item = RecordingDispatchProxy<IItem>.Create(out var itemProxy);

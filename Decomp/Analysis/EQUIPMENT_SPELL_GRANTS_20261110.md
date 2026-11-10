@@ -36,5 +36,15 @@ specials (12), the visuals (10) and the rune specials built from procs and proxi
 * **Death.** A granted spell that is no longer in place on a living player is cast again; whether the retired server kept on-equip effects through death is not known.
 * `ItemSetBonus` rows without a spell (614) grant a property (`unitProperty2Id`, `scalar`, `offset`); those are **not** implemented here.
 
+## 3b. Stance passives (added later the same day; implemented, inferred)
+`Class.spell4IdInnateAbilityPassive00..02` runs parallel to `spell4IdInnateAbilityActive00..02`, the list the stance index selects from. The spells are named "... - Stance - Passive":
+Warrior Onslaught `44926` and Juggernaut `44932`, Engineer Eradicate `45000` and Provoke `41504`, Stalker Nano Skin Lethal `45057`, Evasive `45058` and a third `46059`. Each class's
+passives share one exclusive stack group. The server only recorded the stance index; none of these spells was cast.
+
+Read as "the passive of the current stance is in effect while the player is in that stance" and granted through the same manager (`EquipmentSpellRules.GetStancePassive`). A stance
+passive also has one-off rows (a Kinetic Energy reset behind a prerequisite, a SpellForceRemove of Overdrive), so those row types are accepted for stance passives only. A class is
+served only when every one of its stance passives can be revoked: Warrior and Stalker are; **Engineer is not**, because Eradicate carries a UnitPropertyConversion row the server cannot
+remove by spell. Evidence tier: table layout and spell names. Assumed: the one-off rows run again whenever the passive is granted again (stance change, login, after death).
+
 ## 4. Verification
 `EquipmentSpellRulesTests` (grant listing, set power thresholds, the supported-spell rule). Not run in a live session.

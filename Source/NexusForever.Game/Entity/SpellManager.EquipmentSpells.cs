@@ -14,7 +14,7 @@ namespace NexusForever.Game.Entity
         private bool refreshingEquipmentSpells;
 
         /// <summary>
-        /// The spells the player's equipped items, socketed runes and rune sets grant right now, limited to those the server can also revoke.
+        /// The spells the player's equipped items, socketed runes, rune sets and current stance grant right now, limited to those the server can also revoke.
         /// </summary>
         private HashSet<uint> GetDesiredEquipmentSpells()
         {
@@ -32,6 +32,11 @@ namespace NexusForever.Game.Entity
 
                 desired.Add(spell4Id);
             }
+
+            // the passive of the stance the player is in
+            uint stancePassive = EquipmentSpellRules.GetStancePassive(tables.Class?.GetEntry((uint)player.Class), player.InnateIndex, tables);
+            if (stancePassive != 0u)
+                desired.Add(stancePassive);
 
             return desired;
         }
