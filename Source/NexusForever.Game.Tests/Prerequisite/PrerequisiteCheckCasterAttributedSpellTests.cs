@@ -191,6 +191,45 @@ public class PrerequisiteCheckCasterAttributedSpellTests
         Assert.False(check.MeetsUnit(null, comparison, 0u, objectId, new PrerequisiteParameters()));
     }
 
+    // Native type 103 (FUN_14046a190): an effect node with id ObjectId whose applying unit is the second unit. Retail example: Spell4 29061 "Landmine Proximity" gates its own CCStateSet row 50511
+    // with (NotEqual, ObjectId 50511, Value 0) as a target-apply prerequisite. The server approximates the effect row by the spell that owns it.
+    [Theory]
+    [InlineData(PrerequisiteComparison.Equal, 50511u, 500u, true)]         // the caster's own copy is on the unit
+    [InlineData(PrerequisiteComparison.NotEqual, 50511u, 500u, false)]
+    [InlineData(PrerequisiteComparison.Equal, 50511u, 600u, false)]        // another unit applied it
+    [InlineData(PrerequisiteComparison.NotEqual, 50511u, 600u, true)]
+    [InlineData(PrerequisiteComparison.Equal, 99999u, 500u, false)]        // unknown effect row
+    [InlineData(PrerequisiteComparison.GreaterThan, 50511u, 500u, false)]
+    public void ActiveEffectOnTargetOnlyCountsEffectsAppliedByTheSecondUnit(PrerequisiteComparison comparison, uint objectId, uint secondUnitGuid, bool expected)
+    {
+        var unit = new TestUnit();
+        unit.AddSpellModifierProperty(new SpellPropertyModifier(Property.HealingMultiplierIncoming, 1u, 1.1f, 0f, 0f), 1u, 100u, 1u, 10u);
+        unit.RegisterSpellCaster(10u, 500u);
+
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out var proxy);
+        proxy.SetProperty(nameof(IGameTableManager.Spell4Effects), PlayerBindPointTests.Table(new Spell4EffectsEntry { Id = 50511u, SpellId = 100u }));
+
+        IUnitEntity second = RecordingDispatchProxy<IUnitEntity>.Create(out var secondProxy);
+        secondProxy.SetProperty(nameof(IUnitEntity.Guid), secondUnitGuid);
+
+        var check = new PrerequisiteCheckSpellCooldownNodeOnTarget(tables);
+
+        // Value is set to the effect id on purpose: only ObjectId may be read
+        Assert.Equal(expected, check.MeetsUnit(unit, comparison, 50511u, objectId, new PrerequisiteParameters { Target = second }));
+    }
+
+    [Fact]
+    public void ActiveEffectOnTargetWithoutASecondUnitOnlyAnswersNotEqual()
+    {
+        var unit = new TestUnit();
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out _);
+        var check = new PrerequisiteCheckSpellCooldownNodeOnTarget(tables);
+
+        Assert.False(check.MeetsUnit(unit, PrerequisiteComparison.Equal, 0u, 50511u, new PrerequisiteParameters()));
+        Assert.True(check.MeetsUnit(unit, PrerequisiteComparison.NotEqual, 0u, 50511u, new PrerequisiteParameters()));
+        Assert.False(check.MeetsUnit(null, PrerequisiteComparison.NotEqual, 0u, 50511u, new PrerequisiteParameters()));
+    }
+
     private static IGameTableManager Tables()
     {
         IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out var proxy);

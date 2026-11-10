@@ -33,6 +33,8 @@ In the evaluator `param_3[1]` is the comparison, `param_3[2]` ObjectId and `para
 | 109 | WorldRequirement | Equal / NotEqual against ObjectId only | honoured all six | 0 (latent) |
 | 93 | Spell4EffectCategoryOnUnit | inline: a dword of each active spell (`[[[node+0x38]+0x138]+0x70]+0xf8`) equals ObjectId; flag / negation | read Value as an effect-group id | 5 of 5 (all asked for id 0) |
 | 116 | Stealth | inline: `1 < *(int *)(unit + 0x54)`; flag / negation; neither word read | no check existed (unhandled types answer false) | 32 slots, 327 spell references |
+| 103 | SpellCooldownNodeOnTarget | `14046a190`: an effect node with id ObjectId whose virtual `+0x20` equals the second unit id; no second unit answers NotEqual only | cooldown-node lookup by Value on the player | 36 slots, 46 spell references |
+| 245 | Unknown245 | `1404a1790`: Player/Ghost gate, flag from a lookup of ObjectId, flag / negation | tradeskill tier compared with Value behind the NPC-target gate | 249 slots; every one of the 220 "Learn Dye" spells failed its cast check |
 
 What each change does **not** establish: the meaning of the flag itself. For types 176, 90, 85, 275 and 221 the server keeps its existing notion of the flag (challenge activated, has a platform, on a taxi, knows a
 schematic for the item, spell on the active action set); only the operand and comparison rule were corrected. Type 85 does not apply the native ObjectId filter (an id held by the taxi entity that the server
@@ -51,15 +53,25 @@ player"). `0x14` and `0x17` are Player and Ghost, so the gate requires the **pri
   "Stalker - Combat Stealth". With the client error text for the type ("Stealth property requirement not met") the flag is read as the stealth state. What the field at `+0x54` holds was not read natively.
   Status: Implemented, inferred.
 
+### Types 103 and 245, and the LearnDyeColor effect (added later the same day)
+* **103.** 23 of the 46 spell references are target-apply prerequisites of the form (NotEqual, the same effect row), for example Spell4 29061 "Landmine Proximity" gating its own CCStateSet row 50511. Evaluated
+  with the target as the unit and the caster as the second unit this reads "do not apply while my own copy is on the target", so virtual `+0x20` is read as the unit that applied the effect. The server does
+  not track effect rows applied by other units; the check approximates the row by the spell that owns it (tracked state of that spell registered to the second unit). Status: Implemented, inferred.
+* **245.** All 220 spells gated by type 245 rows are "Learn Dye - ..." spells with (NotEqual, ObjectId) as caster-cast prerequisite, and in 219 of them ObjectId equals DataBits00 of the spell's
+  LearnDyeColor effect. The check now asks whether that dye colour is unlocked. The native lookup `1403c16e0` is labelled `TradeSkill_CheckItemTradeskillRequirement`; that label is contradicted by this data
+  and the body was not re-read. Status: Implemented, inferred.
+* **LearnDyeColor (effect type 110).** DataBits00 is the dye colour (`GenericUnlockEntry.UnlockObject`), not a `GenericUnlockEntry` id. Matching by the entry icon names, "Learn Dye - Red_Light1" (DataBits00 2)
+  is `Dye_Red_Light1` only when 2 is read as UnlockObject (entry id 2 is `Dye_Red_Dark2_Dull`); 222 of 223 retail rows resolve to a Dye entry by colour against 161 by entry id. The handler unlocked the entry
+  with the same id and therefore taught a different dye. It now resolves the entry by colour. Evidence tier: table names; no retail parity claim.
+
 ## 3. Differences found and not changed
 
 | Type | Check | Finding | Why not changed |
 |---:|---|---|---|
-| 245 | Unknown245 | handler `1404a1790`: Player/Ghost gate, `TradeSkill_CheckItemTradeskillRequirement(ObjectId)` flag / negation; server compares a tier rank with Value behind the NPC-target gate; 249 slots, all NotEqual with Value 0 | what the requirement function tests was not read; the server has no equivalent flag |
 | 73 | Vital | re-read: native switch `140466520` reads Breath (id 2, virtual `+0x58`), Absorption (`0x15`, virtual `+0x88`), three public-event resources (`0x16` to `0x18`) and Resource8 to 10 (`0x1b` to `0x1d`), and for any other id returns the class resource slot of the local player or 0, then always compares. The server returns false without comparing for ids it cannot resolve. Retail slots hit: id 0 (1 slot, `>= 80`), id 2 (1 slot, `<= 0`), id 21 (1 slot, `> 0`) | the server has no Breath value and no class-resource index; comparing 0 instead would turn "always false" into "always true" for the id 2 slot, which is no better |
 | 292 | PrimalMatrixNode | native: local player only, `PrimalMatrix_LookupAllocatedNode(1, ObjectId)` compared with Value; server always false; 24 slots | needs the server primal-matrix allocation surface; not yet done |
 | 148 | InfrastructureState | lookup miss: native answers NotEqual only; server substitutes state 0 | server API cannot distinguish a miss from state 0 |
-| 103 / 104 | | wrong slot word (ObjectId), see the audit note section 4.3 | compared field or set not identified |
+| 104 | | wrong slot word (ObjectId 4 to 14 on 3 slots, no spell references found) | the set and its key are not identified |
 | 170 | GameFormula | native compares the id of a live object at global `+0x7188` with Value (flag true when Value is 0); server compares a GameFormula row with ObjectId; 14 slots | the object is not identified; the server check has no native basis |
 | 190 | PetFlair | native compares a per-player integer with an expected value of 0, 1 or 2 derived from a table row; server tests presence under one pet type; 298 slots | the two functions involved were not exported or read |
 | 194 / 195 | MountUsage / HoverboardUsage | native computes a flag for the local player; server returns true unconditionally; 4 slots each | flag meaning not identified |

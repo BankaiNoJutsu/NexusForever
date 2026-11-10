@@ -49,6 +49,43 @@ public class SpellCollectionEffectTests
         }
     }
 
+    // Retail: "Learn Dye - Red_Light1" is Spell4 46411 with LearnDyeColor DataBits00 = 2. GenericUnlockEntry 2 is the dye "Red_Dark2_Dull" (UnlockObject 11); the entry whose
+    // UnlockObject is 2 is "Red_Light1". DataBits00 is therefore the dye colour, and the unlock must go to the entry that owns that colour.
+    [Fact]
+    public void LearnDyeColor_ResolvesTheUnlockEntryByDyeColourNotByEntryId()
+    {
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> tableProxy);
+        tableProxy.SetProperty(nameof(IGameTableManager.GenericUnlockEntry), NexusForever.Game.Tests.Transport.PlayerBindPointTests.Table(
+            new GenericUnlockEntryEntry { Id = 2u, GenericUnlockTypeEnum = NexusForever.Game.Static.Entity.GenericUnlockType.Dye, UnlockObject = 11u },
+            new GenericUnlockEntryEntry { Id = 77u, GenericUnlockTypeEnum = NexusForever.Game.Static.Entity.GenericUnlockType.Dye, UnlockObject = 2u }));
+        using IDisposable dependencyScope = UseGameTableManager(tables);
+
+        IPlayer player = CreatePlayer(out RecordingDispatchProxy<IGenericUnlockManager> unlockProxy);
+        ISpell spell = CreateSpell(player);
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectLearnDyeColor(spell, player, CreateLearnDyeColorInfo(2u));
+
+        RecordingDispatchProxy<IGenericUnlockManager>.Invocation unlock =
+            Assert.Single(unlockProxy.GetInvocations(nameof(IGenericUnlockManager.Unlock)));
+        Assert.Equal((ushort)77, unlock.Arguments[0]);
+    }
+
+    [Fact]
+    public void LearnDyeColor_WithNoEntryForTheColour_DoesNotUnlockTheRowWithTheSameId()
+    {
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out RecordingDispatchProxy<IGameTableManager> tableProxy);
+        tableProxy.SetProperty(nameof(IGameTableManager.GenericUnlockEntry), NexusForever.Game.Tests.Transport.PlayerBindPointTests.Table(
+            new GenericUnlockEntryEntry { Id = 2u, GenericUnlockTypeEnum = NexusForever.Game.Static.Entity.GenericUnlockType.Dye, UnlockObject = 11u }));
+        using IDisposable dependencyScope = UseGameTableManager(tables);
+
+        IPlayer player = CreatePlayer(out RecordingDispatchProxy<IGenericUnlockManager> unlockProxy);
+        ISpell spell = CreateSpell(player);
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectLearnDyeColor(spell, player, CreateLearnDyeColorInfo(2u));
+
+        Assert.Empty(unlockProxy.GetInvocations(nameof(IGenericUnlockManager.Unlock)));
+    }
+
     [Fact]
     public void UnlockMount_WithMissingSpell4Table_DoesNotAddSpellOrEmitUnlock()
     {

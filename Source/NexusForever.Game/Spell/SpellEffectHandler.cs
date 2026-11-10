@@ -3096,19 +3096,31 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            GenericUnlockEntryEntry entry = GetGameTableManager().GenericUnlockEntry?.GetEntry(info.Entry.DataBits00);
+            // DataBits00 is the dye colour (the UnlockObject of a Dye GenericUnlockEntry), not a GenericUnlockEntry id: matching by name, "Learn Dye - Red_Light1" (Spell4 46411, DataBits00 2)
+            // is the entry whose icon is Dye_Red_Light1 only when 2 is read as UnlockObject, and 222 of the 223 retail LearnDyeColor rows resolve to a Dye entry that way against 161 by entry id.
+            // Reading it as an entry id taught a different dye. Inferred from table names; see Decomp/Analysis/PREREQUISITE_CHECK_REVIEW_20261110.md.
+            var unlockTable = GetGameTableManager().GenericUnlockEntry;
+            GenericUnlockEntryEntry entry = unlockTable?.Entries
+                .FirstOrDefault(e => e != null && e.GenericUnlockTypeEnum == GenericUnlockType.Dye && e.UnlockObject == info.Entry.DataBits00);
             if (entry == null)
             {
                 ReportMissingCollectionData(
-                    GetGameTableManager().GenericUnlockEntry == null,
+                    unlockTable == null,
                     GenericUnlockEntryTableName,
                     info.Entry.DataBits00,
                     nameof(HandleEffectLearnDyeColor),
                     "Cannot resolve dye color generic unlock.");
+
+                if (unlockTable != null)
+                {
+                    // the table is loaded and has no dye entry for this colour: unlocking the row with the same id would grant an unrelated dye
+                    SpellEffectDiagnostics.TracePlayerCollection(spell, target, "learn-dye-color", player.Guid, info.Entry.DataBits00, 0u, false, "unknown-dye-colour");
+                    return;
+                }
             }
 
             bool alreadyUnlocked = entry != null && player.Account.GenericUnlockManager.IsUnlocked(entry.GenericUnlockTypeEnum, entry.UnlockObject);
-            player.Account.GenericUnlockManager.Unlock((ushort)info.Entry.DataBits00);
+            player.Account.GenericUnlockManager.Unlock((ushort)(entry?.Id ?? info.Entry.DataBits00));
             SpellEffectDiagnostics.TracePlayerCollection(spell, target, "learn-dye-color", player.Guid, info.Entry.DataBits00, entry?.UnlockObject ?? 0u, !alreadyUnlocked && entry != null, entry == null ? "unknown-generic-unlock" : alreadyUnlocked ? "already-unlocked" : null);
         }
 

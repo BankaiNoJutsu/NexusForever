@@ -753,7 +753,7 @@ public class PrerequisiteCheckTests
     }
 
     [Fact]
-    public void Unknown245_NonAccountItemContext_UsesItemTradeSkillDuplicateBody()
+    public void Unknown245_NonAccountItemContext_TestsWhetherTheDyeIsKnown()
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
         IUnitEntity npc = RecordingDispatchProxy<IUnitEntity>.Create(out var npcProxy);
@@ -772,9 +772,18 @@ public class PrerequisiteCheckTests
 
         var check = new PrerequisiteCheckUnknown245(tables);
 
-        Assert.True(check.Meets(player, PrerequisiteComparison.GreaterThanOrEqual, 2u, 500u,
-            new PrerequisiteParameters { Target = npc }));
-        Assert.False(check.Meets(player, PrerequisiteComparison.GreaterThanOrEqual, 2u, 500u, new PrerequisiteParameters()));
+        // Native type 245 (1404a1790) is a flag test on ObjectId for a player or ghost: no NPC target, no tradeskill tier, Value never read.
+        // All 220 spells it gates are "Learn Dye" spells with (NotEqual, ObjectId = the dye the spell teaches).
+        IAccount account = RecordingDispatchProxy<IAccount>.Create(out var accountProxy);
+        IGenericUnlockManager unlockManager = RecordingDispatchProxy<IGenericUnlockManager>.Create(out var unlockProxy);
+        unlockProxy.SetMethodHandler(nameof(IGenericUnlockManager.IsDyeUnlocked), args => (uint)args[0] == 5u);
+        accountProxy.SetProperty(nameof(IAccount.GenericUnlockManager), unlockManager);
+        playerProxy.SetProperty(nameof(IPlayer.Account), account);
+
+        Assert.True(check.Meets(player, PrerequisiteComparison.NotEqual, 0u, 2u, new PrerequisiteParameters()));              // dye 2 not known: Learn Dye may be cast
+        Assert.False(check.Meets(player, PrerequisiteComparison.NotEqual, 0u, 5u, new PrerequisiteParameters()));             // dye 5 already known
+        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 0u, 5u, new PrerequisiteParameters { Target = npc }));
+        Assert.False(check.Meets(player, PrerequisiteComparison.GreaterThanOrEqual, 2u, 5u, new PrerequisiteParameters()));
     }
 
     [Theory]
