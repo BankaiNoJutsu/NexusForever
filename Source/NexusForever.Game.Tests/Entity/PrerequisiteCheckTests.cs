@@ -61,6 +61,21 @@ public class PrerequisiteCheckTests
         Assert.Equal(expected, result);
     }
 
+    // Native type 15 (Prerequisite_CheckUnderSpell 1404a4ec0) only receives the Value word. Retail prerequisite 29145 is (NotEqual, ObjectId 167471, Value 0): it asks for spell 0 and is always met.
+    [Theory]
+    [InlineData(PrerequisiteComparison.NotEqual, true)]
+    [InlineData(PrerequisiteComparison.Equal, false)]
+    public void UnderSpell_NeverFallsBackToObjectId(PrerequisiteComparison comparison, bool expected)
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        playerProxy.SetMethodReturn(nameof(IPlayer.HasTrackedSpellState), true);
+
+        var check = new PrerequisiteCheckUnderSpell(NullLogger<PrerequisiteCheckUnderSpell>.Instance);
+
+        Assert.Equal(expected, check.Meets(player, comparison, value: 0u, objectId: 167471u, new PrerequisiteParameters()));
+        Assert.Empty(playerProxy.GetInvocations(nameof(IPlayer.HasTrackedSpellState)));
+    }
+
     [Theory]
     [InlineData(PrerequisiteComparison.Equal, 517u, true)]
     [InlineData(PrerequisiteComparison.Equal, 518u, false)]
@@ -333,7 +348,7 @@ public class PrerequisiteCheckTests
     }
 
     [Fact]
-    public void ItemMicrochip_ObjectIdZero_ComparesInstalledCount()
+    public void ItemMicrochip_ValueOutsideSocketIdsMapsToNoBit()
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
         IItem item = RecordingDispatchProxy<IItem>.Create(out var itemProxy);
@@ -342,8 +357,10 @@ public class PrerequisiteCheckTests
         var check = new PrerequisiteCheckItemMicrochip();
         var parameters = new PrerequisiteParameters { Item = item };
 
-        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 2u, 0u, parameters));
+        // Native type 139 (1404a0e10) maps Value to a socket bit for ids 7 to 13 only; both retail slots are (Equal, ObjectId 0, Value 1 or 2) and map to no bit.
+        Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 2u, 0u, parameters));
         Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 1u, 0u, parameters));
+        Assert.True(check.Meets(player, PrerequisiteComparison.NotEqual, 1u, 0u, parameters));
     }
 
     [Fact]
@@ -360,8 +377,10 @@ public class PrerequisiteCheckTests
         var check = new PrerequisiteCheckItemMicrochip();
         var parameters = new PrerequisiteParameters { Item = item };
 
-        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 0u, (uint)RuneType.Fire, parameters));
-        Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 0u, (uint)RuneType.Air, parameters));
+        // the socket id is read from Value; ObjectId is ignored
+        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, (uint)RuneType.Fire, 0u, parameters));
+        Assert.False(check.Meets(player, PrerequisiteComparison.Equal, (uint)RuneType.Air, 0u, parameters));
+        Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 0u, (uint)RuneType.Fire, parameters));
     }
 
     [Fact]
@@ -379,12 +398,12 @@ public class PrerequisiteCheckTests
         var check = new PrerequisiteCheckItemMicrochip(tables);
         var parameters = new PrerequisiteParameters { Item = item };
 
-        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 0u, (uint)RuneType.Air, parameters));
-        Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 0u, (uint)RuneType.Water, parameters));
+        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, (uint)RuneType.Air, 0u, parameters));
+        Assert.False(check.Meets(player, PrerequisiteComparison.Equal, (uint)RuneType.Water, 0u, parameters));
     }
 
     [Fact]
-    public void ItemMicrochip_ObjectIdZero_PrefersInstalledRuneCountWhenNoWireMicrochips()
+    public void ItemMicrochip_NeverCountsInstalledRunes()
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
         IItem item = RecordingDispatchProxy<IItem>.Create(out var itemProxy);
@@ -398,7 +417,8 @@ public class PrerequisiteCheckTests
         var check = new PrerequisiteCheckItemMicrochip();
         var parameters = new PrerequisiteParameters { Item = item };
 
-        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 1u, 0u, parameters));
+        // one rune is installed, but Value 1 is not a socket id: the native test is a bit test, not a count
+        Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 1u, 0u, parameters));
     }
 
     [Fact]
@@ -668,8 +688,13 @@ public class PrerequisiteCheckTests
 
         var check = new PrerequisiteCheckUnknown275(tables);
 
+        // Native type 275 (1404a17e0): the primary unit must be a player or ghost (no NPC target is involved), Equal returns "known", NotEqual its negation, Value is never read.
+        // All 281 retail slots are (NotEqual, Value 0): met while the item is not known.
         Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 1u, 500u, new PrerequisiteParameters { Target = npc }));
-        Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 1u, 500u, new PrerequisiteParameters()));
+        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 0u, 500u, new PrerequisiteParameters()));
+        Assert.False(check.Meets(player, PrerequisiteComparison.NotEqual, 0u, 500u, new PrerequisiteParameters()));
+        Assert.True(check.Meets(player, PrerequisiteComparison.NotEqual, 0u, 501u, new PrerequisiteParameters()));
+        Assert.False(check.Meets(player, PrerequisiteComparison.GreaterThan, 0u, 500u, new PrerequisiteParameters()));
     }
 
     [Theory]
@@ -865,8 +890,23 @@ public class PrerequisiteCheckTests
 
         var check = new PrerequisiteCheckChallengeObject(tables);
 
-        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 1u, 42u, new PrerequisiteParameters()));
-        Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 1u, 99u, new PrerequisiteParameters()));
+        // Native type 176 (14049fc70): with a player primary unit and no second unit (or a player second unit) NotEqual is true and everything else false, without a lookup.
+        Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 0u, 42u, new PrerequisiteParameters()));
+        Assert.True(check.Meets(player, PrerequisiteComparison.NotEqual, 0u, 42u, new PrerequisiteParameters()));
+
+        IUnitEntity otherPlayer = RecordingDispatchProxy<IUnitEntity>.Create(out var otherProxy);
+        otherProxy.SetProperty(nameof(IWorldEntity.Type), EntityType.Player);
+        Assert.True(check.Meets(player, PrerequisiteComparison.NotEqual, 0u, 42u, new PrerequisiteParameters { Target = otherPlayer }));
+
+        // With a non-player second unit the activation flag is returned for Equal and negated for NotEqual; Value is never read (24 of 25 retail slots have Value 0).
+        IUnitEntity creature = RecordingDispatchProxy<IUnitEntity>.Create(out var creatureProxy);
+        creatureProxy.SetProperty(nameof(IWorldEntity.Type), EntityType.NonPlayer);
+        var parameters = new PrerequisiteParameters { Target = creature };
+        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 0u, 42u, parameters));
+        Assert.False(check.Meets(player, PrerequisiteComparison.NotEqual, 0u, 42u, parameters));
+        Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 0u, 99u, parameters));
+        Assert.True(check.Meets(player, PrerequisiteComparison.NotEqual, 0u, 99u, parameters));
+        Assert.False(check.Meets(player, PrerequisiteComparison.GreaterThanOrEqual, 0u, 42u, parameters));
     }
 
     [Fact]
@@ -1084,10 +1124,14 @@ public class PrerequisiteCheckTests
     // IsGroupLeader_ComparesPartyLeader (type 42 compared an is-leader number with Value) was superseded by PrerequisiteCheckIsGroupLeaderTests: the native body does not read Value.
 
     [Theory]
+    // Native type 267 (14049e9a0) receives only the unit and the comparison: Equal returns the raid flag, NotEqual its negation, Value is never read.
+    // Both retail slots are (NotEqual, Value 0), i.e. "not in a raid". See Decomp/Analysis/PREREQUISITE_CHECK_REVIEW_20261110.md.
     [InlineData(PrerequisiteComparison.Equal, 1u, GroupFlags.Raid, true)]
+    [InlineData(PrerequisiteComparison.Equal, 0u, GroupFlags.Raid, true)]
     [InlineData(PrerequisiteComparison.Equal, 1u, GroupFlags.None, false)]
-    [InlineData(PrerequisiteComparison.NotEqual, 0u, GroupFlags.Raid, true)]
-    [InlineData(PrerequisiteComparison.NotEqual, 0u, GroupFlags.None, false)]
+    [InlineData(PrerequisiteComparison.NotEqual, 0u, GroupFlags.Raid, false)]
+    [InlineData(PrerequisiteComparison.NotEqual, 0u, GroupFlags.None, true)]
+    [InlineData(PrerequisiteComparison.GreaterThan, 0u, GroupFlags.Raid, false)]
     public void GroupIsRaid_ComparesCurrentGroupRaidFlag(PrerequisiteComparison comparison, uint value, GroupFlags flags, bool expected)
     {
         var leader = new Identity { RealmId = 1, Id = 2ul };
@@ -1113,8 +1157,8 @@ public class PrerequisiteCheckTests
     }
 
     [Theory]
-    [InlineData(PrerequisiteComparison.Equal, 0u, true)]
-    [InlineData(PrerequisiteComparison.NotEqual, 0u, false)]
+    [InlineData(PrerequisiteComparison.Equal, 0u, false)]
+    [InlineData(PrerequisiteComparison.NotEqual, 0u, true)]
     public void GroupIsRaid_TreatsMissingGroupAsNonRaid(PrerequisiteComparison comparison, uint value, bool expected)
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);

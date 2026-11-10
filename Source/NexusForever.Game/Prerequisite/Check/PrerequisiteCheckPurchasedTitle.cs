@@ -30,7 +30,8 @@ namespace NexusForever.Game.Prerequisite.Check
                     return !player.TitleManager.HasTitle((ushort)objectId);
                 default:
                     log.LogWarning($"Unhandled PrerequisiteComparison {comparison} for {PrerequisiteType.PurchasedTitle}!");
-                    return true;
+                    // native returns false for any comparison other than Equal and NotEqual
+                    return false;
             }
         }
     }

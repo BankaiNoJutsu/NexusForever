@@ -94,7 +94,8 @@ def main():
     cases = []
     for case, body in sorted(parse_cases(args.evaluator).items()):
         text = ' '.join(line.strip() for line in body)
-        offsets = [int(o, 16) for o in re.findall(r'\*param_1 \+ (0x[0-9a-f]+)\)\)', text)]
+        # the decompiler prints some offsets in decimal (for example '+ 400' for +0x190)
+        offsets = [int(o, 0) for o in re.findall(r'\*param_1 \+ (0x[0-9a-f]+|\d+)\)\)', text)]
         callees = [name for name in re.findall(r'\b([A-Za-z_][A-Za-z0-9_]*)\s*\(', text)
                    if name in function_entry and name != 'PrerequisiteManager_ApplyComparison']
         words = '/'.join(sorted(set(re.findall(r'param_3\[(\d)\]', text))))

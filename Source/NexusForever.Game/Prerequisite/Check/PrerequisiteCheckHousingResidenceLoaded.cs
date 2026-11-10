@@ -14,7 +14,9 @@ namespace NexusForever.Game.Prerequisite.Check
     {
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
-            if (!PrerequisiteNpcTargetContext.RequiresNpcTarget(player, parameters))
+            // Native (evaluator case 0xf1) only requires the primary unit to be a player (0x14) or ghost (0x17) and never receives the second unit (re-read 2026-11-10, Decomp/Analysis/PREREQUISITE_CHECK_REVIEW_20261110.md).
+            // The previous gate required a non-player target, which is the type test read backwards.
+            if (player == null)
                 return false;
 
             IResidence residence = player.ResidenceManager?.Residence;

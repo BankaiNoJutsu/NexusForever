@@ -20,8 +20,10 @@ namespace NexusForever.Game.Prerequisite.Check
 
         private bool MeetsEntity(IWorldEntity entity, PrerequisiteComparison comparison, uint value, uint objectId)
         {
-            uint isPetEntity = entity.Type is EntityType.Pet or EntityType.EsperPet ? 1u : 0u;
-            return PrerequisiteCompare.Compare(comparison, isPetEntity, value);
+            // Native (evaluator case 0x10a, vtable +0xc8) receives only the unit and the comparison; the body at 14049cae0 tests entity type 0x18 or 0x19 (re-read 2026-11-10, Decomp/Analysis/PREREQUISITE_CHECK_REVIEW_20261110.md).
+            // Value is never read; comparing the flag with Value inverted all 4 retail slots (Value 0). The slot pointer (140b67808) was read with DumpPointerSlots.java.
+            bool isPetEntity = entity.Type is EntityType.Pet or EntityType.EsperPet;
+            return PrerequisiteCompare.CompareFlag(comparison, isPetEntity);
         }
     }
 }

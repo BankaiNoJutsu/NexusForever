@@ -18,7 +18,11 @@ namespace NexusForever.Game.Prerequisite.Check
 
         public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
-            return PrerequisiteCompare.Compare(comparison, (uint)subject.Faction1, value);
+            // Native (evaluator case 0x4, vtable +0x58, 14049c620): a null unit is false, Equal and NotEqual compare with Value, any other comparison is false (read 2026-11-10, Decomp/Analysis/PREREQUISITE_CHECK_REVIEW_20261110.md).
+            if (subject == null)
+                return false;
+
+            return PrerequisiteCompare.CompareFlag(comparison, (uint)subject.Faction1 == value);
         }
     }
 }

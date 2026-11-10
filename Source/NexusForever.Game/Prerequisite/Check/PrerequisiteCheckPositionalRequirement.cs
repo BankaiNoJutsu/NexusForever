@@ -26,12 +26,14 @@ namespace NexusForever.Game.Prerequisite.Check
 
         public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
+            // Native (evaluator case 0x6c, vtable +0x1e0): with no second unit, ObjectId 0 or no table entry, NotEqual is true and every other comparison false
+            // (re-read 2026-11-10, Decomp/Analysis/PREREQUISITE_CHECK_REVIEW_20261110.md). The entry flag that swaps the two units and wrapped angle ranges are not modelled.
             if (parameters.Target is not IUnitEntity facingEntity || objectId == 0)
-                return false;
+                return comparison == PrerequisiteComparison.NotEqual;
 
             PositionalRequirementEntry entry = gameTableManager.PositionalRequirement.GetEntry(objectId);
             if (entry == null)
-                return false;
+                return comparison == PrerequisiteComparison.NotEqual;
 
             switch (comparison)
             {

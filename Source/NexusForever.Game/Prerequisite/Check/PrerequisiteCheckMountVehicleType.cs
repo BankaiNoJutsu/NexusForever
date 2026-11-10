@@ -15,7 +15,9 @@ namespace NexusForever.Game.Prerequisite.Check
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
             uint platformType = MovementPrerequisiteHelper.GetPlatformEntityType(player);
-            return PrerequisiteCompare.Compare(comparison, platformType, value);
+            // Native (evaluator case 0x5a, vtable +0x2c0, 14049e730) receives only the unit and the comparison: the flag is "the unit has a link at +0xf00" (re-read 2026-11-10, Decomp/Analysis/PREREQUISITE_CHECK_REVIEW_20261110.md).
+            // Value is never read; the previous comparison of a platform type with Value inverted all 9 retail slots (Value 0). The redirect through a type 3/7/9 link is not modelled.
+            return PrerequisiteCompare.CompareFlag(comparison, platformType != 0u);
         }
     }
 }

@@ -27,7 +27,10 @@ namespace NexusForever.Game.Prerequisite.Check
                 return PrerequisiteCompare.Compare(comparison, current, expected);
             }
 
-            return TradeskillPrerequisiteHelper.MeetsItemTradeSkillKnown(player, gameTableManager, comparison, value, objectId, parameters);
+            // Native (evaluator case 0x113, vtable +0x6a0, 1404a17e0) receives the primary unit, the comparison and ObjectId. The unit must be a player (0x14) or ghost (0x17), then the
+            // known-item lookup of ObjectId is returned for Equal and negated for NotEqual; anything else is false (re-read 2026-11-10, Decomp/Analysis/PREREQUISITE_CHECK_REVIEW_20261110.md).
+            // Value is never read. The previous path required a non-player target (the type gate read backwards) and compared the flag with Value, which inverted all 281 retail slots (NotEqual, Value 0).
+            return PrerequisiteCompare.CompareFlag(comparison, TradeskillPrerequisiteHelper.HasKnownItem2Id(player, gameTableManager, objectId));
         }
     }
 }

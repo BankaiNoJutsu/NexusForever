@@ -30,7 +30,9 @@ namespace NexusForever.Game.Prerequisite.Check
                 isRaid = 1u;
             }
 
-            return PrerequisiteCompare.Compare(comparison, isRaid, value);
+            // Native (evaluator case 0x10b, vtable +0x320, 14049e9a0) receives only the unit and the comparison and tests bit 1 of the group context flags (re-read 2026-11-10, Decomp/Analysis/PREREQUISITE_CHECK_REVIEW_20261110.md).
+            // Value is never read; comparing the flag with Value inverted both retail slots (NotEqual, Value 0).
+            return PrerequisiteCompare.CompareFlag(comparison, isRaid == 1u);
         }
     }
 }

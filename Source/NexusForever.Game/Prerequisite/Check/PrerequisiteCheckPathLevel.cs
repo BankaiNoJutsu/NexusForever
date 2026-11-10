@@ -22,11 +22,8 @@ namespace NexusForever.Game.Prerequisite.Check
 
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
-            if (objectId != 0u)
-            {
-                uint pathLevel = PathPrerequisiteHelper.GetPathLevel(player, (PlayerPath)objectId, gameTableManager);
-                return PrerequisiteCompare.Compare(comparison, pathLevel, value);
-            }
+            // Native (evaluator case 0x5b, vtable +0x4b0, 14049ffb0) receives the unit, the comparison and Value only and reads the level from the path global (re-read 2026-11-10,
+            // Decomp/Analysis/PREREQUISITE_CHECK_REVIEW_20261110.md). ObjectId is never read; treating it as a path selector made retail prerequisite slots with a non-zero ObjectId (one slot, ObjectId 36189) unmeetable.
 
             foreach (IPathEntry entry in player.PathManager)
             {

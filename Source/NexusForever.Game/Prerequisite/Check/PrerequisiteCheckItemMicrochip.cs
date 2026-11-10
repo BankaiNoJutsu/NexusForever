@@ -22,19 +22,17 @@ namespace NexusForever.Game.Prerequisite.Check
             if (parameters.Item == null)
                 return false;
 
-            if (objectId == 0)
-            {
-                // Retail rows 10610/10685 keep objectId0=0 with value0=1/2.
-                uint count = GetCountForObjectIdZero(parameters.Item);
-                return PrerequisiteCompare.Compare(comparison, count, value);
-            }
+            // Native (evaluator case 0x8b, 1404a0e10) receives the item context, the comparison and Value: Value is mapped to a socket bit (ids 7 to 13, anything else no bit) and tested against
+            // the item mask; Equal returns the flag, NotEqual its negation (re-read 2026-11-10, Decomp/Analysis/PREREQUISITE_CHECK_REVIEW_20261110.md). ObjectId is never read. Both retail slots (Equal, Value 1 and 2)
+            // map to no bit and are therefore never met; the previous implementation mapped ObjectId and treated Value as an installed-rune count.
+            // Prerequisite_MapMicrochipIdToBit (14049bdc0) only knows ids 7 to 13; the compact slot bytes 1 to 7 that ItemRuneSocketTypes.TryToRuneType also accepts are not ids here.
+            uint mask = value is >= (uint)RuneType.Air and <= (uint)RuneType.Fusion
+                ? ItemRuneSocketTypes.MapRuneTypeToBit((RuneType)value)
+                : 0u;
 
-            uint mask = ItemRuneSocketTypes.MapSocketTypeIdToBit(objectId);
-            if (mask == 0)
-                return false;
-
-            uint slotMask = ItemRuneSocketMaskBuilder.BuildAllowedSocketMask(parameters.Item, gameTableManager);
-            bool present = (slotMask & mask) != 0;
+            // a Value that maps to no bit can never be present; it still answers NotEqual
+            bool present = mask != 0u
+                && (ItemRuneSocketMaskBuilder.BuildAllowedSocketMask(parameters.Item, gameTableManager) & mask) != 0u;
 
             return comparison switch
             {
