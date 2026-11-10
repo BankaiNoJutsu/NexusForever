@@ -48,8 +48,12 @@
         Sheathed            = 15, // 0 = Unsheathed Weapons, 1 = Sheathed Weapons
         [Stat(StatType.Integer)]
         Unknown17           = 17,
+        /// <summary>
+        /// Current Breath. The client's stat update handler (1403d9a60) hands stat 19 to the unit's Breath setter (140466490), which raises BreathChanged;
+        /// the maximum is GameFormula row 55 (100). Evidence tier: native bodies.
+        /// </summary>
         [Stat(StatType.Float)]
-        Unknown19           = 19,
+        Breath              = 19,
         [Stat(StatType.Integer)]
         Shield              = 20,
         [Stat(StatType.Integer)]

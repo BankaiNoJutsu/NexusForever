@@ -178,6 +178,32 @@ public class UnitEntityDamageResultTests
         Assert.Equal(500f, value);
     }
 
+    // Breath is entity stat 19 with a maximum of 100 (GameFormula 55; 100 is also the fallback without tables). Retail spell rows drain it (SapVital, -15 on effect 184873)
+    // and refill it (VitalModifier +100 on effects 42386 and 184798). A unit starts full.
+    [Fact]
+    public void Breath_StartsFullDrainsToZeroAndRefillsToItsMaximum()
+    {
+        TestUnitEntity unit = new();
+
+        Assert.True(unit.TryGetVitalMax(Vital.Breath, out float max));
+        Assert.Equal(100f, max);
+        Assert.True(unit.TryGetVitalValue(Vital.Breath, out float value));
+        Assert.Equal(100f, value);
+
+        Assert.True(unit.TryModifyVital(Vital.Breath, -15f, out float applied));
+        Assert.Equal(-15f, applied);
+        Assert.True(unit.TryModifyVital(Vital.Breath, -500f, out applied));
+        Assert.Equal(-85f, applied);
+        Assert.True(unit.TryGetVitalValue(Vital.Breath, out value));
+        Assert.Equal(0f, value);
+
+        Assert.True(unit.TryModifyVital(Vital.Breath, 100f, out _));
+        Assert.True(unit.TryModifyVital(Vital.Breath, 100f, out applied));
+        Assert.Equal(0f, applied);
+        Assert.True(unit.TryGetVitalValue(Vital.Breath, out value));
+        Assert.Equal(100f, value);
+    }
+
     [Fact]
     public void Update_WithOnslaughtProxyScale_RestoresScaleAfterOverdriveDuration()
     {

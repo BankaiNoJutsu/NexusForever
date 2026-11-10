@@ -829,6 +829,9 @@ namespace NexusForever.Game.Entity
             SetStat(Stat.Dash, 200F);
             // sprint
             SetStat(Stat.Resource0, 500f);
+            // Breath is a stat the client only learns from the server (stat 19); a player enters the world with a full breath. Nothing drains it under water yet:
+            // the property BreathDecay (0.8 by default) is the only trace of that rule and the client never reads it.
+            SetStat(Stat.Breath, GetMaxBreath());
 
             CalculateDefaultProperties();
             SetBaseCharacterProperties();

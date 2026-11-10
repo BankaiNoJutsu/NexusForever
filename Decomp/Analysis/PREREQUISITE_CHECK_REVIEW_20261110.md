@@ -270,3 +270,39 @@ vtable cases to a function; 40 are the shared stub.
 ## 6. Verification
 `dotnet test` filter `Game.Tests.Entity.PrerequisiteCheckTests | Game.Tests.Prerequisite | ItemRune`: 1,318 passed. Ten existing tests encoded the superseded behaviour (GroupIsRaid, ChallengeObject, Unknown275,
 ItemMicrochip) and were rewritten from the native rule and retail rows; they failed before the test changes and pass after.
+
+### Breath resolved: entity stat 19 (added 2026-11-10, last pass; implemented)
+The two earlier Breath passes in this file looked for callers of the wrong virtual slot. The table that holds the setter does not start at `140b66fa0`: that address is the table of a
+0x1c0-byte singleton (`FUN_140444eb0`). The Unit table starts at `140b66fd0` (installed by `140454380`, the only other `LEA` of an address in that range besides a one-slot table at
+`140b66fc8`), so the setter `140466490` is slot **`+0x68`**, next to the getter `+0x58` and the maximum `+0x60`, the same get / max / set order Health (`+0x40`) and Shield (`+0x70`) use.
+
+Of the 337 `CALL|JMP [reg + 0x68]` sites, ten set up a float in XMM1 and one of them is on a unit: `1403d9f8b` in `1403d9a60`, the handler that applies one entity stat (it also raises
+`PlayerLevelChange` and `RefreshHealthShieldBar`). Its switch on the stat id:
+
+| Stat id | Action |
+|---:|---|
+| 1 to 9 | float stored at unit `+0x218` to `+0x238` (Focus, Resource0 to 6, Dash) |
+| 10, 11 | level, mentor level |
+| **19** | `unit->virtual[+0x68](float)` = set Breath, raise `BreathChanged` |
+| 20 | shield (`+0x80`), `RefreshHealthShieldBar` |
+| 21 | interrupt armour, clamped |
+| 22 | `unit->virtual[+0x98](int)` (not followed) |
+| 23, 24, 25 | floats at `+0x23c`, `+0x240`, `+0x244`, the words the vital switch reads for Resource8 to Resource10 |
+| 26 | integer at `+0x50` (not followed) |
+
+So Breath is entity stat 19, a float, sent with the ordinary stat update (`0x0935`) and in the stat list of the entity create packet. The maximum is not sent: `1404826c0` (virtual
+`+0x60`) returns the first integer of GameFormula row 55, **100** in the retail table, for every unit. `Lua_Unit_ShouldShowBreathBar` shows the bar for a Player whose current value is
+below that maximum.
+
+Four retail spell effects touch the vital: `184873` SapVital, -15 (the Ikthian "Aquatic Buffer" aura), `184798` VitalModifier +100 every 0.5 s ("Aquatic Buffer - (Refill Breath)"),
+`42386` VitalModifier +100 every 1 s for 300 s ("Q4378 - Protostar Air Generation") and `4192` ("[TEST] Breathe over time"). Prerequisite row `30476` (type 73, Breath `<= 0`) gates the
+damage row of the aura.
+
+Implemented: `Stat.Unknown19` renamed `Stat.Breath`; `UnitEntity` reads, clamps (0 to GameFormula 55) and writes `Vital.Breath` through that stat, a unit without the stat counting as
+full; a player is given a full Breath when it is built, so the client is told 100 rather than left at its own initial value; prerequisite type 73 reads the value.
+
+**Not implemented, not recoverable from the client:** what drains Breath under water and what refills it in air. The only trace is the unit property `BreathDecay` (125, default 0.8),
+which the client never loads as a property id; its unit (per second, per tick, a fraction) and the rule for when a unit counts as submerged ran on the retired server only. Until that is
+known, Breath only moves when one of the four spell rows moves it, and nothing refills it afterwards except those rows and a relog. Evidence tier: native bodies for the stat id, the
+setter, the maximum and the bar; tables for the spell rows. No retail capture; no retail parity claim.
+

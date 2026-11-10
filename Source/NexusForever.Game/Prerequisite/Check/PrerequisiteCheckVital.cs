@@ -62,7 +62,7 @@ namespace NexusForever.Game.Prerequisite.Check
         /// The switch reads Health, Breath, Shield, Resource0 to Resource6, Focus, Resource7, InterruptArmor, Absorption, three public event resources and Resource8 to Resource10 directly.
         /// Any other id goes through the class object of the local player (virtual +0x60, 1405e78c0): the first of the eight Class.vitalEnumResource words equal to the id whose resource
         /// slot holds a positive value gives that slot; otherwise, and for any unit that is not the local player, the value is 0 and the comparison still runs.
-        /// Not modelled here, answered false as before: Breath (the server has no breath), the public event resources and Resource8 to Resource10.
+        /// Breath is stat 19 (see <see cref="Stat.Breath"/>). Not modelled here, answered false as before: the public event resources and Resource8 to Resource10.
         /// Evidence tier: native bodies. No retail parity claim.
         /// </remarks>
         private bool TryGetNativeVital(IUnitEntity subject, uint vitalId, out float value)
@@ -81,11 +81,11 @@ namespace NexusForever.Game.Prerequisite.Check
                 case Vital.Focus:
                 case Vital.Resource7:
                 case Vital.InterruptArmor:
+                case Vital.Breath:
                     return subject.TryGetVitalValue((Vital)vitalId, out value);
                 case Vital.Absorption:
                     value = subject.CurrentAbsorption;
                     return true;
-                case Vital.Breath:
                 case Vital.PublicResource0:
                 case Vital.PublicResource1:
                 case Vital.PublicResource2:

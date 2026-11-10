@@ -6004,7 +6004,7 @@ WildStar64.exe,14045edd0,LuaEvent_PlayerLevelChange_Raise,Raises Lua event Playe
 WildStar64.exe,14045ef50,LuaEvent_UnitDestroyed_Raise_14045ef50,Raises Lua event UnitDestroyed through ClientEvent_DispatchNamedEvent @ 1400ea3e0; automatic string-anchor pass.
 WildStar64.exe,14045ffd0,LuaEvents_StanceChanged_UnitLevelChanged_Raise,Raises Lua event StanceChanged and UnitLevelChanged through ClientEvent_DispatchNamedEvent @ 1400ea3e0; automatic string-anchor pass.
 WildStar64.exe,140460070,LuaEvent_UnitLevelChanged_Raise,Raises Lua event UnitLevelChanged through ClientEvent_DispatchNamedEvent @ 1400ea3e0; automatic string-anchor pass.
-WildStar64.exe,140466490,Unit_SetBreathAndRaiseBreathChanged,Unit virtual +0x98 (slot 140b67038 of the table at 140b66fa0): stores current Breath at entity +0x44 and raises BreathChanged with the maximum from virtual +0x60. No direct caller; the packet that drives it was not found.
+WildStar64.exe,140466490,Unit_SetBreathAndRaiseBreathChanged,Unit virtual +0x68 (slot 140b67038 of the Unit table at 140b66fd0; get +0x58 max +0x60 set +0x68): stores current Breath at entity +0x44 and raises BreathChanged with the maximum from virtual +0x60. Called by the entity stat handler 1403d9a60 for stat id 0x13 (19). An earlier label gave +0x98 against a table start of 140b66fa0; that address is the table of a 0x1c0-byte singleton (140444eb0) and was wrong.
 WildStar64.exe,14046c300,LuaEvent_UnitActivationTypeChanged_Raise_14046c300,Raises Lua event UnitActivationTypeChanged through ClientEvent_DispatchNamedEvent @ 1400ea3e0; automatic string-anchor pass.
 WildStar64.exe,140474fa0,LuaEvent_MessageFinished_Raise_140474fa0,Raises Lua event MessageFinished through ClientEvent_DispatchNamedEvent @ 1400ea3e0; automatic string-anchor pass.
 WildStar64.exe,140475370,LuaEvent_MessageFinished_Raise_140475370,Raises Lua event MessageFinished through ClientEvent_DispatchNamedEvent @ 1400ea3e0; automatic string-anchor pass. The function is 2936 bytes and does other work as well.
@@ -6367,3 +6367,5 @@ WildStar64.exe,140551630,Quest_GetObjectiveCompletedPercent,Percentage branch of
 WildStar64.exe,140551840,Quest_GetObjectiveNeededCount,Objective count word; 100 for percentage-style objective types (2; 8; 15; 16; 46) without flag 0x200.
 WildStar64.exe,140458ec0,Unit_RegisterWithOwnerOnCreate,Unit-created path for entity type 0x19: resolves the owner id at +0x2b0 and appends its own id to the owner list at +0x2b8 unless present; then starts or skips the owner-follow state.
 WildStar64.exe,14047c1e0,Unit_OwnsEntityId,Membership test on the owned-entity list of a unit (+0x2b8 / +0x2c0).
+WildStar64.exe,1404826c0,Unit_GetMaxBreath_GameFormula55,Unit virtual +0x60: caches and returns the first integer of GameFormula row 0x37 (55) as the maximum Breath (100 in the retail table).
+WildStar64.exe,140454380,Unit_Construct_SetsTable140b66fd0,Constructor that installs the Unit virtual table at 140b66fd0 (destructor side 1404550d0).

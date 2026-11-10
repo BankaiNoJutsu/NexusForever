@@ -1273,6 +1273,9 @@ namespace NexusForever.Game.Entity
                     return maxValue > 0f;
                 case Vital.Focus:
                     return TryGetPositiveProperty(Property.BaseFocusPool, out maxValue);
+                case Vital.Breath:
+                    maxValue = GetMaxBreath();
+                    return maxValue > 0f;
                 case Vital.KineticCell:
                 case Vital.MedicCore:
                 case Vital.Volatility:
@@ -1336,6 +1339,15 @@ namespace NexusForever.Game.Entity
             return TrySetVitalValue(vital, currentValue, newValue, source, damageType, out appliedAmount);
         }
 
+        /// <summary>
+        /// The maximum Breath of a unit: GameFormula row 55, first integer (100 in the retail table). The client reads the same row for the maximum it compares the current value
+        /// with (unit virtual +0x60, 1404826c0); it is one number for every unit. 100 is used when the table is not loaded.
+        /// </summary>
+        protected float GetMaxBreath()
+        {
+            return TryGetGameTableManager()?.GameFormula?.GetEntry(55u)?.Dataint0 ?? 100u;
+        }
+
         private bool TryGetPositiveProperty(Property property, out float value)
         {
             value = GetPropertyValue(property);
@@ -1354,6 +1366,10 @@ namespace NexusForever.Game.Entity
                     return true;
                 case Vital.Focus:
                     value = GetStatFloat(Stat.Focus) ?? 0f;
+                    return true;
+                case Vital.Breath:
+                    // a unit that was never told otherwise has a full breath
+                    value = GetStatFloat(Stat.Breath) ?? GetMaxBreath();
                     return true;
                 case Vital.KineticCell:
                 case Vital.MedicCore:
@@ -1440,6 +1456,8 @@ namespace NexusForever.Game.Entity
                     return TrySetFloatVital(oldValue, newValue, Stat.Dash, out appliedAmount);
                 case Vital.InterruptArmor:
                     return TrySetUnsignedVital(oldValue, newValue, value => InterruptArmor = value, out appliedAmount);
+                case Vital.Breath:
+                    return TrySetFloatVital(oldValue, newValue, Stat.Breath, out appliedAmount);
                 default:
                     return false;
             }

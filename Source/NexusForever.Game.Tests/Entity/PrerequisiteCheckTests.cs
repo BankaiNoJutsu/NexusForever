@@ -1452,13 +1452,17 @@ public class PrerequisiteCheckTests
         Assert.True(check.MeetsUnit(creature, PrerequisiteComparison.Equal, 0u, (uint)Vital.KineticCell, new PrerequisiteParameters()));
     }
 
-    [Fact]
-    public void BreathIsNotModelledAndFailsClosed()
+    // Retail row 30476 (Breath <= 0) gates the damage row of the Ikthian "Aquatic Buffer" aura. Breath is entity stat 19 (native stat handler 1403d9a60).
+    [Theory]
+    [InlineData(0f, true)]
+    [InlineData(15f, false)]
+    [InlineData(100f, false)]
+    public void BreathIsReadFromTheUnit(float breath, bool expected)
     {
-        IPlayer player = VitalPlayer(Class.Warrior);
+        IPlayer player = VitalPlayer(Class.Warrior, (Vital.Breath, breath));
         var check = new PrerequisiteCheckVital(ClassTables(), NullLogger<PrerequisiteCheckVital>.Instance);
 
-        Assert.False(check.Meets(player, PrerequisiteComparison.LessThanOrEqual, 0u, (uint)Vital.Breath, new PrerequisiteParameters()));
+        Assert.Equal(expected, check.Meets(player, PrerequisiteComparison.LessThanOrEqual, 0u, (uint)Vital.Breath, new PrerequisiteParameters()));
     }
 
     private static IPlayer VitalPlayer(Class playerClass, params (Vital Vital, float Value)[] resources)
