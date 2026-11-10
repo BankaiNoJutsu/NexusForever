@@ -228,6 +228,16 @@ namespace NexusForever.Game.Abstract.Entity
         bool RemoveSpellPropertyInstance(ISpellPropertyInstance instance) => false;
 
         /// <summary>
+        /// End the running spells of this unit that are kept alive by spell-lifetime rows (toggles, granted passives, permanent auras) and match the supplied Spell4 predicate.
+        /// </summary>
+        int EndSpellLifetimes(Func<uint, bool> spell4Predicate) => 0;
+
+        /// <summary>
+        /// Return whether a spell with the supplied Spell4 id is running on this unit and kept alive by spell-lifetime rows.
+        /// </summary>
+        bool HasSpellLifetime(uint spell4Id) => false;
+
+        /// <summary>
         /// Remove all <see cref="Property"/> modifiers by a Spell that is currently affecting this <see cref="IUnitEntity"/>
         /// </summary>
         bool RemoveSpellProperties(uint spell4Id);

@@ -35,6 +35,12 @@ namespace NexusForever.Game.Static.Spell
         public const uint ReceiveDamageMagic  = 19u;
         public const uint HealOther           = 20u;
 
+        // Evidence (names and data, no native consumer): the 31 Proc rows with event 87 belong to spells that react to a class resource level:
+        //           Spell4=59159 Warrior Full Defense ("While above 500 Kinetic Energy gain a Defense"), 59045 Kinetic Fury, 59137 Kinetic Buffer,
+        //           84001 Engineer Volatile Injection, and the ON auras of the two Warrior toggles (79790 Power Link, 79753 Augmented Blade), whose
+        //           proc casts the toggle's "Spell Remove" under the prerequisite "Kinetic Energy < 250". Inferred. No retail parity claim.
+        public const uint ResourceChanged     = 87u;
+
         public static bool TryGetReceiveDamageSchoolTriggerEvent(SpellSchool school, out uint triggerEvent)
         {
             triggerEvent = school switch
@@ -66,6 +72,7 @@ namespace NexusForever.Game.Static.Spell
                 ReceiveDamageRanged => "receive-damage-ranged",
                 ReceiveDamageMagic  => "receive-damage-magic",
                 HealOther           => "heal-other",
+                ResourceChanged     => "resource-changed",
                 _                   => null
             };
 

@@ -735,6 +735,16 @@ namespace NexusForever.Game.Entity
                 return;
             }
 
+            // Proc DataBits06 is a prerequisite on the holder: every one of the 392 populated values is a Prerequisite id, and the toggle auras read "Kinetic Energy < 250"
+            // there. Inferred from the table; see Decomp/Analysis/SPELL_EFFECT_PROXY_20261110.md, section 1h. Without a prerequisite manager the word is not evaluated.
+            if (state.DataBits06 != 0u
+                && prerequisiteManagerResolver?.Invoke() is { } procPrerequisites
+                && !procPrerequisites.MeetsUnit(this, state.DataBits06, new NexusForever.Game.Prerequisite.PrerequisiteParameters { Target = resolvedTarget }))
+            {
+                SpellEffectDiagnostics.TraceProcDispatch(this, eventName, phase, observedTriggerEvent, source?.Guid ?? 0u, target?.Guid ?? 0u, resolvedTarget.Guid, effectId, state.Spell4Id, state.CastingId, state.TriggerEvent, state.TriggerSpell4Id, state.Chance, state.TargetData, state.CooldownMsOrSentinel, state.CooldownRemainingSeconds, "none", "prerequisite-not-met");
+                return;
+            }
+
             if (state.CooldownRemainingSeconds > 0d)
             {
                 SpellEffectDiagnostics.TraceProcDispatch(this, eventName, phase, observedTriggerEvent, source?.Guid ?? 0u, target?.Guid ?? 0u, resolvedTarget.Guid, effectId, state.Spell4Id, state.CastingId, state.TriggerEvent, state.TriggerSpell4Id, state.Chance, state.TargetData, state.CooldownMsOrSentinel, state.CooldownRemainingSeconds, "none", "cooldown-active");
@@ -1474,6 +1484,11 @@ namespace NexusForever.Game.Entity
         {
             SetStat(stat, newValue);
             appliedAmount = newValue - oldValue;
+
+            // Proc trigger event 87: a class resource changed (see ProcTriggerEventCandidate.ResourceChanged).
+            if (appliedAmount != 0f && stat is >= Stat.Resource0 and <= Stat.Resource6)
+                ProbeProcEvent("resource-changed", ProcTriggerEventCandidate.ResourceChanged, this, this, null, null, null, "after-change");
+
             return true;
         }
 
@@ -2517,6 +2532,28 @@ namespace NexusForever.Game.Entity
         {
             ISpell spell = pendingSpells.SingleOrDefault(s => s.CastingId == castingId);
             return spell?.TryCompleteClientSideInteraction(wasCancelled) ?? false;
+        }
+
+        /// <summary>
+        /// End the running spells of this unit that are kept alive by spell-lifetime rows (toggles, granted passives, permanent auras) and match the supplied Spell4 predicate.
+        /// </summary>
+        public int EndSpellLifetimes(Func<uint, bool> spell4Predicate)
+        {
+            ArgumentNullException.ThrowIfNull(spell4Predicate);
+
+            int ended = 0;
+            foreach (Spell.Spell spell in pendingSpells.OfType<Spell.Spell>().ToArray())
+            {
+                if (spell.HasSpellLifetimeRows && spell4Predicate(spell.Parameters.SpellInfo.Entry.Id) && spell.EndSpellLifetime())
+                    ended++;
+            }
+
+            return ended;
+        }
+
+        public bool HasSpellLifetime(uint spell4Id)
+        {
+            return pendingSpells.OfType<Spell.Spell>().Any(s => s.HasSpellLifetimeRows && s.Parameters.SpellInfo.Entry.Id == spell4Id);
         }
 
         /// <summary>

@@ -3678,6 +3678,12 @@ namespace NexusForever.Game.Spell
             }
 
             IReadOnlyCollection<SpellStateRemoval> removals = target.RemoveTrackedSpellStates(predicate, uint.MaxValue);
+
+            // A toggle or granted passive is a running spell kept alive by its ticking rows; removing it ends that spell too. The "Spell Remove" of Warrior Power Link
+            // (Spell4 79789) names the base spell of the toggle (35146) and is what the second press of the ability casts. Never the spell that is doing the removing.
+            if (target is UnitEntity holder)
+                holder.EndSpellLifetimes(spell4Id => spell4Id != spell.Parameters.SpellInfo.Entry.Id && predicate(spell4Id));
+
             bool removedProperties = removals.Any(r => r.Kind == SpellStateRemovalKind.PropertyModifier);
             IReadOnlyCollection<SpellStateRemoval> removedCCStates = removals.Where(r => r.Kind == SpellStateRemovalKind.CrowdControl).ToArray();
             SpellEffectDiagnostics.TraceForceRemove(spell, target, forceRemove, removeScope, removals.Count, removedProperties, removedCCStates.Count, null);

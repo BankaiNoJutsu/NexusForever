@@ -203,6 +203,28 @@ public class AmpTableAugmentationTests
         Assert.Single(f.Manager.GetSpellCooldownModifiers());
     }
 
+    // Retail: Engineer Health Regeneration I (Spell4 57392, row 137082) is one VitalModifier row on the caster with tick and delay 2500 ms and effect flag 2;
+    // Stalker Stealth Regen (59394) is one Proxy row with tick 1000 ms, "While in Stealth you regenerate 5 health per second".
+    [Theory]
+    [InlineData(SpellEffectType.VitalModifier, 2500u, 2500u, 2u, 1u, true)]
+    [InlineData(SpellEffectType.Proxy, 1000u, 0u, 2u, 1u, true)]
+    [InlineData(SpellEffectType.Proxy, 1000u, 0u, 0u, 1u, false)]     // not marked as living with the spell
+    [InlineData(SpellEffectType.Proxy, 500u, 0u, 2u, 4u, false)]      // area rows (Danger Zone) stay outside the owned lifecycle
+    [InlineData(SpellEffectType.Damage, 1000u, 0u, 2u, 1u, false)]
+    public void PeriodicAmpsThatTickOnTheCasterAreOwnedAsARunningSpell(SpellEffectType type, uint tick, uint delay, uint flags, uint targetFlags, bool expected)
+    {
+        var f = new Fixture(initialise: false);
+        f.PropertyEffect.EffectType = type;
+        f.PropertyEffect.TickTime = tick;
+        f.PropertyEffect.DelayTime = delay;
+        f.PropertyEffect.Flags = flags;
+        f.PropertyEffect.TargetFlags = targetFlags;
+
+        Assert.Equal(expected, AugmentationSpellRules.IsSupported(PropertySpell, f.Tables));
+        Assert.Equal(expected, AugmentationSpellRules.IsPeriodic(PropertySpell, f.Tables));
+        Assert.False(AugmentationSpellRules.IsPeriodic(CooldownSpell, f.Tables));
+    }
+
     [Theory]
     [InlineData(1u, 0u, 4u)]
     [InlineData(2u, 1u, 4u)]

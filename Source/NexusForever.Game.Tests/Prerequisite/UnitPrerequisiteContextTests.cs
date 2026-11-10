@@ -346,26 +346,80 @@ public sealed class UnitPrerequisiteContextTests
         Assert.Equal(tick != 0u && expected == 0u, Invoke<bool>(spell, "IsUnpulsedPeriodicProxy", proxy));
     }
 
-    // Every spell with cast method 10 (Aura) has a duration; 687 of them are permanent (0xFFFFFFFF), for example Medic Danger Zone (Spell4 58912, Proxy row 147851, tick 500 ms).
-    // A permanent Aura pulses until the spell ends, but only rows that leave no state behind; anything else keeps the old single execution.
+    // A spell without a finite duration keeps its tick-only rows pulsing until the spell ends: permanent Auras (687 spells, for example Medic Danger Zone, Spell4 58912,
+    // Proxy row 147851, tick 500 ms) and durationless passives and toggles (Warrior Power Link 53599, tick 250 ms; rune special Untouchable 81880, tick 1000 ms).
+    // Every such row carries effect flag 0x2. Only rows that leave no state behind are pulsed.
     [Theory]
-    [InlineData(SpellCastMethod.Aura, SpellEffectType.Proxy, uint.MaxValue)]
-    [InlineData(SpellCastMethod.Aura, SpellEffectType.Damage, uint.MaxValue)]
-    [InlineData(SpellCastMethod.Aura, SpellEffectType.UnitPropertyModifier, 0u)]
-    [InlineData(SpellCastMethod.Normal, SpellEffectType.Proxy, 0u)]
-    public void PermanentAurasPulseStatelessTickOnlyRowsUntilTheSpellEnds(SpellCastMethod castMethod, SpellEffectType effectType, uint expected)
+    [InlineData(uint.MaxValue, SpellEffectType.Proxy, 2u, uint.MaxValue)]
+    [InlineData(uint.MaxValue, SpellEffectType.Damage, 2u, uint.MaxValue)]
+    [InlineData(0u, SpellEffectType.Proxy, 2u, uint.MaxValue)]
+    [InlineData(0u, SpellEffectType.VitalModifier, 2u, uint.MaxValue)]
+    [InlineData(0u, SpellEffectType.UnitPropertyModifier, 2u, 0u)]     // leaves state behind
+    [InlineData(0u, SpellEffectType.Proxy, 0u, 0u)]                    // not marked as living with the spell
+    public void SpellsWithoutAFiniteDurationPulseStatelessTickOnlyRowsUntilTheSpellEnds(uint spellDuration, SpellEffectType effectType, uint effectFlags, uint expected)
     {
         using var fixture = new Fixture();
         var caster = Unit(1, 10, out _);
         var spell = fixture.Spell(caster, null, out var info);
-        info.SetProperty(nameof(ISpellInfo.Entry), new Spell4Entry { Id = 58912, SpellDuration = uint.MaxValue });
-        var baseInfo = RecordingDispatchProxy<ISpellBaseInfo>.Create(out var baseProxy);
-        baseProxy.SetProperty(nameof(ISpellBaseInfo.CastMethod), castMethod);
-        info.SetProperty(nameof(ISpellInfo.BaseInfo), baseInfo);
+        info.SetProperty(nameof(ISpellInfo.Entry), new Spell4Entry { Id = 53599, SpellDuration = spellDuration });
 
-        var row = SpellEffectInterpreter.Interpret(new Spell4EffectsEntry { Id = 147851, EffectType = effectType, TickTime = 500, DataBits01 = 60920 });
+        var row = SpellEffectInterpreter.Interpret(new Spell4EffectsEntry { Id = 210449, EffectType = effectType, Flags = effectFlags, TickTime = 250, DataBits01 = 79787 });
 
         Assert.Equal(expected, Invoke<uint>(spell, "GetEffectPulseDuration", row));
+    }
+
+    // Warrior Power Link: the ticking rows carry the caster-apply prerequisite "the ON aura is not active", and the same cast applies that aura. The prerequisite therefore
+    // decides whether the row starts and is not asked again on each pulse; a second press finds the aura active, so its rows do not start.
+    [Fact]
+    public void ARowThatLivesWithItsSpellTestsItsCasterApplyPrerequisiteOnceWhenItStarts()
+    {
+        using var fixture = new Fixture(Row(1, PrerequisiteType.Level, 10), Row(2, PrerequisiteType.Level, 99));
+        var caster = Unit(1, 10, out var casterProxy);
+        var spell = fixture.Spell(caster, null, out var info);
+        info.SetProperty(nameof(ISpellInfo.Entry), new Spell4Entry { Id = 53599 });
+        var baseInfo = RecordingDispatchProxy<ISpellBaseInfo>.Create(out var baseProxy);
+        baseProxy.SetProperty(nameof(ISpellBaseInfo.Entry), new Spell4BaseEntry { Id = 35146 });
+        info.SetProperty(nameof(ISpellInfo.BaseInfo), baseInfo);
+
+        var starts = SpellEffectInterpreter.Interpret(new Spell4EffectsEntry
+            { Id = 210449, EffectType = SpellEffectType.Proxy, Flags = 2, TargetFlags = 1, TickTime = 250, DataBits01 = 79787, PrerequisiteIdCasterApply = 1 });
+        var blocked = SpellEffectInterpreter.Interpret(new Spell4EffectsEntry
+            { Id = 210627, EffectType = SpellEffectType.Proxy, Flags = 2, TargetFlags = 1, TickTime = 250, DataBits01 = 79788, PrerequisiteIdCasterApply = 2 });
+
+        Assert.True(Invoke<bool>(spell, "ScheduleEffect", starts));
+        Assert.True(Invoke<bool>(spell, "ScheduleEffect", blocked));    // handled, but not started
+
+        // the caster stops meeting prerequisite 1 once the toggle is on; the started row keeps passing, the other one never started
+        casterProxy.SetProperty(nameof(IUnitEntity.Level), 11u);
+        Assert.True(Invoke<bool>(spell, "MeetsApplyPrerequisites", starts, caster));
+        Assert.False(Invoke<bool>(spell, "MeetsApplyPrerequisites", blocked, caster));
+    }
+
+    // A toggle is a running spell kept alive by its ticking rows. SpellForceRemove ends it: the "Spell Remove" of Warrior Power Link (Spell4 79789) names the base spell of the
+    // toggle and is what the second press casts.
+    [Fact]
+    public void EndingASpellLifetimeFinishesTheSpellAndOnlySpellsThatHaveOne()
+    {
+        using var fixture = new Fixture();
+        var caster = Unit(1, 10, out _);
+        var spell = fixture.Spell(caster, null, out var info);
+        info.SetProperty(nameof(ISpellInfo.Entry), new Spell4Entry { Id = 53599 });
+        var baseInfo = RecordingDispatchProxy<ISpellBaseInfo>.Create(out var baseProxy);
+        baseProxy.SetProperty(nameof(ISpellBaseInfo.Entry), new Spell4BaseEntry { Id = 35146 });
+        info.SetProperty(nameof(ISpellInfo.BaseInfo), baseInfo);
+        FieldInfo status = typeof(Game.Spell.Spell).GetField("status", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        status.SetValue(spell, Enum.Parse(status.FieldType, "Executing"));
+
+        // nothing keeps it alive yet
+        Assert.False(Invoke<bool>(spell, "EndSpellLifetime"));
+
+        var row = SpellEffectInterpreter.Interpret(new Spell4EffectsEntry { Id = 210449, EffectType = SpellEffectType.Proxy, Flags = 2, TargetFlags = 1, TickTime = 250, DataBits01 = 79787 });
+        Assert.True(Invoke<bool>(spell, "ScheduleEffect", row));
+
+        Assert.False(spell.IsFinished);
+        Assert.True(Invoke<bool>(spell, "EndSpellLifetime"));
+        Assert.True(spell.IsFinished);
+        Assert.False(Invoke<bool>(spell, "EndSpellLifetime"));
     }
 
     private static PrerequisiteEntry Row(uint id, PrerequisiteType type, uint value, uint objectId = 0)

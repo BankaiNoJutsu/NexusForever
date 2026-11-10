@@ -170,8 +170,63 @@ Two more tooltip witnesses for the tick, both on spells that are **not** Auras (
 
 These are the 509 rows (430 spells) that stay inert: rune and item specials, milestones, toggles and creature "base" spells. The table gives them a tick and no end. 265 of the 430 spells
 have neither a persistence prerequisite, a channel nor a cost that could end them; what ends them is whatever granted them (unequipping the rune, toggling the ability off, the creature
-dying). The server has no toggle and applies learned passives as properties without a running spell, so pulsing these rows would have no way to stop. **Not implemented**; the missing
-piece is a lifecycle for granted spells (grant starts the spell, revoke ends it), not evidence about the rows.
+dying). **Implemented in a later commit the same day, see 1h**; when this section was written the server had no way to stop such a spell.
+
+## 1h. Toggles and granted passives: the spell runs until it is removed (added 2026-11-10, late; implemented, inferred)
+
+Evidence tier: raw tables and tooltip text; the mechanism is read off the two Warrior toggles, whose data is complete enough to follow end to end. No native consumer. No retail parity claim.
+
+### What the data says a toggle is
+Warrior Power Link (`53599`, tooltip "Toggle: While active, you and nearby party members deal 8% increased damage, and you gain Kinetic Drain ... Drains 56 Kinetic Energy every 0.25s"):
+
+| Row | Type | Timing | Data | Caster-apply prerequisite |
+|---|---|---|---|---|
+| `210450` | Proxy | once | `79790` "Power Link - ON" (a permanent Aura, cast method 10, duration `0xFFFFFFFF`) | `37397`: the ON aura is **not** active |
+| `210449` | Proxy | tick 250 ms, flag 0x2 | periodic spell `79787` "Power Link - Buff" | `37397` |
+| `210627` | Proxy | tick 250 ms, flag 0x2 | periodic spell `79788` "KE Drain Tick" = VitalModifier, vital 6, -56; word 06 = `43748` (not in Overdrive) | `37397` |
+| `210456` | Proxy | once | `79789` "Power Link - Spell Remove" = two SpellForceRemove rows (scope 3 = base spell) naming the base spells of the toggle (`35146`) and of the ON aura | `37398`: the ON aura **is** active |
+
+So one ability is both switches. Pressed while off, it applies the ON aura and starts the two ticking rows; pressed while on, it casts the remover. The ON aura also carries a Proc
+(event 87, cooldown 250 ms) that casts the same remover under prerequisite `37374`: "Kinetic Energy < 250 and not in Overdrive", which is the same 250 the ability needs to be cast.
+Warrior Augmented Blade (`46935`) is built the same way. These are the only two abilities whose tooltip says "Toggle".
+
+Three things follow, and each is now implemented:
+
+1. **The ticking rows run until the spell is removed.** `Spell.GetEffectPulseDuration` pulses a tick-only row with effect flag 0x2 until the spell ends, for any spell without a
+   finite duration (before: only permanent Auras), for effect types that leave no state behind.
+2. **The caster-apply prerequisite of such a row is asked once, when the row starts.** It cannot be asked on every pulse: the rows require "ON is not active" and the same cast applies
+   ON, yet the tooltip has them tick every 0.25 s while active. `Spell.ScheduleEffect` tests it at cast time and `MeetsApplyPrerequisites` skips it on later pulses; target-apply and the
+   Proxy words 06 and 07 are still asked on every pulse.
+3. **SpellForceRemove ends the running spell.** The handler removed tracked states only. It now also ends running spells of the target that are kept alive by such rows and match
+   the same predicate (`UnitEntity.EndSpellLifetimes`), never the spell doing the removing.
+
+### The automatic switch-off needed two more words
+* **Proc trigger event 87 is "a class resource changed".** 31 Proc rows use it, on spells that react to a resource level: Warrior Full Defense ("While above 500 Kinetic Energy gain a
+  Defense"), Kinetic Fury, Kinetic Buffer, Engineer Volatile Injection, Medic In Flux, the class "On Start" spells, and the two ON auras. The server now raises it when one of the
+  resource stats changes (`ProcTriggerEventCandidate.ResourceChanged`). Inferred from the names and from the toggles; nothing states it.
+* **Proc DataBits06 is a prerequisite on the holder.** All 392 populated values are Prerequisite ids. It is now evaluated before a proc fires.
+
+Independent corroboration found online for one detail: the community wiki describes Overdrive as preventing "Kinetic Energy decay and Kinetic Energy Drain effects", which is what the
+caster prerequisite in Proxy word 06 of the drain row (`43748`: not under Overdrive `42908`) says. The same search did not turn up any statement of whether a toggle switches itself off
+at low Kinetic Energy; that behaviour comes from the data above only.
+
+### Granted passives
+The AMP lifecycle (`SpellManager.RefreshAugmentations`) already cast and retired AMP spells but excluded anything periodic. It now owns AMPs whose rows all tick on the caster
+(`AugmentationSpellRules.IsPeriodic`): the spell is cast when the AMP is slotted, is not recast while it runs, ends with its caster and is cast again once alive, and is ended when the
+AMP is retired. Tooltip witness: Stalker "Stealth Regen" (`59394`, Proxy tick 1000 ms, word 06 = `8127`) "While in Stealth you regenerate 5 health per second". Twelve AMPs have that
+shape; those in a stack group other than 0 or 2 stay outside, as before.
+
+### Server-side choices that come from no source
+* A spell kept alive this way also ends when its caster dies, and when the same caster casts the same spell again.
+* A failed start-time prerequisite means the row never starts for that cast; it is not retried.
+* Any durationless spell with such rows now runs until removed, whoever casts it. No server script casts one of these 632 spells by id today, and a creature's ends with the creature,
+  but a script that casts one on a player and never removes it would leave it ticking until the player dies.
+
+### Still not covered
+* Rune and item specials (for example Untouchable): the server has no equip-time grant for them at all, so they are never cast.
+* Milestone and innate class passives with ticking rows: they are mixed with other effect types and are not cast as spells.
+* AMPs with area rows (Medic Danger Zone, Warrior No Escape, Recklessness, Fortitude) and periodic AMPs in other stack groups.
+* The retired server's behaviour when a toggle is on and the player logs out or zones is unknown; here the spell ends with the entity.
 
 ## 2. The parent's caster casts the child
 

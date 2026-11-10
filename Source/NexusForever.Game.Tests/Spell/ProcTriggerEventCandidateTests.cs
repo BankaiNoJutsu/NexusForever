@@ -15,6 +15,17 @@ public class ProcTriggerEventCandidateTests
         Assert.Equal(expectedLabel, label);
     }
 
+    // Event 87: a class resource changed. Retail: Warrior Full Defense (Spell4 59159) "While above 500 Kinetic Energy gain a Defense"; the ON auras of the two Warrior
+    // toggles (79790, 79753) cast the toggle's "Spell Remove" from it under the prerequisite "Kinetic Energy < 250".
+    [Fact]
+    public void ResourceChangedIsADispatchedTriggerEvent()
+    {
+        Assert.Equal(87u, ProcTriggerEventCandidate.ResourceChanged);
+        Assert.True(ProcTriggerEventCandidate.TryGetConservativeLabel(ProcTriggerEventCandidate.ResourceChanged, out string label));
+        Assert.Equal("resource-changed", label);
+        Assert.True(ProcDispatchEvidenceBoundary.Describe(ProcTriggerEventCandidate.ResourceChanged, 9u).IsConservativelyDispatchSupported);
+    }
+
     [Theory]
     [InlineData(SpellSchool.Melee, ProcTriggerEventCandidate.ReceiveDamageMelee)]
     [InlineData(SpellSchool.Ranged, ProcTriggerEventCandidate.ReceiveDamageRanged)]

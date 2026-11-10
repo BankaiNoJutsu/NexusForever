@@ -10,6 +10,7 @@ namespace NexusForever.Game.Entity
         private readonly Dictionary<uint, IReadOnlyCollection<ISpellPropertyInstance>> augmentationProperties = [];
         private readonly Dictionary<uint, HashSet<SpellCooldownModifier>> augmentationCooldowns = [];
         private readonly Dictionary<uint, IReadOnlyCollection<ISpellProcInstance>> augmentationProcs = [];
+        private readonly HashSet<uint> augmentationLifetimes = [];
         private double augmentationRetryTime;
         private bool refreshingAugmentations;
 
@@ -42,6 +43,13 @@ namespace NexusForever.Game.Entity
                     player.RemoveProc(instance);
                 augmentationProcs.Remove(id);
             }
+
+            // A periodic AMP is a running spell; retiring the AMP ends it.
+            foreach (uint id in augmentationLifetimes.Where(id => !desired.Contains(id)).ToArray())
+            {
+                player.EndSpellLifetimes(spell4Id => spell4Id == id);
+                augmentationLifetimes.Remove(id);
+            }
         }
 
         private void RefreshAugmentations()
@@ -71,6 +79,9 @@ namespace NexusForever.Game.Entity
                         ownedCooldowns.IntersectWith(existingCooldowns);
                     if (existing.Count != 0 || existingCooldowns.Length != 0 || existingProcs.Count != 0)
                         continue;
+                    // A periodic AMP that is still running (it ends with the caster and is cast again here once alive).
+                    if (player.HasSpellLifetime(id))
+                        continue;
 
                     var parameters = new AugmentationSpellParameters
                     {
@@ -88,6 +99,8 @@ namespace NexusForever.Game.Entity
                         augmentationCooldowns[id] = new HashSet<SpellCooldownModifier>(
                             GetSpellCooldownModifiers().Where(m => m.Spell4Id == id), ReferenceEqualityComparer.Instance);
                         augmentationProcs[id] = parameters.ProcInstances.ToArray();
+                        if (AugmentationSpellRules.IsPeriodic(id, GetGameTableManager()))
+                            augmentationLifetimes.Add(id);
                     }
                 }
             }

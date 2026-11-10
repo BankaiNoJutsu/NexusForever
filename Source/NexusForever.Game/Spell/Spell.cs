@@ -72,6 +72,7 @@ namespace NexusForever.Game.Spell
         private readonly List<ITelegraph> telegraphs = new();
         private readonly List<PendingSpellGoEffect> pendingSpellGoEffects = new();
         private readonly Dictionary<ISpellTargetEffectInfo, ISpellEvent> lifetimeEvents = new();
+        private readonly HashSet<uint> startedSpellLifetimeRows = new();
         private readonly HashSet<(uint TargetId, uint EffectEntryId)> terminatedPersistentEffects = new();
         private uint chargeThresholdValue;
 
@@ -572,7 +573,11 @@ namespace NexusForever.Game.Spell
 
         private bool MeetsApplyPrerequisites(SpellEffectInterpretation effect, IWorldEntity target)
         {
-            return MeetsApplyPrerequisite(GetPrerequisite(effect.Entry.PrerequisiteIdCasterApply), Caster, prerequisiteManager, target as IUnitEntity)
+            // A row that lives as long as its spell had its caster-apply prerequisite tested once, when the row started (see ScheduleEffect).
+            bool casterApplyMet = startedSpellLifetimeRows.Contains(effect.Entry.Id)
+                || MeetsApplyPrerequisite(GetPrerequisite(effect.Entry.PrerequisiteIdCasterApply), Caster, prerequisiteManager, target as IUnitEntity);
+
+            return casterApplyMet
                 && MeetsApplyPrerequisite(GetPrerequisite(effect.Entry.PrerequisiteIdTargetApply), target, prerequisiteManager, Caster)
                 && MeetsProxyPrerequisites(effect.Entry, target);
         }
@@ -1864,8 +1869,20 @@ namespace NexusForever.Game.Spell
                 if (firstPulseDelay > pulseDuration)
                     return false;
 
+                bool spellLifetime = effect.Timing.DurationTime == 0u;
+                if (spellLifetime)
+                {
+                    // The caster-apply prerequisite of a row that lives with its spell decides whether the row starts; it is not asked again on each pulse.
+                    // Warrior Power Link (Spell4 53599) only works this way: its ticking rows require "the ON aura is not active", and the same cast applies that aura.
+                    // Inferred from that data; see Decomp/Analysis/SPELL_EFFECT_PROXY_20261110.md, section 1h.
+                    if (!MeetsApplyPrerequisite(GetPrerequisite(effect.Entry.PrerequisiteIdCasterApply), Caster, prerequisiteManager, GetPrimaryTargetEntity()))
+                        return true;
+
+                    startedSpellLifetimeRows.Add(effect.Entry.Id);
+                }
+
                 SpellEffectDiagnostics.TraceEffectSchedule(this, effect, firstPulseDelay, effect.Timing.TickTime, pulseDuration, true);
-                ScheduleEffectPulse(effect, firstPulseDelay, firstPulseDelay, effect.Timing.TickTime, pulseDuration, effect.Timing.DurationTime == 0u);
+                ScheduleEffectPulse(effect, firstPulseDelay, firstPulseDelay, effect.Timing.TickTime, pulseDuration, spellLifetime);
                 return true;
             }
 
@@ -1902,10 +1919,16 @@ namespace NexusForever.Game.Spell
         /// both numbers: Medic Restrictor (field Spell4 38287, spellDuration 4000, tick 500) "a field that lasts for 4s ... every 0.5s"; Warrior Polarity Field (38975, 10000, 1000)
         /// "lasting 10s ... every 1s", where the ticking rows are Damage, VitalModifier and Proxy; Medic Nullifier (58868, 6000, 1000) "lasting 6s ... every 1s".
         /// The client classifies these spells itself: 559 of the 564 such rows belong to spells with cast method 10 (Aura), and every Aura spell has a duration, finite or 0xFFFFFFFF.
-        /// A permanent Aura (0xFFFFFFFF) pulses until the spell ends, returned here as <see cref="uint.MaxValue"/>, but only for rows that leave no state behind
-        /// (<see cref="IsStatelessPulseEffect"/>), because each pulse's bookkeeping is discarded. Spells without a duration (passives, toggles) are not Aura spells and their tick-only
-        /// rows still execute once. No retail parity claim.
+        /// A spell without a finite duration (a permanent Aura, or a passive or toggle with no duration at all) pulses until the spell ends, returned here as
+        /// <see cref="uint.MaxValue"/>, but only for rows that leave no state behind (<see cref="IsStatelessPulseEffect"/>), because each pulse's bookkeeping is discarded.
+        /// Tooltip witnesses for the durationless case: rune special Untouchable (Spell4 81880, tick 1000) "Every 1s while in combat, gain an Empower"; Warrior Power Link
+        /// (53599, tick 250) "Toggle: While active ... Drains 56 Kinetic Energy every 0.25s". No retail parity claim.
         /// </remarks>
+        /// <summary>
+        /// Spell4Effects.flags bit set on every row that ticks without a duration of its own (1,805 of 1,805) and on no row that has a duration.
+        /// </summary>
+        private const uint SpellLifetimeEffectFlag = 0x2u;
+
         private uint GetEffectPulseDuration(SpellEffectInterpretation effect)
         {
             if (effect.Timing.DurationTime > 0u)
@@ -1915,14 +1938,14 @@ namespace NexusForever.Game.Spell
                 return 0u;
 
             uint spellDuration = Parameters.SpellInfo.Entry.SpellDuration;
-            if (spellDuration == uint.MaxValue)
-            {
-                return Parameters.SpellInfo.BaseInfo?.CastMethod == SpellCastMethod.Aura && IsStatelessPulseEffect(effect.Entry.EffectType)
-                    ? uint.MaxValue
-                    : 0u;
-            }
+            if (spellDuration != 0u && spellDuration != uint.MaxValue)
+                return spellDuration;
 
-            return spellDuration;
+            // No finite lifetime: a permanent Aura (0xFFFFFFFF), or a passive or toggle without a duration. Both carry effect flag 0x2 on the row and live until the spell is
+            // removed (SpellForceRemove, the caster dying, the same spell cast again). Only rows that leave no state behind are pulsed.
+            return (effect.Entry.Flags & SpellLifetimeEffectFlag) != 0u && IsStatelessPulseEffect(effect.Entry.EffectType)
+                ? uint.MaxValue
+                : 0u;
         }
 
         /// <summary>
@@ -1947,6 +1970,27 @@ namespace NexusForever.Game.Spell
 
             foreach (ISpellTargetInfo target in targets)
                 target.Effects.RemoveAll(info => info.Entry.Id == effect.Entry.Id && !lifetimeEvents.ContainsKey(info));
+        }
+
+        /// <summary>
+        /// Whether this spell is being kept alive by rows that pulse for its lifetime.
+        /// </summary>
+        internal bool HasSpellLifetimeRows => startedSpellLifetimeRows.Count != 0 && status == SpellStatus.Executing;
+
+        /// <summary>
+        /// End a spell that is being kept alive by rows that pulse for its lifetime, as SpellForceRemove does to a toggle or a revoked passive.
+        /// </summary>
+        internal bool EndSpellLifetime()
+        {
+            if (!HasSpellLifetimeRows)
+                return false;
+
+            startedSpellLifetimeRows.Clear();
+            events.CancelEvents();
+            status = SpellStatus.Finished;
+            log.Trace($"Spell {Parameters.SpellInfo.Entry.Id} lifetime was ended.");
+            Finish();
+            return true;
         }
 
         /// <summary>
