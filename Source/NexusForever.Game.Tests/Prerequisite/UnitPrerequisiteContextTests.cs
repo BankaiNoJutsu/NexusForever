@@ -302,6 +302,50 @@ public sealed class UnitPrerequisiteContextTests
         Assert.False(Invoke<bool>(spell, "MeetsPersistencePrerequisites", effect, target));
     }
 
+    [Fact]
+    public void ProxyWordSixIsTestedOnTheCasterAndWordSevenOnTheTarget()
+    {
+        using var fixture = new Fixture(Row(1, PrerequisiteType.Level, 10), Row(2, PrerequisiteType.Level, 20));
+        var caster = Unit(1, 10, out _);
+        var target = Unit(2, 20, out _);
+        var spell = fixture.Spell(caster, target, out _);
+
+        var both = SpellEffectInterpreter.Interpret(new Spell4EffectsEntry { Id = 1, EffectType = SpellEffectType.Proxy, DataBits06 = 1, DataBits07 = 2 });
+        Assert.True(Invoke<bool>(spell, "MeetsApplyPrerequisites", both, target));
+        Assert.False(Invoke<bool>(spell, "MeetsApplyPrerequisites", both, caster));
+
+        var casterFails = SpellEffectInterpreter.Interpret(new Spell4EffectsEntry { Id = 2, EffectType = SpellEffectType.Proxy, DataBits06 = 2 });
+        Assert.False(Invoke<bool>(spell, "MeetsApplyPrerequisites", casterFails, target));
+
+        // The words belong to Proxy only; other effect types use them for their own data.
+        var otherType = SpellEffectInterpreter.Interpret(new Spell4EffectsEntry { Id = 3, EffectType = SpellEffectType.Damage, DataBits06 = 2, DataBits07 = 1 });
+        Assert.True(Invoke<bool>(spell, "MeetsApplyPrerequisites", otherType, target));
+    }
+
+    // Retail: Medic Restrictor field (Spell4 38287, spellDuration 4000) row 131274 is a Proxy with tick 500 ms, no duration, DataBits01 = 77118; the tooltip reads
+    // "a field that lasts for 4s. Apply a Snare to foes inside the field every 0.5s". Warrior Polarity Field (38975, 10000) has a tick-only Damage row with tick 1000.
+    [Theory]
+    [InlineData(4000u, 500u, 0u, 4000u)]          // tick-only row in a spell with a finite duration: pulses for the spell
+    [InlineData(4000u, 500u, 6000u, 6000u)]       // the row's own duration wins
+    [InlineData(0u, 500u, 0u, 0u)]                // no spell duration: nothing to pulse
+    [InlineData(uint.MaxValue, 500u, 0u, 0u)]     // permanent spell: not modelled
+    [InlineData(4000u, 0u, 0u, 0u)]               // no tick
+    public void TickOnlyRowsPulseForTheFiniteDurationOfTheirSpell(uint spellDuration, uint tick, uint rowDuration, uint expected)
+    {
+        using var fixture = new Fixture();
+        var caster = Unit(1, 10, out _);
+        var spell = fixture.Spell(caster, null, out var info);
+        info.SetProperty(nameof(ISpellInfo.Entry), new Spell4Entry { Id = 38287, SpellDuration = spellDuration });
+
+        var damage = SpellEffectInterpreter.Interpret(new Spell4EffectsEntry { Id = 1, EffectType = SpellEffectType.Damage, TickTime = tick, DurationTime = rowDuration });
+        Assert.Equal(expected, Invoke<uint>(spell, "GetEffectPulseDuration", damage));
+
+        var proxy = SpellEffectInterpreter.Interpret(new Spell4EffectsEntry { Id = 131274, EffectType = SpellEffectType.Proxy, TickTime = tick, DurationTime = rowDuration, DataBits01 = 77118 });
+        Assert.Equal(tick != 0u ? 77118u : 0u, proxy.Proxy.Spell4Id);
+        // A periodic proxy with nothing to pulse it stays inert rather than firing once at cast time.
+        Assert.Equal(tick != 0u && expected == 0u, Invoke<bool>(spell, "IsUnpulsedPeriodicProxy", proxy));
+    }
+
     private static PrerequisiteEntry Row(uint id, PrerequisiteType type, uint value, uint objectId = 0)
         => new() { Id = id, Flags = EvaluationMode.EvaluateAND, PrerequisiteTypeId = [type],
             PrerequisiteComparisonId = [PrerequisiteComparison.Equal], Value = [value], ObjectId = [objectId] };

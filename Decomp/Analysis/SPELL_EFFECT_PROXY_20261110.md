@@ -33,7 +33,7 @@ Rejected reading: a stack limit on the child spell. Spell `30900` is an instant 
 * **Word 04 = 0** (about 115 rows) is treated as unlimited; nothing shows what it means.
 * **DataBits03** (float, 1.0 on 15,873 rows, 100.0 on 604, fractions on others) and **DataBits05** (60 on 10,099 rows, 1 on 2,444, 120, 30, 900, 1000) are still unread. A trigger chance and an internal
   cooldown or range are candidates; the two scales in word 03 are unexplained.
-* Upstream `spells-v2` names word 06 `PrerequisiteId` (470 rows set); the server does not read it.
+* Words 06 and 07 are prerequisites, see 1e (implemented later the same day).
 
 ## 1b. A ticking Proxy keeps its spell in DataBits01 (added later the same day)
 
@@ -72,9 +72,23 @@ The 804 Proxy rows with a tick and no duration of their own split by the owning 
   Honeygrave - Raid Damage AOE Tick"). Tooltip witness for the tick: Warrior Power Link (`53599`, tick 250 ms, word 01 = `79788`) "Drains 56 Kinetic Energy every 0.25s".
 
 Reading: a tick-only Proxy casts its periodic spell (word 01) every tick for as long as the owning spell is alive; the lifetime is the spell's (`spellDuration`, a toggle being switched off, a
-passive being removed), not the row's. Evidence tier: table split plus the two tooltip tick matches. Not implemented: the server has no spell lifetime outside its pending-event queue
-(`Spell4.spellDuration` is read only by two rule helpers), so pulsing these rows needs a lifetime model for passives, toggles and auras first. One finite row has an execution limit that is not
+passive being removed), not the row's. Evidence tier: table split plus the tooltip matches. **Partly implemented later the same day** (finite spell duration only, below). The permanent, duration-less and channelled groups
+(664 rows) are still not pulsed: the server has no spell lifetime outside its pending-event queue, and learned passives are applied as properties without a spell instance, so those rows
+need a lifetime model for passives, toggles and auras first. Their Proxy rows stay inert (`Spell.IsUnpulsedPeriodicProxy`). One finite row has an execution limit that is not
 `spellDuration / tick` (Eldan Security Beam `39498`: tick 500 ms, spell duration 60 s, limit 60), so the limit is not derived from the lifetime.
+
+**Finite spell duration: implemented, inferred.** Three tooltips state both the lifetime and the tick, and both match `Spell4.spellDuration` and the row's `tickTime`:
+
+| Field spell | spellDuration | Tick-only rows | Parent tooltip |
+|---|---:|---|---|
+| Medic Restrictor field `38287` | 4000 | Proxy `131274`, tick 500, word 01 = `77118` | "leave behind a field that lasts for 4s. Apply a Snare to foes inside the field every 0.5s" |
+| Warrior Polarity Field aura `38975` | 10000 | Damage `84528`, Proxy `158181`, VitalModifier `167502`, all tick 1000, delay 1000 | "Create a 8m field, lasting 10s ... deals ... damage to all foes inside the field every 1s" |
+| Medic Nullifier field `58868` | 6000 | Proxy `141450`, tick 1000, word 01 = `77099` | "Create a field, lasting 6s, and apply an Affliction to foes inside the field every 1s" |
+
+The Polarity Field rows show the rule is not specific to Proxy: 359 Damage rows and 30 rows of other types are tick-only inside a spell with a finite duration. `Spell.GetEffectPulseDuration`
+now pulses any tick-only row every `tickTime` until `spellDuration` (first pulse at the delay, or at one tick, as for rows with their own duration). The interpreter reads word 01 on every
+ticking Proxy row. A server-side guard that is not from any source stops these pulses when the caster is dead, because a few creature auras carry durations of hours (`9999999`, `99999999`).
+Previously such rows executed once at cast time, or for Proxy rows cast nothing. No retail parity claim.
 
 **DataBits05 was checked against the "can only be triggered by the same foe every N s" tooltips and is not that interval**: the five passives above state 15, 10, 10, 10 and 15 s and all carry 120.
 Their word 07 holds a different id on each (24549, 24655, 24658, 37496, 38384), which was not followed. Word 05 clusters by authoring family rather than by any tooltip number: 60 on 10,099 rows,
@@ -98,6 +112,24 @@ Competing readings, neither confirmed:
 
 No tooltip for the rune set is in Jabbithole (`87345`, `87346` and `87375` have no record) and the video subtitle index has no statement of the set bonus. The experiment that separates the two is
 a retail recording of an Esper with that set casting Mental Boon at 1 and at 5 Psi Points and counting the stacks of the 5 s modifier. Left unread.
+
+## 1e. DataBits06 and DataBits07 are prerequisites: caster and target (added later the same day; implemented, inferred)
+
+Evidence tier: raw tables only. No native consumer, no tooltip states the rule. No retail parity claim.
+
+* **Both words resolve.** Word 06 is set on 470 Proxy rows and word 07 on 257; every value is the id of a `Prerequisite` row (470 of 470, 257 of 257). 220 of the word 07 values are also
+  valid Spell4 ids, which is id overlap: the same values read as prerequisites give conditions that fit the row (below).
+* **Word 06 describes the caster.** On rows that target foes or an area (target flags 2, 4, 6) it carries ability-book conditions that only the caster can meet: type 59 (spell tier) and 233
+  (tier unlocked) on 25 rows. Examples: Stormtalon Lightning Storm (`63116`, area) has five proxies gated on the tier of the boss spell `39613` being 1 to 5; "Rune Set - Medic - Healer -
+  Resource Probes" (`82553`, area) gates each proxy on a probe ability tier being unlocked; "Warrior - Add Cell - Relentless Strikes - T4+" gates on the spell tier.
+* **Word 07 describes the target.** On target and area rows it carries type 38 (creature id) and type 3 (class) on 20 rows, for example "NPC - Battle Prowess" (`43558`, target flag 2), whose
+  five proxies each require a different creature id. On area auras it is "does not already have the child spell": Medic Danger Zone (`58912`, area, periodic spell `60920`
+  "Danger Zone - Cooldown", a 15 s marker on the target) carries prerequisite `24549` = type 50 NotEqual `60920`, and the tooltip says the passive "can only be triggered by the same foe
+  every 15s". That also settles what the word 07 ids noted in 1c were.
+* Mirrors the row's own `prerequisiteIdCasterApply` and `prerequisiteIdTargetApply`, which no Proxy row with these words uses for the same purpose.
+
+Implemented in `Spell.MeetsProxyPrerequisites` (plain Proxy, type 26, only): word 06 is evaluated on the caster with the target as second unit, word 07 on the target with the caster as
+second unit, before the handler runs. Assumed, not evidenced: a proxy that fails these does not use up an execution of word 04. Not examined: the other proxy effect types.
 
 ## 2. The parent's caster casts the child
 

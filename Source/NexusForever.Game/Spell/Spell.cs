@@ -573,7 +573,27 @@ namespace NexusForever.Game.Spell
         private bool MeetsApplyPrerequisites(SpellEffectInterpretation effect, IWorldEntity target)
         {
             return MeetsApplyPrerequisite(GetPrerequisite(effect.Entry.PrerequisiteIdCasterApply), Caster, prerequisiteManager, target as IUnitEntity)
-                && MeetsApplyPrerequisite(GetPrerequisite(effect.Entry.PrerequisiteIdTargetApply), target, prerequisiteManager, Caster);
+                && MeetsApplyPrerequisite(GetPrerequisite(effect.Entry.PrerequisiteIdTargetApply), target, prerequisiteManager, Caster)
+                && MeetsProxyPrerequisites(effect.Entry, target);
+        }
+
+        /// <summary>
+        /// Evaluate the two prerequisite words of a plain Proxy effect row: DataBits06 on the caster and DataBits07 on the proxy target.
+        /// </summary>
+        /// <remarks>
+        /// Implemented, inferred from the table (Decomp/Analysis/SPELL_EFFECT_PROXY_20261110.md, section 1e); the client does not execute effects. Every populated word resolves to a
+        /// Prerequisite row (470 of 470 and 257 of 257). Word 06 carries ability-book conditions on rows that target foes (spell tier, tier unlocked), which only the caster can meet;
+        /// word 07 carries creature-id and class conditions and "does not already have the child spell" on area rows, which describe the target. Each is evaluated like the row's own
+        /// caster-apply and target-apply prerequisites, with the other unit as the second unit. Because this runs before the handler, a failing proxy does not use up an execution
+        /// (DataBits04); that order is assumed. No retail parity claim.
+        /// </remarks>
+        private bool MeetsProxyPrerequisites(Spell4EffectsEntry entry, IWorldEntity target)
+        {
+            if (entry.EffectType != SpellEffectType.Proxy || (entry.DataBits06 == 0u && entry.DataBits07 == 0u))
+                return true;
+
+            return MeetsApplyPrerequisite(GetPrerequisite(entry.DataBits06), Caster, prerequisiteManager, target as IUnitEntity)
+                && MeetsApplyPrerequisite(GetPrerequisite(entry.DataBits07), target, prerequisiteManager, Caster);
         }
 
         private PrerequisiteEntry GetPrerequisite(uint prerequisiteId)
@@ -1699,6 +1719,9 @@ namespace NexusForever.Game.Spell
                     continue;
                 }
 
+                if (IsUnpulsedPeriodicProxy(effect))
+                    continue;
+
                 if (ScheduleEffect(effect))
                 {
                     scheduledEffects = true;
@@ -1830,18 +1853,19 @@ namespace NexusForever.Game.Spell
 
         private bool ScheduleEffect(SpellEffectInterpretation effect)
         {
-            // Tick-only and duration-only rows need more evidence before they are safe to move off the immediate path.
-            if (effect.Timing.TickTime > 0u && effect.Timing.DurationTime > 0u)
+            // Duration-only rows need more evidence before they are safe to move off the immediate path.
+            uint pulseDuration = GetEffectPulseDuration(effect);
+            if (effect.Timing.TickTime > 0u && pulseDuration > 0u)
             {
                 uint firstPulseDelay = effect.Timing.DelayTime > 0u
                     ? effect.Timing.DelayTime
                     : effect.Timing.TickTime;
 
-                if (firstPulseDelay > effect.Timing.DurationTime)
+                if (firstPulseDelay > pulseDuration)
                     return false;
 
-                SpellEffectDiagnostics.TraceEffectSchedule(this, effect, firstPulseDelay, effect.Timing.TickTime, effect.Timing.DurationTime, true);
-                ScheduleEffectPulse(effect, firstPulseDelay, firstPulseDelay, effect.Timing.TickTime, effect.Timing.DurationTime);
+                SpellEffectDiagnostics.TraceEffectSchedule(this, effect, firstPulseDelay, effect.Timing.TickTime, pulseDuration, true);
+                ScheduleEffectPulse(effect, firstPulseDelay, firstPulseDelay, effect.Timing.TickTime, pulseDuration, effect.Timing.DurationTime == 0u);
                 return true;
             }
 
@@ -1855,10 +1879,51 @@ namespace NexusForever.Game.Spell
             return false;
         }
 
-        private void ScheduleEffectPulse(SpellEffectInterpretation effect, uint delayTime, uint elapsedTime, uint tickTime, uint durationTime)
+        /// <summary>
+        /// Return how long a ticking effect row pulses: its own duration, or for a tick-only row the finite duration of the owning spell.
+        /// </summary>
+        /// <remarks>
+        /// Implemented, inferred (Decomp/Analysis/SPELL_EFFECT_PROXY_20261110.md, section 1c). A row with a tick and no duration of its own lives as long as its spell. Three tooltips state
+        /// both numbers: Medic Restrictor (field Spell4 38287, spellDuration 4000, tick 500) "a field that lasts for 4s ... every 0.5s"; Warrior Polarity Field (38975, 10000, 1000)
+        /// "lasting 10s ... every 1s", where the ticking rows are Damage, VitalModifier and Proxy; Medic Nullifier (58868, 6000, 1000) "lasting 6s ... every 1s".
+        /// Only a finite Spell4.spellDuration is modelled. Permanent spells (0xFFFFFFFF) and spells without a duration (passives, toggles, auras) need a spell lifetime the server does not
+        /// have, so their tick-only rows still execute once. No retail parity claim.
+        /// </remarks>
+        /// <summary>
+        /// A Proxy row that keeps a periodic spell (DataBits01, with DataBits00 empty) but has nothing to pulse it: no duration of its own and no finite spell duration.
+        /// </summary>
+        /// <remarks>
+        /// These rows belong to permanent passives, toggles and auras. Casting the periodic spell once at cast time would be neither the retail behaviour nor the previous server
+        /// behaviour (the row cast nothing), so they stay inert until spells have a lifetime.
+        /// </remarks>
+        private bool IsUnpulsedPeriodicProxy(SpellEffectInterpretation effect)
+        {
+            return effect.Entry.EffectType == SpellEffectType.Proxy
+                && effect.Entry.DataBits00 == 0u
+                && effect.Timing.TickTime > 0u
+                && GetEffectPulseDuration(effect) == 0u;
+        }
+
+        private uint GetEffectPulseDuration(SpellEffectInterpretation effect)
+        {
+            if (effect.Timing.DurationTime > 0u)
+                return effect.Timing.DurationTime;
+
+            uint spellDuration = Parameters.SpellInfo.Entry.SpellDuration;
+            if (effect.Timing.TickTime > 0u && spellDuration != 0u && spellDuration != uint.MaxValue)
+                return spellDuration;
+
+            return 0u;
+        }
+
+        private void ScheduleEffectPulse(SpellEffectInterpretation effect, uint delayTime, uint elapsedTime, uint tickTime, uint durationTime, bool spellLifetime = false)
         {
             events.EnqueueEvent(new SpellEvent(delayTime / 1000d, () =>
             {
+                // Server-side guard, not read from any source: a row that lives as long as its spell stops with its caster. Some creature auras carry durations of hours.
+                if (spellLifetime && Caster is { IsAlive: false })
+                    return;
+
                 if (ExecuteEffect(effect))
                     SendSpellGo();
 
@@ -1867,7 +1932,7 @@ namespace NexusForever.Game.Spell
 
                 uint nextElapsedTime = elapsedTime + tickTime;
                 if (nextElapsedTime <= durationTime)
-                    ScheduleEffectPulse(effect, tickTime, nextElapsedTime, tickTime, durationTime);
+                    ScheduleEffectPulse(effect, tickTime, nextElapsedTime, tickTime, durationTime, spellLifetime);
             }));
         }
 
