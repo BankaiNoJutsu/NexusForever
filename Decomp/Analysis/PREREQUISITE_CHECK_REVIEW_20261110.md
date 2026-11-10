@@ -46,7 +46,7 @@ player"). `0x14` and `0x17` are Player and Ghost, so the gate requires the **pri
 | Type | Check | Finding | Why not changed |
 |---:|---|---|---|
 | 245 | Unknown245 | handler `1404a1790`: Player/Ghost gate, `TradeSkill_CheckItemTradeskillRequirement(ObjectId)` flag / negation; server compares a tier rank with Value behind the NPC-target gate; 249 slots, all NotEqual with Value 0 | what the requirement function tests was not read; the server has no equivalent flag |
-| 73 | Vital | native switch `140466520` handles vital ids the server rejects (2, 0x15, 0x16 to 0x18, 0x1b to 0x1d) and still compares 0 for unknown ids; server returns false | reported by a review pass, not yet re-read |
+| 73 | Vital | re-read: native switch `140466520` reads Breath (id 2, virtual `+0x58`), Absorption (`0x15`, virtual `+0x88`), three public-event resources (`0x16` to `0x18`) and Resource8 to 10 (`0x1b` to `0x1d`), and for any other id returns the class resource slot of the local player or 0, then always compares. The server returns false without comparing for ids it cannot resolve. Retail slots hit: id 0 (1 slot, `>= 80`), id 2 (1 slot, `<= 0`), id 21 (1 slot, `> 0`) | the server has no Breath value and no class-resource index; comparing 0 instead would turn "always false" into "always true" for the id 2 slot, which is no better |
 | 292 | PrimalMatrixNode | native: local player only, `PrimalMatrix_LookupAllocatedNode(1, ObjectId)` compared with Value; server always false; 24 slots | needs the server primal-matrix allocation surface; not yet done |
 | 148 | InfrastructureState | lookup miss: native answers NotEqual only; server substitutes state 0 | server API cannot distinguish a miss from state 0 |
 | 93 / 103 / 104 | | wrong slot word (ObjectId), see the audit note section 4.3 | compared field or set not identified |
@@ -64,10 +64,15 @@ For these types the evaluator calls the shared stub `140001ba0`, so the client c
 server-side or retail witness: 27, 29, 46, 76, 96, 97, 98, 99, 100, 101, 166, 167, 168, 169, 180. For several of them the evaluator does not even pass the words the server reads (for example type 46 reads
 ObjectId while only Value is passed; types 97 to 101 read ObjectId and Value while only the two units are passed).
 
-### Systemic: which unit `Meets` tests
-Many check classes evaluate `parameters.Target ?? player` in `Meets`, while the native case always tests the primary unit (`param_2[0]`) and reaches the second unit only where a handler is passed it. Reported
-for types 87, 129, 196, 80, 93, 78, 172, 291 and 295, and likely wider. Whether this is a defect depends on how callers map their context onto `player` and `parameters.Target` (if a caller evaluating a
-target prerequisite passes the tested unit as Target, the results coincide). This was not changed: it needs one decision for the whole manager, traced from the call sites, not a per-check patch.
+### Which unit `Meets` tests: traced, not a spell defect
+Twenty-one check classes evaluate `parameters.Target ?? player` in `Meets`, while the native case tests the primary unit (`param_2[0]`). Traced from the call sites:
+
+* The spell code (`Spell.CheckPrerequisites`, runner override, effect apply and persistence checks) always calls `PrerequisiteManager.MeetsUnit(subject, id, parameters)` with the tested unit as the subject and
+  the other unit as `parameters.Target`, which is the native (primary, second) arrangement.
+* All 21 of those classes override `MeetsUnit` and test the subject there, so on the spell path they test the primary unit.
+* `Meets(player, ..., parameters)` with a Target set is reached from one place only: `ClientActivateUnitCastHandler.MeetsActivateSpellPrerequisite`, where the Target is the activated entity. There the 21 classes
+  test the activated entity instead of the player. Which unit the client treats as primary for activation-spell prerequisites was not read, so that path is unchanged.
+* A check class with no `MeetsUnit` override answers false for any non-player subject (the interface default). That fail-closed gap is a coverage limit, not a wrong answer for players.
 
 ## 4. Types reviewed and found consistent
 1, 7, 8, 9, 10, 11, 16, 22, 26, 28, 35, 39, 51, 56, 68, 71, 86, 95, 117, 118, 136, 177, 204, 214, 215, 244, 250, 270, 286, 287. Some of these carry a "not visible in the decompile" caveat in the pass
