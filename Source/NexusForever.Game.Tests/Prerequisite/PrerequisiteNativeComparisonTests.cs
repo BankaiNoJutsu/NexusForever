@@ -6,6 +6,7 @@ using NexusForever.Game.Prerequisite.Check;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Prerequisite;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.Game.Static.Spell;
 using Path = NexusForever.Game.Static.PlayerPath.Path;
 
 namespace NexusForever.Game.Tests.Prerequisite;
@@ -14,8 +15,34 @@ namespace NexusForever.Game.Tests.Prerequisite;
 //  - type 11 OtherPrerequisite (evaluator case 0xb): comparison 2 returns the NOT of the nested prerequisite, every other comparison returns the nested result. Retail uses comparison 1 (3,559
 //    slots), 2 (322) and 0 (22).
 //  - type 52 Path (evaluator case 0x34, FUN_14049fd50): the player's path equals Value; comparison 1 returns that, 2 its negation, any other comparison false. Retail: Equal 538, NotEqual 14.
+//  - type 105 SpellEffectTypeOnUnit (evaluator case 0x69, inline; Decomp/Analysis/PREREQUISITE_105_SPELL_EFFECT_TYPE_20261110.md): the id compared with each active node is the slot's
+//    ObjectId, not its Value; comparison 1 returns the match, 2 its negation, any other comparison false. Retail: 7 slots, ObjectId 0/3/31/83/100/112, Value always 0.
 public class PrerequisiteNativeComparisonTests
 {
+    // Retail row 7405 is (Equal, ObjectId 83 Stealth, Value 0); row 37231 is three NotEqual slots with ObjectId 31, 100 and 112 (the disguise effects) and Value 0.
+    [Theory]
+    [InlineData(PrerequisiteComparison.Equal, SpellEffectType.Stealth, true)]
+    [InlineData(PrerequisiteComparison.Equal, SpellEffectType.Disguise, false)]
+    [InlineData(PrerequisiteComparison.NotEqual, SpellEffectType.Stealth, false)]
+    [InlineData(PrerequisiteComparison.NotEqual, SpellEffectType.Disguise, true)]
+    [InlineData(PrerequisiteComparison.NotEqual, SpellEffectType.MimicDisguise, true)]
+    [InlineData(PrerequisiteComparison.NotEqual, SpellEffectType.DisguiseOutfit, true)]
+    [InlineData(PrerequisiteComparison.GreaterThan, SpellEffectType.Stealth, false)]
+    [InlineData((PrerequisiteComparison)0, SpellEffectType.Stealth, false)]
+    public void SpellEffectTypeOnUnitReadsTheEffectTypeFromObjectId(PrerequisiteComparison comparison, SpellEffectType objectId, bool expected)
+    {
+        // the unit only has an active Stealth effect
+        var asked = new List<SpellEffectType>();
+        bool result = PrerequisiteCheckSpellEffectTypeOnUnit.Evaluate(comparison, (uint)objectId, type =>
+        {
+            asked.Add(type);
+            return type == SpellEffectType.Stealth;
+        });
+
+        Assert.Equal(expected, result);
+        Assert.Equal([objectId], asked);
+    }
+
     [Theory]
     [InlineData(PrerequisiteComparison.Equal, true, true)]
     [InlineData(PrerequisiteComparison.Equal, false, false)]

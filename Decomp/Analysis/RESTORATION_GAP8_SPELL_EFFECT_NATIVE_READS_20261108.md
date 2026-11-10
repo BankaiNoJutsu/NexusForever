@@ -192,3 +192,10 @@ Not re-derived: every address and decompiled line above except the two below. Th
 (dispatches `&PTR_u_Race_140a6c938`, falls back to `ClientDB_RegisterRace`: a Race row getter). Both label corrections were applied to `function_labels.csv` in place (`SystemMessage_BuildTypedParams`, `ClientDB_GetRace`); the
 Ghidra project and `function_evidence_inventory.csv` were not updated and will pick the new names up at the next label application. Earlier notes that call `14022d500` a Creature2 getter for prerequisite 172 are unverified.
 Conclusion stands: the client has no consumer for effect types 0x18, 0x3C and 0x6D, so none gets a handler from this evidence. The 14049fd50 suspicion (prerequisite 105 reads a path global) is unchecked.
+
+## Label application (2026-11-10)
+Rows 1 to 7 of section 5 were re-decompiled on a freshly analysed project (`run_ghidra_analysis.ps1`, Ghidra 12.0.4, binary `sha256:231bb2bb...96b3e5`) and added to `function_labels.csv`; each row's comment states
+what was re-derived and what was carried over from this note. An export-only pass applied them (`applied=5540, missing=0`) and `function_evidence_inventory.csv` was backfilled (7 rows).
+`14049fd50` was re-read and resolved: it is the type 52 Path handler (evaluator case `0x34`, vtable `+0x478`), so the suspicion above is confirmed and the row is renamed `Prerequisite_CheckPath_LiveCase34`.
+Type 105 is inline in the evaluator and compares against ObjectId; details, the server fix and the wider `_TableN` label problem are in `PREREQUISITE_105_SPELL_EFFECT_TYPE_20261110.md`.
+The section 4 verdicts were not revisited: no new consumer search was run for effect types 0x18, 0x3C or 0x6D.

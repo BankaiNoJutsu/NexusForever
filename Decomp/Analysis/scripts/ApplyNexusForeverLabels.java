@@ -21,6 +21,7 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.CodeUnit;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionManager;
+import ghidra.program.model.mem.MemoryBlock;
 import ghidra.program.model.symbol.Symbol;
 import ghidra.program.model.symbol.SymbolTable;
 import ghidra.program.model.symbol.SourceType;
@@ -53,6 +54,8 @@ public class ApplyNexusForeverLabels extends GhidraScript {
 		int localLabels = 0;
 		int skipped = 0;
 		int missing = 0;
+		int disassembled = 0;
+		int dataLabels = 0;
 		int duplicates = 0;
 		Map<String, String> labelsByAddress = new HashMap<>();
 
@@ -97,12 +100,49 @@ public class ApplyNexusForeverLabels extends GhidraScript {
 				if (function == null) {
 					function = functionManager.getFunctionContaining(address);
 				}
-				if (function == null && currentProgram.getListing().getInstructionAt(address) != null) {
+				MemoryBlock block = currentProgram.getMemory().getBlock(address);
+
+				// A freshly analysed project does not disassemble code that is only reached through vtables,
+				// callback tables or unrecovered jump tables. Disassemble at the labelled address so the label
+				// set stays reproducible when ghidra_projects is deleted and rebuilt.
+				if (function == null && block != null && block.isExecute() &&
+					currentProgram.getListing().getInstructionAt(address) == null &&
+					currentProgram.getListing().getDefinedDataAt(address) == null &&
+					currentProgram.getListing().getCodeUnitContaining(address) != null &&
+					currentProgram.getListing().getCodeUnitContaining(address).getMinAddress().equals(address)) {
+					if (disassemble(address) && currentProgram.getListing().getInstructionAt(address) != null) {
+						disassembled++;
+						function = functionManager.getFunctionContaining(address);
+					}
+				}
+
+				boolean hasInstruction = currentProgram.getListing().getInstructionAt(address) != null;
+
+				// Function entries in these binaries are 16-byte aligned. An unaligned labelled address with no
+				// containing function is a mid-function target (for example a switch case), so it only gets a label.
+				if (function == null && hasInstruction && (address.getOffset() & 0xf) == 0) {
 					function = createFunction(address, name);
 					if (function != null) {
 						created++;
 						isFunctionEntry = true;
 					}
+				}
+
+				// Data rows (tables, dispatch slots) and mid-function targets outside any function body:
+				// keep the name as a plain label instead of reporting the row as missing.
+				if (function == null && block != null && (hasInstruction || !block.isExecute())) {
+					Symbol existingSymbol = symbolTable.getPrimarySymbol(address);
+					if (existingSymbol == null || !existingSymbol.getName().equals(name)) {
+						symbolTable.createLabel(address, name, SourceType.USER_DEFINED).setPrimary();
+					}
+					if (hasInstruction) {
+						localLabels++;
+					}
+					else {
+						dataLabels++;
+					}
+					applied++;
+					continue;
 				}
 
 				if (function == null) {
@@ -153,7 +193,7 @@ public class ApplyNexusForeverLabels extends GhidraScript {
 		}
 
 		println("Applied NexusForever labels for " + programName + ": applied=" + applied +
-			", created=" + created + ", localLabels=" + localLabels + ", skipped=" + skipped + ", missing=" + missing +
+			", created=" + created + ", localLabels=" + localLabels + ", disassembled=" + disassembled + ", dataLabels=" + dataLabels + ", skipped=" + skipped + ", missing=" + missing +
 			", duplicateRows=" + duplicates);
 	}
 

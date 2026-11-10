@@ -4,22 +4,22 @@
 
 | Target | Functions | Named % | Cache % | Remaining | Selected | Focused % |
 | --- | --- | --- | --- | --- | --- | --- |
-| `Houston64.exe` | 25129 | 31.39% | 100% | 0 | 1631 | 0.2% |
-| `StsConnLib64.MT.dll` | 4522 | 8.31% | 100% | 0 | 864 | 19.11% |
-| `WildStar64.exe` | 25069 | 8.25% | 100% | 0 | 3760 | 1.99% |
+| `Houston64.exe` | 25129 | 31.39% | 7.28% | 23300 | 1640 | 6.53% |
+| `StsConnLib64.MT.dll` | 4522 | 8.51% | 25.21% | 3382 | 878 | 19.42% |
+| `WildStar64.exe` | 25055 | 22.84% | 11.49% | 22176 | 6232 | 9.58% |
 
 ## Full Function Backlog
 
 | Scope | Functions | Named | Selected | Unselected | Selected % |
 | --- | --- | --- | --- | --- | --- |
-| Default targets | 54720 | 10332 | 6255 | 48465 | 11.43% |
+| Default targets | 54706 | 13997 | 8750 | 45956 | 15.99% |
 
 ## Opcode Coverage
 
 | Direction | Total | Implemented | Partial | Missing |
 | --- | --- | --- | --- | --- |
-| Client | 356 | 355 | 1 | 0 |
-| Server | 713 | 712 | 1 | 0 |
+| Client | 360 | 354 | 6 | 0 |
+| Server | 716 | 715 | 1 | 0 |
 | Core | 3 | 3 | 0 | 0 |
 
 ## Queue: Client Opcodes Missing Models
@@ -30,7 +30,12 @@ None.
 
 | Opcode | Hex | Model | Comment |
 | --- | --- | --- | --- |
+| `ClientPrimalMatrixSave` | 0x0072 | `ClientPrimalMatrixSave` | native SavePrimalMatrix confirmation: count32, node IDs uint32[], positive allocation increments uint8[] |
+| `ClientHousingPlaceDecor` | 0x04E6 | `ClientHousingPlaceDecor` |  |
+| `ClientAccountCREDDRedeem` | 0x0770 | `ClientAccountCREDDRedeem` | account-item senders 140006f80 and 1404e5410; registration 140077d30 uses the empty writer 140001ba0 |
+| `ClientPremiumLockboxKeyRequest` | 0x079E | `ClientPremiumLockboxKeyRequest` |  |
 | `ClientRewardTrackClaimRewardPoint` | 0x07CE | `ClientRewardTrackClaimRewardPoint` |  |
+| `ClientRewardTrackChooseTrack` | 0x07CF | `ClientRewardTrackChooseTrack` |  |
 
 ## Queue: Server Opcodes Missing Models
 
