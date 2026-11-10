@@ -206,6 +206,9 @@ namespace NexusForever.Game.Spell
                 case DamageShape.Cone:
                 case DamageShape.LongCone:
                     return TelegraphDamage.Param01;
+                case DamageShape.Pie:
+                    // must cover the radius InsideTelegraph accepts for this shape (Param01), a radius of 0 only searched the grid cell of the telegraph origin
+                    return TelegraphDamage.Param01;
                 case DamageShape.Square:
                     // never smaller than before (Param01), but large enough to reach the far corner of the box
                     return MathF.Max(TelegraphDamage.Param01,

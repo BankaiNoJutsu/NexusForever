@@ -657,6 +657,27 @@ public class UnitEntityDamageResultTests
             (int)update.Arguments[3] == 1);
     }
 
+    [Fact]
+    public void UpdatePendingSpells_WhenSpellFinishes_RemovesAndDisposesIt()
+    {
+        TestUnitEntity unit = new();
+        ISpell finished = RecordingDispatchProxy<ISpell>.Create(out RecordingDispatchProxy<ISpell> finishedProxy);
+        finishedProxy.SetProperty(nameof(ISpell.IsFinished), true);
+        ISpell active = RecordingDispatchProxy<ISpell>.Create(out RecordingDispatchProxy<ISpell> activeProxy);
+        activeProxy.SetProperty(nameof(ISpell.IsFinished), false);
+        AddPendingSpell(unit, finished);
+        AddPendingSpell(unit, active);
+
+        unit.UpdatePendingSpells(0.1d);
+        unit.UpdatePendingSpells(0.1d);
+
+        // the finished spell is updated once, disposed once and never seen again
+        Assert.Single(finishedProxy.GetInvocations(nameof(ISpell.Update)));
+        Assert.Single(finishedProxy.GetInvocations(nameof(IDisposable.Dispose)));
+        Assert.Equal(2, activeProxy.GetInvocations(nameof(ISpell.Update)).Count);
+        Assert.Empty(activeProxy.GetInvocations(nameof(IDisposable.Dispose)));
+    }
+
     [Theory]
     [InlineData(CCState.Interrupt)]
     [InlineData(CCState.Knockdown)]

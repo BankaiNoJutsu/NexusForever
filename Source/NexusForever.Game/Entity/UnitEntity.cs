@@ -488,12 +488,7 @@ namespace NexusForever.Game.Entity
             HandleDelayDeathTriggers(lastTick);
             HandleProcCooldowns(lastTick);
 
-            foreach (ISpell spell in pendingSpells.ToArray())
-            {
-                spell.Update(lastTick);
-                if (spell.IsFinished)
-                    pendingSpells.Remove(spell);
-            }
+            UpdatePendingSpells(lastTick);
 
             statUpdateTimer.Update(lastTick);
             if (statUpdateTimer.HasElapsed)
@@ -522,6 +517,26 @@ namespace NexusForever.Game.Entity
                     continue;
 
                 state.CooldownRemainingSeconds = Math.Max(0d, state.CooldownRemainingSeconds - lastTick);
+            }
+        }
+
+        /// <summary>
+        /// Update pending <see cref="ISpell"/>'s, any that have finished are removed and disposed.
+        /// </summary>
+        /// <remarks>
+        /// A finished spell must be disposed here, nothing else holds it once it leaves the pending collection
+        /// and its owned script collection would otherwise never be unloaded.
+        /// </remarks>
+        internal void UpdatePendingSpells(double lastTick)
+        {
+            foreach (ISpell spell in pendingSpells.ToArray())
+            {
+                spell.Update(lastTick);
+                if (!spell.IsFinished)
+                    continue;
+
+                pendingSpells.Remove(spell);
+                spell.Dispose();
             }
         }
 

@@ -113,6 +113,22 @@ public class TelegraphCrossAndEllipseTests
         Assert.True(Shape(DamageShape.ThreeAxis, 5f, 3f, 12f).SearchRadius >= 12f);
     }
 
+    // Pie: the hit rule (upstream NexusForever, not re-derived here) accepts targets out to Param01 that lie outside the Param02 wedge. The grid search radius was 0 for this shape, so only
+    // the grid cell of the telegraph origin was searched and farther targets the hit rule accepts were never tested. Retail rows: 48, Param01 from 3 to 100.
+    // Status: internal consistency fix only; no retail parity claim for the Pie hit rule itself.
+    [Theory]
+    [InlineData(3f)]
+    [InlineData(35f)]
+    [InlineData(100f)]
+    public void APieUsesAGridSearchThatCoversTheRadiusItsHitRuleAccepts(float radius)
+    {
+        Telegraph telegraph = Shape(DamageShape.Pie, 0f, radius, 90f);
+
+        // behind the telegraph (outside the wedge) and just inside the radius
+        Assert.True(telegraph.InsideTelegraph(new Vector3(0f, 0f, radius - 0.5f), 0f));
+        Assert.True(telegraph.SearchRadius >= radius);
+    }
+
     private static Telegraph Shape(DamageShape shape, float param00, float param01, float param02, Vector3? position = null, Vector3? rotation = null)
     {
         var entry = new TelegraphDamageEntry
