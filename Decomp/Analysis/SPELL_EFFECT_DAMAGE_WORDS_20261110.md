@@ -48,9 +48,9 @@ families; no tooltip, no native consumer.
 
 1.0 on 706 rows, fractions on 63 (Spellslinger Charged Shot C3 0.75 and C4 0.5, landmines and scripted explosions 0.75, Engineer Bolt Caster tier 9 0.5).
 
-**One tooltip is not explained.** Medic AMP Chemical Burn (`57506`) says "This damage has 100% Shield Pierce", and its damage row (`147124` of `60765`) carries 0 here. The AMP spell
-itself is a single effect of type 127 with data 745, which was not followed; the pierce may be granted there. It does not carry a different value in this word, so it does not
-contradict the reading, but it shows the word is not the only way damage bypasses shields.
+**The one tooltip that seemed to disagree is stale text.** Spell4 `57506` says "This damage has 100% Shield Pierce" for Medic Chemical Burn, while its damage row (`147124` of
+`60765`) carries 0. `57506` is only the item-unlock spell of the AMP (one UnlockInlaidAugment effect, AMP 745). The AMP itself (`59012`) is described in Jabbithole's AMP table as
+"Landing a Multi-Hit deals an additional 27 technology damage every 1s for 4s", with no shield clause. The 0 matches the current description.
 
 Implemented: `SpellEffectDamageSemantics.ShieldPierce` (Damage rows only, clamped to 0..1) and `DamageCalculator.CalculateShieldAmount`, which scales the share of the damage a shield may
 absorb by `1 - pierce`. **Assumed:** that scaling form for fractions; 1.0 and 0.99 are not sensitive to it. The earlier second reading (no random spread) is dropped: it explained none of

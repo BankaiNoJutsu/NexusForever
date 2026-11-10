@@ -154,6 +154,9 @@ Assumed: a failed roll does not use up an execution (word 04). Order: prerequisi
 
 **Word 05 is still unread.** It is an integer with a default of 60 and "unlimited"-looking values (999, 1000, `0xFFFFFFFF`), and Proc word 05 draws on the same values (1 on most AMPs, 60,
 10, 100). It is not the AMP "every N s" interval (that is Proc word 04) and no column of the parent or child spell matches it. Reads as a cap on something; on what is not known.
+One more observation, not enough to read it: among AMP procs the word is 1 except on the two whose tooltip limits the proc "per foe" or "per target" (Frost Armor "Can only occur
+every 10s per foe", Healing Touch "once every 4s per target"), where it is 10. That would make it the number of distinct targets a per-target limit keeps track of. The Proxy rows of
+the "same foe every N s" passives carry 120, not 10, and two AMPs without such wording carry 60 and 100, so this stays a lead.
 
 ## 1g. Effect flag 0x2 marks a row that lives as long as its spell (added 2026-11-10, late)
 
