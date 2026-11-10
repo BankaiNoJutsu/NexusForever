@@ -209,7 +209,8 @@ public class AmpTableAugmentationTests
     [InlineData(SpellEffectType.VitalModifier, 2500u, 2500u, 2u, 1u, true)]
     [InlineData(SpellEffectType.Proxy, 1000u, 0u, 2u, 1u, true)]
     [InlineData(SpellEffectType.Proxy, 1000u, 0u, 0u, 1u, false)]     // not marked as living with the spell
-    [InlineData(SpellEffectType.Proxy, 500u, 0u, 2u, 4u, false)]      // area rows (Danger Zone) stay outside the owned lifecycle
+    [InlineData(SpellEffectType.Proxy, 500u, 0u, 2u, 4u, true)]       // area rows: the aura follows its caster (Medic Danger Zone, Spell4 58912)
+    [InlineData(SpellEffectType.Proxy, 500u, 0u, 2u, 8u, false)]      // a target flag outside caster, target and area
     [InlineData(SpellEffectType.Damage, 1000u, 0u, 2u, 1u, false)]
     public void PeriodicAmpsThatTickOnTheCasterAreOwnedAsARunningSpell(SpellEffectType type, uint tick, uint delay, uint flags, uint targetFlags, bool expected)
     {

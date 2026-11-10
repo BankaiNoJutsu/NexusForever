@@ -277,6 +277,7 @@ namespace NexusForever.Game.Entity
         {
             UpdateLearnedPassives(lastTick);
             UpdateAugmentations(lastTick);
+            UpdateEquipmentSpells(lastTick);
             // update cooldowns
             foreach ((CooldownKey key, ActiveCooldown cooldown) in activeCooldowns.ToArray())
             {

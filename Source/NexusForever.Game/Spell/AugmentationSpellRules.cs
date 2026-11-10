@@ -16,7 +16,8 @@ namespace NexusForever.Game.Spell
         {
             Spell4Entry spell = tables?.Spell4?.GetEntry(spell4Id);
             var effects = tables?.Spell4Effects;
-            return spell != null && spell.CastTime == 0 && spell.SpellDuration == 0 && HasSupportedStackGroup(spell, tables)
+            return spell != null && spell.CastTime == 0 && HasSupportedStackGroup(spell, tables)
+                && (spell.SpellDuration == 0 || spell.SpellDuration == uint.MaxValue && IsPeriodicShape(spell4Id, tables))
                 && spell.ChannelMaxTime == 0 && spell.ChannelInitialDelay == 0 && spell.ChannelPulseTime == 0
                 && effects != null && cache.GetValue(effects, BuildIndex).TryGetValue(spell4Id, out uint[] triggers)
                 && (triggers.Length == 0 || spell.Spell4StackGroupId == 2)
@@ -40,10 +41,10 @@ namespace NexusForever.Game.Spell
                 .Where(g => ((g.All(e => e.EffectType == SpellEffectType.UnitPropertyModifier)
                             || g.All(IsSupportedCooldownEffect)
                             || g.All(IsSupportedProcEffect))
-                        && g.All(e => e.DelayTime == 0 && e.TickTime == 0)
-                        || g.All(IsSupportedPeriodicEffect))
+                        && g.All(e => e.DelayTime == 0 && e.TickTime == 0
+                            && (e.TargetFlags & ~(uint)(SpellEffectTargetFlags.Caster | SpellEffectTargetFlags.Target)) == 0)
+                        || IsPeriodicGroup(g))
                     && g.All(e => e.DurationTime == 0
-                    && (e.TargetFlags & ~(uint)(SpellEffectTargetFlags.Caster | SpellEffectTargetFlags.Target)) == 0
                     && e.PrerequisiteIdCasterPersistence == 0 && e.PrerequisiteIdTargetPersistence == 0
                     && e.PrerequisiteIdTargetSuspend == 0))
                 .ToDictionary(g => g.Key, g => g.Where(e => e.EffectType == SpellEffectType.Proc)
@@ -59,14 +60,32 @@ namespace NexusForever.Game.Spell
         /// </remarks>
         public static bool IsPeriodic(uint spell4Id, IGameTableManager tables)
         {
-            return IsSupported(spell4Id, tables)
-                && tables.Spell4Effects.Entries.Any(e => e.SpellId == spell4Id && e.TickTime != 0);
+            return IsSupported(spell4Id, tables) && IsPeriodicShape(spell4Id, tables);
+        }
+
+        private static bool IsPeriodicShape(uint spell4Id, IGameTableManager tables)
+        {
+            Spell4EffectsEntry[] rows = tables.Spell4Effects?.Entries.Where(e => e.SpellId == spell4Id).ToArray() ?? [];
+            return rows.Length != 0 && IsPeriodicGroup(rows);
+        }
+
+        /// <summary>
+        /// Every row either ticks for the life of the spell or is a visual. Area rows are allowed: the aura of a permanent AMP follows its caster, for example Medic Danger Zone
+        /// (Spell4 58912, Proxy on area targets every 500 ms plus one Fluff row) "While within 8m of a foe gain an Empower for 8s".
+        /// </summary>
+        private static bool IsPeriodicGroup(IEnumerable<Spell4EffectsEntry> rows)
+        {
+            Spell4EffectsEntry[] group = rows as Spell4EffectsEntry[] ?? rows.ToArray();
+            return group.Any(e => e.TickTime != 0)
+                && group.All(e => IsSupportedPeriodicEffect(e)
+                    || e.EffectType == SpellEffectType.Fluff && e.TickTime == 0 && e.DelayTime == 0);
         }
 
         private static bool IsSupportedPeriodicEffect(Spell4EffectsEntry effect)
         {
+            const uint allowedTargets = (uint)(SpellEffectTargetFlags.Caster | SpellEffectTargetFlags.Target | SpellEffectTargetFlags.Telegraph);
             return effect.EffectType is SpellEffectType.Proxy or SpellEffectType.VitalModifier
-                && effect.Flags == 2 && effect.TargetFlags == (uint)SpellEffectTargetFlags.Caster
+                && effect.Flags == 2 && effect.TargetFlags != 0 && (effect.TargetFlags & ~allowedTargets) == 0
                 && effect.TickTime != 0 && (effect.DelayTime == 0 || effect.DelayTime == effect.TickTime);
         }
 

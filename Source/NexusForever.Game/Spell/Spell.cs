@@ -1972,6 +1972,15 @@ namespace NexusForever.Game.Spell
                 target.Effects.RemoveAll(info => info.Entry.Id == effect.Entry.Id && !lifetimeEvents.ContainsKey(info));
         }
 
+        private bool IsCasterCentredTelegraphEffect(SpellEffectInterpretation effect)
+        {
+            if (((SpellEffectTargetFlags)effect.Entry.TargetFlags & SpellEffectTargetFlags.Telegraph) == 0)
+                return false;
+
+            uint targetType = Parameters.SpellInfo.BaseInfo?.TargetMechanics?.TargetType ?? 0u;
+            return targetType != TargetTypeTargetAoe && targetType != TargetTypePositionAoe;
+        }
+
         /// <summary>
         /// Whether this spell is being kept alive by rows that pulse for its lifetime.
         /// </summary>
@@ -2016,6 +2025,11 @@ namespace NexusForever.Game.Spell
                 // Some creature auras carry durations of hours, and a permanent aura has no end of its own.
                 if (spellLifetime && ShouldStopSpellLifetimePulse(durationTime))
                     return;
+
+                // An aura without an end of its own that is centred on its caster follows the caster: rebuild its telegraphs where the caster is now. Fields placed at a
+                // target or a position, and auras with a finite duration, keep the anchor they were cast with.
+                if (spellLifetime && durationTime == uint.MaxValue && IsCasterCentredTelegraphEffect(effect))
+                    InitialiseTelegraphs();
 
                 if (ExecuteEffect(effect))
                     SendSpellGo();

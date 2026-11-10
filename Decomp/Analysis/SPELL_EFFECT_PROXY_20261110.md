@@ -223,9 +223,11 @@ shape; those in a stack group other than 0 or 2 stay outside, as before.
   but a script that casts one on a player and never removes it would leave it ticking until the player dies.
 
 ### Still not covered
-* Rune and item specials (for example Untouchable): the server has no equip-time grant for them at all, so they are never cast.
+* Rune and item specials: granted on equip since a later commit the same day, see `EQUIPMENT_SPELL_GRANTS_20261110.md`.
 * Milestone and innate class passives with ticking rows: they are mixed with other effect types and are not cast as spells.
-* AMPs with area rows (Medic Danger Zone, Warrior No Escape, Recklessness, Fortitude) and periodic AMPs in other stack groups.
+* AMPs whose aura has area rows (Medic Danger Zone, Warrior No Escape, Recklessness) are owned since a later commit the same day: the periodic AMP rule accepts area rows and
+  a visual row, and a caster-centred aura without an end rebuilds its telegraphs at the caster on every pulse. Fortitude (a property modifier next to the ticking row) and
+  periodic AMPs in other stack groups are still outside.
 * The retired server's behaviour when a toggle is on and the player logs out or zones is unknown; here the spell ends with the entity.
 
 ## 2. The parent's caster casts the child
