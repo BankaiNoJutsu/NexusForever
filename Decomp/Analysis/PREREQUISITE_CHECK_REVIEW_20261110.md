@@ -125,6 +125,24 @@ player"). `0x14` and `0x17` are Player and Ghost, so the gate requires the **pri
   on such a realm, without it. The server compared "is mounted" with Value; it now returns the flag as false. The label `Prerequisite_CheckMount` was wrong for this body. Status: Implemented
   from the native body; the meaning of the bit is inferred from the rows that carry it.
 
+### Type 94 (added later the same day)
+`14049f5b0(unit, comparison, ObjectId, Value, secondUnit)`. The creature is the unit when it is not a Player or Ghost, else the second unit when that is not a Player or Ghost; with no
+creature, or no quest definition for ObjectId, only NotEqual is met. Otherwise the flag is `140552f50` (the quest is in the active quest map) and `140551730(quest, Value, creature+0x35f8)`:
+the objective at index Value exists, `1405517a0` accepts its type (10, 13, 14, 18; or 27 and 28 when `SettlerMission_LookupById` gives mode 1 or 2), the slot is below 32, and that bit is
+set in the objective word (virtual `+0x40`).
+
+* `+0x35f8` is written in the unit-created path (`140456960`, two stores) and reset to -1 in the unit constructor; it is the slot type 107 already reads as the entity's QuestChecklistIdx.
+* Table test of the reading: 771 of 781 slots carry a Quest2 id; resolving the objective at index Value gives type 14 (ActivateTargetGroupChecklist) on 564 slots and type 10
+  (ScriptedTargetGroupChecklist) on 56, together 620 of the 722 that resolve. The rest point at types the native gate rejects (12 on 37 slots, 23, 32, 25, 5, 8, 3, 17, 11, 22, 2) or accepts
+  conditionally (18 on 9, 28 on 7).
+* The server stores checklist progress as bits indexed by QuestChecklistIdx for types 14 and 10 (`QuestObjective.ObjectiveUpdate`, written from `SpellEffectHandler` and
+  `InteractionObjectiveUpdater`), so the check reads the same bit the producers write.
+
+Read as "this creature is already ticked off in the checklist objective". The server applied the type 68 rule (objective complete; a Completed quest counts), which answers the same for
+every creature of a checklist. Not modelled: types 13, 18, 27 and 28, which the native gate accepts but for which the server keeps a count (16 slots). That the native gate treats 13
+(SpellSuccess2) and 18 (TalkToTargetGroup) as checklist objectives contradicts `QuestObjective.IsChecklist`; recorded, not changed. Status: Implemented from the native bodies; meaning
+inferred from the objective types.
+
 ## 3. Differences found and not changed
 
 | Type | Check | Finding | Why not changed |
@@ -133,7 +151,6 @@ player"). `0x14` and `0x17` are Player and Ghost, so the gate requires the **pri
 | 292 | PrimalMatrixNode | native: local player only, `PrimalMatrix_LookupAllocatedNode(1, ObjectId)` compared with Value; server always false; 24 slots | understood; blocked on a server feature, not on evidence: the player has no primal matrix allocation state to query |
 | 148 | InfrastructureState | lookup miss: native answers NotEqual only; server substitutes state 0 | server API cannot distinguish a miss from state 0 |
 | 88 | Pet | native tests whether the primary unit id is in a list on the second unit (`+0x2b8` / `+0x2c0`); server tests the vanity pet against Value; 1 slot (row 15631), no referencing row found. An instruction scan for `+0x2b8` returns 309 hits and no labelled unit function, so the list stays unidentified | list not identified; nothing references the row |
-| 94 | QuestObjective6 | native result depends on unit types and the unit slot at `+0x35f8`; 781 slots | unit participation slot is a known unmodelled concept |
 | 41 | ZoneExplored | native compares an untruncated float ratio; server a truncated integer. Re-checked: none of the 14 rows using type 41 is referenced by any table. 13 are early rows (ids 716 to 1250) with ObjectId 0 and a zone-like id in Value under Equal, which the current native body cannot satisfy; only row 7964 (zone 1, `>= 25`) has the current shape | no live reference |
 | 179, 80, 172, 218, 246, 78, 140, 81, 173, 174 | | latent or zero-row differences | no retail slot affected, or reported and not re-read |
 

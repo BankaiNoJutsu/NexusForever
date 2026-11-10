@@ -1354,7 +1354,70 @@ public class PrerequisiteCheckTests
         IPlayer player = ActiveQuestPlayer(questId: 4321, QuestState.Accepted, completeFlags: [false, true, true]);
 
         Assert.Equal(expected, new PrerequisiteCheckQuestObjective().Meets(player, comparison, index, 4321u, new PrerequisiteParameters()));
-        Assert.Equal(expected, new PrerequisiteCheckQuestObjective6().Meets(player, comparison, index, 4321u, new PrerequisiteParameters()));
+    }
+
+    // Native type 94 (14049f5b0 / 140551730 / 1405517a0) is not the per-unit variant of type 68: it tests the bit of the QuestChecklistIdx of the creature in the progress word of a
+    // checklist objective of an ACTIVE quest. 620 of 722 resolvable retail slots point at objective types 14 and 10.
+    [Theory]
+    [InlineData(QuestObjectiveType.ActivateTargetGroupChecklist, 0b0100u, (byte)2, PrerequisiteComparison.Equal, true)]       // this creature is ticked
+    [InlineData(QuestObjectiveType.ActivateTargetGroupChecklist, 0b0100u, (byte)1, PrerequisiteComparison.Equal, false)]      // another creature of the same checklist is not
+    [InlineData(QuestObjectiveType.ActivateTargetGroupChecklist, 0b0100u, (byte)1, PrerequisiteComparison.NotEqual, true)]
+    [InlineData(QuestObjectiveType.ScriptedTargetGroupChecklist, 0b0001u, (byte)0, PrerequisiteComparison.Equal, true)]
+    [InlineData(QuestObjectiveType.KillCreature, 0b0111u, (byte)0, PrerequisiteComparison.Equal, false)]                      // a counter is not a checklist
+    [InlineData(QuestObjectiveType.ActivateTargetGroupChecklist, 0xFFFFFFFFu, (byte)40, PrerequisiteComparison.Equal, false)] // index beyond the mask
+    [InlineData(QuestObjectiveType.ActivateTargetGroupChecklist, 0b0100u, (byte)2, PrerequisiteComparison.GreaterThan, false)]
+    public void QuestObjective6_TestsTheChecklistBitOfTheCreatureInTheObjectiveProgress(QuestObjectiveType type, uint progress, byte checklistIdx, PrerequisiteComparison comparison, bool expected)
+    {
+        IPlayer player = ChecklistQuestPlayer(4321, type, progress);
+        IUnitEntity creature = RecordingDispatchProxy<IUnitEntity>.Create(out var creatureProxy);
+        creatureProxy.SetProperty(nameof(IWorldEntity.Type), EntityType.NonPlayer);
+        creatureProxy.SetProperty(nameof(IWorldEntity.QuestChecklistIdx), checklistIdx);
+
+        var check = new PrerequisiteCheckQuestObjective6(QuestTables(4321u));
+
+        Assert.Equal(expected, check.Meets(player, comparison, 1u, 4321u, new PrerequisiteParameters { Target = creature }));
+    }
+
+    [Fact]
+    public void QuestObjective6_WithoutACreatureOrAQuestDefinition_MeetsNotEqualOnly()
+    {
+        IPlayer player = ChecklistQuestPlayer(4321, QuestObjectiveType.ActivateTargetGroupChecklist, 0xFFu);
+        IUnitEntity creature = RecordingDispatchProxy<IUnitEntity>.Create(out var creatureProxy);
+        creatureProxy.SetProperty(nameof(IWorldEntity.Type), EntityType.NonPlayer);
+
+        var check = new PrerequisiteCheckQuestObjective6(QuestTables(4321u));
+
+        Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 1u, 4321u, new PrerequisiteParameters()));
+        Assert.True(check.Meets(player, PrerequisiteComparison.NotEqual, 1u, 4321u, new PrerequisiteParameters()));
+        Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 1u, 9999u, new PrerequisiteParameters { Target = creature }));
+        Assert.True(check.Meets(player, PrerequisiteComparison.NotEqual, 1u, 9999u, new PrerequisiteParameters { Target = creature }));
+    }
+
+    private static IGameTableManager QuestTables(uint questId)
+    {
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out var tableProxy);
+        tableProxy.SetProperty(nameof(IGameTableManager.Quest2), CreateGameTable(new Quest2Entry { Id = questId }));
+        return tables;
+    }
+
+    private static IPlayer ChecklistQuestPlayer(ushort questId, QuestObjectiveType type, uint progress)
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        playerProxy.SetProperty(nameof(IWorldEntity.Type), EntityType.Player);
+        IQuestManager questManager = RecordingDispatchProxy<IQuestManager>.Create(out var questProxy);
+        IQuest quest = RecordingDispatchProxy<IQuest>.Create(out var questEntityProxy);
+        questEntityProxy.SetProperty(nameof(IQuest.Id), questId);
+        IQuestObjective objective = RecordingDispatchProxy<IQuestObjective>.Create(out var objectiveProxy);
+        IQuestObjectiveInfo info = RecordingDispatchProxy<IQuestObjectiveInfo>.Create(out var infoProxy);
+        infoProxy.SetProperty(nameof(IQuestObjectiveInfo.Type), type);
+        objectiveProxy.SetProperty(nameof(IQuestObjective.ObjectiveInfo), info);
+        objectiveProxy.SetProperty(nameof(IQuestObjective.Index), (byte)1);
+        objectiveProxy.SetProperty(nameof(IQuestObjective.Progress), progress);
+        var objectives = new List<IQuestObjective> { objective };
+        questEntityProxy.SetMethodHandler("GetEnumerator", _ => objectives.GetEnumerator());
+        questProxy.SetMethodReturn(nameof(IQuestManager.GetActiveQuests), new List<IQuest> { quest });
+        playerProxy.SetProperty(nameof(IPlayer.QuestManager), questManager);
+        return player;
     }
 
     [Fact]
