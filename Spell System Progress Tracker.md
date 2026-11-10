@@ -8,9 +8,9 @@ This is the working implementation tracker for the global `Spell4` / `Spell4Effe
 - `Spell Effect Evidence Matrix.md`
 - `Spell Reverse Engineering Runtime Candidates.md`
 - `Tools/SpellReverseEngineering/world_context_queries.sql`
-- `Decomp/Analysis/PREREQUISITE_HANDLER_TABLE_AUDIT_20261110.md` and `PREREQUISITE_CHECK_REVIEW_20261110.md` (prerequisites that gate casts and effects, audited against the client evaluator)
+- `Decomp/Analysis/PREREQUISITE_HANDLER_TABLE_AUDIT_20261110.md` and `PREREQUISITE_CHECK_REVIEW_20261110.md` (prerequisites that gate casts and effects, audited against the client evaluator; later the same day types 170, 190, 194/195, 182/186, 178 and 104 were identified and corrected, leaving 175, 289, 88 and 94 unidentified and 292 waiting on a server primal-matrix feature)
 - `Decomp/Analysis/SPELL_EFFECT_DATA_TYPING_AUDIT_20261110.md` (effect data words against the client typing table)
-- `Decomp/Analysis/SPELL_EFFECT_PROXY_20261110.md` (Proxy execution limit and child caster)
+- `Decomp/Analysis/SPELL_EFFECT_PROXY_20261110.md` (Proxy execution limit and child caster; section 1c: tick-only Proxy rows live as long as their spell, which needs a server spell-lifetime model before it can be implemented)
 - `Decomp/Analysis/SPELL_EFFECT_ID_SPACES_20261110.md` (which table each effect id word belongs to; QuestAdvanceObjective and LearnDyeColor corrected)
 
 ## Current Completion

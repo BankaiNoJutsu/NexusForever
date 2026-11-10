@@ -48,11 +48,40 @@ Where both are set on a ticking row they hold the same id. Example: Esper Mental
 (= 6000 / 500). The server read only word 00, so these rows cast nothing. The interpreter now uses word 01 when word 00 is 0 and the row has both a tick and a duration (749 rows), which are the rows the
 scheduler pulses. Status: Implemented, inferred from the table split; upstream `spells-v2` names the word `PeriodicSpellId`.
 
-Not changed: the 787 tick-only rows (the scheduler does not pulse rows without their own duration, and where their lifetime comes from is not known) and the 174 rows with only word 01 and no tick.
+Not changed: the tick-only rows (the scheduler does not pulse rows without their own duration; see 1c for where their lifetime comes from) and the 174 rows with only word 01 and no tick.
 
 **DataBits03 is not simply a chance.** One tooltip agrees with a chance reading (Spell4 42566, word 03 = 0.1, "10% chance to disorient"), but Mental Boon has five rows to the same child (`87375`) and the same
 caster-apply prerequisite with word 03 = 1.0, 0.8, 0.6, 0.4 and 0.2, next to a tooltip that scales per Psi Point, and Warrior Breaching Strikes has 0.25 on a row whose tooltip states no chance. Of 40 rows
 with a fractional word 03 and a Jabbithole tooltip, only that one tooltip states the same percentage. Left unread.
+
+## 1c. Tick-only rows live as long as their spell (added later the same day; not implemented)
+
+The 804 Proxy rows with a tick and no duration of their own split by the owning spell:
+
+| Owning spell | Rows | Spells |
+|---|---:|---:|
+| `Spell4.spellDuration` = `0xFFFFFFFF` | 155 | |
+| `Spell4.spellDuration` finite (10 s on 40 rows, 6 s on 21, others) | 163 | 153 |
+| no spell duration, cast method 0, no channel | 491 | 413 |
+| no spell duration, channelled (`channelMaxTime` set) | 18 | 17 |
+
+* The `0xFFFFFFFF` rows are permanent passives whose tooltip describes a standing proximity test: Medic Danger Zone (Spell4 `58912`, tick 500 ms, area target flag 4, word 01 = `60920`) "While within
+  8m of a foe gain an Empower for 8s"; Warrior No Escape `59121`, Recklessness `59122`, Fortitude `59166`; rune special `82165`; "Offensive Sproutling" `61244` (tick 2000 ms) "receive magic damage
+  ... every second" (the tooltip and the tick disagree by a factor of two on that one).
+* The rows without a spell duration are milestone and AMP passives ("Engineer - Master Mechanic - Milestone", tick 5000 ms), toggles and creature hazard auras ("Flying Debris - Pulsing", "[WB] King
+  Honeygrave - Raid Damage AOE Tick"). Tooltip witness for the tick: Warrior Power Link (`53599`, tick 250 ms, word 01 = `79788`) "Drains 56 Kinetic Energy every 0.25s".
+
+Reading: a tick-only Proxy casts its periodic spell (word 01) every tick for as long as the owning spell is alive; the lifetime is the spell's (`spellDuration`, a toggle being switched off, a
+passive being removed), not the row's. Evidence tier: table split plus the two tooltip tick matches. Not implemented: the server has no spell lifetime outside its pending-event queue
+(`Spell4.spellDuration` is read only by two rule helpers), so pulsing these rows needs a lifetime model for passives, toggles and auras first. One finite row has an execution limit that is not
+`spellDuration / tick` (Eldan Security Beam `39498`: tick 500 ms, spell duration 60 s, limit 60), so the limit is not derived from the lifetime.
+
+**DataBits05 was checked against the "can only be triggered by the same foe every N s" tooltips and is not that interval**: the five passives above state 15, 10, 10, 10 and 15 s and all carry 120.
+Their word 07 holds a different id on each (24549, 24655, 24658, 37496, 38384), which was not followed. Word 05 clusters by authoring family rather than by any tooltip number: 60 on 10,099 rows,
+1 on 2,444, 120 on 1,136, 900 mostly on Engineer spells, 1000 mostly on Esper spells, 12 on 319 rows that all tick and mostly carry word 03 = 100.0. Still unread.
+
+Upstream `spells-v2` reads the same four words the server now reads (00 spell, 01 periodic spell, 04 maximum executions, with the same Telekinetic Strike example, and 06 prerequisite) and is
+silent on words 03 and 05. That is agreement between two inferred readings, not independent evidence.
 
 ## 2. The parent's caster casts the child
 
