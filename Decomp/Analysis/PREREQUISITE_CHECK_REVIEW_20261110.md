@@ -64,6 +64,19 @@ player"). `0x14` and `0x17` are Player and Ghost, so the gate requires the **pri
   is `Dye_Red_Light1` only when 2 is read as UnlockObject (entry id 2 is `Dye_Red_Dark2_Dull`); 222 of 223 retail rows resolve to a Dye entry by colour against 161 by entry id. The handler unlocked the entry
   with the same id and therefore taught a different dye. It now resolves the entry by colour. Evidence tier: table names; no retail parity claim.
 
+### Types 170 and 190 (added later the same day)
+* **170.** Native `14049c880`: false without a unit; the flag is "the object at local-player global `+0x7188` exists and Value is 0 or that object's id (virtual `+0x68`)"; Equal / NotEqual only; ObjectId
+  is not read and no table is consulted. All 14 retail rows gate creature activate spells or animation states of transport NPCs whose spell is a "Transport to ... Yes/No CSI" spell, with NotEqual, and
+  Value equals that spell's own `Spell4Base.clientSideInteractionId` in 5 of the 7 spells (62688 -> 1029, 62734 -> 1031, 63342 -> 1050, 87494 -> 1363, 87510 -> 1367). The object is therefore read as the
+  active client-side interaction: "offer the transport unless its confirmation is already open". The server models that as a pending spell waiting on a client-side interaction response
+  (`UnitEntity.HasActiveClientSideInteraction`). The previous check compared a GameFormula row with ObjectId. Not identified natively: the object at `+0x7188`; the 2 spells whose Value differs from
+  their own interaction id were not explained. Status: Implemented, inferred.
+* **190.** Native `1404a14d0`: Player or Ghost only; `expected` is 0 without a PetFlair row for ObjectId, 1 when the row's second unlock bit index (row `+8`) is 0, otherwise 2; `actual` is a per-player
+  count for the same flair (`FUN_1403a9c40`, body not read); Equal is `actual == expected`, NotEqual the negation; Value is not read. All 298 retail ObjectIds are PetFlair ids, all slots are NotEqual,
+  and they are referenced by 206 AccountItem rows and 36 ItemSpecial rows, none by spells. Read as "the flair is fully unlocked"; the check now asks `PetCustomisationManager.HasFlair(ObjectId)` where
+  it asked for a hoverboard customisation with that id. Not modelled: a flair with two unlock bits of which only one is set (natively not equal to the expected 2, so "not unlocked"; the server has one
+  unlock state per flair). Status: Implemented, inferred.
+
 ## 3. Differences found and not changed
 
 | Type | Check | Finding | Why not changed |
@@ -72,8 +85,6 @@ player"). `0x14` and `0x17` are Player and Ghost, so the gate requires the **pri
 | 292 | PrimalMatrixNode | native: local player only, `PrimalMatrix_LookupAllocatedNode(1, ObjectId)` compared with Value; server always false; 24 slots | needs the server primal-matrix allocation surface; not yet done |
 | 148 | InfrastructureState | lookup miss: native answers NotEqual only; server substitutes state 0 | server API cannot distinguish a miss from state 0 |
 | 104 | | wrong slot word (ObjectId 4 to 14 on 3 slots, no spell references found) | the set and its key are not identified |
-| 170 | GameFormula | native compares the id of a live object at global `+0x7188` with Value (flag true when Value is 0); server compares a GameFormula row with ObjectId; 14 slots | the object is not identified; the server check has no native basis |
-| 190 | PetFlair | native compares a per-player integer with an expected value of 0, 1 or 2 derived from a table row; server tests presence under one pet type; 298 slots | the two functions involved were not exported or read |
 | 194 / 195 | MountUsage / HoverboardUsage | native computes a flag for the local player; server returns true unconditionally; 4 slots each | flag meaning not identified |
 | 88 | Pet | native tests whether the primary unit id is in a list on the second unit; server tests the vanity pet against Value; 1 slot | list not identified |
 | 178, 175, 182, 289 | | server compares a number with Value where the native handler never receives Value | native flag not identified |

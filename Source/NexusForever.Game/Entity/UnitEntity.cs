@@ -2560,6 +2560,24 @@ namespace NexusForever.Game.Entity
         }
 
         /// <summary>
+        /// Returns whether this unit has a pending spell waiting on a client-side interaction with the supplied <c>ClientSideInteraction</c> id (0 matches any).
+        /// </summary>
+        internal bool HasActiveClientSideInteraction(uint clientSideInteractionId)
+        {
+            foreach (ISpell spell in pendingSpells)
+            {
+                if (spell.IsFinished || spell.Parameters?.WaitForClientSideInteractionResponse != true)
+                    continue;
+
+                uint activeId = spell.Parameters.SpellInfo?.BaseInfo?.Entry?.ClientSideInteractionId ?? 0u;
+                if (clientSideInteractionId == 0u || activeId == clientSideInteractionId)
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Returns whether any spell with tracked state on this unit has the supplied <c>Spell4Base.SpellClass</c> value.
         /// </summary>
         internal bool HasTrackedSpellOfClass(uint spellClass, IGameTableManager gameTableManager)

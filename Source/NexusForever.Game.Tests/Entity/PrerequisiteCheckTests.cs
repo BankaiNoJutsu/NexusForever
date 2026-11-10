@@ -546,26 +546,23 @@ public class PrerequisiteCheckTests
         Assert.False(result);
     }
 
+    // Native type 170 (14049c880): the flag is "an interaction object is active and Value is 0 or its id"; Equal returns it, NotEqual its negation; ObjectId is never read.
+    // Retail: prerequisite 26050 is (NotEqual, Value 1029) on the activate spell of "Tanxox - Transport to Thayd CSI" (Spell4 62688), whose clientSideInteractionId is 1029.
     [Theory]
-    [InlineData(PrerequisiteComparison.Equal, 50u, true)]
-    [InlineData(PrerequisiteComparison.Equal, 49u, false)]
-    [InlineData(PrerequisiteComparison.GreaterThanOrEqual, 50u, true)]
-    [InlineData(PrerequisiteComparison.LessThan, 51u, true)]
-    public void GameFormula_ComparesFormulaDataint0AgainstObjectId(PrerequisiteComparison comparison, uint objectId, bool expected)
+    [InlineData(PrerequisiteComparison.NotEqual, 1029u, 0u, true)]        // nothing open: the transport is offered
+    [InlineData(PrerequisiteComparison.NotEqual, 1029u, 1029u, false)]    // its confirmation is already open
+    [InlineData(PrerequisiteComparison.NotEqual, 1029u, 1031u, true)]     // another interaction is open
+    [InlineData(PrerequisiteComparison.Equal, 1029u, 1029u, true)]
+    [InlineData(PrerequisiteComparison.Equal, 0u, 1031u, true)]           // Value 0 matches any open interaction
+    [InlineData(PrerequisiteComparison.Equal, 0u, 0u, false)]
+    [InlineData(PrerequisiteComparison.GreaterThanOrEqual, 1029u, 1029u, false)]
+    public void GameFormula_TestsTheActiveClientSideInteraction(PrerequisiteComparison comparison, uint value, uint activeInteractionId, bool expected)
     {
-        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
-        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out var proxy);
-        proxy.SetProperty(nameof(IGameTableManager.GameFormula), CreateGameTable(new GameFormulaEntry
-        {
-            Id       = 378u,
-            Dataint0 = 50u
-        }));
-
-        var check = new PrerequisiteCheckGameFormula(tables);
-
-        bool result = check.Meets(player, comparison, value: 378u, objectId, new PrerequisiteParameters());
+        bool result = PrerequisiteCheckGameFormula.Evaluate(comparison, value,
+            id => activeInteractionId != 0u && (id == 0u || id == activeInteractionId));
 
         Assert.Equal(expected, result);
+        Assert.False(new PrerequisiteCheckGameFormula().MeetsUnit(null, comparison, value, 0u, new PrerequisiteParameters()));
     }
 
     [Theory]

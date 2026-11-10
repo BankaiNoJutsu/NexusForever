@@ -19,8 +19,29 @@ namespace NexusForever.Game.Tests.Prerequisite;
 //    ObjectId, not its Value; comparison 1 returns the match, 2 its negation, any other comparison false. Retail: 7 slots, ObjectId 0/3/31/83/100/112, Value always 0.
 //  - type 116 Stealth (evaluator case 0x74, inline): the flag is 1 < unit+0x54, Equal returns it, NotEqual its negation, anything else is false; ObjectId and Value are not read. Retail: 32 slots,
 //    22 with Value 28455 (Spell4 "Stalker - Optic Camouflage", a Stealth effect), which the client ignores.
+//  - type 190 PetFlair (1404a14d0): the per-player unlock count for PetFlair ObjectId is compared with the count the row expects; Equal / NotEqual only, Value not read. Retail: 298 slots, all NotEqual,
+//    referenced by AccountItem and ItemSpecial rows ("usable while the flair is not unlocked").
 public class PrerequisiteNativeComparisonTests
 {
+    [Theory]
+    [InlineData(PrerequisiteComparison.NotEqual, false, true)]
+    [InlineData(PrerequisiteComparison.NotEqual, true, false)]
+    [InlineData(PrerequisiteComparison.Equal, true, true)]
+    [InlineData(PrerequisiteComparison.GreaterThan, true, false)]
+    public void PetFlairTestsWhetherTheFlairIsUnlocked(PrerequisiteComparison comparison, bool unlocked, bool expected)
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        IPetCustomisationManager pets = RecordingDispatchProxy<IPetCustomisationManager>.Create(out var petProxy);
+        petProxy.SetMethodHandler(nameof(IPetCustomisationManager.HasFlair), args => unlocked && (ushort)args[0] == 337);
+        playerProxy.SetProperty(nameof(IPlayer.PetCustomisationManager), pets);
+
+        var check = new PrerequisiteCheckPetFlair();
+
+        // Value is non-zero on purpose: it must not be read
+        Assert.Equal(expected, check.Meets(player, comparison, 5u, 337u, new PrerequisiteParameters()));
+        Assert.Empty(petProxy.GetInvocations(nameof(IPetCustomisationManager.GetCustomisation)));
+    }
+
     [Theory]
     [InlineData(PrerequisiteComparison.Equal, 28455u, true, true)]
     [InlineData(PrerequisiteComparison.Equal, 28455u, false, false)]
