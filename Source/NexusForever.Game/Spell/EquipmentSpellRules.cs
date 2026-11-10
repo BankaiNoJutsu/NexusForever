@@ -128,7 +128,8 @@ namespace NexusForever.Game.Spell
         /// Whether the server can grant the spell on equip and take everything it did away again on unequip.
         /// </summary>
         /// <remarks>
-        /// Only spells without a cast time, channel or finite duration whose rows are property modifiers, procs, proxies or visuals, none with a duration of its own. Those are
+        /// Only spells without a cast time, channel or finite duration whose rows are property modifiers, property conversions, procs, proxies or visuals, none with a duration
+        /// of its own. Those are
         /// either tracked on the unit by spell id (and removed by <see cref="IUnitEntity.RemoveTrackedSpellStates"/>) or rows that live with the running spell (ended by
         /// <see cref="IUnitEntity.EndSpellLifetimes"/>). Anything else is left alone rather than granted without a way to revoke it.
         /// </remarks>
@@ -142,7 +143,8 @@ namespace NexusForever.Game.Spell
         /// named "... - Stance - Passive" (Warrior Onslaught 44926 and Juggernaut 44932, Engineer Eradicate 45000 and Provoke 41504, three Stalker Nano Skins). They share one
         /// exclusive stack group per class. Read as "the passive of the current stance is in effect while the player is in it"; inferred from the table layout and the names.
         /// A stance passive also carries one-off rows (a resource reset, a SpellForceRemove), so those are allowed here. A class is served only when every one of its stance
-        /// passives can be revoked, so that changing stance never leaves one behind. No retail parity claim.
+        /// passives can be revoked, so that changing stance never leaves one behind (all three classes with stance passives are, since property conversions count as revocable).
+        /// No retail parity claim.
         /// </remarks>
         public static uint GetStancePassive(ClassEntry classEntry, byte innateIndex, IGameTableManager tables)
         {
@@ -191,7 +193,7 @@ namespace NexusForever.Game.Spell
                 if (!cache.TryGetValue(spell4Id, out bool persistent))
                 {
                     persistent = effects.Entries.Any(e => e.SpellId == spell4Id
-                        && (e.EffectType is SpellEffectType.UnitPropertyModifier or SpellEffectType.Proc || e.TickTime != 0u));
+                        && (e.EffectType is SpellEffectType.UnitPropertyModifier or SpellEffectType.UnitPropertyConversion or SpellEffectType.Proc || e.TickTime != 0u));
                     cache[spell4Id] = persistent;
                 }
 
@@ -217,6 +219,8 @@ namespace NexusForever.Game.Spell
             {
                 SpellEffectType.UnitPropertyModifier => row.TickTime == 0u && row.DelayTime == 0u,
                 SpellEffectType.Proc                 => row.TickTime == 0u && row.DelayTime == 0u,
+                // stored with the unit's spell property modifiers, so it is removed by spell id like a property modifier
+                SpellEffectType.UnitPropertyConversion => row.TickTime == 0u && row.DelayTime == 0u,
                 SpellEffectType.Fluff                => row.TickTime == 0u,
                 // a ticking proxy must be marked as living with the spell (effect flag 0x2); a plain proxy fires once when the item is equipped
                 SpellEffectType.Proxy                => row.TickTime == 0u || (row.Flags & 2u) != 0u,

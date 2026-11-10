@@ -25,7 +25,8 @@ or a proxy (a ticking proxy must carry effect flag 0x2, see `SPELL_EFFECT_PROXY_
 specials (12), the visuals (10) and the rune specials built from procs and proxies. It leaves out, on purpose:
 
 * 228 "Dungeon Test" specials (large property blocks plus ItemVisualSwap rows on test gear);
-* specials with effect types whose state the server cannot remove by spell (types 50, 55, 73, 112, 121, 145).
+* specials with effect types whose state the server cannot remove by spell (types 50, 55, 73, 112, 121). Type 145 (UnitPropertyConversion) was on this list at first and is
+  granted since a later commit: it is stored with the unit's spell property modifiers.
 
 ## 3. Assumed, not evidenced
 * **Set power adds up across everything equipped.** The tables give each rune a power and each bonus a threshold; that the sum is taken over all equipped gear rather than per item is
@@ -45,8 +46,8 @@ passives share one exclusive stack group. The server only recorded the stance in
 
 Read as "the passive of the current stance is in effect while the player is in that stance" and granted through the same manager (`EquipmentSpellRules.GetStancePassive`). A stance
 passive also has one-off rows (a Kinetic Energy reset behind a prerequisite, a SpellForceRemove of Overdrive), so those row types are accepted for stance passives only. A class is
-served only when every one of its stance passives can be revoked: Warrior and Stalker are; **Engineer is not**, because Eradicate carries a UnitPropertyConversion row the server cannot
-remove by spell. Evidence tier: table layout and spell names. Assumed: the one-off rows run again whenever the passive is granted again (stance change, login, after death).
+served only when every one of its stance passives can be revoked. Warrior and Stalker were from the start; Engineer followed in a later commit the same day, once it was checked
+that a UnitPropertyConversion (on Eradicate) is stored with the unit's spell property modifiers and is removed by spell id like any of them. Evidence tier: table layout and spell names. Assumed: the one-off rows run again whenever the passive is granted again (stance change, login, after death).
 
 ## 4. Verification
 `EquipmentSpellRulesTests` (grant listing, set power thresholds, the supported-spell rule). Not run in a live session.
