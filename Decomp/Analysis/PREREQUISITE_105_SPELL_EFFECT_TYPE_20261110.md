@@ -69,3 +69,6 @@ Each of the first thirteen rows in `function_labels.csv` now carries a "TYPE ATT
 
 Reproduction: `run_ghidra_analysis.ps1 -ExportOnly -SkipDefaultExport -SkipCoverage -Targets WildStar64.exe -ExtraPostScript Gap8Decomp.java -ExtraPostScriptArgs @(<out>,'1404a2100')`, then
 `function_pointer_family_slots.csv` for the slot owners; `FindDataReferences.java` on `140b67870`, `140b67bb8`, `14049fd50`.
+
+## Follow-up (same day)
+The bodies in section 4 were re-read and the labels renamed; the full type-to-handler map and the audit of the server checks are in `PREREQUISITE_HANDLER_TABLE_AUDIT_20261110.md`.
