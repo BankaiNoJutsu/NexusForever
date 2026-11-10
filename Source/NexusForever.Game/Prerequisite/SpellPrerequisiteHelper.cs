@@ -31,6 +31,11 @@ namespace NexusForever.Game.Prerequisite
             return unit is UnitEntity unitEntity && unitEntity.HasActiveSpellEffectType(effectType);
         }
 
+        public static bool HasTrackedSpellOfClass(IUnitEntity unit, uint spellClass, IGameTableManager gameTableManager)
+        {
+            return unit is UnitEntity unitEntity && unitEntity.HasTrackedSpellOfClass(spellClass, gameTableManager);
+        }
+
         public static bool HasActiveSpellEffectGroup(IUnitEntity unit, uint effectGroupId, IGameTableManager gameTableManager)
         {
             return unit is UnitEntity unitEntity && unitEntity.HasActiveSpellEffectGroup(effectGroupId, gameTableManager);

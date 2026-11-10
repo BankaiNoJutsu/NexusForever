@@ -7,11 +7,16 @@ using NexusForever.GameTable.Model;
 namespace NexusForever.Game.Prerequisite.Check
 {
     /// <summary>
-    /// Prerequisite type 93: handler table <c>14049f690</c> (live case <c>0x5d</c> via <c>1403d6f1c</c>);
-    /// walks active spell effects at entity <c>+0x15c8</c> and compares <c>Spell4EffectGroupList</c> membership for
-    /// <c>value0</c> (effect-group id). NF proxies via persistent lifetime effects and
-    /// <see cref="Spell4EffectGroupListEntry"/> rows.
+    /// Prerequisite type 93 (enum name <c>Spell4EffectCategoryOnUnit</c>, an older guess): evaluator case <c>0x5d</c> of <c>PrerequisiteManager_EvaluateTypeSlot</c> (<c>1404a2100</c>) is inline. A null unit is
+    /// false; otherwise it walks the unit active-spell list at <c>+0x15c8</c> and compares a dword of each spell's data (<c>[[[node+0x38]+0x138]+0x70]+0xf8</c>) with the slot <b>ObjectId</b>; Equal returns
+    /// whether one matched, NotEqual the negation, any other comparison false. Value is never read.
     /// </summary>
+    /// <remarks>
+    /// The compared dword was not identified natively. That it is <c>Spell4Base.SpellClass</c> is inferred from the retail rows: all 5 slots use ObjectId 36 or 38, which are exactly BuffDispellable and
+    /// DebuffDispellable, and the only spells gated by those rows are the tiers of Medic "Antidote" (a SpellDispel) through the caster-apply prerequisite of its follow-up proxies.
+    /// The previous implementation read Value (0 on every retail slot) as a Spell4EffectGroupList id. <c>14049f690</c>, previously cited here, is the type 6 QuestState handler.
+    /// Status: Implemented, inferred. See Decomp/Analysis/PREREQUISITE_CHECK_REVIEW_20261110.md. No retail parity claim.
+    /// </remarks>
     [PrerequisiteCheck(PrerequisiteType.Spell4EffectCategoryOnUnit)]
     public class PrerequisiteCheckSpell4EffectCategoryOnUnit : IPrerequisiteCheck
     {
@@ -30,8 +35,10 @@ namespace NexusForever.Game.Prerequisite.Check
 
         private bool MeetsEntity(IUnitEntity unit, PrerequisiteComparison comparison, uint value, uint objectId)
         {
-            uint hasCategory = SpellPrerequisiteHelper.HasActiveSpellEffectGroup(unit, value, gameTableManager) ? 1u : 0u;
-            return PrerequisiteCompare.Compare(comparison, hasCategory, 1u);
+            if (unit == null)
+                return false;
+
+            return PrerequisiteCompare.CompareFlag(comparison, SpellPrerequisiteHelper.HasTrackedSpellOfClass(unit, objectId, gameTableManager));
         }
     }
 }

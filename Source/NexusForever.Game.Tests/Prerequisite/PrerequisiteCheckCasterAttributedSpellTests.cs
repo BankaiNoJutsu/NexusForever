@@ -167,6 +167,30 @@ public class PrerequisiteCheckCasterAttributedSpellTests
         return unit;
     }
 
+    // Native type 93 (evaluator case 0x5d, inline) compares a dword of each active spell with ObjectId. All 5 retail slots use ObjectId 36 or 38, the BuffDispellable and DebuffDispellable spell classes,
+    // and gate Medic "Antidote" follow-ups (Decomp/Analysis/PREREQUISITE_CHECK_REVIEW_20261110.md). Value is 0 on every retail slot and is not read.
+    [Theory]
+    [InlineData(PrerequisiteComparison.Equal, 38u, true)]
+    [InlineData(PrerequisiteComparison.Equal, 36u, false)]
+    [InlineData(PrerequisiteComparison.NotEqual, 38u, false)]
+    [InlineData(PrerequisiteComparison.NotEqual, 36u, true)]
+    [InlineData(PrerequisiteComparison.GreaterThanOrEqual, 38u, false)]
+    public void SpellClassOnUnitMatchesTheClassOfATrackedSpell(PrerequisiteComparison comparison, uint objectId, bool expected)
+    {
+        var unit = new TestUnit();
+        unit.AddSpellModifierProperty(new SpellPropertyModifier(Property.HealingMultiplierIncoming, 1u, 1.1f, 0f, 0f), 1u, 100u, 1u, 10u);
+
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out var proxy);
+        proxy.SetProperty(nameof(IGameTableManager.Spell4), PlayerBindPointTests.Table(new Spell4Entry { Id = 100u, Spell4BaseIdBaseSpell = 7u }));
+        proxy.SetProperty(nameof(IGameTableManager.Spell4Base), PlayerBindPointTests.Table(new Spell4BaseEntry { Id = 7u, SpellClass = 38u }));
+
+        var check = new PrerequisiteCheckSpell4EffectCategoryOnUnit(tables);
+
+        // Value is deliberately a different class id: only ObjectId may be read
+        Assert.Equal(expected, check.MeetsUnit(unit, comparison, 36u, objectId, new PrerequisiteParameters()));
+        Assert.False(check.MeetsUnit(null, comparison, 0u, objectId, new PrerequisiteParameters()));
+    }
+
     private static IGameTableManager Tables()
     {
         IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out var proxy);

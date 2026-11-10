@@ -31,6 +31,8 @@ In the evaluator `param_3[1]` is the comparison, `param_3[2]` ObjectId and `para
 | 288 | PurchasedTitle | comparisons other than Equal / NotEqual are false | returned true | 0 (latent) |
 | 4 | Faction | handler `14049c620`: Equal / NotEqual only, null unit false | honoured all six | 0 (latent) |
 | 109 | WorldRequirement | Equal / NotEqual against ObjectId only | honoured all six | 0 (latent) |
+| 93 | Spell4EffectCategoryOnUnit | inline: a dword of each active spell (`[[[node+0x38]+0x138]+0x70]+0xf8`) equals ObjectId; flag / negation | read Value as an effect-group id | 5 of 5 (all asked for id 0) |
+| 116 | Stealth | inline: `1 < *(int *)(unit + 0x54)`; flag / negation; neither word read | no check existed (unhandled types answer false) | 32 slots, 327 spell references |
 
 What each change does **not** establish: the meaning of the flag itself. For types 176, 90, 85, 275 and 221 the server keeps its existing notion of the flag (challenge activated, has a platform, on a taxi, knows a
 schematic for the item, spell on the active action set); only the operand and comparison rule were corrected. Type 85 does not apply the native ObjectId filter (an id held by the taxi entity that the server
@@ -41,6 +43,14 @@ Several handlers start with `unit == null || (type != 0x14 && type != 0x17) -> f
 player"). `0x14` and `0x17` are Player and Ghost, so the gate requires the **primary unit to be a player or ghost** and is satisfied whenever the server evaluates a player. Types 241 and 275 were corrected.
 `RequiresNpcTarget` is still used by types 97, 98, 99, 168 (client stubs), 166/167 (client stubs), 186 and the shared tradeskill helpers for types 173/174/245; those were not changed (see section 3).
 
+### Types 93 and 116: identified from the client and Jabbithole data (added later the same day)
+* **93.** All 5 retail slots use ObjectId 36 or 38, which are exactly `SpellClass.BuffDispellable` (0x24) and `DebuffDispellable` (0x26), and the only spells gated by those rows are the tiers of Medic
+  "Antidote" (Spell4 52480 and up: `SpellDispel` plus proxies whose caster-apply prerequisite is the type 93 row). The check now asks whether a spell with tracked state on the unit has that
+  `Spell4Base.SpellClass`. The native dword itself was not identified. Status: Implemented, inferred.
+* **116.** 22 of 32 slots carry Value 28455, which the client never reads and which is Spell4 "Stalker - Optic Camouflage" (first effect: Stealth); the rows are paired with UnderSpell checks for
+  "Stalker - Combat Stealth". With the client error text for the type ("Stealth property requirement not met") the flag is read as the stealth state. What the field at `+0x54` holds was not read natively.
+  Status: Implemented, inferred.
+
 ## 3. Differences found and not changed
 
 | Type | Check | Finding | Why not changed |
@@ -49,7 +59,7 @@ player"). `0x14` and `0x17` are Player and Ghost, so the gate requires the **pri
 | 73 | Vital | re-read: native switch `140466520` reads Breath (id 2, virtual `+0x58`), Absorption (`0x15`, virtual `+0x88`), three public-event resources (`0x16` to `0x18`) and Resource8 to 10 (`0x1b` to `0x1d`), and for any other id returns the class resource slot of the local player or 0, then always compares. The server returns false without comparing for ids it cannot resolve. Retail slots hit: id 0 (1 slot, `>= 80`), id 2 (1 slot, `<= 0`), id 21 (1 slot, `> 0`) | the server has no Breath value and no class-resource index; comparing 0 instead would turn "always false" into "always true" for the id 2 slot, which is no better |
 | 292 | PrimalMatrixNode | native: local player only, `PrimalMatrix_LookupAllocatedNode(1, ObjectId)` compared with Value; server always false; 24 slots | needs the server primal-matrix allocation surface; not yet done |
 | 148 | InfrastructureState | lookup miss: native answers NotEqual only; server substitutes state 0 | server API cannot distinguish a miss from state 0 |
-| 93 / 103 / 104 | | wrong slot word (ObjectId), see the audit note section 4.3 | compared field or set not identified |
+| 103 / 104 | | wrong slot word (ObjectId), see the audit note section 4.3 | compared field or set not identified |
 | 170 | GameFormula | native compares the id of a live object at global `+0x7188` with Value (flag true when Value is 0); server compares a GameFormula row with ObjectId; 14 slots | the object is not identified; the server check has no native basis |
 | 190 | PetFlair | native compares a per-player integer with an expected value of 0, 1 or 2 derived from a table row; server tests presence under one pet type; 298 slots | the two functions involved were not exported or read |
 | 194 / 195 | MountUsage / HoverboardUsage | native computes a flag for the local player; server returns true unconditionally; 4 slots each | flag meaning not identified |

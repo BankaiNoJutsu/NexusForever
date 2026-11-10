@@ -2559,6 +2559,28 @@ namespace NexusForever.Game.Entity
             return false;
         }
 
+        /// <summary>
+        /// Returns whether any spell with tracked state on this unit has the supplied <c>Spell4Base.SpellClass</c> value.
+        /// </summary>
+        internal bool HasTrackedSpellOfClass(uint spellClass, IGameTableManager gameTableManager)
+        {
+            if (gameTableManager?.Spell4 == null || gameTableManager.Spell4Base == null)
+                return false;
+
+            foreach (uint spell4Id in TrackedSpell4Ids())
+            {
+                Spell4Entry spellEntry = gameTableManager.Spell4.GetEntry(spell4Id);
+                if (spellEntry == null)
+                    continue;
+
+                Spell4BaseEntry baseEntry = gameTableManager.Spell4Base.GetEntry(spellEntry.Spell4BaseIdBaseSpell);
+                if (baseEntry != null && baseEntry.SpellClass == spellClass)
+                    return true;
+            }
+
+            return false;
+        }
+
         internal bool HasActiveSpellEffectGroup(uint effectGroupId, IGameTableManager gameTableManager)
         {
             if (effectGroupId == 0u)

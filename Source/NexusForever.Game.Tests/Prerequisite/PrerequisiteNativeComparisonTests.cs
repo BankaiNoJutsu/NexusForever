@@ -17,8 +17,30 @@ namespace NexusForever.Game.Tests.Prerequisite;
 //  - type 52 Path (evaluator case 0x34, FUN_14049fd50): the player's path equals Value; comparison 1 returns that, 2 its negation, any other comparison false. Retail: Equal 538, NotEqual 14.
 //  - type 105 SpellEffectTypeOnUnit (evaluator case 0x69, inline; Decomp/Analysis/PREREQUISITE_105_SPELL_EFFECT_TYPE_20261110.md): the id compared with each active node is the slot's
 //    ObjectId, not its Value; comparison 1 returns the match, 2 its negation, any other comparison false. Retail: 7 slots, ObjectId 0/3/31/83/100/112, Value always 0.
+//  - type 116 Stealth (evaluator case 0x74, inline): the flag is 1 < unit+0x54, Equal returns it, NotEqual its negation, anything else is false; ObjectId and Value are not read. Retail: 32 slots,
+//    22 with Value 28455 (Spell4 "Stalker - Optic Camouflage", a Stealth effect), which the client ignores.
 public class PrerequisiteNativeComparisonTests
 {
+    [Theory]
+    [InlineData(PrerequisiteComparison.Equal, 28455u, true, true)]
+    [InlineData(PrerequisiteComparison.Equal, 28455u, false, false)]
+    [InlineData(PrerequisiteComparison.NotEqual, 28455u, true, false)]
+    [InlineData(PrerequisiteComparison.NotEqual, 0u, false, true)]
+    [InlineData(PrerequisiteComparison.GreaterThan, 0u, true, false)]
+    public void StealthReturnsTheStealthFlagAndIgnoresValue(PrerequisiteComparison comparison, uint value, bool stealthed, bool expected)
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        playerProxy.SetProperty(nameof(IUnitEntity.IsStealthed), stealthed);
+        IUnitEntity creature = RecordingDispatchProxy<IUnitEntity>.Create(out var creatureProxy);
+        creatureProxy.SetProperty(nameof(IUnitEntity.IsStealthed), stealthed);
+
+        var check = new PrerequisiteCheckStealth();
+
+        Assert.Equal(expected, check.Meets(player, comparison, value, 0u, new PrerequisiteParameters()));
+        Assert.Equal(expected, check.MeetsUnit(creature, comparison, value, 0u, new PrerequisiteParameters()));
+        Assert.False(check.MeetsUnit(null, comparison, value, 0u, new PrerequisiteParameters()));
+    }
+
     // Retail row 7405 is (Equal, ObjectId 83 Stealth, Value 0); row 37231 is three NotEqual slots with ObjectId 31, 100 and 112 (the disguise effects) and Value 0.
     [Theory]
     [InlineData(PrerequisiteComparison.Equal, SpellEffectType.Stealth, true)]

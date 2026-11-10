@@ -1603,7 +1603,8 @@ public class PrerequisiteCheckTests
         tableProxy.SetProperty(nameof(IGameTableManager.Spell4EffectGroupList), CreateGameTable<Spell4EffectGroupListEntry>());
 
         var check = new PrerequisiteCheckSpell4EffectCategoryOnUnit(tables);
-        bool result = check.Meets(player, comparison, groupId, objectId: 0u, new PrerequisiteParameters());
+        // the id is read from ObjectId (native case 0x5d); a unit with no tracked spells never matches
+        bool result = check.Meets(player, comparison, 0u, objectId: groupId, new PrerequisiteParameters());
 
         Assert.Equal(expected, result);
     }
