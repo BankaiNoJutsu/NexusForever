@@ -81,8 +81,8 @@ namespace NexusForever.Game.Prerequisite.Check
                     if (objective.Index != objectiveIndex)
                         continue;
 
-                    // types 10, 13, 14 and 18; the native gate also accepts 27 and 28 for two activate modes, which the server does not keep as bits
-                    if (objective.ObjectiveInfo == null || !QuestObjective.IsChecklistType(objective.ObjectiveInfo.Type))
+                    // types 10, 13, 14 and 18, and 27 and 28 for activate modes 1 and 2
+                    if (!QuestObjective.IsChecklistObjective(objective.ObjectiveInfo))
                         return false;
 
                     return (objective.Progress & (1u << checklistIdx)) != 0u;

@@ -25,8 +25,8 @@
         ActivateTargetGroup          = 23, // data = TargetGroupId, ObjectiveText describes interacting with objects (Count: 96)
         CompleteQuest                = 24, // data = QuestId, ObjectiveText describes either completing quests by name, or completing objectives of other quests (Count: 39)
         CompleteEvent                = 25, // data = PublicEventObjectiveId, ObjectiveText describes completing a mini event (killing a bunch of zombies like in http://wildstar.mmorpg-life.com/quests/here-they-come-exile/) (Count: 152)
-        Unknown27                    = 27, // data = unknown, ObjectiveText not in localisation files (Count: 1)
-        RescuePublicEventCreatures   = 28, // data = PublicEventObjectiveId, ObjectiveText describes rescuing creatures (Count: 5)
+        Unknown27                    = 27, // data = PathSoldierActivate id (client lookup); one row, on no quest; credited like 28
+        RescuePublicEventCreatures   = 28, // data = PathSoldierActivate id, not a PublicEventObjective id: activate the row's creatures ("Rescue Kidnapped Rustics from the cages"); name kept, see SoldierActivateQuestObjectiveUpdater
         Unknown29                    = 29, // data = unknown, ObjectiveText not in localisation files (Count: 2)
         CompletePublicEventObjective = 31, // data = PublicEventObjectiveId, ObjectiveText are all empty (Count: 260)
         VirtualCollect               = 32, // data = VirtualItemId, ObjectiveText describes collecting items and lots of $v(vitem=xxx) macros (Count: 709)

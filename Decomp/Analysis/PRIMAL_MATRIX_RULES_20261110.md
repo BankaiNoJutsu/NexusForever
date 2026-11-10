@@ -85,3 +85,11 @@ type 4 (6); the 16 cluster centres carry no reward row at all.
 Not implemented: refunds or a reset; the cluster-centre question of section 5 (a centre opens like any other node); any check beyond the client's own rules.
 
 Verification: `PrimalMatrixTests` (neighbours, the open-node rule, cost, rewards, a save and load round trip through SQLite, the snapshot). Not run in a live session.
+
+## Later additions (2026-11-10)
+* **Ability points.** The nine AbilityPoint nodes (reward row 52, value 1) are now a derived term like matrix AMP power: `SpellManager.SetPrimalMatrixTierPoints` adds them to every action set
+  above the one-point bonus cap, `ServerAbilityPoints.TotalAbilityPoints` includes them, and the action set change request is limited by the same total (it was a fixed 42, which ignored the
+  bonus point as well). How the retired server published the total is assumed.
+* **Refund / reset: rejected, no client request exists.** The only Primal Matrix request the client can make is the Lua call `SavePrimalMatrix` (one occurrence in the exports) and its
+  packet `0x0072`, which carries positive increments only. No reset, refund or respec name exists among the client's Primal Matrix strings (`PrimalMatrixSaving`, `PrimalMatrixPending`,
+  `PrimalMatrixExchange`, `PrimalMatrixWelcome`, ...). `NodeDeallocationPrevented` belongs to the pending, unsaved selection in the window. Nothing to build.

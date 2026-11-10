@@ -30,5 +30,10 @@ namespace NexusForever.Game.Abstract.Quest
         bool UsesDynamicProgress();
 
         bool DisablesDynamicProgress();
+
+        /// <summary>
+        /// Objective type 27 or 28 whose PathSoldierActivate row (<c>Data</c>) has activate mode 1 or 2: progress is a bit mask of creature checklist indices.
+        /// </summary>
+        bool IsSoldierActivateChecklist => false;
     }
 }

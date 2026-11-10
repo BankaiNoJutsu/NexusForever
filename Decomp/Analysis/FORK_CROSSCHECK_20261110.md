@@ -74,3 +74,16 @@ and nothing shows how (sum, product or maximum).
 
 ### Not found in any fork
 Breath, the type 148 lookup miss, Proxy words 03 and 05, Damage word 05.
+
+### Quest objective types 27 and 28 - discrepancy resolved (added 2026-11-10, late)
+The `PathSoldierActivate` reading now has an independent source besides the native lookup and the matching counts: the client's own `Creature2.description` of the row creatures names the
+quest and objective. Row 217 -> creature `13677` "marauder cage - q4520 obj2 - twh"; row 218 -> creature `20263` "ellie tashmore's marauder cage - q4520 obj3 - twh"; row 37 -> creature
+`35249` "Algoroc Tract 3 - Exo-Lab - Cage Panel - For XAS Scientists". Quest 4520 ("Tremor Ridge Kidnappings") has objective 6181 at index 2 ("Rescue Kidnapped Rustics from the cages",
+count 6) and 7381 at index 3 ("Rescue Ellie Tashmore from her cage", count 1). The world database has 14 spawns of creature `13677` with checklist indices 0 to 13. Against the old reading:
+`PublicEventObjective` 217 and 218 belong to public events 91 and 49 with counts 1 and 15, and quest 4520 is an ordinary zone quest.
+
+Changed: type 28 was removed from `PublicEventQuestObjectiveUpdater`; `SoldierActivateQuestObjectiveUpdater` credits types 27 and 28 when a simple entity matching the row (`creature2Id` or
+`targetGroupId`) is activated; rows with activate mode 1 or 2 keep a bit mask of checklist indices (`IQuestObjectiveInfo.IsSoldierActivateChecklist`), which prerequisite type 94 reads too.
+Still unknown: what advanced the objective on the retired server (activation is inferred, shared with the Soldier path producer); objective 14973 (`Data` 159, quest 8256) has no row and
+gets no credit from either producer now; rows 16 and 17 name creatures (`19790`, `19789`) that are not in `Creature2` and their objectives (7192, 7191) are on no quest. The enum name
+`RescuePublicEventCreatures` was kept. Evidence tier: native lookup + table joins + client designer descriptions + world data. No retail capture; no retail parity claim.

@@ -154,9 +154,15 @@ namespace NexusForever.Game.Quest
         /// <remarks>
         /// The client treats objective types 10, 13, 14 and 18 as checklists (Quest_IsChecklistObjectiveType 1405517a0) in three places: prerequisite type 94, the item-use check and
         /// the completed count the quest tracker shows. Types 13 and 18 kept a count here until 2026-11-10; see Decomp/Analysis/PREREQUISITE_CHECK_REVIEW_20261110.md.
-        /// Types 27 and 28 are checklists natively for two activate modes and are not modelled. Evidence tier: native bodies. No retail parity claim.
+        /// Types 27 and 28 are checklists natively when their PathSoldierActivate row has activate mode 1 or 2 (<see cref="SoldierActivateQuestObjectiveUpdater"/>).
+        /// Evidence tier: native bodies. No retail parity claim.
         /// </remarks>
-        private bool IsChecklist() => IsChecklistType(ObjectiveInfo.Type);
+        private bool IsChecklist() => IsChecklistObjective(ObjectiveInfo);
+
+        public static bool IsChecklistObjective(IQuestObjectiveInfo info)
+        {
+            return info != null && (IsChecklistType(info.Type) || info.IsSoldierActivateChecklist);
+        }
 
         public static bool IsChecklistType(QuestObjectiveType type)
         {

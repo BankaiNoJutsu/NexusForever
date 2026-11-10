@@ -58,7 +58,7 @@ namespace NexusForever.Game.Quest
             {
                 QuestObjectiveEntry objectiveEntry = gameTableManager.QuestObjective?.GetEntry(objectiveId);
                 if (objectiveEntry != null)
-                    builder.Add(new QuestObjectiveInfo(objectiveEntry));
+                    builder.Add(new QuestObjectiveInfo(objectiveEntry, SoldierActivateQuestObjectiveUpdater.IsChecklist(objectiveEntry, gameTableManager)));
             }
 
             Objectives = builder.ToImmutable();

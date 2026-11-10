@@ -14,10 +14,16 @@ namespace NexusForever.Game.Quest
         /// <summary>
         /// Create a new <see cref="QuestObjectiveInfo"/> with supplied <see cref="QuestObjectiveEntry"/>.
         /// </summary>
-        public QuestObjectiveInfo(QuestObjectiveEntry entry)
+        public QuestObjectiveInfo(QuestObjectiveEntry entry, bool soldierActivateChecklist = false)
         {
             Entry = entry;
+            IsSoldierActivateChecklist = soldierActivateChecklist;
         }
+
+        /// <summary>
+        /// Objective type 27 or 28 whose PathSoldierActivate row (<c>Data</c>) has activate mode 1 or 2: progress is a bit mask of creature checklist indices.
+        /// </summary>
+        public bool IsSoldierActivateChecklist { get; }
 
         /// <summary>
         /// Quest objective is sequential, previous quest objective must be complete.

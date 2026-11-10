@@ -225,6 +225,12 @@ The setter has no direct caller. It is slot `+0x98` of the unit virtual table (s
 code decompiled; none of them calls this slot on a unit, so the packet or stat id that drives Breath was **not found**. Without it the server cannot tell the client a Breath value, so
 Breath stays unmodelled: no vital, no drain from the one SapVital row that targets it, and type 73 keeps answering false for it.
 
+Second pass, same day, same result. Checked and ruled out: a tail jump through the slot (the `CALL|JMP [reg + 0x98]` scan covers both); a client-side decay from the unit property
+`BreathDecay` (125): no instruction loads `0x7d` as a property id argument (three `MOV reg, 0x7d` sites, in the Lua parser, a packet-region function and the item Lua bindings). The Hazard
+system has a `Breath` hazard type (0) with its own meter and packets (`0x0109` to `0x010B`), which the server already models; that meter is separate from the unit float at `+0x44`, and
+`HazardManager_ApplyList` does not write it. Not looked at: the 3 call sites outside any function and the roughly 100 single-site functions of the scan that are not in entity, movement or
+hazard code. Types 27 and 28 of the quest objective table were modelled later the same day; see `FORK_CROSSCHECK_20261110.md`.
+
 ## 3. Differences found and not changed
 
 | Type | Check | Finding | Why not changed |

@@ -1374,6 +1374,11 @@ namespace NexusForever.Game.Entity
                 ?? throw new InvalidOperationException("World entity game table manager has not been initialised.");
         }
 
+        /// <summary>
+        /// The game table manager, or null for an entity that was built without one.
+        /// </summary>
+        protected IGameTableManager TryGetGameTableManager() => gameTableManagerResolver?.Invoke();
+
         private IChatMessageBuilder BuildNpcChat(string text, ChatChannelType type)
         {
             return new ChatMessageBuilder

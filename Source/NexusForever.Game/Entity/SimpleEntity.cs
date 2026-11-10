@@ -9,6 +9,8 @@ using NexusForever.Network.World.Entity;
 using NexusForever.Network.World.Entity.Model;
 using NexusForever.Script;
 
+using NexusForever.Game.Quest;
+
 namespace NexusForever.Game.Entity
 {
     public class SimpleEntity : UnitEntity, ISimpleEntity
@@ -76,6 +78,7 @@ namespace NexusForever.Game.Entity
         private void ProgressPathChecklistMissions(IPlayer activator)
         {
             activator.PathManager.ProgressActivateChecklistMissions(CreatureId, GetCreatureTargetGroupIds(), QuestChecklistIdx);
+            SoldierActivateQuestObjectiveUpdater.OnActivate(activator, CreatureId, GetCreatureTargetGroupIds(), QuestChecklistIdx, TryGetGameTableManager());
         }
 
         private bool ShouldCastInteractionCompletionSpell()
