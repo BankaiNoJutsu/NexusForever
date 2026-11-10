@@ -44,19 +44,24 @@ changes: it is the AMP power the matrix contributes.
 ## 4. Rewards (tables)
 Each node names one `PrimalMatrixReward` row per class. A reward row has up to four typed slots:
 
-| Type | Rows (slot 0) | Data | Reading |
-|---:|---:|---|---|
-| 5 | 36 | `objectId` = a Property id, `value` 10 to 30 | adds to that property. Slot 1 of nearly every row is type 5, property 153 (Heroism), value 25; the launch coverage says unlocking nodes raises a Heroism rating |
-| 4 | 36 | `objectId` = a Spell4 id (`87947` to `88219`) | grants that spell |
-| 2 | 1 | `value` 1 | AMP power or an ability point; the coverage says bridge nodes grant "AMP Points, Ability Points" |
-| 3 | 1 | `value` 1 | the other of the two |
+The client registers the type as a named enum, `PrimalMatrixRewardType` (name and value pairs at `140c33d50` to `140c33da8`, read directly): **None 0, RewardProperty 1,
+AbilityPoint 2, AMPPoint 3, AbilityUnlock 4, UnitProperty 5.**
+
+| Type | Name (native) | Rows (slot 0) | Data |
+|---:|---|---:|---|
+| 5 | UnitProperty | 36 | `objectId` = a Property id, `value` 10 to 30. Slot 1 of nearly every row is UnitProperty 153 (Heroism), value 25; the launch coverage says unlocking nodes raises a Heroism rating |
+| 4 | AbilityUnlock | 36 | `objectId` = a Spell4 id (`87947` to `88219`) |
+| 2 | AbilityPoint | 1 | `value` 1 |
+| 3 | AMPPoint | 1 | `value` 1 |
+
+Types 0 and 1 are not used by any row.
 
 By node type (Warrior column; the other classes have the same shape): the 96 colour nodes all carry a type 5 reward; the 24 bridge nodes carry type 2 (9 nodes), type 3 (9) or
 type 4 (6); the 16 cluster centres carry no reward row at all.
 
 ## 5. Still unknown
-* Which of reward types 2 and 3 is AMP power and which is the ability point.
-* Whether a type 5 value is granted once per allocation or once per node (nodes with five allocations carry the same 30 as nodes with one).
+* Whether a UnitProperty value is granted once per allocation or once per node (nodes with five allocations carry the same 30 as nodes with one). The launch coverage says
+  extra essence in a multi-tier node "further boosts" its benefit, which reads as per allocation; nothing native was read.
 * Whether a cluster centre (type 1, free) needs all six surrounding nodes full; the UI rule in section 2 only asks for one allocated neighbour, and the coverage describes completing a
   cluster before moving on.
 * What the retired server validated. The rules in sections 2 and 3 are the client's own; a server would be expected to enforce the same, but that is an assumption.
@@ -65,3 +70,5 @@ type 4 (6); the 16 cluster centres carry no reward row at all.
 ## 6. What an implementation needs
 Per-character storage of node id and count (a new table in both the MySQL and the SQLite migration sets), the validation in sections 1 to 3 against the account's four essence balances,
 a snapshot on login and after each save, and the rewards of section 4. The prerequisite check for type 292 already compares a count and only needs the stored value.
+The rewards are the wide part: AMP points and ability points have to enter the totals the action sets and the AMP power publication already own, and the property rewards need a
+source that is neither an item nor a spell.
