@@ -27,8 +27,18 @@ namespace NexusForever.Game.Tests.Prerequisite;
 //  - type 178 (14049d2c0): ObjectId is an ItemSlot id; the flag is "an item is equipped at the index of the lowest bit of equippedSlotFlags". Retail: ItemSlot 46 ArmorGadget (0x800 -> index 11)
 //    unlocks the gadget action slot; Value (100 on that row) is not read.
 //  - type 104 (14046a210): the unit has an active effect in spell effect group ObjectId. Retail row 23816: NotEqual group 12 (housing statue / warhorn buffs) on the plugs that grant them.
+//  - type 289 (14049f0c0): bit 0 of the client's RealmDataCenter row flags (PTR rows only). Not a test realm here, so Equal is false and NotEqual true.
 public class PrerequisiteNativeComparisonTests
 {
+    [Theory]
+    [InlineData(PrerequisiteComparison.Equal, false)]
+    [InlineData(PrerequisiteComparison.NotEqual, true)]
+    [InlineData(PrerequisiteComparison.GreaterThanOrEqual, false)]
+    public void TestDataCenterFlagIsFalseOnThisServer(PrerequisiteComparison comparison, bool expected)
+    {
+        Assert.Equal(expected, new PrerequisiteCheckTestDataCenter().Meets(null, comparison, 0u, 0u, new PrerequisiteParameters()));
+    }
+
     [Theory]
     [InlineData(PrerequisiteComparison.Equal, true, true)]
     [InlineData(PrerequisiteComparison.NotEqual, true, false)]

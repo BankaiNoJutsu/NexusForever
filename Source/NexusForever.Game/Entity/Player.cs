@@ -2709,6 +2709,20 @@ namespace NexusForever.Game.Entity
             return true;
         }
 
+        /// <summary>
+        /// Returns whether an active tradeskill of this <see cref="IPlayer"/> has the supplied TradeskillBonus id picked as a talent in any tier.
+        /// </summary>
+        public bool HasTradeskillTalent(uint tradeskillBonusId)
+        {
+            foreach (TradeskillState tradeskill in tradeskills.Values)
+            {
+                if (tradeskill.IsActive != 0u && Array.IndexOf(tradeskill.TalentTierIds, tradeskillBonusId) >= 0)
+                    return true;
+            }
+
+            return false;
+        }
+
         public bool ResetTradeskillTalents(TradeskillType tradeskillId)
         {
             if (!HasTradeskill(tradeskillId))

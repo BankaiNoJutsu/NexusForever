@@ -1,4 +1,4 @@
-using NexusForever.Game.Abstract.Entity;
+﻿using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Prerequisite;
@@ -19,15 +19,20 @@ namespace NexusForever.Game.Prerequisite.Check
     }
 
     /// <summary>
-    /// Prerequisite type 289 (slot <c>+0x3d0</c>, comparison only): kept on the earlier "is on a mount platform compared with Value" behaviour. Its native body was not read.
+    /// Prerequisite type 289: evaluator case <c>0x121</c> calls manager vtable <c>+0x3d0</c> (<c>14049f0c0</c>) with the comparison only. The flag is bit 0 of the <c>flags</c> field of the
+    /// RealmDataCenter row the client was started against (application object <c>DAT_140c635f0 + 0x16e8</c>, set from the <c>realmDataCenterId</c> launch argument through <c>14022e1c0</c>).
+    /// Equal returns it, NotEqual its negation, any other comparison false. No unit, ObjectId or Value is read.
     /// </summary>
+    /// <remarks>
+    /// Retail RealmDataCenter rows carry the bit on <c>auth.ptr.wildstar-online.com</c> (id 12) and one internal row (id 13) only; the live NA and EU rows and the localhost row do not. Read as
+    /// "this is a public test realm". The three retail slots offer a quest (10433, 10440) either after its predecessor or, on such a realm, without it.
+    /// This server is not a test data centre, so the flag is false. The previous implementation compared "is mounted" with Value, following a label that mistook the application object for a unit.
+    /// Status: Implemented from the native body; the meaning of the bit is inferred from the two rows that carry it. No retail parity claim.
+    /// </remarks>
     [PrerequisiteCheck(PrerequisiteType.Unknown289)]
-    public class PrerequisiteCheckMountScalar : IPrerequisiteCheck
+    public class PrerequisiteCheckTestDataCenter : IPrerequisiteCheck
     {
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
-        {
-            uint mounted = MovementPrerequisiteHelper.GetPlatformEntityType(player) == (uint)EntityType.Mount ? 1u : 0u;
-            return PrerequisiteCompare.Compare(comparison, mounted, value);
-        }
+            => PrerequisiteCompare.CompareFlag(comparison, false);
     }
 }

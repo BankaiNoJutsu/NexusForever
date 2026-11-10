@@ -112,6 +112,19 @@ player"). `0x14` and `0x17` are Player and Ghost, so the gate requires the **pri
   a spell with cooldown id Value (always 0); it now uses the existing effect-group helper. Rows 5634 (group 4, on an effect whose spell no longer exists) and 29932 (group 14, empty) are dead.
   Status: Implemented from the native body and the table builder.
 
+### Types 175 and 289 (added later the same day)
+* **175.** `14049f190` walks the list at local-player global `+0x1698` / `+0x16a0`. An instruction scan shows that list is the known-tradeskill list (`Lua_Crafting_GetKnownTradeskills`,
+  `Lua_Crafting_GetTradeskillTalents`, `Tradeskill_SendClientTradeskillPickTalent` and a dozen more crafting functions read it). For every entry with `+0xc` non-zero the ten ids at `+0x18` are
+  searched for ObjectId; Value is not read. The entry layout (tradeskill id, active flag, ten ids) is the server's own tradeskill state with its ten talent tier picks, and the one retail
+  ObjectId, 153, is a TradeskillBonus row that is one of the three choices (152, 153, 154) of TradeskillTalentTier 42. Read as "tradeskill talent ObjectId is picked". The server read ObjectId
+  as a tradeskill id and compared its tier with Value. New `IPlayer.HasTradeskillTalent`. The retail row has no referencing row. Status: Implemented from the native body; the meaning of the
+  ten ids is inferred. The labels `Prerequisite_CheckJump`, `_CheckTaxi`, `_CheckMoving` and `_CheckPet` on the neighbouring bodies that read the same list are stale names.
+* **289.** `14049f0c0` reads bit 0 of `*(DAT_140c635f0 + 0x16e8) + 4`. `WorldSocket_InitPersistentRuntimeNodes` (`14000b690`) fills `+0x16e8` with the RealmDataCenter row for the
+  `realmDataCenterId` launch argument (`14022e1c0`), and `+4` is that row's `flags`; the same pointer supplies the redirect and store URLs. Of the ten retail rows only
+  `auth.ptr.wildstar-online.com` (id 12) and one internal row (id 13) carry bit 0. Read as "public test realm". The three slots offer quests 10433 and 10440 either after their predecessor or,
+  on such a realm, without it. The server compared "is mounted" with Value; it now returns the flag as false. The label `Prerequisite_CheckMount` was wrong for this body. Status: Implemented
+  from the native body; the meaning of the bit is inferred from the rows that carry it.
+
 ## 3. Differences found and not changed
 
 | Type | Check | Finding | Why not changed |
@@ -119,9 +132,7 @@ player"). `0x14` and `0x17` are Player and Ghost, so the gate requires the **pri
 | 73 | Vital | re-read: native switch `140466520` reads Breath (id 2, virtual `+0x58`), Absorption (`0x15`, virtual `+0x88`), three public-event resources (`0x16` to `0x18`) and Resource8 to 10 (`0x1b` to `0x1d`), and for any other id returns the class resource slot of the local player or 0, then always compares. The server returns false without comparing for ids it cannot resolve. Retail slots hit: id 0 (1 slot, `>= 80`), id 2 (1 slot, `<= 0`), id 21 (1 slot, `> 0`) | the server has no Breath value and no class-resource index; comparing 0 instead would turn "always false" into "always true" for the id 2 slot, which is no better |
 | 292 | PrimalMatrixNode | native: local player only, `PrimalMatrix_LookupAllocatedNode(1, ObjectId)` compared with Value; server always false; 24 slots | understood; blocked on a server feature, not on evidence: the player has no primal matrix allocation state to query |
 | 148 | InfrastructureState | lookup miss: native answers NotEqual only; server substitutes state 0 | server API cannot distinguish a miss from state 0 |
-| 88 | Pet | native tests whether the primary unit id is in a list on the second unit (`+0x2b8` / `+0x2c0`); server tests the vanity pet against Value; 1 slot (row 15631), no referencing row found | list not identified; nothing references the row |
-| 175 | TradeSkill | native `14049f190`: the flag is "ObjectId is one of the ten ids (`+0x18`) of an active entry of the list at local-player global `+0x1698`"; Value is not read; server compares a tradeskill tier with Value; 1 slot (ObjectId 153), no referencing row found | the list is not identified (an older label calls it the pet list); nothing references the row |
-| 289 | Unknown289 | native `14049f0c0` reads bit 0 of `*(DAT_140c635f0 + 0x16e8) + 4`. `DAT_140c635f0` is the application object created in `140019350`, not a unit, so the label `Prerequisite_CheckMount` and the server's "is mounted" reading have no basis; 3 slots, two of them in the availability of quests 10433 and 10440 as an alternative to "quest 9716 / 9729 completed" | the flag is not identified; Jabbithole has no record of those quests |
+| 88 | Pet | native tests whether the primary unit id is in a list on the second unit (`+0x2b8` / `+0x2c0`); server tests the vanity pet against Value; 1 slot (row 15631), no referencing row found. An instruction scan for `+0x2b8` returns 309 hits and no labelled unit function, so the list stays unidentified | list not identified; nothing references the row |
 | 94 | QuestObjective6 | native result depends on unit types and the unit slot at `+0x35f8`; 781 slots | unit participation slot is a known unmodelled concept |
 | 41 | ZoneExplored | native compares an untruncated float ratio; server a truncated integer. Re-checked: none of the 14 rows using type 41 is referenced by any table. 13 are early rows (ids 716 to 1250) with ObjectId 0 and a zone-like id in Value under Equal, which the current native body cannot satisfy; only row 7964 (zone 1, `>= 25`) has the current shape | no live reference |
 | 179, 80, 172, 218, 246, 78, 140, 81, 173, 174 | | latent or zero-row differences | no retail slot affected, or reported and not re-read |

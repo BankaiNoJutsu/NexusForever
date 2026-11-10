@@ -867,21 +867,20 @@ public class PrerequisiteCheckTests
         Assert.False(check.Meets(player, PrerequisiteComparison.NotEqual, value: 1u, objectId: 123u, new PrerequisiteParameters()));
     }
 
-    [Fact]
-    public void TradeSkill_ComparesTradeskillTierRankForObjectId()
+    // Native type 175 (14049f190): "ObjectId is one of the ten talent ids of an active tradeskill"; Equal / NotEqual, Value not read. Retail: ObjectId 153, a TradeskillBonus of talent tier 42.
+    [Theory]
+    [InlineData(153u, PrerequisiteComparison.Equal, true)]
+    [InlineData(152u, PrerequisiteComparison.Equal, false)]
+    [InlineData(152u, PrerequisiteComparison.NotEqual, true)]
+    [InlineData(153u, PrerequisiteComparison.GreaterThanOrEqual, false)]
+    public void TradeSkill_TestsWhetherTheTradeskillTalentIsPicked(uint tradeskillBonusId, PrerequisiteComparison comparison, bool expected)
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
-        playerProxy.SetMethodReturn(nameof(IPlayer.HasTradeskill), true);
-        playerProxy.SetMethodReturn(nameof(IPlayer.GetTradeskillXp), 150u);
+        playerProxy.SetMethodHandler(nameof(IPlayer.HasTradeskillTalent), args => (uint)args[0] == 153u);
 
-        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out var tableProxy);
-        tableProxy.SetProperty(nameof(IGameTableManager.TradeskillTier), CreateGameTable(
-            new TradeskillTierEntry { Id = 1u, TradeSkillId = (uint)TradeskillType.Mining, Tier = 2u, RequiredXp = 100u }));
+        var check = new PrerequisiteCheckTradeSkill();
 
-        var check = new PrerequisiteCheckTradeSkill(tables);
-
-        Assert.True(check.Meets(player, PrerequisiteComparison.GreaterThanOrEqual, 2u, (uint)TradeskillType.Mining, new PrerequisiteParameters()));
-        Assert.False(check.Meets(player, PrerequisiteComparison.GreaterThanOrEqual, 3u, (uint)TradeskillType.Mining, new PrerequisiteParameters()));
+        Assert.Equal(expected, check.Meets(player, comparison, 7u, tradeskillBonusId, new PrerequisiteParameters()));
     }
 
     [Fact]

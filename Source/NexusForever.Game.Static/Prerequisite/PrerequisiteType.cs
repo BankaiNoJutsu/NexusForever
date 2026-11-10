@@ -180,7 +180,7 @@
         HealthScaled                  = 172, // Health requirement not met - client case 0xac inline: Entity_GetHealthScaleFactor 14047a940(entity) * *(float*)(entity+0xd08+0x8c) float; NF compares health percent (Health*100/MaxHealth) until scale factor is modeled; handler table[172] reads accountItemList+0x184 (DailyLogin rewardsAvailable) on dead path
         ItemTradeSkill              = 173, // Item tradeskill requirement not met - handler table[173] Prerequisite_CheckItemTradeSkill 1404a1790: NPC types 0x14/0x17; TradeSkill_CheckItemTradeskillRequirement 1403c16e0(item2Id)
         ItemTradeSkillKnown         = 174, // Known tradeskill recipe requirement not met - handler table[174] Prerequisite_CheckItemTradeSkillKnown 1404a17e0: NPC types 0x14/0x17; TradeSkill_ClientHasKnownItem2Id 1403b91d0 binary-searches player known-recipe list
-        TradeSkill                  = 175, // Tradeskill requirement not met - handler table[175] stub 140001ba0; NF compares TradeskillType objectId0 tier rank via HasTradeskill + TradeskillTier
+        TradeSkill                  = 175, // Tradeskill requirement not met - live case 0xaf vtable +0x3e0 -> 14049f190: ObjectId is a TradeskillBonus id picked as a talent on an active tradeskill; Value not read
         ChallengeObject             = 176, // Challenge object requirement not met - handler table[176] stub 140001ba0; NF proxies activated challenge for objectId0 Challenge.tbl id
         TrueLevel                   = 177, // Native case 0xB1 compares unit+0x38 (base level) with Value via FUN_1404a2090; not a challenge lookup
         ProgressTrackOnMatchingEntity = 178, // Requirements not met - older name; live case 0xb2 vtable +0x140 -> 14049d2c0: an item is equipped in ItemSlot ObjectId (lowest bit of equippedSlotFlags); see PrerequisiteCheckItemSlotEquipped
@@ -294,7 +294,7 @@
         Unknown286                  = 286, // Exists without description - live case 0x11e vtable +0x688 -> Prerequisite_CheckDailyLoginDaysTotal 1404a1710; accountItemList+0x180; duplicate-body alias, no semantic rename
         DailyLoginRewardsAvailable  = 287, // Exists without description - live case 0x11f vtable +0x690 -> Prerequisite_CheckDailyLoginRewardsAvailable 1404a1750; accountItemList+0x184
         PurchasedTitle              = 288, // Character title requirement not met
-        Unknown289                  = 289, // Exists without description - live case 0x121 vtable +0x3d0 -> Prerequisite_CheckMount 14049f0c0; duplicate-body alias, no semantic rename
+        Unknown289                  = 289, // Exists without description - live case 0x121 vtable +0x3d0 -> 14049f0c0: bit 0 of the flags of the RealmDataCenter row the client runs against (set on the PTR rows only); see PrerequisiteCheckTestDataCenter
         Unknown290                  = 290, // Exists without description - live case 0x122 vtable +0x3a8 -> Prerequisite_CheckUnderForcedMovement 14049efa0; duplicate-body alias, no semantic rename
         Unknown291                  = 291, // Exists without description - live case 0x123 vtable +0x6c0 -> Prerequisite_CheckProgressTrackOnMatchingEntity 1404a1890; duplicate-body alias, no semantic rename
         PrimalMatrixNode            = 292, // Requirements not met - objectId is PrimalMatrixNode.tbl id; value0 is allocation threshold (always 1 in client rows); live case 0x124 vtable +0x6c8; handler table[292] _purecall; PrimalMatrix_LookupAllocatedNode 1404d6a60 is wired at handler table[179] 1404a18f0 only

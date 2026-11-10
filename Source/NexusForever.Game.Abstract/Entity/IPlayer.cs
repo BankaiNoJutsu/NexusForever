@@ -313,6 +313,11 @@ namespace NexusForever.Game.Abstract.Entity
         uint EnsureTradeskillTalentPointTotal(TradeskillType tradeskillId, uint earnedTalentPoints);
         bool PickTradeskillTalent(TradeskillType tradeskillId, uint tier, uint tradeskillBonusId);
         bool ResetTradeskillTalents(TradeskillType tradeskillId);
+
+        /// <summary>
+        /// Returns whether an active tradeskill of this <see cref="IPlayer"/> has the supplied TradeskillBonus id picked as a talent in any tier.
+        /// </summary>
+        bool HasTradeskillTalent(uint tradeskillBonusId);
         bool HasLearnedSchematic(uint tradeskillSchematic2Id);
         bool LearnSchematic(uint tradeskillSchematic2Id, bool discovered = false);
         bool DiscoverSchematic(uint tradeskillSchematic2Id);
