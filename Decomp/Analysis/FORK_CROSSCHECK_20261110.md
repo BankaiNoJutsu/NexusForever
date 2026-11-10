@@ -45,7 +45,13 @@ reading has a native or retail witness. The fork does not read word 07. Words 03
 `cmcnutt0000` cites the same client function (`0x1405517A0`) and stores progress for types 10, 13, 14 and 18 (and 27, 28 with activate mode 1 or 2) as a bit mask of `QuestChecklistIdx`, complete when
 the number of set bits reaches the count. That is the reading the three native consumers recorded in `PREREQUISITE_CHECK_REVIEW_20261110.md` point to. Two further observations made while checking:
 
-* The lookup behind types 27 and 28 is `PathSoldierActivate` in the fork; this branch labelled the same call `SettlerMission_LookupById`. Not re-read; one of the two names is wrong.
+* The lookup behind types 27 and 28 is `PathSoldierActivate` in the fork; this branch labelled the same call `SettlerMission_LookupById`. Checked against the table afterwards: `PathSoldierActivate` has `soldierActivateModeEnum` at row offset `+0x10`, the word the client tests, and five of the six retail objectives of types 27 and 28 carry a `Data` that is a `PathSoldierActivate` id with mode 1. The fork is right; the label was corrected to `PathSoldierActivate_LookupById`. 
+  **Discrepancy with existing code, recorded and not changed.** `PublicEventQuestObjectiveUpdater` credits type 28 (`RescuePublicEventCreatures`) by reading `Data` as a `PublicEventObjective` id.
+  All six `Data` values (16, 17, 37, 159, 217, 218) are also valid `PublicEventObjective` ids, but they are small integers and nearly any small integer is. Against that reading: the client
+  passes the same word to the `PathSoldierActivate` lookup, and the `count` column of the matching `PathSoldierActivate` row equals the objective count on all four type 28 objectives that
+  resolve (6181: 6, 7191: 3, 7381: 1, 7647: 4). Read that way the objective is "activate N of the creatures of this soldier-activate row" (`creature2Id` 13677, 19789, 20263, 35249), a
+  checklist of those creatures. Objective 14973 (`Data` 159) has no `PathSoldierActivate` row and fits neither cleanly. How these objectives advanced on the retired server is not known,
+  so the producer is unchanged and the two types are still not kept as bit masks.
 * The world data that argued against the mask (objectives 21319, 21378, 21332, 21379: creatures `73422` and `73662`, every spawn index 0) looks like incomplete data rather than retail values:
   objective 8029 is also a single creature id (`23379`) with four spawns, and those carry indices 0 to 3.
 

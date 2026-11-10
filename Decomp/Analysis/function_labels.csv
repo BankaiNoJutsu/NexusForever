@@ -1239,7 +1239,7 @@ WildStar64.exe,140220080,ScientistDatacubeDiscovery_LookupById,Looks up a scient
 WildStar64.exe,140220d40,ScientistFieldStudy_LookupById,Looks up a scientist field study mission entry by sub-data ID.
 WildStar64.exe,140221180,ScientistSpecimenSurvey_LookupById,Looks up a scientist specimen survey mission entry by sub-data ID.
 WildStar64.exe,140222f40,SettlerSheriff_LookupById,Looks up a settler sheriff mission entry by sub-data ID.
-WildStar64.exe,140223380,SettlerMission_LookupById,Looks up a settler mission entry (types 4-6: resource/scout/sheriff) by sub-data ID.
+WildStar64.exe,140223380,PathSoldierActivate_LookupById,PathSoldierActivate row by id (soldierActivateModeEnum at row +0x10). Called by Quest_IsChecklistObjectiveType with the Data word of quest objective types 27 and 28; five of the six retail objectives of those types resolve to a row with mode 1. Previously labelled SettlerMission_LookupById.
 WildStar64.exe,1406195b0,ScientistExperimentation_Refresh,Refreshes the scientist experimentation active patterns from server state.
 WildStar64.exe,14077d240,ExplorerClue_ShowHintArrow,Shows the hint arrow for an explorer clue in the current mission.
 WildStar64.exe,14056b7b0,PowerMap_GetProgressFloat,Returns the current float progress (0.0-1.0) for an explorer power map mission.
@@ -6357,7 +6357,7 @@ WildStar64.exe,14049d2c0,Prerequisite_CheckItemSlotEquipped,Prerequisite type 17
 WildStar64.exe,14022e1c0,ClientDB_GetRealmDataCenterEntry,Returns the RealmDataCenter row for an id; the application object keeps the row for the realmDataCenterId launch argument at +0x16e8.
 WildStar64.exe,140552f50,QuestRuntime_IsQuestInActiveMap,True when the quest of the supplied quest node is present in the active quest map of the quest runtime (DAT_140c65b80).
 WildStar64.exe,140551730,Quest_IsObjectiveChecklistBitSet,Quest node; objective index; slot: active quest; objective exists and passes Quest_IsChecklistObjectiveType; slot below 32; returns objective word (virtual +0x40) masked with 1 << slot. Used by prerequisite type 94 with unit +0x35f8.
-WildStar64.exe,1405517a0,Quest_IsChecklistObjectiveType,True for objective types 10; 13; 14; 18 and for 27/28 when the settler mission mode is 1 or 2.
+WildStar64.exe,1405517a0,Quest_IsChecklistObjectiveType,True for objective types 10; 13; 14; 18 and for 27/28 when the PathSoldierActivate row of the objective Data has mode 1 or 2.
 WildStar64.exe,1403c9f30,LocalPlayer_CreateClassMechanicObject,Builds the class object stored at game +0x6d90 from the Class row: base constructor 1405e7330; subclass vtable chosen by the row mechanic word (1; 2; 4; 5; 6).
 WildStar64.exe,1405e7330,ClassMechanic_Construct,Base constructor of the class object (vtable 140b6e4a0); copies the innate ability spell ids of the Class row.
 WildStar64.exe,1405e78c0,ClassMechanic_FindResourceSlotForVital,Class object virtual +0x60 (shared by all subclasses): first index of the eight Class.vitalEnumResource words equal to the vital id whose unit resource float (+0x21c + 4 * index) is positive; else 11. Default branch of Unit_GetCurrentVitalForPrerequisite.
