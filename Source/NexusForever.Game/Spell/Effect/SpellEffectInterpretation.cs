@@ -26,7 +26,11 @@ namespace NexusForever.Game.Spell.Effect
 
     public sealed record SpellEffectTiming(uint DelayTime, uint TickTime, uint DurationTime);
 
-    public sealed record SpellEffectDamageSemantics(float TypeMultiplier, float TypeBaseValue);
+    /// <param name="ArmorPierce">
+    /// Fraction of the victim's armor a Damage row ignores (Spell4Effects DataBits04, effect type 8 only). Inferred from tooltips, see
+    /// Decomp/Analysis/SPELL_EFFECT_DAMAGE_WORDS_20261110.md. No retail parity claim.
+    /// </param>
+    public sealed record SpellEffectDamageSemantics(float TypeMultiplier, float TypeBaseValue, float ArmorPierce = 0f);
 
     public sealed record SpellEffectProxyRandomExclusiveCandidate(uint Spell4Id, uint Weight);
 
@@ -925,6 +929,12 @@ namespace NexusForever.Game.Spell.Effect
             return Interpret(info.Entry);
         }
 
+        private static float ReadArmorPierce(uint dataBits)
+        {
+            float value = BitConverter.UInt32BitsToSingle(dataBits);
+            return float.IsFinite(value) ? Math.Clamp(value, 0f, 1f) : 0f;
+        }
+
         public static SpellEffectInterpretation Interpret(Spell4EffectsEntry entry)
         {
             ArgumentNullException.ThrowIfNull(entry);
@@ -1593,6 +1603,11 @@ namespace NexusForever.Game.Spell.Effect
                         entry.DataBits05);
                     break;
                 case SpellEffectType.Damage:
+                    interpretation.Damage = new SpellEffectDamageSemantics(
+                        BitConverter.UInt32BitsToSingle(entry.DataBits00),
+                        entry.DataBits01,
+                        ReadArmorPierce(entry.DataBits04));
+                    break;
                 case SpellEffectType.Heal:
                 case SpellEffectType.DistanceDependentDamage:
                 case SpellEffectType.DistributedDamage:

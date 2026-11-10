@@ -86,7 +86,7 @@ namespace NexusForever.Game.Combat
 
             damage = CalculateBaseDamageVariance(damage);
 
-            damage = GetDamageAfterArmorMitigation(victim, info.Entry.DamageType, damage);
+            damage = GetDamageAfterArmorMitigation(victim, info.Entry.DamageType, damage, effect.Damage?.ArmorPierce ?? 0f);
             damage = ApplyDamageTakenMultiplier(victim, info.Entry.DamageType, damage);
 
             if (CalculateCrit(ref damage, attacker, victim))
@@ -553,7 +553,7 @@ namespace NexusForever.Game.Combat
             return (uint)(damage * (Random.Shared.Next(95, 103) / 100f));
         }
 
-        private uint GetDamageAfterArmorMitigation(IUnitEntity victim, DamageType damageType, uint damage)
+        private uint GetDamageAfterArmorMitigation(IUnitEntity victim, DamageType damageType, uint damage, float armorPierce = 0f)
         {
             GameFormulaEntry armorFormulaEntry = gameTableManager.GameFormula.GetEntry(1234);
             return ApplyArmorMitigation(
@@ -564,7 +564,8 @@ namespace NexusForever.Game.Combat
                 victim.GetPropertyValue(Property.DamageMitigationPctOffsetPhysical),
                 victim.GetPropertyValue(Property.DamageMitigationPctOffsetTech),
                 victim.GetPropertyValue(Property.DamageMitigationPctOffsetMagic),
-                armorFormulaEntry);
+                armorFormulaEntry,
+                armorPierce);
         }
 
         internal static uint ApplyArmorMitigation(
@@ -575,12 +576,18 @@ namespace NexusForever.Game.Combat
             float physicalOffset,
             float techOffset,
             float magicOffset,
-            GameFormulaEntry armorFormulaEntry)
+            GameFormulaEntry armorFormulaEntry,
+            float armorPierce = 0f)
         {
             if (damage == 0u || armorFormulaEntry == null || victimLevel == 0u)
                 return damage;
 
             float maximumArmorMitigation = armorFormulaEntry.Dataint01 * 0.01f;
+            // A Damage row may ignore part of the victim's armor (Spell4Effects DataBits04, for example "pierce 35% armor" on Spellslinger True Shot). That the fraction scales the
+            // armor term and leaves the flat mitigation offsets alone is assumed; the tooltips only say "armor". See Decomp/Analysis/SPELL_EFFECT_DAMAGE_WORDS_20261110.md.
+            if (float.IsFinite(armorPierce) && armorPierce > 0f)
+                victimArmor *= 1f - Math.Min(armorPierce, 1f);
+
             float mitigationPct = (armorFormulaEntry.Datafloat0 / victimLevel * armorFormulaEntry.Datafloat01) * victimArmor / 100f;
             mitigationPct += damageType switch
             {

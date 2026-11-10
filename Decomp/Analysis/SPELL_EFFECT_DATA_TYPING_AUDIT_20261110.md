@@ -53,7 +53,7 @@ Competing readings of Proxy word 03 (float): a trigger chance (1.0 = always) wit
 **Resolved the same day** from the tick-count equality and the Telekinetic Strike tooltip: word 04 is the maximum number of executions, and the child is cast by the caster of the parent. See
 `SPELL_EFFECT_PROXY_20261110.md`; implemented as inferred. Word 03 is still unread.
 
-The unread Damage floats (words 03 to 05) and the DistributedDamage and DistanceDependentDamage floats are consistent with the tracker's note that distance falloff and target-count splitting are not modelled;
+**Damage words 03 to 05 were read later the same day** (`SPELL_EFFECT_DAMAGE_WORDS_20261110.md`): word 04 is the armor pierce fraction (implemented, inferred from tooltips), word 03 a per-jump scalar on chained damage (not implemented), word 05 still unread. The DistributedDamage and DistanceDependentDamage floats are consistent with the tracker's note that distance falloff and target-count splitting are not modelled;
 which word is which is not known.
 
 ### 2.4 Words the server reads as float where the table says raw

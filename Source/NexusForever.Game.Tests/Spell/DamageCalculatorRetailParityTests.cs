@@ -130,6 +130,54 @@ public class DamageCalculatorRetailParityTests
         Assert.Equal(100u, damage);
     }
 
+    // Damage DataBits04 is the fraction of armor the row ignores. Tooltip witnesses: Spellslinger True Shot Tap 1 (Spell4 36052, 0.35) "pierce 35% armor";
+    // True Shot Surge Tap 2 (36054, 0.5) "Armor Pierce increased to 50%"; Warrior Breaching Strikes 2nd Hit (42371, 0.2) "Pierces 20% Armor".
+    // With this formula row 1,000 armor at level 50 mitigates 40%.
+    [Theory]
+    [InlineData(0f, 60u)]
+    [InlineData(0.35f, 74u)]
+    [InlineData(0.5f, 80u)]
+    [InlineData(1f, 100u)]
+    [InlineData(4f, 100u)]
+    [InlineData(float.NaN, 60u)]
+    public void ApplyArmorMitigation_IgnoresThePiercedFractionOfArmor(float armorPierce, uint expectedDamage)
+    {
+        var formula = new GameFormulaEntry { Id = 1234u, Dataint01 = 75u, Datafloat0 = 2f, Datafloat01 = 1f };
+
+        uint damage = DamageCalculator.ApplyArmorMitigation(
+            100u,
+            DamageType.Physical,
+            victimLevel: 50u,
+            victimArmor: 1000f,
+            physicalOffset: 0f,
+            techOffset: 0f,
+            magicOffset: 0f,
+            formula,
+            armorPierce);
+
+        Assert.Equal(expectedDamage, damage);
+    }
+
+    [Fact]
+    public void ArmorPierceLeavesTheFlatMitigationOffsetAlone()
+    {
+        var formula = new GameFormulaEntry { Id = 1234u, Dataint01 = 75u, Datafloat0 = 2f, Datafloat01 = 1f };
+
+        uint damage = DamageCalculator.ApplyArmorMitigation(100u, DamageType.Physical, 50u, 1000f, 0.10f, 0f, 0f, formula, armorPierce: 1f);
+
+        Assert.Equal(90u, damage);
+    }
+
+    [Fact]
+    public void OnlyDamageRowsReadDataBits04AsArmorPierce()
+    {
+        uint half = BitConverter.SingleToUInt32Bits(0.5f);
+
+        Assert.Equal(0.5f, SpellEffectInterpreter.Interpret(new Spell4EffectsEntry { Id = 80119u, EffectType = SpellEffectType.Damage, DataBits04 = half }).Damage.ArmorPierce);
+        Assert.Equal(0f, SpellEffectInterpreter.Interpret(new Spell4EffectsEntry { Id = 1u, EffectType = SpellEffectType.Heal, DataBits04 = half }).Damage.ArmorPierce);
+        Assert.Equal(0f, SpellEffectInterpreter.Interpret(new Spell4EffectsEntry { Id = 2u, EffectType = SpellEffectType.DistributedDamage, DataBits04 = half }).Damage.ArmorPierce);
+    }
+
     [Fact]
     public void ApplyArmorMitigation_WithMissingFormulaKeepsDamage()
     {
