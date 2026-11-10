@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Collections.Immutable;
@@ -13,6 +13,7 @@ using NexusForever.Game.Abstract.Account.Unlock;
 using NexusForever.Game.Abstract.Challenges;
 using NexusForever.GameTable.Model;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Map.Instance;
 using NexusForever.Game.Abstract.Entity.Creature;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Quest;
@@ -1418,21 +1419,56 @@ public class PrerequisiteCheckTests
         Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 12u, 0u, parameters));
     }
 
-    [Fact]
-    public void HouseOwnership_ComparesOwnedResidenceProperty()
+    // Native types 182 (1404a1070) and 186 (1404a10e0): the residence is the one the SECOND unit stands on, found by its world socket; no second unit or no residence is false.
+    // 182 is "the player owns it", 186 "the player is its neighbour"; Equal / NotEqual, ObjectId and Value not read. Retail row 17536 is "182 or 186" on 42 housing spells.
+    private static IUnitEntity CreateHousingUnit(ulong? ownerId, bool playerIsNeighbour)
+    {
+        IUnitEntity unit = RecordingDispatchProxy<IUnitEntity>.Create(out var unitProxy);
+        unitProxy.SetProperty(nameof(IWorldEntity.Guid), 2u);
+        if (ownerId == null)
+            return unit;
+
+        IResidence residence = RecordingDispatchProxy<IResidence>.Create(out var residenceProxy);
+        residenceProxy.SetProperty(nameof(IResidence.OwnerId), ownerId);
+        residenceProxy.SetMethodHandler(nameof(IResidence.HasNeighbor), args => playerIsNeighbour && (ulong)args[0] == 10ul);
+        IResidenceMapInstance map = RecordingDispatchProxy<IResidenceMapInstance>.Create(out var mapProxy);
+        mapProxy.SetMethodHandler(nameof(IResidenceMapInstance.GetResidenceForEntity), args => ReferenceEquals(args[0], unit) ? residence : null);
+        unitProxy.SetProperty(nameof(IGridEntity.Map), map);
+        return unit;
+    }
+
+    [Theory]
+    [InlineData(10ul, PrerequisiteComparison.Equal, true)]      // the player's own plot
+    [InlineData(77ul, PrerequisiteComparison.Equal, false)]     // somebody else's plot, even though the player owns a house elsewhere
+    [InlineData(77ul, PrerequisiteComparison.NotEqual, true)]
+    [InlineData(10ul, PrerequisiteComparison.GreaterThan, false)]
+    public void HouseOwnership_TestsTheResidenceTheSecondUnitStandsOn(ulong ownerId, PrerequisiteComparison comparison, bool expected)
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
         playerProxy.SetProperty(nameof(IPlayer.CharacterId), 10ul);
-        IResidenceManager residenceManager = RecordingDispatchProxy<IResidenceManager>.Create(out var residenceProxy);
-        IResidence residence = RecordingDispatchProxy<IResidence>.Create(out var homeProxy);
-        homeProxy.SetProperty(nameof(IResidence.OwnerId), 10ul);
-        homeProxy.SetProperty(nameof(IResidence.PropertyInfoId), PropertyInfoId.Residence);
-        residenceProxy.SetProperty(nameof(IResidenceManager.Residence), residence);
+        IResidenceManager residenceManager = RecordingDispatchProxy<IResidenceManager>.Create(out var residenceManagerProxy);
+        IResidence own = RecordingDispatchProxy<IResidence>.Create(out var ownProxy);
+        ownProxy.SetProperty(nameof(IResidence.OwnerId), (ulong?)10ul);
+        residenceManagerProxy.SetProperty(nameof(IResidenceManager.Residence), own);
         playerProxy.SetProperty(nameof(IPlayer.ResidenceManager), residenceManager);
 
         var check = new PrerequisiteCheckHouseOwnership();
 
-        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 1u, (uint)PropertyInfoId.Residence, new PrerequisiteParameters()));
+        // Value and ObjectId are non-zero on purpose: they must not be read
+        Assert.Equal(expected, check.Meets(player, comparison, 5u, 9u, new PrerequisiteParameters { Target = CreateHousingUnit(ownerId, false) }));
+    }
+
+    [Fact]
+    public void HouseOwnership_WithoutSecondUnitOrResidence_IsFalseForEveryComparison()
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), 10ul);
+
+        var check = new PrerequisiteCheckHouseOwnership();
+
+        Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 0u, 0u, new PrerequisiteParameters()));
+        Assert.False(check.Meets(player, PrerequisiteComparison.NotEqual, 0u, 0u, new PrerequisiteParameters()));
+        Assert.False(check.Meets(player, PrerequisiteComparison.NotEqual, 0u, 0u, new PrerequisiteParameters { Target = CreateHousingUnit(null, false) }));
     }
 
     [Theory]
@@ -1464,41 +1500,25 @@ public class PrerequisiteCheckTests
     [InlineData(PrerequisiteComparison.Equal, false, false)]
     [InlineData(PrerequisiteComparison.NotEqual, true, false)]
     [InlineData(PrerequisiteComparison.NotEqual, false, true)]
-    public void HousingNeighborResidence_ComparesNeighborPresence(
-        PrerequisiteComparison comparison,
-        bool hasNeighbor,
-        bool expected)
+    [InlineData(PrerequisiteComparison.GreaterThanOrEqual, true, false)]
+    public void HousingNeighborResidence_TestsWhetherThePlayerIsANeighbourOfTheSecondUnitsResidence(PrerequisiteComparison comparison, bool isNeighbour, bool expected)
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
-        playerProxy.SetProperty(nameof(IWorldEntity.Guid), 1u);
-        IUnitEntity target = RecordingDispatchProxy<IUnitEntity>.Create(out var targetProxy);
-        targetProxy.SetProperty(nameof(IWorldEntity.Guid), 2u);
-
-        IResidence residence = RecordingDispatchProxy<IResidence>.Create(out var residenceProxy);
-        IEnumerable<(ulong CharacterId, byte PermissionLevel)> neighbors = hasNeighbor
-            ? new List<(ulong, byte)> { (99ul, 1) }
-            : Array.Empty<(ulong, byte)>();
-        residenceProxy.SetMethodHandler(nameof(IResidence.GetNeighbors), _ => neighbors);
-
-        IResidenceManager residenceManager = RecordingDispatchProxy<IResidenceManager>.Create(out var residenceManagerProxy);
-        residenceManagerProxy.SetProperty(nameof(IResidenceManager.Residence), residence);
-        playerProxy.SetProperty(nameof(IPlayer.ResidenceManager), residenceManager);
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), 10ul);
 
         var check = new PrerequisiteCheckHousingNeighborResidence();
-        bool result = check.Meets(player, comparison, value: 1u, objectId: 0u, new PrerequisiteParameters { Target = target });
 
-        Assert.Equal(expected, result);
+        Assert.Equal(expected, check.Meets(player, comparison, 5u, 9u, new PrerequisiteParameters { Target = CreateHousingUnit(77ul, isNeighbour) }));
     }
 
     [Fact]
-    public void HousingNeighborResidence_ReturnsFalseWithoutNpcTarget()
+    public void HousingNeighborResidence_WithoutSecondUnit_IsFalseForEveryComparison()
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
         var check = new PrerequisiteCheckHousingNeighborResidence();
 
-        bool result = check.Meets(player, PrerequisiteComparison.Equal, 1u, objectId: 0u, new PrerequisiteParameters());
-
-        Assert.False(result);
+        Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 1u, objectId: 0u, new PrerequisiteParameters()));
+        Assert.False(check.Meets(player, PrerequisiteComparison.NotEqual, 1u, objectId: 0u, new PrerequisiteParameters()));
     }
 
     [Fact]

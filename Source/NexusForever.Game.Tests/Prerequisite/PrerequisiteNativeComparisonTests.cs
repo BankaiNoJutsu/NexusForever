@@ -6,6 +6,8 @@ using NexusForever.Game.Prerequisite.Check;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Prerequisite;
 using NexusForever.Game.Tests.TestSupport;
+using NexusForever.GameTable;
+using NexusForever.GameTable.Model;
 using NexusForever.Game.Static.Spell;
 using Path = NexusForever.Game.Static.PlayerPath.Path;
 
@@ -21,8 +23,27 @@ namespace NexusForever.Game.Tests.Prerequisite;
 //    22 with Value 28455 (Spell4 "Stalker - Optic Camouflage", a Stealth effect), which the client ignores.
 //  - type 190 PetFlair (1404a14d0): the per-player unlock count for PetFlair ObjectId is compared with the count the row expects; Equal / NotEqual only, Value not read. Retail: 298 slots, all NotEqual,
 //    referenced by AccountItem and ItemSpecial rows ("usable while the flair is not unlocked").
+//  - types 194 MountUsage / 195 HoverboardUsage (14049ced0): the player's zone and its parents are walked; WorldZone flag 0x10 anywhere on the chain denies. Equal / NotEqual only.
 public class PrerequisiteNativeComparisonTests
 {
+    [Theory]
+    [InlineData(0u, 0u, PrerequisiteComparison.Equal, true)]         // open zone
+    [InlineData(0xD2u, 0u, PrerequisiteComparison.Equal, false)]     // the zone itself denies (retail interior rows are 0xD2)
+    [InlineData(0x100u, 0x10u, PrerequisiteComparison.Equal, false)] // a parent denies; the allow bit on the child does not override it
+    [InlineData(0u, 0x10u, PrerequisiteComparison.NotEqual, true)]
+    [InlineData(0u, 0u, PrerequisiteComparison.GreaterThan, false)]
+    public void MountAndHoverboardUsageWalkTheZoneChainForTheDenyBit(uint zoneFlags, uint parentFlags, PrerequisiteComparison comparison, bool expected)
+    {
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out var tableProxy);
+        tableProxy.SetProperty(nameof(IGameTableManager.WorldZone), NexusForever.Game.Tests.Transport.PlayerBindPointTests.Table(
+            new WorldZoneEntry { Id = 7u, Flags = parentFlags }));
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.Zone), new WorldZoneEntry { Id = 8u, ParentZoneId = 7u, Flags = zoneFlags });
+
+        Assert.Equal(expected, new PrerequisiteCheckMountUsage(tables).Meets(player, comparison, 0u, 0u, new PrerequisiteParameters()));
+        Assert.Equal(expected, new PrerequisiteCheckHoverboardUsage(tables).Meets(player, comparison, 0u, 0u, new PrerequisiteParameters()));
+    }
+
     [Theory]
     [InlineData(PrerequisiteComparison.NotEqual, false, true)]
     [InlineData(PrerequisiteComparison.NotEqual, true, false)]

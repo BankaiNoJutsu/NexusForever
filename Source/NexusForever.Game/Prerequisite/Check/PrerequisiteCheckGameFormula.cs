@@ -12,7 +12,7 @@ namespace NexusForever.Game.Prerequisite.Check
     /// <remarks>
     /// The object is read as the active client-side interaction. All 14 retail rows gate creature activate spells or animation states of transport NPCs whose spell is a "Transport to ... Yes/No CSI"
     /// spell, with NotEqual, and Value equals that spell's own <c>Spell4Base.clientSideInteractionId</c> in 5 of the 7 spells (62688 -> 1029, 62734 -> 1031, 63342 -> 1050, 87494 -> 1363, 87510 -> 1367):
-    /// "offer the transport unless its confirmation is already open". The object at <c>+0x7188</c> itself was not identified natively.
+    /// "offer the transport unless its confirmation is already open". The same slot is read by <c>Lua_CSIsLib_GetActiveCSI</c> (<c>140755000</c>) and written by <c>ProgressClickWindow_SetActiveObject</c>, so the object is the active client-side interaction.
     /// The previous implementation looked Value up in GameFormula.tbl and compared a column with ObjectId.
     /// The server models an open interaction as a pending spell waiting on a client-side interaction response.
     /// Status: Implemented, inferred. See Decomp/Analysis/PREREQUISITE_CHECK_REVIEW_20261110.md. No retail parity claim.

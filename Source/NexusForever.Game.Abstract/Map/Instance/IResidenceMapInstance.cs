@@ -19,6 +19,14 @@ namespace NexusForever.Game.Abstract.Map.Instance
         void AddChild(IResidence residence, bool temporary);
 
         /// <summary>
+        /// Return the <see cref="IResidence"/> on this map that supplied <see cref="IWorldEntity"/> belongs to, or null.
+        /// </summary>
+        /// <remarks>
+        /// The residence is found by the entity's world socket (the plot it stands on). An entity without a socket resolves to the residence whose plug it is, or to the only residence on the map.
+        /// </remarks>
+        IResidence GetResidenceForEntity(IWorldEntity entity);
+
+        /// <summary>
         /// Remove child <see cref="IResidence"/> to parent <see cref="IResidence"/>.
         /// </summary>
         void RemoveChild(IResidence residence);

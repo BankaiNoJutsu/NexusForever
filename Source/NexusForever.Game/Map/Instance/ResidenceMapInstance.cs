@@ -695,6 +695,34 @@ namespace NexusForever.Game.Map.Instance
             return housingPlugUpdate.Contributions.Any(c => c.HasPayload);
         }
 
+        /// <summary>
+        /// Return the <see cref="IResidence"/> on this map that supplied <see cref="IWorldEntity"/> belongs to, or null.
+        /// </summary>
+        /// <remarks>
+        /// Native (prerequisite types 182 and 186, <c>1405b15c0</c>): the loaded residence with a plot whose HousingPlotInfo world socket id equals the unit's socket id (unit <c>+0x172c</c>); a unit
+        /// without a socket matches nothing. The plug and single-residence fallbacks are server approximations for housing units the server spawns without a socket id.
+        /// </remarks>
+        public IResidence GetResidenceForEntity(IWorldEntity entity)
+        {
+            if (entity == null)
+                return null;
+
+            if (entity.WorldSocketId != 0)
+            {
+                IResidence bySocket = residences.Values.FirstOrDefault(r =>
+                    r.GetPlots().Any(p => p.PlotInfoEntry != null && p.PlotInfoEntry.WorldSocketId == entity.WorldSocketId));
+                if (bySocket != null)
+                    return bySocket;
+            }
+
+            IResidence byPlug = residences.Values.FirstOrDefault(r =>
+                r.GetPlots().Any(p => p.PlugEntity != null && p.PlugEntity.Guid == entity.Guid));
+            if (byPlug != null)
+                return byPlug;
+
+            return residences.Count == 1 ? residences.Values.First() : null;
+        }
+
         public bool TryHarvestPlug(IPlayer harvester, IPlugEntity plugEntity)
         {
             if (plugEntity?.PlugEntry == null)

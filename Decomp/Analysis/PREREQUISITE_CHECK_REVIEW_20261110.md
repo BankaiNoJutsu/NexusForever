@@ -71,11 +71,32 @@ player"). `0x14` and `0x17` are Player and Ghost, so the gate requires the **pri
   active client-side interaction: "offer the transport unless its confirmation is already open". The server models that as a pending spell waiting on a client-side interaction response
   (`UnitEntity.HasActiveClientSideInteraction`). The previous check compared a GameFormula row with ObjectId. Not identified natively: the object at `+0x7188`; the 2 spells whose Value differs from
   their own interaction id were not explained. Status: Implemented, inferred.
+  Later the same day the object was identified natively: `Lua_CSIsLib_GetActiveCSI` (`140755000`), `Lua_CSIsLib_IsCSIRunning`, `CSIKey_HandlePress` and `ProgressClickWindow_SetActiveObject` all read
+  or write the same slot (`+0x7188`), so it is the active client-side interaction. Only the server-side model of "active" remains inferred.
 * **190.** Native `1404a14d0`: Player or Ghost only; `expected` is 0 without a PetFlair row for ObjectId, 1 when the row's second unlock bit index (row `+8`) is 0, otherwise 2; `actual` is a per-player
   count for the same flair (`FUN_1403a9c40`, body not read); Equal is `actual == expected`, NotEqual the negation; Value is not read. All 298 retail ObjectIds are PetFlair ids, all slots are NotEqual,
   and they are referenced by 206 AccountItem rows and 36 ItemSpecial rows, none by spells. Read as "the flair is fully unlocked"; the check now asks `PetCustomisationManager.HasFlair(ObjectId)` where
   it asked for a hoverboard customisation with that id. Not modelled: a flair with two unlock bits of which only one is set (natively not equal to the expected 2, so "not unlocked"; the server has one
   unlock state per flair). Status: Implemented, inferred.
+
+### Types 194 / 195 (mount and hoverboard usage) and 182 / 186 (housing) (added later the same day)
+* **194 / 195.** Both call `14049ced0`. For the local player it takes the unit's current zone id (unit `+0x17e8`; the same field is read by `Lua_Unit_IsVisibleOnCurrentZoneMinimap` and the
+  current-zone-map Lua function), looks the zone up in the tree at global `+0x7160` (`14043ed60`) and walks the node and its parents reading the row flags at `+0x1c`, which is
+  `WorldZone.flags`. Bit `0x10` anywhere on the chain makes the flag false. Bit `0x100` is an allow bit: it is required only when the object at unit `+0x16f0` exists and its virtual `+0x78`
+  returns 0. Types 197 (glider, `14049cfb0`) and 198 (spaceship, `14049d090`) are the same body with bits `0x40` / `0x200` and `0x80` / `0x400`, and `1403c9500` selects the same three bit pairs
+  by a vehicle kind. Table: 281 of 3,436 WorldZone rows carry `0x10` (250 carry `0x40`, 238 `0x80`), 6 carry `0x100`; the named ones are interior rooms ("Queen's Den", "Crimson Legion Control
+  Room"). The 4 + 4 slots sit, through nested rows 35184, 35364, 36099 and 37820, in the cast prerequisite of 224 mount summon spells. Both checks returned true unconditionally; they now
+  walk the player's zone chain for `0x10`. Not modelled: the `+0x16f0` condition and with it the allow bit (the object is listed in older notes as a bounding-volume object; what its virtual
+  `+0x78` reports was not read). Types 197 and 198 have no retail rows and no server check. Status: Implemented from the native body and the table; the meaning "mounts not allowed here" is
+  inferred from the failure text and the gated spells.
+* **182 / 186.** `1404a1070` and `1404a10e0` both require a Player or Ghost unit and a second unit, and resolve a residence with `1405b15c0(housing global, secondUnit+0x172c)`: the loaded
+  residence that has a plot whose `HousingPlotInfo` row has that world socket id (row `+4`). Without one both are false for every comparison. 182 then compares residence `+0x20` with unit
+  `+0x1a8` through the general comparison (read from the disassembly; the decompiler drops the arguments); 186 looks the residence key (`+8`, `+0x20`) up in the local player's neighbour list.
+  Read as "the player owns / is a neighbour of the residence this housing unit stands on". Row 17536 ("182 or 186") gates 42 "Plant Seeds" spells and housing prop creatures. Both server checks
+  tested the player's own residence wherever the player was, so any house owner passed on another player's plot, and 186 asked whether that own residence had any neighbour at all. They now
+  resolve the residence from the second unit (`IResidenceMapInstance.GetResidenceForEntity`). Server approximations: a unit without a socket id resolves to the residence whose plug it is or to
+  the only residence on the map (natively it matches nothing); a spell cast without a target on a community map therefore resolves nothing. Not read natively: that residence `+0x20` and unit
+  `+0x1a8` are owner and character ids. Status: Implemented, inferred.
 
 ## 3. Differences found and not changed
 
@@ -85,9 +106,8 @@ player"). `0x14` and `0x17` are Player and Ghost, so the gate requires the **pri
 | 292 | PrimalMatrixNode | native: local player only, `PrimalMatrix_LookupAllocatedNode(1, ObjectId)` compared with Value; server always false; 24 slots | needs the server primal-matrix allocation surface; not yet done |
 | 148 | InfrastructureState | lookup miss: native answers NotEqual only; server substitutes state 0 | server API cannot distinguish a miss from state 0 |
 | 104 | | wrong slot word (ObjectId 4 to 14 on 3 slots, no spell references found) | the set and its key are not identified |
-| 194 / 195 | MountUsage / HoverboardUsage | native computes a flag for the local player; server returns true unconditionally; 4 slots each | flag meaning not identified |
 | 88 | Pet | native tests whether the primary unit id is in a list on the second unit; server tests the vanity pet against Value; 1 slot | list not identified |
-| 178, 175, 182, 289 | | server compares a number with Value where the native handler never receives Value | native flag not identified |
+| 178, 175, 289 | | server compares a number with Value where the native handler never receives Value | native flag not identified |
 | 94 | QuestObjective6 | native result depends on unit types and the unit slot at `+0x35f8`; 781 slots | unit participation slot is a known unmodelled concept |
 | 41 | ZoneExplored | native compares an untruncated float ratio; server a truncated integer | small; not yet done |
 | 179, 80, 172, 218, 246, 78, 140, 81, 173, 174 | | latent or zero-row differences | no retail slot affected, or reported and not re-read |
