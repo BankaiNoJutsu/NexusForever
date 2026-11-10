@@ -37,6 +37,32 @@ public class SpellAbilityPointTests
         Assert.Equal((byte)43, actionSet.TierPoints);
     }
 
+    // Primal Matrix ability points are a term of their own: not held by the one-point bonus cap, never shrinking, and counted in the published total.
+    // Server-side model; no retail parity claim.
+    [Fact]
+    public void PrimalMatrixTierPoints_StackAboveTheBonusCapAndArePublishedInTheTotal()
+    {
+        IGameSession session = RecordingDispatchProxy<IGameSession>.Create(out RecordingDispatchProxy<IGameSession> sessionProxy);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.CharacterId), 42ul);
+        playerProxy.SetProperty(nameof(IPlayer.Session), session);
+
+        var manager = new global::NexusForever.Game.Entity.SpellManager(player, new CharacterModel { Id = 42ul });
+        manager.AddAbilityTierPoints(1);
+
+        Assert.True(manager.SetPrimalMatrixTierPoints(3));
+        Assert.False(manager.SetPrimalMatrixTierPoints(3));
+        Assert.False(manager.SetPrimalMatrixTierPoints(2));
+
+        Assert.Equal(46, manager.MaxAbilityTierPoints);
+        Assert.All(Enumerable.Range(0, ActionSet.MaxActionSets), index => Assert.Equal((byte)46, manager.GetActionSet((byte)index).TierPoints));
+
+        manager.SendServerAbilityPoints();
+        var packet = Assert.IsType<ServerAbilityPoints>(sessionProxy.GetInvocations(nameof(IGameSession.EnqueueMessageEncrypted)).Last().Arguments[0]);
+        Assert.Equal(46u, packet.AbilityPoints);
+        Assert.Equal(46u, packet.TotalAbilityPoints);
+    }
+
     [Fact]
     public void AddAbilityTierPoints_PropagatesUnlockAndSendsUpdatedBudgetOnce()
     {

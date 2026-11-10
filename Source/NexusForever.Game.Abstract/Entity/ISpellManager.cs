@@ -140,6 +140,17 @@ namespace NexusForever.Game.Abstract.Entity
         void SetPrimalMatrixAmpPower(ushort power) { }
 
         /// <summary>
+        /// Set the ability tier points the Primal Matrix contributes, on all action sets. Derived from the character's allocations, so it is not saved here; it only ever grows.
+        /// Returns whether the total changed.
+        /// </summary>
+        bool SetPrimalMatrixTierPoints(byte points) => false;
+
+        /// <summary>
+        /// The ability tier points an action set may spend in total: the base points, the bonus points and the Primal Matrix points.
+        /// </summary>
+        int MaxAbilityTierPoints => 42;
+
+        /// <summary>
         /// Add bonus ability tier points to all action sets.
         /// </summary>
         void AddAbilityTierPoints(byte amount);

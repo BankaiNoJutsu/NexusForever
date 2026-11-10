@@ -22,8 +22,8 @@ namespace NexusForever.Game.Entity
     /// <item>A UnitProperty reward is added once per allocation of its node (launch coverage says extra essence in a multi-tier node boosts its benefit; nothing native was read).</item>
     /// <item>AMPPoint rewards are a term of their own: the snapshot's last word is the AMP power the matrix contributes (the client stores it apart from the bonus power),
     /// and the same total is added to every action set on top of the base and bonus power.</item>
-    /// <item>AbilityPoint rewards go through the spell manager's bonus ability point counter, which is capped at one point; the ability point total is owned by the confirmed
-    /// spellbook publication and was not widened here, so most of the matrix's nine ability point nodes grant nothing yet.</item>
+    /// <item>AbilityPoint rewards are a term of their own as well: the total is added to every action set on top of the base and bonus points and counted in the published
+    /// ability point total and in the action set change limit. That the retired server published them through the same total is assumed.</item>
     /// </list>
     /// No retail parity claim.
     /// </remarks>
@@ -58,6 +58,7 @@ namespace NexusForever.Game.Entity
 
             ApplyPropertyRewards();
             ApplyAmpPower();
+            ApplyTierPoints();
         }
 
         public byte GetAllocations(uint nodeId)
@@ -100,6 +101,8 @@ namespace NexusForever.Game.Entity
             GrantOneTimeRewards(before, after);
             ApplyPropertyRewards();
             ApplyAmpPower();
+            if (ApplyTierPoints())
+                player.SpellManager?.SendServerAbilityPoints();
             player.RequestSave();
             return true;
         }
@@ -119,7 +122,7 @@ namespace NexusForever.Game.Entity
         }
 
         /// <summary>
-        /// Grant the rewards that are given once, for the allocations added by a save: ability unlocks and ability points.
+        /// Grant the rewards that are given once, for the allocations added by a save: ability unlocks.
         /// </summary>
         private void GrantOneTimeRewards(IReadOnlyDictionary<uint, byte> before, IReadOnlyDictionary<uint, byte> after)
         {
@@ -141,9 +144,6 @@ namespace NexusForever.Game.Entity
                                 player.SpellManager?.AddSpell(spell.Spell4BaseIdBaseSpell);
                             break;
                         }
-                        case PrimalMatrixRules.RewardType.AbilityPoint:
-                            player.SpellManager?.AddAbilityTierPoints((byte)Math.Clamp(reward.Value * added, 0f, byte.MaxValue));
-                            break;
                     }
                 }
             }
@@ -179,6 +179,14 @@ namespace NexusForever.Game.Entity
         /// </summary>
         private ushort GetAmpPower()
         {
+            return (ushort)Math.Clamp(GetRewardTotal(PrimalMatrixRules.RewardType.AmpPoint), 0f, ushort.MaxValue);
+        }
+
+        /// <summary>
+        /// The summed value of one counted reward type over every allocation.
+        /// </summary>
+        private float GetRewardTotal(PrimalMatrixRules.RewardType type)
+        {
             float total = 0f;
             lock (gate)
             {
@@ -186,12 +194,18 @@ namespace NexusForever.Game.Entity
                 {
                     PrimalMatrixNodeEntry node = gameTableManager?.PrimalMatrixNode?.GetEntry(nodeId);
                     foreach (PrimalMatrixRules.Reward reward in PrimalMatrixRules.GetRewards(node, player.Class, gameTableManager?.PrimalMatrixReward))
-                        if (reward.Type == PrimalMatrixRules.RewardType.AmpPoint && float.IsFinite(reward.Value))
+                        if (reward.Type == type && float.IsFinite(reward.Value))
                             total += reward.Value * count;
                 }
             }
 
-            return (ushort)Math.Clamp(total, 0f, ushort.MaxValue);
+            return total;
+        }
+
+        private bool ApplyTierPoints()
+        {
+            byte points = (byte)Math.Clamp(GetRewardTotal(PrimalMatrixRules.RewardType.AbilityPoint), 0f, 100f);
+            return player.SpellManager?.SetPrimalMatrixTierPoints(points) ?? false;
         }
 
         private void ApplyAmpPower()

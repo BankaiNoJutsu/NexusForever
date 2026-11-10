@@ -856,6 +856,30 @@ namespace NexusForever.Game.Entity
                 actionSet?.AddPrimalMatrixAmpPower(added);
         }
 
+        private byte primalMatrixTierPoints;
+
+        /// <summary>
+        /// The ability tier points an action set may spend in total: the base points, the bonus points and the Primal Matrix points.
+        /// </summary>
+        public int MaxAbilityTierPoints => ActionSet.MaxTierPoints + bonusAbilityTierPoints + primalMatrixTierPoints;
+
+        /// <summary>
+        /// Set the ability tier points the Primal Matrix contributes, on all action sets. Derived from the character's allocations, so it is not saved here; it only ever grows.
+        /// Returns whether the total changed.
+        /// </summary>
+        public bool SetPrimalMatrixTierPoints(byte points)
+        {
+            if (points <= primalMatrixTierPoints)
+                return false;
+
+            byte added = (byte)(points - primalMatrixTierPoints);
+            primalMatrixTierPoints = points;
+            foreach (IActionSet actionSet in actionSets)
+                actionSet?.AddPrimalMatrixTierPoints(added);
+
+            return true;
+        }
+
         public void AddAbilityTierPoints(byte amount)
         {
             if (amount == 0u)
@@ -985,7 +1009,7 @@ namespace NexusForever.Game.Entity
             player.Session.EnqueueMessageEncrypted(new ServerAbilityPoints
             {
                 AbilityPoints      = actionSets[ActiveActionSet].TierPoints,
-                TotalAbilityPoints = (uint)(ActionSet.MaxTierPoints + bonusAbilityTierPoints)
+                TotalAbilityPoints = (uint)MaxAbilityTierPoints
             });
         }
 

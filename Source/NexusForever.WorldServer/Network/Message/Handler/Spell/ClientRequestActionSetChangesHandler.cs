@@ -216,7 +216,7 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Spell
             }
 
             int requiredTierPoints = requestedSpellTiers.Values.Sum(CalculateTierCost);
-            if (requiredTierPoints > ActionSet.MaxTierPoints)
+            if (requiredTierPoints > session.Player.SpellManager.MaxAbilityTierPoints)
                 return LimitedActionSetResult.InsufficientAbilityPoints;
 
             List<ushort> newAmpIds = GetDistinctNewAmpIds(actionSet, requestActionSetChanges.Amps)

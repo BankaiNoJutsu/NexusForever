@@ -309,6 +309,17 @@ namespace NexusForever.Game.Spell
         }
 
         /// <summary>
+        /// Add ability tier points granted by the Primal Matrix to <see cref="IActionSet"/>. They are on top of the base and bonus points, so the bonus cap does not apply.
+        /// </summary>
+        public void AddPrimalMatrixTierPoints(byte points)
+        {
+            if (points == 0u)
+                return;
+
+            TierPoints = (byte)Math.Min(TierPoints + points, byte.MaxValue);
+        }
+
+        /// <summary>
         /// Add bonus ability tier points to <see cref="IActionSet"/>.
         /// </summary>
         public void AddTierPoints(byte points)
