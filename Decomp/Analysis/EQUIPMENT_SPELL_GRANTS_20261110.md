@@ -34,7 +34,9 @@ specials (12), the visuals (10) and the rune specials built from procs and proxi
   (on-equip, on-activate, or both) is not known.
 * **Timing.** The server polls once a second, so a grant or a revoke can lag an equip by up to that long. When the retired server applied them is not known.
 * **Death.** A granted spell that is no longer in place on a living player is cast again; whether the retired server kept on-equip effects through death is not known.
-* `ItemSetBonus` rows without a spell (614) grant a property (`unitProperty2Id`, `scalar`, `offset`); those are **not** implemented here.
+* `ItemSetBonus` rows that grant a property (158 rows: `unitProperty2Id` with an `offset` on 133 and a `scalar` on 25, never both, never with a spell) are applied since a later
+  commit the same day: the offset is added to the property and the scalar multiplies it, under the same power thresholds. That reading of the two columns, and the order (add,
+  then multiply), are assumed from the value shapes (+0.004 on a chance, 1.003 on base health). The other 456 rows are empty.
 
 ## 3b. Stance passives (added later the same day; implemented, inferred)
 `Class.spell4IdInnateAbilityPassive00..02` runs parallel to `spell4IdInnateAbilityActive00..02`, the list the stance index selects from. The spells are named "... - Stance - Passive":

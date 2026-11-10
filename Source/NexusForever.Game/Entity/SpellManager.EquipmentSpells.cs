@@ -10,6 +10,7 @@ namespace NexusForever.Game.Entity
     public partial class SpellManager
     {
         private readonly HashSet<uint> equipmentSpells = [];
+        private string runeSetPropertyKey = string.Empty;
         private double equipmentSpellRetryTime;
         private bool refreshingEquipmentSpells;
 
@@ -56,6 +57,7 @@ namespace NexusForever.Game.Entity
             refreshingEquipmentSpells = true;
             try
             {
+                RefreshRuneSetProperties();
                 HashSet<uint> desired = GetDesiredEquipmentSpells();
                 foreach (uint id in equipmentSpells.Where(id => !desired.Contains(id)).ToArray())
                 {
@@ -92,6 +94,29 @@ namespace NexusForever.Game.Entity
             {
                 refreshingEquipmentSpells = false;
             }
+        }
+
+        /// <summary>
+        /// Hand the property bonuses of the reached rune sets to the player, only when they changed. Several sets may name the same property: offsets add up and scalars multiply.
+        /// </summary>
+        private void RefreshRuneSetProperties()
+        {
+            IEnumerable<IItem> equipped = player.Inventory?.Where(bag => bag.Location == InventoryLocation.Equipped).SelectMany(bag => bag) ?? [];
+
+            var bonuses = new Dictionary<Property, (float Scalar, float Offset)>();
+            foreach ((Property property, float scalar, float offset) in EquipmentSpellRules.GetSetPropertyBonuses(equipped, GetGameTableManager()))
+            {
+                (float Scalar, float Offset) current = bonuses.GetValueOrDefault(property);
+                float combinedScalar = scalar == 0f ? current.Scalar : (current.Scalar == 0f ? scalar : current.Scalar * scalar);
+                bonuses[property] = (combinedScalar, current.Offset + offset);
+            }
+
+            string key = string.Join(";", bonuses.OrderBy(b => b.Key).Select(b => $"{(uint)b.Key}:{b.Value.Scalar:R}:{b.Value.Offset:R}"));
+            if (key == runeSetPropertyKey)
+                return;
+
+            runeSetPropertyKey = key;
+            player.SetRuneSetProperties(bonuses);
         }
 
         private void UpdateEquipmentSpells(double lastTick)

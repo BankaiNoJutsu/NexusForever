@@ -612,6 +612,7 @@ namespace NexusForever.Game.Entity
 
         private Dictionary<Property, Dictionary<ItemSlot, /*value*/float>> itemProperties = new();
         private Dictionary<Property, float> primalMatrixProperties = new();
+        private Dictionary<Property, (float Scalar, float Offset)> runeSetProperties = new();
 
         private UpdateTimer relocationTimer = new(TimeSpan.FromSeconds(1));
         private UpdateTimer ghostSpawnTimer;
@@ -3827,6 +3828,26 @@ namespace NexusForever.Game.Entity
 
             if (primalMatrixProperties != null && primalMatrixProperties.TryGetValue(propertyValue.Property, out float primalMatrixValue))
                 propertyValue.Value += primalMatrixValue;
+
+            // Rune set bonuses: the offset is added and the scalar multiplies the result (ItemSetBonus; the order is assumed, no row carries both).
+            if (runeSetProperties != null && runeSetProperties.TryGetValue(propertyValue.Property, out (float Scalar, float Offset) runeSet))
+            {
+                propertyValue.Value += runeSet.Offset;
+                if (runeSet.Scalar != 0f)
+                    propertyValue.Value *= runeSet.Scalar;
+            }
+        }
+
+        /// <summary>
+        /// Replace the property bonuses granted by the player's rune sets.
+        /// </summary>
+        public void SetRuneSetProperties(IReadOnlyDictionary<Property, (float Scalar, float Offset)> bonuses)
+        {
+            Property[] affected = (runeSetProperties?.Keys ?? Enumerable.Empty<Property>()).Union(bonuses?.Keys ?? []).ToArray();
+            runeSetProperties = bonuses == null ? new() : new Dictionary<Property, (float Scalar, float Offset)>(bonuses);
+
+            foreach (Property property in affected)
+                CalculateProperty(property);
         }
 
         /// <summary>

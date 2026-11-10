@@ -401,6 +401,11 @@ namespace NexusForever.Game.Abstract.Entity
         void SetPrimalMatrixProperties(IReadOnlyDictionary<Property, float> totals);
 
         /// <summary>
+        /// Replace the property bonuses granted by the player's rune sets: an amount added to the property and a factor it is multiplied by.
+        /// </summary>
+        void SetRuneSetProperties(IReadOnlyDictionary<Property, (float Scalar, float Offset)> bonuses);
+
+        /// <summary>
         /// Remove a <see cref="Property"/> modifier by a item that is currently affecting this <see cref="IPlayer"/>.
         /// </summary>
         void RemoveItemProperty(Property property, ItemSlot itemSlot);

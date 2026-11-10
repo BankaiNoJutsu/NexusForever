@@ -50,6 +50,22 @@ public class EquipmentSpellRulesTests
         Assert.Equal(expectSecond, granted.Contains(SetBonusSpellHigh));
     }
 
+    // 158 ItemSetBonus rows grant a property: an offset (for example +0.004) or a scalar (for example 1.003 on base health), never both.
+    [Fact]
+    public void RuneSetPropertyBonusesFollowTheSamePowerThresholds()
+    {
+        IGameTableManager tables = Tables();
+
+        var low = EquipmentSpellRules.GetSetPropertyBonuses([Item(GearItem, RuneA)], tables).ToArray();              // power 2
+        Assert.Equal(((NexusForever.Game.Static.Entity.Property)154, 0f, 0.004f), Assert.Single(low));
+
+        var high = EquipmentSpellRules.GetSetPropertyBonuses([Item(GearItem, RuneA, RuneB)], tables).ToArray();      // power 3
+        Assert.Equal(2, high.Length);
+        Assert.Contains((NexusForever.Game.Static.Entity.Property.BaseHealth, 1.003f, 0f), high);
+
+        Assert.Empty(EquipmentSpellRules.GetSetPropertyBonuses([Item(GearItem, PlainRune)], tables));
+    }
+
     [Fact]
     public void NothingEquippedGrantsNothing()
     {
@@ -128,11 +144,12 @@ public class EquipmentSpellRulesTests
             new ItemRuneInstanceEntry { Id = 1u, ItemSetId = SetId, ItemSetPower = 2u },
             new ItemRuneInstanceEntry { Id = 2u, ItemSetId = SetId, ItemSetPower = 1u }));
         proxy.SetProperty(nameof(IGameTableManager.ItemSet), CreateGameTable(
-            new ItemSetEntry { Id = SetId, ItemSetBonusId00 = 1u, ItemSetBonusId01 = 2u, ItemSetBonusId02 = 3u }));
+            new ItemSetEntry { Id = SetId, ItemSetBonusId00 = 1u, ItemSetBonusId01 = 2u, ItemSetBonusId02 = 3u, ItemSetBonusId03 = 4u }));
         proxy.SetProperty(nameof(IGameTableManager.ItemSetBonus), CreateGameTable(
             new ItemSetBonusEntry { Id = 1u, RequiredPower = 3u, Spell4Id = SetBonusSpell },
             new ItemSetBonusEntry { Id = 2u, RequiredPower = 5u, Spell4Id = SetBonusSpellHigh },
-            new ItemSetBonusEntry { Id = 3u, RequiredPower = 1u, UnitProperty2Id = 7u }));    // a property bonus, not a spell
+            new ItemSetBonusEntry { Id = 3u, RequiredPower = 1u, UnitProperty2Id = 154u, Offset = 0.004f },    // a property bonus, not a spell
+            new ItemSetBonusEntry { Id = 4u, RequiredPower = 3u, UnitProperty2Id = 7u, Scalar = 1.003f }));
         proxy.SetProperty(nameof(IGameTableManager.Spell4), CreateGameTable(
             new Spell4Entry { Id = UntouchableSpell },
             new Spell4Entry { Id = GadgetSpell },

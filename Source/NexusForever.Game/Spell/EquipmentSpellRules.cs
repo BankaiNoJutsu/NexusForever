@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Spell;
 using NexusForever.GameTable;
 using NexusForever.GameTable.Model;
@@ -34,8 +35,8 @@ namespace NexusForever.Game.Spell
             if (equippedItems == null || tables == null)
                 yield break;
 
-            var setPower = new Dictionary<uint, uint>();
-            foreach (IItem item in equippedItems)
+            IItem[] items = equippedItems.ToArray();
+            foreach (IItem item in items)
             {
                 Item2Entry entry = item?.Info?.Entry;
                 if (entry == null)
@@ -52,8 +53,44 @@ namespace NexusForever.Game.Spell
 
                     foreach ((uint spell4Id, uint prerequisiteId) in GetSpecial(rune.ItemSpecialId00, tables))
                         yield return (spell4Id, prerequisiteId, item);
+                }
+            }
 
-                    ItemRuneInstanceEntry instance = rune.ItemRuneInstanceId == 0u ? null : tables.ItemRuneInstance?.GetEntry(rune.ItemRuneInstanceId);
+            foreach (ItemSetBonusEntry bonus in GetReachedSetBonuses(items, tables))
+                if (bonus.Spell4Id != 0u)
+                    yield return (bonus.Spell4Id, 0u, null);
+        }
+
+        /// <summary>
+        /// Return the property bonuses of the rune sets whose power the supplied equipped items reach.
+        /// </summary>
+        /// <remarks>
+        /// 158 of the 749 ItemSetBonus rows name a property (<c>unitProperty2Id</c>) with either an <c>offset</c> (133 rows, for example +0.004 on a chance property) or a
+        /// <c>scalar</c> (25 rows, for example 1.003 on base health); no row sets both and no row has a property and a spell. Read as "add the offset" and "multiply by the
+        /// scalar"; inferred from the value shapes. No retail parity claim.
+        /// </remarks>
+        public static IEnumerable<(Property Property, float Scalar, float Offset)> GetSetPropertyBonuses(IEnumerable<IItem> equippedItems, IGameTableManager tables)
+        {
+            if (equippedItems == null || tables == null)
+                yield break;
+
+            foreach (ItemSetBonusEntry bonus in GetReachedSetBonuses(equippedItems, tables))
+                if (bonus.UnitProperty2Id != 0u && (bonus.Scalar != 0f || bonus.Offset != 0f))
+                    yield return ((Property)bonus.UnitProperty2Id, bonus.Scalar, bonus.Offset);
+        }
+
+        /// <summary>
+        /// The bonuses of every rune set whose required power is reached by the runes socketed into the supplied items.
+        /// </summary>
+        private static IEnumerable<ItemSetBonusEntry> GetReachedSetBonuses(IEnumerable<IItem> equippedItems, IGameTableManager tables)
+        {
+            var setPower = new Dictionary<uint, uint>();
+            foreach (IItem item in equippedItems)
+            {
+                foreach (ItemRuneSlot slot in item?.RuneSlots ?? [])
+                {
+                    Item2Entry rune = slot.RuneItem2Id == 0u ? null : tables.Item?.GetEntry(slot.RuneItem2Id);
+                    ItemRuneInstanceEntry instance = rune == null || rune.ItemRuneInstanceId == 0u ? null : tables.ItemRuneInstance?.GetEntry(rune.ItemRuneInstanceId);
                     if (instance != null && instance.ItemSetId != 0u && instance.ItemSetPower != 0u)
                         setPower[instance.ItemSetId] = setPower.GetValueOrDefault(instance.ItemSetId) + instance.ItemSetPower;
                 }
@@ -68,8 +105,8 @@ namespace NexusForever.Game.Spell
                 foreach (uint bonusId in GetBonusIds(set))
                 {
                     ItemSetBonusEntry bonus = bonusId == 0u ? null : tables.ItemSetBonus?.GetEntry(bonusId);
-                    if (bonus != null && bonus.Spell4Id != 0u && bonus.RequiredPower <= power)
-                        yield return (bonus.Spell4Id, 0u, null);
+                    if (bonus != null && bonus.RequiredPower <= power)
+                        yield return bonus;
                 }
             }
         }
