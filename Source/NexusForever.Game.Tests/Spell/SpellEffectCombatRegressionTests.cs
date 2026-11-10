@@ -916,6 +916,21 @@ public class SpellEffectCombatRegressionTests
         Assert.All(casts, cast => Assert.Equal(36562u, (uint)cast.Arguments[0]));
     }
 
+    // Proxy DataBits03 is the trigger chance. Retail: Esper Reverie "2 Point Proxy" 0.4, "3 Point Proxy" 0.6, "4 Point Proxy" 0.8 (rune set child 87375);
+    // Spell4 42566 0.1 next to the tooltip "10% chance to disorient"; 15,873 rows carry 1.0; pre-release rows carry 100.0.
+    [Theory]
+    [InlineData(1.0f, 0.999, true)]
+    [InlineData(0.4f, 0.39, true)]
+    [InlineData(0.4f, 0.41, false)]
+    [InlineData(0.1f, 0.5, false)]
+    [InlineData(100.0f, 0.999, true)]
+    [InlineData(0f, 0.999, true)]
+    [InlineData(float.NaN, 0.999, true)]
+    public void PassesProxyChance_RollsAgainstDataBits03(float chance, double roll, bool expected)
+    {
+        Assert.Equal(expected, global::NexusForever.Game.Spell.SpellHandler.PassesProxyChance(BitConverter.SingleToUInt32Bits(chance), roll));
+    }
+
     // A row without a tick never falls back to DataBits01 (174 retail rows have only DataBits01 and no tick; what they do is not known).
     [Fact]
     public void HandleEffectProxy_WithoutTick_DoesNotCastDataBits01()

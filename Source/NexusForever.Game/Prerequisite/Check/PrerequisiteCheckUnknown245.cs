@@ -2,6 +2,7 @@ using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Static.Prerequisite;
 using NexusForever.GameTable;
+using NexusForever.GameTable.Model;
 
 namespace NexusForever.Game.Prerequisite.Check
 {
@@ -14,17 +15,20 @@ namespace NexusForever.Game.Prerequisite.Check
     /// of them ObjectId equals DataBits00 of the spell's LearnDyeColor effect. The row therefore reads "this dye is not known yet". The previous non-account path compared a tradeskill tier rank with
     /// Value behind a "needs an NPC target" gate (the Player/Ghost type test read backwards), which failed every Learn Dye cast.
     /// Read natively later the same day: <c>1403c16e0</c> takes the DyeColorRamp row of ObjectId, requires a generic unlock entry of type 1 for the same id, and then requires the ramp's own
-    /// prerequisite (row <c>+0x18</c>, set on ramps 355 and 371 only) to pass. That confirms the dye reading. The ramp prerequisite is not evaluated here.
+    /// prerequisite (row <c>+0x18</c>, set on ramps 355 and 371 only, both a loyalty point threshold) to pass. That confirms the dye reading. The ramp row and its prerequisite are
+    /// evaluated on the non-account path when the table and the manager are available.
     /// Status: Implemented, inferred. See Decomp/Analysis/PREREQUISITE_CHECK_REVIEW_20261110.md. No retail parity claim.
     /// </remarks>
     [PrerequisiteCheck(PrerequisiteType.Unknown245)]
     public class PrerequisiteCheckUnknown245 : IPrerequisiteCheck
     {
         private readonly IGameTableManager gameTableManager;
+        private readonly IPrerequisiteManager prerequisiteManager;
 
-        public PrerequisiteCheckUnknown245(IGameTableManager gameTableManager)
+        public PrerequisiteCheckUnknown245(IGameTableManager gameTableManager, IPrerequisiteManager prerequisiteManager = null)
         {
-            this.gameTableManager = gameTableManager;
+            this.gameTableManager    = gameTableManager;
+            this.prerequisiteManager = prerequisiteManager;
         }
 
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
@@ -37,6 +41,13 @@ namespace NexusForever.Game.Prerequisite.Check
             }
 
             bool known = player.Account?.GenericUnlockManager?.IsDyeUnlocked(objectId) == true;
+            if (known && gameTableManager?.DyeColorRamp != null)
+            {
+                DyeColorRampEntry ramp = gameTableManager.DyeColorRamp.GetEntry(objectId);
+                known = ramp != null
+                    && (ramp.PrerequisiteId == 0u || prerequisiteManager == null || prerequisiteManager.Meets(player, ramp.PrerequisiteId, parameters));
+            }
+
             return PrerequisiteCompare.CompareFlag(comparison, known);
         }
     }

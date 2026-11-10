@@ -131,6 +131,48 @@ Evidence tier: raw tables only. No native consumer, no tooltip states the rule. 
 Implemented in `Spell.MeetsProxyPrerequisites` (plain Proxy, type 26, only): word 06 is evaluated on the caster with the target as second unit, word 07 on the target with the caster as
 second unit, before the handler runs. Assumed, not evidenced: a proxy that fails these does not use up an execution of word 04. Not examined: the other proxy effect types.
 
+## 1f. DataBits03 is the trigger chance (added 2026-11-10, late; implemented, inferred)
+
+Supersedes the two competing readings in 1d. Evidence tier: raw tables and tooltip text. No native consumer. No retail parity claim.
+
+1. **Same layout as Proc.** The Proc effect (type 14) keeps a float chance in word 02 and a cooldown in milliseconds in word 04, and AMP tooltips confirm both on about twenty AMPs:
+   "MKII Battle Suit" 25% chance, every 3s (0.25, 3000); "Anti-Magic Armor" 30% (0.3); "Make It Rain" 10%, every 3s (0.1, 3000); "Companion" 20%, every 10s (0.2, 10000);
+   "Can't Stop This" 100%, every 20s (1.0, 20000); "Quick Response" every 15s (15000). Proxy has the same float in front of its execution limit: 1.0 on 15,873 rows, fractions on about 250.
+2. **One Proxy tooltip states it.** Spell4 `42566`, 0.1, "10% chance to disorient".
+3. **The Esper healer rune set puts 0.2 per Psi Point on separate spells.** Its child `87375` hangs off "Reverie - 2 Point Proxy" with 0.4, "3 Point Proxy" 0.6, "4 Point Proxy" 0.8, and
+   "Mending Banner - Proxy 1" to "Proxy 4" with 0.2, 0.4, 0.6, 0.8. Each of those spells is already specific to a point count, so a threshold on the points spent (the second reading in 1d)
+   would be redundant there; a chance that grows with the points spent is not.
+4. **The children of the other fractional rows are chance-style bonuses by name:** "Breaching Strikes - Cooldown Reset" (0.25), "Reaver - Support Ability Cooldown" (0.3),
+   "D+S - Inlaid C CDR Dematerialize" (0.2). Their unlock tooltips are not in Jabbithole, so these are names only.
+5. **Older scale.** 100.0 (604 rows) and 1000.0 (53) sit on pre-release and test spells ("[Paladin] ..."), a percent scale; they always fire.
+
+Of 17 distinct fractional rows that reach a tooltip, one states the percentage and none contradicts it; the rest are silent because the tooltip belongs to the base ability, not to the
+bonus the row implements.
+
+Implemented in `SpellHandler.PassesProxyChance`: a row with 0 < word 03 < 1 fires when a uniform roll is below it. 0 (115 rows) is treated as always, because nothing shows what it means.
+Assumed: a failed roll does not use up an execution (word 04). Order: prerequisites (1e), then the roll, then the execution limit.
+
+**Word 05 is still unread.** It is an integer with a default of 60 and "unlimited"-looking values (999, 1000, `0xFFFFFFFF`), and Proc word 05 draws on the same values (1 on most AMPs, 60,
+10, 100). It is not the AMP "every N s" interval (that is Proc word 04) and no column of the parent or child spell matches it. Reads as a cap on something; on what is not known.
+
+## 1g. Effect flag 0x2 marks a row that lives as long as its spell (added 2026-11-10, late)
+
+`Spell4Effects.flags` bit `0x2` is set on every one of the 1,805 rows that tick without a duration of their own, on none of the 3,994 rows that tick with one, and on none of the
+32,306 rows that have a duration and no tick. Among rows with neither it is set on 20,009 of 92,905 (permanent modifiers, procs). The bit therefore marks "this row has no lifetime of its own
+and lives with the spell", which is the rule 1c arrived at from the tooltips.
+
+Two more tooltip witnesses for the tick, both on spells that are **not** Auras (cast method 0, no spell duration):
+
+| Spell | Row | Tooltip |
+|---|---|---|
+| Rune special "Untouchable" `81880` | Proxy, tick 1000, periodic spell `81881` | "Every 1s while in combat, gain an Empower" |
+| Warrior Power Link `53599` | Proxy, tick 250, periodic spell `79788` = VitalModifier vital 6, amount -56 | "Toggle: While active ... Drains 56 Kinetic Energy every 0.25s" |
+
+These are the 509 rows (430 spells) that stay inert: rune and item specials, milestones, toggles and creature "base" spells. The table gives them a tick and no end. 265 of the 430 spells
+have neither a persistence prerequisite, a channel nor a cost that could end them; what ends them is whatever granted them (unequipping the rune, toggling the ability off, the creature
+dying). The server has no toggle and applies learned passives as properties without a running spell, so pulsing these rows would have no way to stop. **Not implemented**; the missing
+piece is a lifecycle for granted spells (grant starts the spell, revoke ends it), not evidence about the rows.
+
 ## 2. The parent's caster casts the child
 
 Previously a unit-target Proxy made the **target** cast the child on itself. The other proxy variants (ProxyLinearAE, ProxyChannel, ProxyRandomExclusive) and the world-object path already cast from the parent's

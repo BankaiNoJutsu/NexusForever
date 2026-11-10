@@ -784,6 +784,34 @@ public class PrerequisiteCheckTests
         Assert.False(check.Meets(player, PrerequisiteComparison.GreaterThanOrEqual, 2u, 5u, new PrerequisiteParameters()));
     }
 
+    // Native 1403c16e0: an unlocked dye only counts when its DyeColorRamp row exists and the ramp's own prerequisite passes (retail ramps 355 and 371, loyalty thresholds).
+    [Theory]
+    [InlineData(355u, true, true)]
+    [InlineData(355u, false, false)]
+    [InlineData(5u, false, true)]      // ramp without a prerequisite
+    [InlineData(999u, true, false)]    // no ramp row
+    public void Unknown245_UnlockedDyeAlsoNeedsItsRampPrerequisite(uint rampId, bool rampPrerequisiteMet, bool expectedKnown)
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        IAccount account = RecordingDispatchProxy<IAccount>.Create(out var accountProxy);
+        IGenericUnlockManager unlockManager = RecordingDispatchProxy<IGenericUnlockManager>.Create(out var unlockProxy);
+        unlockProxy.SetMethodReturn(nameof(IGenericUnlockManager.IsDyeUnlocked), true);
+        accountProxy.SetProperty(nameof(IAccount.GenericUnlockManager), unlockManager);
+        playerProxy.SetProperty(nameof(IPlayer.Account), account);
+
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out var tableProxy);
+        tableProxy.SetProperty(nameof(IGameTableManager.DyeColorRamp), CreateGameTable(
+            new DyeColorRampEntry { Id = 5u },
+            new DyeColorRampEntry { Id = 355u, PrerequisiteId = 39265u }));
+        NexusForever.Game.Abstract.Prerequisite.IPrerequisiteManager manager = RecordingDispatchProxy<NexusForever.Game.Abstract.Prerequisite.IPrerequisiteManager>.Create(out var managerProxy);
+        managerProxy.SetMethodHandler(nameof(NexusForever.Game.Abstract.Prerequisite.IPrerequisiteManager.Meets), args => (uint)args[1] == 39265u && rampPrerequisiteMet);
+
+        var check = new PrerequisiteCheckUnknown245(tables, manager);
+
+        Assert.Equal(expectedKnown, check.Meets(player, PrerequisiteComparison.Equal, 0u, rampId, new PrerequisiteParameters()));
+        Assert.Equal(!expectedKnown, check.Meets(player, PrerequisiteComparison.NotEqual, 0u, rampId, new PrerequisiteParameters()));
+    }
+
     [Theory]
     [InlineData(false, true)]
     [InlineData(true, false)]

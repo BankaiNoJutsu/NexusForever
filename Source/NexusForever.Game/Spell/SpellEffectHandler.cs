@@ -2199,6 +2199,9 @@ namespace NexusForever.Game.Spell
         public static void HandleEffectProxy(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
             SpellEffectProxySemantics proxy = SpellEffectInterpreter.Interpret(info).Proxy;
+            if (!PassesProxyChance(info?.Entry?.DataBits03 ?? 0u, Random.Shared.NextDouble()))
+                return;
+
             if (!TryConsumeProxyExecution(spell, info))
                 return;
 
@@ -2223,6 +2226,24 @@ namespace NexusForever.Game.Spell
             }
 
             HandleProxySpell(spell, spell.Caster, target, info);
+        }
+
+        /// <summary>
+        /// Return whether a Proxy row fires for the supplied roll in [0, 1): DataBits03 is its trigger chance.
+        /// </summary>
+        /// <remarks>
+        /// Implemented, inferred (Decomp/Analysis/SPELL_EFFECT_PROXY_20261110.md, section 1f). The word sits where the Proc effect keeps its chance, which AMP tooltips confirm; one
+        /// Proxy tooltip states it ("10% chance to disorient", 0.1); and the Esper healer rune set puts exactly 0.2 per Psi Point on separate one- to four-point proxy spells.
+        /// 1.0 (15,873 rows) always fires. Values above 1 are the older percent scale (100.0, 1000.0) and always fire; 0 (115 rows) is treated as always because nothing shows what
+        /// it means. A failed roll does not use up an execution (assumed). No retail parity claim.
+        /// </remarks>
+        internal static bool PassesProxyChance(uint dataBits03, double roll)
+        {
+            float chance = BitConverter.UInt32BitsToSingle(dataBits03);
+            if (!float.IsFinite(chance) || chance <= 0f || chance >= 1f)
+                return true;
+
+            return roll < chance;
         }
 
         private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ISpell, Dictionary<uint, uint>> ProxyExecutionCounts = new();

@@ -214,4 +214,25 @@ public class PrerequisiteNativeComparisonTests
 
         Assert.Equal(expected, check.Meets(player, comparison, (uint)value, 0u, new PrerequisiteParameters()));
     }
+
+    // Native type 88 (14049d470): "the primary unit's id is in the owned-entity list of the second unit". The list (unit +0x2b8) is filled by 140458ec0 when an entity of
+    // type 0x19 is created, with its owner taken from +0x2b0. No second unit: only NotEqual is met. Retail row 15631 is (Equal, 0, 0).
+    [Theory]
+    [InlineData(EntityType.EsperPet, 7u, true, PrerequisiteComparison.Equal, true)]
+    [InlineData(EntityType.EsperPet, 7u, true, PrerequisiteComparison.NotEqual, false)]
+    [InlineData(EntityType.EsperPet, 8u, true, PrerequisiteComparison.Equal, false)]      // owned by someone else
+    [InlineData(EntityType.NonPlayer, 7u, true, PrerequisiteComparison.Equal, false)]     // not the entity type that registers with its owner
+    [InlineData(EntityType.EsperPet, 7u, false, PrerequisiteComparison.Equal, false)]     // no second unit
+    [InlineData(EntityType.EsperPet, 7u, false, PrerequisiteComparison.NotEqual, true)]
+    [InlineData(EntityType.EsperPet, 7u, true, PrerequisiteComparison.GreaterThan, false)]
+    public void Type88TestsWhetherThePrimaryUnitIsAnOwnedEntityOfTheSecondUnit(EntityType type, uint summonerGuid, bool hasSecond, PrerequisiteComparison comparison, bool expected)
+    {
+        IWorldEntity primary = RecordingDispatchProxy<IWorldEntity>.Create(out var primaryProxy);
+        primaryProxy.SetProperty(nameof(IWorldEntity.Type), type);
+        primaryProxy.SetProperty(nameof(IWorldEntity.SummonerGuid), (uint?)summonerGuid);
+        IUnitEntity second = RecordingDispatchProxy<IUnitEntity>.Create(out var secondProxy);
+        secondProxy.SetProperty(nameof(IUnitEntity.Guid), 7u);
+
+        Assert.Equal(expected, PrerequisiteCheckPet.Evaluate(primary, hasSecond ? second : null, comparison));
+    }
 }

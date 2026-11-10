@@ -200,16 +200,30 @@ mask. Types 27 and 28 are still not modelled. No retail capture exists; no retai
 ### Type 245, native lookup read (added later the same day)
 `1403c16e0(manager, ObjectId)`: DyeColorRamp row by id (`1401fcf20`; the row's `prerequisiteId` is at `+0x18`, matching the table layout), a generic unlock entry of type 1 for the same id
 (`1404530f0` on `DAT_140c65910`, with `+4` or `+8` nonzero), then true when the ramp has no prerequisite or the prerequisite manager passes it for the local player. This confirms
-natively the dye reading that was inferred from the 220 "Learn Dye" spells. Only ramps 355 and 371 carry a prerequisite (`39265`, `39251`); the server check does not evaluate it.
+natively the dye reading that was inferred from the 220 "Learn Dye" spells. Only ramps 355 and 371 carry a prerequisite (`39265`, `39251`, both loyalty point thresholds); the check evaluates the ramp row and its prerequisite since a later commit the same day.
 The function and its caller `1404a1790` were relabelled (they named a tradeskill requirement).
+
+### Type 88 (added 2026-11-10, late)
+The list at second unit `+0x2b8` / `+0x2c0` was identified from its writer. `140454380` (the entity constructor) zeroes both words; the only code that appends is `140458ec0`, called
+from the unit-created path (`140456960`): for an entity of type `0x19` it resolves the owner id at `+0x2b0` (the word `Lua_Unit_GetUnitOwner` returns for type `0x18`) and appends the
+entity's own id to the owner's list unless it is already there. `14047c1e0` is the membership test. So the live type 88 body (`14049d470`) reads "the primary unit is an entity of type
+0x19 owned by the second unit"; with no second unit only NotEqual is met. Type `0x19` is `EntityType.EsperPet` in the server enum. The fork reading recorded in
+`FORK_CROSSCHECK_20261110.md` ("the subject is a pet of the target") was right in substance. The server check compared "a vanity pet is visible" with Value, from the legacy handler table
+entry. Changed. The one retail row (15631) is unreferenced. Status: Implemented from the native bodies.
+
+### Quest objective 7207 (added 2026-11-10, late; nothing to fix)
+Objective 7207 (quest 5070 "The Black Hoods", TalkToTargetGroup, count 500, 15 spawns with checklist indices 1 to 15) is not a broken objective. Its flags are `0x3C`: hidden (`0x8`),
+optional (`0x20`) and two more bits. Jabbithole lists the quest's objectives by order 0, 2, 3, 4, 5; order 1 is missing because the client never shows it. It is a hidden record of which
+bar patrons the player has spoken to, with a count nobody can reach so that it never completes on its own. `Quest.RequiredObjectivesComplete` already skips optional objectives and
+`CompleteOptionalObjectives` closes them when the quest completes. Under the old count model it would have "completed" after 500 conversations; as a mask it now holds one bit per patron.
 
 ## 3. Differences found and not changed
 
 | Type | Check | Finding | Why not changed |
 |---:|---|---|---|
 | 292 | PrimalMatrixNode | native: local player only, `PrimalMatrix_LookupAllocatedNode(1, ObjectId)` (the saved count byte, 0 when the node is not in the map) compared with Value; 24 slots, all `== 1` | changed later the same day to compare a count of 0 instead of answering false for every comparison. The allocation feature itself is missing: the save request is decoded and dropped, so no node is ever allocated |
-| 148 | InfrastructureState | lookup miss: native answers NotEqual only; server substitutes state 0 | re-checked: not recoverable. The client list holds whatever states the retired server sent; whether it sent a row for an infrastructure nobody had built is not in the client. 34 retail slots are `== 0` and depend on it |
-| 88 | Pet | native tests whether the primary unit id is in a list on the second unit (`+0x2b8` / `+0x2c0`); server tests the vanity pet against Value; 1 slot (row 15631), no referencing row found. An instruction scan for `+0x2b8` returns 309 hits and no labelled unit function, so the list stays unidentified | list not identified; nothing references the row |
+| 148 | InfrastructureState | lookup miss: native answers NotEqual only; server substitutes state 0 | re-checked twice: not recoverable. The server sends none of the three infrastructure state packets (`ServerPathSettlerInfrastructureStarted`, `Complete`, `Updated` have no sender), so a client of this server always misses; whether the server-side answer should follow that depends on what records the retired server kept. The client list holds whatever states the retired server sent; whether it sent a row for an infrastructure nobody had built is not in the client. 34 retail slots are `== 0` and depend on it |
+| 88 | Pet | RESOLVED later the same day, see the type 88 section above. Earlier text: native tests whether the primary unit id is in a list on the second unit (`+0x2b8` / `+0x2c0`); server tests the vanity pet against Value; 1 slot (row 15631), no referencing row found. An instruction scan for `+0x2b8` returns 309 hits and no labelled unit function, so the list stays unidentified | list not identified; nothing references the row |
 | 41 | ZoneExplored | native compares an untruncated float ratio; server a truncated integer. Re-checked: none of the 14 rows using type 41 is referenced by any table. 13 are early rows (ids 716 to 1250) with ObjectId 0 and a zone-like id in Value under Equal, which the current native body cannot satisfy; only row 7964 (zone 1, `>= 25`) has the current shape | no live reference |
 | 179, 80, 172, 218, 246, 78, 140, 81, 173, 174 | | latent or zero-row differences | no retail slot affected, or reported and not re-read |
 
