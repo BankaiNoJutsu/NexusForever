@@ -30,8 +30,8 @@ The `spells-v2` line has a spell class per `Spell4Base.castMethod`, and `SpellAu
 So the rule implemented here (a tick-only row pulses for the finite duration of its spell) is, in the client's own terms, "an Aura spell ticks its rows for its duration". Cast method 10 is named
 `Aura` in `SpellCastMethod`. **Permanent auras (687 spells) were implemented in a later commit the same day, in part**: `Spell.GetEffectPulseDuration` pulses the tick-only rows of a permanent
 Aura until the spell ends, for effect types that leave no state behind (Damage, Heal, Proxy, VitalModifier, SapVital: 329 of the 385 such rows), and drops each pulse's target record after it is
-sent. Two server-side guards that come from no source end it: the caster dying, and the same caster casting the same spell again. Limits: creature casts select no telegraph targets on this
-server, so a creature aura with area rows still reaches nobody; the 56 rows of other effect types execute once as before. When this note was first written the text read: The fork shows the shape of the model (the spell stays executing and re-triggers on a timer); doing the same
+sent. Two server-side guards that come from no source end it: the caster dying, and the same caster casting the same spell again. Limits: the 56 rows of other effect types execute once as before. (An earlier version of this note said creature casts select no telegraph targets; that was wrong. `Spell.Cast` builds the
+telegraphs of a non-player caster at cast start, and each pulse refreshes telegraph targets, so creature auras do reach units inside their telegraph.) When this note was first written the text read: The fork shows the shape of the model (the spell stays executing and re-triggers on a timer); doing the same
 here needs the spell to stop accumulating per-pulse target effect records first, otherwise a permanent aura grows without bound. The 514 cast method 0 rows remain unexplained by either code base;
 the fork's handling of them re-arms a timer that is never enqueued, so they fire once there.
 

@@ -6004,7 +6004,7 @@ WildStar64.exe,14045edd0,LuaEvent_PlayerLevelChange_Raise,Raises Lua event Playe
 WildStar64.exe,14045ef50,LuaEvent_UnitDestroyed_Raise_14045ef50,Raises Lua event UnitDestroyed through ClientEvent_DispatchNamedEvent @ 1400ea3e0; automatic string-anchor pass.
 WildStar64.exe,14045ffd0,LuaEvents_StanceChanged_UnitLevelChanged_Raise,Raises Lua event StanceChanged and UnitLevelChanged through ClientEvent_DispatchNamedEvent @ 1400ea3e0; automatic string-anchor pass.
 WildStar64.exe,140460070,LuaEvent_UnitLevelChanged_Raise,Raises Lua event UnitLevelChanged through ClientEvent_DispatchNamedEvent @ 1400ea3e0; automatic string-anchor pass.
-WildStar64.exe,140466490,LuaEvent_BreathChanged_Raise,Raises Lua event BreathChanged through ClientEvent_DispatchNamedEvent @ 1400ea3e0; automatic string-anchor pass.
+WildStar64.exe,140466490,Unit_SetBreathAndRaiseBreathChanged,Unit virtual +0x98 (slot 140b67038 of the table at 140b66fa0): stores current Breath at entity +0x44 and raises BreathChanged with the maximum from virtual +0x60. No direct caller; the packet that drives it was not found.
 WildStar64.exe,14046c300,LuaEvent_UnitActivationTypeChanged_Raise_14046c300,Raises Lua event UnitActivationTypeChanged through ClientEvent_DispatchNamedEvent @ 1400ea3e0; automatic string-anchor pass.
 WildStar64.exe,140474fa0,LuaEvent_MessageFinished_Raise_140474fa0,Raises Lua event MessageFinished through ClientEvent_DispatchNamedEvent @ 1400ea3e0; automatic string-anchor pass.
 WildStar64.exe,140475370,LuaEvent_MessageFinished_Raise_140475370,Raises Lua event MessageFinished through ClientEvent_DispatchNamedEvent @ 1400ea3e0; automatic string-anchor pass. The function is 2936 bytes and does other work as well.

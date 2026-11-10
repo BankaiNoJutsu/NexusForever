@@ -217,6 +217,14 @@ optional (`0x20`) and two more bits. Jabbithole lists the quest's objectives by 
 bar patrons the player has spoken to, with a count nobody can reach so that it never completes on its own. `Quest.RequiredObjectivesComplete` already skips optional objectives and
 `CompleteOptionalObjectives` closes them when the quest completes. Under the old count model it would have "completed" after 500 conversations; as a mask it now holds one bit per patron.
 
+### Breath (type 73, vital 2): where the client keeps it (added 2026-11-10, late; not implemented)
+The current Breath of a unit is a float at entity `+0x44`. It is written by one function, `140466490` (labelled `LuaEvent_BreathChanged_Raise`), which stores the value and raises the
+`BreathChanged` event with the maximum from unit virtual `+0x60`; `Lua_Unit_ShouldShowBreathBar` (`140649b30`) shows the bar for a Player whose current value is below that maximum.
+The setter has no direct caller. It is slot `+0x98` of the unit virtual table (stored once, at `140b67038`; the table starts at `140b66fa0`, where `+0x40`, `+0x58`, `+0x70` and
+`+0x88` are the health, breath, shield and absorption getters the vital switch uses). The 234 `CALL [reg + 0x98]` sites in the client were listed and the ones in entity and movement
+code decompiled; none of them calls this slot on a unit, so the packet or stat id that drives Breath was **not found**. Without it the server cannot tell the client a Breath value, so
+Breath stays unmodelled: no vital, no drain from the one SapVital row that targets it, and type 73 keeps answering false for it.
+
 ## 3. Differences found and not changed
 
 | Type | Check | Finding | Why not changed |
