@@ -1880,20 +1880,10 @@ namespace NexusForever.Game.Spell
         }
 
         /// <summary>
-        /// Return how long a ticking effect row pulses: its own duration, or for a tick-only row the finite duration of the owning spell.
-        /// </summary>
-        /// <remarks>
-        /// Implemented, inferred (Decomp/Analysis/SPELL_EFFECT_PROXY_20261110.md, section 1c). A row with a tick and no duration of its own lives as long as its spell. Three tooltips state
-        /// both numbers: Medic Restrictor (field Spell4 38287, spellDuration 4000, tick 500) "a field that lasts for 4s ... every 0.5s"; Warrior Polarity Field (38975, 10000, 1000)
-        /// "lasting 10s ... every 1s", where the ticking rows are Damage, VitalModifier and Proxy; Medic Nullifier (58868, 6000, 1000) "lasting 6s ... every 1s".
-        /// Only a finite Spell4.spellDuration is modelled. Permanent spells (0xFFFFFFFF) and spells without a duration (passives, toggles, auras) need a spell lifetime the server does not
-        /// have, so their tick-only rows still execute once. No retail parity claim.
-        /// </remarks>
-        /// <summary>
         /// A Proxy row that keeps a periodic spell (DataBits01, with DataBits00 empty) but has nothing to pulse it: no duration of its own and no finite spell duration.
         /// </summary>
         /// <remarks>
-        /// These rows belong to permanent passives, toggles and auras. Casting the periodic spell once at cast time would be neither the retail behaviour nor the previous server
+        /// These rows belong to passives and toggles, whose spells have no duration. Casting the periodic spell once at cast time would be neither the retail behaviour nor the previous server
         /// behaviour (the row cast nothing), so they stay inert until spells have a lifetime.
         /// </remarks>
         private bool IsUnpulsedPeriodicProxy(SpellEffectInterpretation effect)
@@ -1904,33 +1894,96 @@ namespace NexusForever.Game.Spell
                 && GetEffectPulseDuration(effect) == 0u;
         }
 
+        /// <summary>
+        /// Return how long a ticking effect row pulses: its own duration, or for a tick-only row the finite duration of the owning spell.
+        /// </summary>
+        /// <remarks>
+        /// Implemented, inferred (Decomp/Analysis/SPELL_EFFECT_PROXY_20261110.md, section 1c). A row with a tick and no duration of its own lives as long as its spell. Three tooltips state
+        /// both numbers: Medic Restrictor (field Spell4 38287, spellDuration 4000, tick 500) "a field that lasts for 4s ... every 0.5s"; Warrior Polarity Field (38975, 10000, 1000)
+        /// "lasting 10s ... every 1s", where the ticking rows are Damage, VitalModifier and Proxy; Medic Nullifier (58868, 6000, 1000) "lasting 6s ... every 1s".
+        /// The client classifies these spells itself: 559 of the 564 such rows belong to spells with cast method 10 (Aura), and every Aura spell has a duration, finite or 0xFFFFFFFF.
+        /// A permanent Aura (0xFFFFFFFF) pulses until the spell ends, returned here as <see cref="uint.MaxValue"/>, but only for rows that leave no state behind
+        /// (<see cref="IsStatelessPulseEffect"/>), because each pulse's bookkeeping is discarded. Spells without a duration (passives, toggles) are not Aura spells and their tick-only
+        /// rows still execute once. No retail parity claim.
+        /// </remarks>
         private uint GetEffectPulseDuration(SpellEffectInterpretation effect)
         {
             if (effect.Timing.DurationTime > 0u)
                 return effect.Timing.DurationTime;
 
-            uint spellDuration = Parameters.SpellInfo.Entry.SpellDuration;
-            if (effect.Timing.TickTime > 0u && spellDuration != 0u && spellDuration != uint.MaxValue)
-                return spellDuration;
+            if (effect.Timing.TickTime == 0u)
+                return 0u;
 
-            return 0u;
+            uint spellDuration = Parameters.SpellInfo.Entry.SpellDuration;
+            if (spellDuration == uint.MaxValue)
+            {
+                return Parameters.SpellInfo.BaseInfo?.CastMethod == SpellCastMethod.Aura && IsStatelessPulseEffect(effect.Entry.EffectType)
+                    ? uint.MaxValue
+                    : 0u;
+            }
+
+            return spellDuration;
+        }
+
+        /// <summary>
+        /// Effect types whose execution leaves nothing on the target that the spell has to remove later, so a pulse's target effect record can be dropped once it has been sent.
+        /// </summary>
+        private static bool IsStatelessPulseEffect(SpellEffectType effectType)
+        {
+            return effectType is SpellEffectType.Damage
+                or SpellEffectType.Heal
+                or SpellEffectType.Proxy
+                or SpellEffectType.VitalModifier
+                or SpellEffectType.SapVital;
+        }
+
+        /// <summary>
+        /// Drop the finished target effect records of a spell-lifetime pulse so a long-lived aura does not accumulate one record per target per tick.
+        /// </summary>
+        private void PruneSpellLifetimePulseRecords(SpellEffectInterpretation effect)
+        {
+            if (!IsStatelessPulseEffect(effect.Entry.EffectType))
+                return;
+
+            foreach (ISpellTargetInfo target in targets)
+                target.Effects.RemoveAll(info => info.Entry.Id == effect.Entry.Id && !lifetimeEvents.ContainsKey(info));
+        }
+
+        /// <summary>
+        /// Server-side guards for a row that lives as long as its spell, none of them read from any source: it stops with its caster, and a permanent aura stops once the same
+        /// caster has cast the same spell again.
+        /// </summary>
+        private bool ShouldStopSpellLifetimePulse(uint durationTime)
+        {
+            if (Caster is { IsAlive: false })
+                return true;
+
+            if (durationTime != uint.MaxValue || Caster is not UnitEntity holder)
+                return false;
+
+            uint spell4Id = Parameters.SpellInfo.Entry.Id;
+            return holder.GetActiveSpell(s => !ReferenceEquals(s, this) && !s.IsFinished && s.CastingId > CastingId && s.Parameters?.SpellInfo?.Entry?.Id == spell4Id) != null;
         }
 
         private void ScheduleEffectPulse(SpellEffectInterpretation effect, uint delayTime, uint elapsedTime, uint tickTime, uint durationTime, bool spellLifetime = false)
         {
             events.EnqueueEvent(new SpellEvent(delayTime / 1000d, () =>
             {
-                // Server-side guard, not read from any source: a row that lives as long as its spell stops with its caster. Some creature auras carry durations of hours.
-                if (spellLifetime && Caster is { IsAlive: false })
+                // Some creature auras carry durations of hours, and a permanent aura has no end of its own.
+                if (spellLifetime && ShouldStopSpellLifetimePulse(durationTime))
                     return;
 
                 if (ExecuteEffect(effect))
                     SendSpellGo();
 
+                if (spellLifetime)
+                    PruneSpellLifetimePulseRecords(effect);
+
                 if (tickTime == 0u || durationTime == 0u)
                     return;
 
-                uint nextElapsedTime = elapsedTime + tickTime;
+                // a permanent aura (uint.MaxValue) keeps no elapsed time, so the counter cannot overflow
+                uint nextElapsedTime = durationTime == uint.MaxValue ? elapsedTime : elapsedTime + tickTime;
                 if (nextElapsedTime <= durationTime)
                     ScheduleEffectPulse(effect, tickTime, nextElapsedTime, tickTime, durationTime, spellLifetime);
             }));

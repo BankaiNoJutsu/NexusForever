@@ -328,7 +328,7 @@ public sealed class UnitPrerequisiteContextTests
     [InlineData(4000u, 500u, 0u, 4000u)]          // tick-only row in a spell with a finite duration: pulses for the spell
     [InlineData(4000u, 500u, 6000u, 6000u)]       // the row's own duration wins
     [InlineData(0u, 500u, 0u, 0u)]                // no spell duration: nothing to pulse
-    [InlineData(uint.MaxValue, 500u, 0u, 0u)]     // permanent spell: not modelled
+    [InlineData(uint.MaxValue, 500u, 0u, 0u)]     // permanent spell that is not an Aura: nothing to pulse
     [InlineData(4000u, 0u, 0u, 0u)]               // no tick
     public void TickOnlyRowsPulseForTheFiniteDurationOfTheirSpell(uint spellDuration, uint tick, uint rowDuration, uint expected)
     {
@@ -344,6 +344,28 @@ public sealed class UnitPrerequisiteContextTests
         Assert.Equal(tick != 0u ? 77118u : 0u, proxy.Proxy.Spell4Id);
         // A periodic proxy with nothing to pulse it stays inert rather than firing once at cast time.
         Assert.Equal(tick != 0u && expected == 0u, Invoke<bool>(spell, "IsUnpulsedPeriodicProxy", proxy));
+    }
+
+    // Every spell with cast method 10 (Aura) has a duration; 687 of them are permanent (0xFFFFFFFF), for example Medic Danger Zone (Spell4 58912, Proxy row 147851, tick 500 ms).
+    // A permanent Aura pulses until the spell ends, but only rows that leave no state behind; anything else keeps the old single execution.
+    [Theory]
+    [InlineData(SpellCastMethod.Aura, SpellEffectType.Proxy, uint.MaxValue)]
+    [InlineData(SpellCastMethod.Aura, SpellEffectType.Damage, uint.MaxValue)]
+    [InlineData(SpellCastMethod.Aura, SpellEffectType.UnitPropertyModifier, 0u)]
+    [InlineData(SpellCastMethod.Normal, SpellEffectType.Proxy, 0u)]
+    public void PermanentAurasPulseStatelessTickOnlyRowsUntilTheSpellEnds(SpellCastMethod castMethod, SpellEffectType effectType, uint expected)
+    {
+        using var fixture = new Fixture();
+        var caster = Unit(1, 10, out _);
+        var spell = fixture.Spell(caster, null, out var info);
+        info.SetProperty(nameof(ISpellInfo.Entry), new Spell4Entry { Id = 58912, SpellDuration = uint.MaxValue });
+        var baseInfo = RecordingDispatchProxy<ISpellBaseInfo>.Create(out var baseProxy);
+        baseProxy.SetProperty(nameof(ISpellBaseInfo.CastMethod), castMethod);
+        info.SetProperty(nameof(ISpellInfo.BaseInfo), baseInfo);
+
+        var row = SpellEffectInterpreter.Interpret(new Spell4EffectsEntry { Id = 147851, EffectType = effectType, TickTime = 500, DataBits01 = 60920 });
+
+        Assert.Equal(expected, Invoke<uint>(spell, "GetEffectPulseDuration", row));
     }
 
     private static PrerequisiteEntry Row(uint id, PrerequisiteType type, uint value, uint objectId = 0)

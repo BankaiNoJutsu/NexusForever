@@ -88,7 +88,7 @@ need a lifetime model for passives, toggles and auras first. Their Proxy rows st
 The Polarity Field rows show the rule is not specific to Proxy: 359 Damage rows and 30 rows of other types are tick-only inside a spell with a finite duration. `Spell.GetEffectPulseDuration`
 now pulses any tick-only row every `tickTime` until `spellDuration` (first pulse at the delay, or at one tick, as for rows with their own duration). The interpreter reads word 01 on every
 ticking Proxy row. A server-side guard that is not from any source stops these pulses when the caster is dead, because a few creature auras carry durations of hours (`9999999`, `99999999`).
-Previously such rows executed once at cast time, or for Proxy rows cast nothing. No retail parity claim. The client classifies these spells itself: 559 of the 564 such rows belong to spells with cast method 10 (Aura), see `FORK_CROSSCHECK_20261110.md`.
+Previously such rows executed once at cast time, or for Proxy rows cast nothing. No retail parity claim. The client classifies these spells itself: 559 of the 564 such rows belong to spells with cast method 10 (Aura), see `FORK_CROSSCHECK_20261110.md`. Permanent Auras (spell duration `0xFFFFFFFF`) pulse the same way until the spell ends, for effect types that leave no state behind; the 514 tick-only Proxy rows of spells with cast method 0 and no duration are still inert.
 
 **DataBits05 was checked against the "can only be triggered by the same foe every N s" tooltips and is not that interval**: the five passives above state 15, 10, 10, 10 and 15 s and all carry 120.
 Their word 07 holds a different id on each (24549, 24655, 24658, 37496, 38384), which was not followed. Word 05 clusters by authoring family rather than by any tooltip number: 60 on 10,099 rows,
