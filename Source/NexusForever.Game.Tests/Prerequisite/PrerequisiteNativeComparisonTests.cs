@@ -24,8 +24,51 @@ namespace NexusForever.Game.Tests.Prerequisite;
 //  - type 190 PetFlair (1404a14d0): the per-player unlock count for PetFlair ObjectId is compared with the count the row expects; Equal / NotEqual only, Value not read. Retail: 298 slots, all NotEqual,
 //    referenced by AccountItem and ItemSpecial rows ("usable while the flair is not unlocked").
 //  - types 194 MountUsage / 195 HoverboardUsage (14049ced0): the player's zone and its parents are walked; WorldZone flag 0x10 anywhere on the chain denies. Equal / NotEqual only.
+//  - type 178 (14049d2c0): ObjectId is an ItemSlot id; the flag is "an item is equipped at the index of the lowest bit of equippedSlotFlags". Retail: ItemSlot 46 ArmorGadget (0x800 -> index 11)
+//    unlocks the gadget action slot; Value (100 on that row) is not read.
+//  - type 104 (14046a210): the unit has an active effect in spell effect group ObjectId. Retail row 23816: NotEqual group 12 (housing statue / warhorn buffs) on the plugs that grant them.
 public class PrerequisiteNativeComparisonTests
 {
+    [Theory]
+    [InlineData(PrerequisiteComparison.Equal, true, true)]
+    [InlineData(PrerequisiteComparison.NotEqual, true, false)]
+    [InlineData(PrerequisiteComparison.NotEqual, false, true)]
+    [InlineData(PrerequisiteComparison.GreaterThan, true, false)]
+    public void SpellEffectGroupFlagIsEqualOrNotEqualOnly(PrerequisiteComparison comparison, bool hasEffectInGroup, bool expected)
+    {
+        Assert.Equal(expected, PrerequisiteCheckSpellCooldownNodeInServiceSet.Evaluate(comparison, hasEffectInGroup));
+    }
+
+    [Fact]
+    public void SpellEffectGroupWithoutAUnitIsFalseForEveryComparison()
+    {
+        var check = new PrerequisiteCheckSpellCooldownNodeInServiceSet(null);
+        Assert.False(check.MeetsUnit(null, PrerequisiteComparison.NotEqual, 0u, 12u, new PrerequisiteParameters()));
+        Assert.False(check.MeetsUnit(null, PrerequisiteComparison.Equal, 0u, 12u, new PrerequisiteParameters()));
+    }
+
+    [Theory]
+    [InlineData(46u, true, PrerequisiteComparison.Equal, true)]
+    [InlineData(46u, false, PrerequisiteComparison.Equal, false)]
+    [InlineData(46u, false, PrerequisiteComparison.NotEqual, true)]
+    [InlineData(46u, true, PrerequisiteComparison.GreaterThanOrEqual, false)]
+    [InlineData(99u, true, PrerequisiteComparison.Equal, false)]      // no ItemSlot row: NotEqual only
+    [InlineData(99u, true, PrerequisiteComparison.NotEqual, true)]
+    public void ItemSlotEquippedTestsTheEquippedIndexOfTheItemSlotRow(uint itemSlotId, bool gadgetEquipped, PrerequisiteComparison comparison, bool expected)
+    {
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out var tableProxy);
+        tableProxy.SetProperty(nameof(IGameTableManager.ItemSlot), NexusForever.Game.Tests.Transport.PlayerBindPointTests.Table(
+            new ItemSlotEntry { Id = 46u, EquippedSlotFlags = 0x800u }));
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        IInventory inventory = RecordingDispatchProxy<IInventory>.Create(out var inventoryProxy);
+        IItem gadget = RecordingDispatchProxy<IItem>.Create(out _);
+        inventoryProxy.SetMethodHandler(nameof(IInventory.GetItem),
+            args => gadgetEquipped && args.Length == 2 && args[0] is InventoryLocation.Equipped && (uint)args[1] == (uint)EquippedItem.Gadget ? gadget : null);
+        playerProxy.SetProperty(nameof(IPlayer.Inventory), inventory);
+
+        Assert.Equal(expected, new PrerequisiteCheckItemSlotEquipped(tables).Meets(player, comparison, 100u, itemSlotId, new PrerequisiteParameters()));
+    }
+
     [Theory]
     [InlineData(0u, 0u, PrerequisiteComparison.Equal, true)]         // open zone
     [InlineData(0xD2u, 0u, PrerequisiteComparison.Equal, false)]     // the zone itself denies (retail interior rows are 0xD2)

@@ -5,7 +5,7 @@ using NexusForever.GameTable;
 
 namespace NexusForever.Game.Prerequisite.Check
 {
-    [PrerequisiteCheck(PrerequisiteType.ProgressTrackOnMatchingEntity)]
+    // Type 178 no longer uses this body: the evaluator dispatches 178 to 14049d2c0 (see PrerequisiteCheckItemSlotEquipped) and only 291 to 1404a1890.
     [PrerequisiteCheck(PrerequisiteType.Unknown291)]
     public class PrerequisiteCheckProgressTrackOnMatchingEntity : IPrerequisiteCheck
     {

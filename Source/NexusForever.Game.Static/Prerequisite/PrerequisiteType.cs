@@ -106,7 +106,7 @@
         AccountItemListItem2Count101 = 101, // Requirements not met - table[101] 14049fac0 AccountItemList_WalkItem2IdMatch 140497d9c (no NPC gate); NF account-row Item2 count vs value0
         SpellCooldownNodeOnUnit       = 102, // Spell effect requirements not met - live 1404a4fe0; table[102] 14049fb50; value0=cooldown-node id; NF checks active SpellManager cooldown referencing SpellCoolDown id
         SpellCooldownNodeOnTarget     = 103, // Spell effect requirements not met - live 14046a190; table[103] 14049fbe0; value0=cooldown-node id on caster with prerequisite target present
-        SpellCooldownNodeInServiceSet = 104, // Spell effect requirements not met - live 14046a210; table[104] 14049fc70; value0=cooldown-node id; NF checks spell-book membership referencing node
+        SpellCooldownNodeInServiceSet = 104, // Spell effect requirements not met - older name; live 14046a210: the unit has an active effect in spell effect group ObjectId (Spell4EffectGroupList); Value not read
         SpellEffectTypeOnUnit         = 105, // Spell effect requirements not met - evaluator case 0x69 (inline in 1404a2100); ObjectId=SpellEffectType (correlated), Value unused in retail rows; NF checks persistent lifetime effects on unit pending spells
         TargetEntityLookupHit         = 106, // Requirements not met - live Prerequisite_CheckTargetEntityLookupHit 14049e900 (+0x318); table[106] 14049fd80; NF resolves target on player.Map
         QuestObjective7             = 107, // path mission progress word bit of the target creature's QuestChecklistIdx (native FUN_14049fff0)
@@ -183,7 +183,7 @@
         TradeSkill                  = 175, // Tradeskill requirement not met - handler table[175] stub 140001ba0; NF compares TradeskillType objectId0 tier rank via HasTradeskill + TradeskillTier
         ChallengeObject             = 176, // Challenge object requirement not met - handler table[176] stub 140001ba0; NF proxies activated challenge for objectId0 Challenge.tbl id
         TrueLevel                   = 177, // Native case 0xB1 compares unit+0x38 (base level) with Value via FUN_1404a2090; not a challenge lookup
-        ProgressTrackOnMatchingEntity = 178, // Requirements not met - handler table[178] Prerequisite_CheckProgressTrackOnMatchingEntity 1404a1890: target entity id (+8) must equal local player, then Progress_GetTrackedScalar 1403fa980(1, objectId0) before ApplyComparison; rejects tbl Equipped hint
+        ProgressTrackOnMatchingEntity = 178, // Requirements not met - older name; live case 0xb2 vtable +0x140 -> 14049d2c0: an item is equipped in ItemSlot ObjectId (lowest bit of equippedSlotFlags); see PrerequisiteCheckItemSlotEquipped
         CreatureDifficulty          = 179, // Requirements not met - objectId0 is Creature2Difficulty id; spell apply path + NF PrerequisiteCheckCreatureDifficulty; handler table[179] 1404a18f0 calls PrimalMatrix_LookupAllocatedNode 1404d6a60 (separate dead-path cluster — not difficulty compare)
         CreatureDifficultyRank      = 180, // Requirements not met - handler table[180] stub 140001ba0; value0 is Creature2Difficulty.RankValue on target (optional objectId0 filters difficulty id); spell path also handles type 179 inline
         // 181 is unused in PrerequisiteType.tbl

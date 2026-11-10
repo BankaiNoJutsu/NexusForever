@@ -98,6 +98,20 @@ player"). `0x14` and `0x17` are Player and Ghost, so the gate requires the **pri
   the only residence on the map (natively it matches nothing); a spell cast without a target on a community map therefore resolves nothing. Not read natively: that residence `+0x20` and unit
   `+0x1a8` are owner and character ids. Status: Implemented, inferred.
 
+### Types 178 and 104 (added later the same day)
+* **178.** Live case `0xb2` dispatches vtable `+0x140` (`14049d2c0`), not the body at `1404a1890` the server followed (that one is type 291 only). ObjectId is an `ItemSlot` id (`14020e7a0`
+  reads the ItemSlot table); the index of the lowest set bit of the row's `equippedSlotFlags` selects an entry of the local player's indexed storage with selector 0, and the flag is "the entry
+  exists". No row or no bit below 31 answers NotEqual only. Value is not read. Retail: ObjectId 46 = "ArmorGadget" (flags `0x800`, equipped index 11 = Gadget) is the unlock prerequisite of
+  ActionSlotPrereq slot index 8, the gadget action slot; ObjectId 43 = "ArmorShields" (`0x8000`, index 15 = Shields). An older enum comment had rejected this "Equipped" reading on the strength
+  of the disproven handler table. New check `PrerequisiteCheckItemSlotEquipped`; the progress-track body stays on type 291. Status: Implemented from the native body; selector 0 = equipped bag
+  is inferred from the bit to equipped-index match.
+* **104.** `14046a210(unit, ObjectId)`: the decompiler drops the argument of the spell service call (virtual `+0x40`, `140561e00`), which looks ObjectId up in the map at service `+0x740` and
+  returns a set of effect ids; the flag is "an active effect of the unit is in the set". `Spell4Manager_BuildRuntimeData` (`14055e180`) fills that map from each Spell4Effects row's
+  Spell4EffectGroupList, one entry per group id. ObjectId is a spell effect group. Retail row 23816 ("owner or neighbour, and NotEqual group 12") is the animation-state prerequisite of the
+  "Eldan Statue" and "Warhorn" housing plugs, and group 12 holds exactly the 17 effects of the "Housing Statue Buff" and "Housing Warhorn Buff" spells. The server asked whether the player knew
+  a spell with cooldown id Value (always 0); it now uses the existing effect-group helper. Rows 5634 (group 4, on an effect whose spell no longer exists) and 29932 (group 14, empty) are dead.
+  Status: Implemented from the native body and the table builder.
+
 ## 3. Differences found and not changed
 
 | Type | Check | Finding | Why not changed |
@@ -105,9 +119,9 @@ player"). `0x14` and `0x17` are Player and Ghost, so the gate requires the **pri
 | 73 | Vital | re-read: native switch `140466520` reads Breath (id 2, virtual `+0x58`), Absorption (`0x15`, virtual `+0x88`), three public-event resources (`0x16` to `0x18`) and Resource8 to 10 (`0x1b` to `0x1d`), and for any other id returns the class resource slot of the local player or 0, then always compares. The server returns false without comparing for ids it cannot resolve. Retail slots hit: id 0 (1 slot, `>= 80`), id 2 (1 slot, `<= 0`), id 21 (1 slot, `> 0`) | the server has no Breath value and no class-resource index; comparing 0 instead would turn "always false" into "always true" for the id 2 slot, which is no better |
 | 292 | PrimalMatrixNode | native: local player only, `PrimalMatrix_LookupAllocatedNode(1, ObjectId)` compared with Value; server always false; 24 slots | needs the server primal-matrix allocation surface; not yet done |
 | 148 | InfrastructureState | lookup miss: native answers NotEqual only; server substitutes state 0 | server API cannot distinguish a miss from state 0 |
-| 104 | | wrong slot word (ObjectId 4 to 14 on 3 slots, no spell references found) | the set and its key are not identified |
-| 88 | Pet | native tests whether the primary unit id is in a list on the second unit; server tests the vanity pet against Value; 1 slot | list not identified |
-| 178, 175, 289 | | server compares a number with Value where the native handler never receives Value | native flag not identified |
+| 88 | Pet | native tests whether the primary unit id is in a list on the second unit (`+0x2b8` / `+0x2c0`); server tests the vanity pet against Value; 1 slot (row 15631), no referencing row found | list not identified; nothing references the row |
+| 175 | TradeSkill | native `14049f190`: the flag is "ObjectId is one of the ten ids (`+0x18`) of an active entry of the list at local-player global `+0x1698`"; Value is not read; server compares a tradeskill tier with Value; 1 slot (ObjectId 153), no referencing row found | the list is not identified (an older label calls it the pet list); nothing references the row |
+| 289 | Unknown289 | native `14049f0c0` reads bit 0 of `*(DAT_140c635f0 + 0x16e8) + 4`. `DAT_140c635f0` is the application object created in `140019350`, not a unit, so the label `Prerequisite_CheckMount` and the server's "is mounted" reading have no basis; 3 slots, two of them in the availability of quests 10433 and 10440 as an alternative to "quest 9716 / 9729 completed" | the flag is not identified; Jabbithole has no record of those quests |
 | 94 | QuestObjective6 | native result depends on unit types and the unit slot at `+0x35f8`; 781 slots | unit participation slot is a known unmodelled concept |
 | 41 | ZoneExplored | native compares an untruncated float ratio; server a truncated integer | small; not yet done |
 | 179, 80, 172, 218, 246, 78, 140, 81, 173, 174 | | latent or zero-row differences | no retail slot affected, or reported and not re-read |
