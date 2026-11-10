@@ -2185,10 +2185,22 @@ namespace NexusForever.Game.Spell
             player.ResurrectionManager.ResurrectRequest(spell.Caster.Guid);
         }
 
+        /// <remarks>
+        /// Implemented, inferred (Decomp/Analysis/SPELL_EFFECT_PROXY_20261110.md). Two rules, neither read from native code (the client does not execute effects):
+        /// 1. DataBits04 is the maximum number of times the proxy fires over the life of the parent spell, 0xFFFFFFFF for no limit. The client table types the word as an integer; for ticking proxies
+        ///    with a finite value it equals duration / tick in 52 of 76 rows; and Telekinetic Strike (Spell4 32893) hits up to 5 foes with a per-target proxy capped at 1 whose child grants 1 Psi Point,
+        ///    while its tooltip reads "to 5 foes and generate a Psi Point".
+        /// 2. The child spell is cast by the caster of the parent with the proxy target as its primary target. 4,562 of the 4,748 child spells of per-target proxies affect an explicit target, and the
+        ///    resource builders (Telekinetic Strike, Relentless Strikes) grant the resource to the child's caster. Previously the target cast the child on itself.
+        /// No retail parity claim.
+        /// </remarks>
         [SpellEffectHandler(SpellEffectType.Proxy)]
         public static void HandleEffectProxy(ISpell spell, IUnitEntity target, ISpellTargetEffectInfo info)
         {
             SpellEffectProxySemantics proxy = SpellEffectInterpreter.Interpret(info).Proxy;
+            if (!TryConsumeProxyExecution(spell, info))
+                return;
+
             if (ShouldRouteProxyToOriginalCaster(spell, proxy))
             {
                 HandleProxySpell(spell, spell.Caster, spell.Caster, info, proxy);
@@ -2209,7 +2221,34 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            HandleProxySpell(spell, target, target, info);
+            HandleProxySpell(spell, spell.Caster, target, info);
+        }
+
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ISpell, Dictionary<uint, uint>> ProxyExecutionCounts = new();
+
+        /// <summary>
+        /// Count one execution of a Proxy effect row for the supplied spell and return false once the row's DataBits04 limit has been reached.
+        /// </summary>
+        /// <remarks>
+        /// A limit of 0xFFFFFFFF is unlimited. A limit of 0 (115 retail rows) is treated as unlimited because nothing shows what it means.
+        /// The count is kept for the life of the spell instance, so it spans every target and every tick of that cast.
+        /// </remarks>
+        internal static bool TryConsumeProxyExecution(ISpell spell, ISpellTargetEffectInfo info)
+        {
+            uint limit = info?.Entry?.DataBits04 ?? uint.MaxValue;
+            if (spell == null || limit == uint.MaxValue || limit == 0u)
+                return true;
+
+            Dictionary<uint, uint> counts = ProxyExecutionCounts.GetValue(spell, _ => new Dictionary<uint, uint>());
+            lock (counts)
+            {
+                counts.TryGetValue(info.Entry.Id, out uint count);
+                if (count >= limit)
+                    return false;
+
+                counts[info.Entry.Id] = count + 1u;
+                return true;
+            }
         }
 
         public static void HandleEffectProxyWorld(ISpell spell, IWorldEntity target, ISpellTargetEffectInfo info)

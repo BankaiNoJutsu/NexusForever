@@ -833,7 +833,7 @@ public class SpellEffectCombatRegressionTests
     [Fact]
     public void HandleEffectProxy_WithExplicitPosition_ForwardsPositionToChildSpell()
     {
-        IPlayer player = CreatePlayer(out _, out _);
+        IPlayer player = CreatePlayer(out _, out RecordingDispatchProxy<IPlayer> playerProxy);
         IUnitEntity target = RecordingDispatchProxy<IUnitEntity>.Create(out RecordingDispatchProxy<IUnitEntity> targetProxy);
         targetProxy.SetProperty(nameof(IUnitEntity.Guid), 170u);
 
@@ -846,11 +846,64 @@ public class SpellEffectCombatRegressionTests
 
         global::NexusForever.Game.Spell.SpellHandler.HandleEffectProxy(spell, target, info);
 
-        RecordingDispatchProxy<IUnitEntity>.Invocation cast = Assert.Single(targetProxy.GetInvocations(nameof(IUnitEntity.CastSpell)));
+        // the child is cast by the caster of the parent spell, aimed at the proxy target (Decomp/Analysis/SPELL_EFFECT_PROXY_20261110.md)
+        RecordingDispatchProxy<IPlayer>.Invocation cast = Assert.Single(playerProxy.GetInvocations(nameof(IPlayer.CastSpell)));
         Assert.Equal(46252u, (uint)cast.Arguments[0]);
         ISpellParameters parameters = Assert.IsAssignableFrom<ISpellParameters>(cast.Arguments[1]);
         Assert.Equal(170u, parameters.PrimaryTargetId);
         Assert.Same(position, parameters.Position);
+        Assert.Empty(targetProxy.GetInvocations(nameof(IUnitEntity.CastSpell)));
+    }
+
+    // Retail witness: Telekinetic Strike (Spell4 32893) has Damage on target flag 4 (up to 5 foes) and Proxy row 62204 on target flag 4 with DataBits00 = 30900 and DataBits04 = 1.
+    // Spell 30900 is a caster-flag VitalModifier of vital 6 by 1 (a Psi Point). The tooltip reads "Deal ... magic damage to 5 foes and generate a Psi Point".
+    [Fact]
+    public void HandleEffectProxy_WithExecutionLimitOne_CastsTheChildOnceFromTheCasterHoweverManyTargetsAreHit()
+    {
+        IPlayer esper = CreatePlayer(out _, out RecordingDispatchProxy<IPlayer> esperProxy);
+        ISpell spell = CreateSpell(32893u, esper);
+        ISpellTargetEffectInfo info = CreateProxyInfo(effectId: 62204u, spellId: 32893u, proxySpell4Id: 30900u, maxExecutions: 1u);
+
+        var foes = new List<RecordingDispatchProxy<IUnitEntity>>();
+        for (uint i = 0u; i < 5u; i++)
+        {
+            IUnitEntity foe = RecordingDispatchProxy<IUnitEntity>.Create(out RecordingDispatchProxy<IUnitEntity> foeProxy);
+            foeProxy.SetProperty(nameof(IUnitEntity.Guid), 500u + i);
+            foes.Add(foeProxy);
+            global::NexusForever.Game.Spell.SpellHandler.HandleEffectProxy(spell, foe, info);
+        }
+
+        RecordingDispatchProxy<IPlayer>.Invocation cast = Assert.Single(esperProxy.GetInvocations(nameof(IPlayer.CastSpell)));
+        Assert.Equal(30900u, (uint)cast.Arguments[0]);
+        Assert.Equal(500u, ((ISpellParameters)cast.Arguments[1]).PrimaryTargetId);
+        Assert.All(foes, foe => Assert.Empty(foe.GetInvocations(nameof(IUnitEntity.CastSpell))));
+
+        // the limit belongs to one cast: a second cast of the same spell fires again
+        ISpell secondCast = CreateSpell(32893u, esper);
+        IUnitEntity anotherFoe = RecordingDispatchProxy<IUnitEntity>.Create(out RecordingDispatchProxy<IUnitEntity> anotherFoeProxy);
+        anotherFoeProxy.SetProperty(nameof(IUnitEntity.Guid), 600u);
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectProxy(secondCast, anotherFoe, info);
+        Assert.Equal(2, esperProxy.GetInvocations(nameof(IPlayer.CastSpell)).Count);
+    }
+
+    // DataBits04 = 0xFFFFFFFF is unlimited (7,846 retail rows); a finite value such as 12 with tick 500 ms and duration 6000 ms (44 retail rows) allows exactly that many executions.
+    [Theory]
+    [InlineData(uint.MaxValue, 20, 20)]
+    [InlineData(12u, 20, 12)]
+    [InlineData(3u, 2, 2)]
+    [InlineData(0u, 4, 4)]
+    public void HandleEffectProxy_CountsExecutionsAgainstTheLimitForTheLifeOfTheSpell(uint maxExecutions, int attempts, int expectedCasts)
+    {
+        IPlayer caster = CreatePlayer(out _, out RecordingDispatchProxy<IPlayer> casterProxy);
+        IUnitEntity target = RecordingDispatchProxy<IUnitEntity>.Create(out RecordingDispatchProxy<IUnitEntity> targetProxy);
+        targetProxy.SetProperty(nameof(IUnitEntity.Guid), 170u);
+        ISpell spell = CreateSpell(90001u, caster);
+        ISpellTargetEffectInfo info = CreateProxyInfo(effectId: 900010u, spellId: 90001u, proxySpell4Id: 90002u, maxExecutions: maxExecutions);
+
+        for (int i = 0; i < attempts; i++)
+            global::NexusForever.Game.Spell.SpellHandler.HandleEffectProxy(spell, target, info);
+
+        Assert.Equal(expectedCasts, casterProxy.GetInvocations(nameof(IPlayer.CastSpell)).Count);
     }
 
     [Theory]
@@ -1854,7 +1907,7 @@ public class SpellEffectCombatRegressionTests
         return info;
     }
 
-    private static ISpellTargetEffectInfo CreateProxyInfo(uint effectId, uint spellId, uint proxySpell4Id)
+    private static ISpellTargetEffectInfo CreateProxyInfo(uint effectId, uint spellId, uint proxySpell4Id, uint maxExecutions = uint.MaxValue)
     {
         ISpellTargetEffectInfo info = RecordingDispatchProxy<ISpellTargetEffectInfo>.Create(out RecordingDispatchProxy<ISpellTargetEffectInfo> infoProxy);
         infoProxy.SetProperty(nameof(ISpellTargetEffectInfo.EffectId), effectId);
@@ -1864,7 +1917,8 @@ public class SpellEffectCombatRegressionTests
             SpellId    = spellId,
             TargetFlags = 4u,
             EffectType  = SpellEffectType.Proxy,
-            DataBits00  = proxySpell4Id
+            DataBits00  = proxySpell4Id,
+            DataBits04  = maxExecutions
         });
         return info;
     }

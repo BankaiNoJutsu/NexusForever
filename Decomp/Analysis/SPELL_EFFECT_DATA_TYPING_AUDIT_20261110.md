@@ -50,8 +50,8 @@ Competing readings of Proxy word 04 (integer):
 
 Competing readings of Proxy word 03 (float): a trigger chance (1.0 = always) with a second scale present in the data (100.0 on 604 rows), or a multiplier passed to the child. Not separable from the table.
 
-Experiment that separates the word 04 readings: a retail video or capture of a multi-target builder (for example Esper Telekinetic Strike) hitting several targets and the resource gained per cast; or a
-combat log of a `Proxy` row with word 04 = 1 on an AoE parent. **Not implemented:** capping proxies at word 04 would change 8,508 rows of combat behaviour on a correlated reading.
+**Resolved the same day** from the tick-count equality and the Telekinetic Strike tooltip: word 04 is the maximum number of executions, and the child is cast by the caster of the parent. See
+`SPELL_EFFECT_PROXY_20261110.md`; implemented as inferred. Word 03 is still unread.
 
 The unread Damage floats (words 03 to 05) and the DistributedDamage and DistanceDependentDamage floats are consistent with the tracker's note that distance falloff and target-count splitting are not modelled;
 which word is which is not known.
