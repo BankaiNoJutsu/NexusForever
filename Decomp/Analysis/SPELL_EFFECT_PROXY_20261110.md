@@ -83,6 +83,22 @@ Their word 07 holds a different id on each (24549, 24655, 24658, 37496, 38384), 
 Upstream `spells-v2` reads the same four words the server now reads (00 spell, 01 periodic spell, 04 maximum executions, with the same Telekinetic Strike example, and 06 prerequisite) and is
 silent on words 03 and 05. That is agreement between two inferred readings, not independent evidence.
 
+## 1d. DataBits03: the Mental Boon ladder in context (added later the same day; still unread)
+
+The five Mental Boon rows with word 03 = 1.0, 0.8, 0.6, 0.4 and 0.2 (rows `228670`, `228728` to `228731`, repeated on all nine tiers `33257`, `55922` to `55929`) are not part of the base ability.
+They share one caster-apply prerequisite (`43597`: the caster has spell `87345` or `87346`, "Rune Set - Esper - Healer - RMT - Base" tiers 1 and 2) and one child, `87375` "Rune Set - Esper -
+Healer - RMT - ABil Mod", a single ModifySpell effect (word 01 = 634) lasting 5 s. The rows are identical apart from word 03. Mental Boon is a finisher that spends 1 to 5 Psi Points.
+
+Competing readings, neither confirmed:
+
+| Reading | For | Against |
+|---|---|---|
+| Chance that the row fires | Spell4 `42566` has 0.1 next to "10% chance to disorient" | five identical rows with a descending chance is an odd way to author anything; 39 of 40 fractional rows with a tooltip state no such percentage |
+| Threshold on a normalised quantity (here Psi Points spent / 5), so that n points fire n rows | explains five otherwise identical rows in steps of 0.2 on a five-point finisher; the child is a stackable modifier | does not explain the 0.1 "10% chance" row, nor the 100.0 and 1000.0 values on ticking rows |
+
+No tooltip for the rune set is in Jabbithole (`87345`, `87346` and `87375` have no record) and the video subtitle index has no statement of the set bonus. The experiment that separates the two is
+a retail recording of an Esper with that set casting Mental Boon at 1 and at 5 Psi Points and counting the stacks of the 5 s modifier. Left unread.
+
 ## 2. The parent's caster casts the child
 
 Previously a unit-target Proxy made the **target** cast the child on itself. The other proxy variants (ProxyLinearAE, ProxyChannel, ProxyRandomExclusive) and the world-object path already cast from the parent's
