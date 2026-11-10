@@ -135,6 +135,11 @@ namespace NexusForever.Game.Abstract.Entity
         void AddAmpPower(ushort amount);
 
         /// <summary>
+        /// Set the AMP power the Primal Matrix contributes, on all action sets. Derived from the character's allocations, so it is not saved here; it only ever grows.
+        /// </summary>
+        void SetPrimalMatrixAmpPower(ushort power) { }
+
+        /// <summary>
         /// Add bonus ability tier points to all action sets.
         /// </summary>
         void AddAbilityTierPoints(byte amount);

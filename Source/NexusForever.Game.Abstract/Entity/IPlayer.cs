@@ -172,6 +172,7 @@ namespace NexusForever.Game.Abstract.Entity
         IPathManager PathManager { get; }
         ITitleManager TitleManager { get; }
         IInlaidAugmentationManager InlaidAugmentationManager { get; }
+        IPrimalMatrixManager PrimalMatrixManager { get; }
         ISpellManager SpellManager { get; }
         ICostumeManager CostumeManager { get; }
         IPetCustomisationManager PetCustomisationManager { get; }
@@ -393,6 +394,11 @@ namespace NexusForever.Game.Abstract.Entity
         /// Add a <see cref="Property"/> modifier given a <see cref="ItemSlot"/> and value.
         /// </summary>
         void AddItemProperty(Property property, ItemSlot itemSlot, float value);
+
+        /// <summary>
+        /// Replace the property totals granted by the player's Primal Matrix allocations.
+        /// </summary>
+        void SetPrimalMatrixProperties(IReadOnlyDictionary<Property, float> totals);
 
         /// <summary>
         /// Remove a <see cref="Property"/> modifier by a item that is currently affecting this <see cref="IPlayer"/>.

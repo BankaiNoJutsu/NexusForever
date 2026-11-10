@@ -840,6 +840,22 @@ namespace NexusForever.Game.Entity
             if (player is not Player) SendAmpPowerUpdate(player.Session, bonusAmpPower);
         }
 
+        private ushort primalMatrixAmpPower;
+
+        /// <summary>
+        /// Set the AMP power the Primal Matrix contributes, on all action sets. Derived from the character's allocations, so it is not saved here; it only ever grows.
+        /// </summary>
+        public void SetPrimalMatrixAmpPower(ushort power)
+        {
+            if (power <= primalMatrixAmpPower)
+                return;
+
+            ushort added = (ushort)(power - primalMatrixAmpPower);
+            primalMatrixAmpPower = power;
+            foreach (IActionSet actionSet in actionSets)
+                actionSet?.AddPrimalMatrixAmpPower(added);
+        }
+
         public void AddAbilityTierPoints(byte amount)
         {
             if (amount == 0u)

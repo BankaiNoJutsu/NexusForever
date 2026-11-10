@@ -514,6 +514,7 @@ namespace NexusForever.Game.Entity
         public IPathManager PathManager { get; private set; }
         public ITitleManager TitleManager { get; private set; }
         public IInlaidAugmentationManager InlaidAugmentationManager { get; private set; }
+        public IPrimalMatrixManager PrimalMatrixManager { get; private set; }
         public ISpellManager SpellManager { get; private set; }
         public ICostumeManager CostumeManager { get; private set; }
         public IPetCustomisationManager PetCustomisationManager { get; private set; }
@@ -610,6 +611,7 @@ namespace NexusForever.Game.Entity
         private PlayerSaveMask saveMask;
 
         private Dictionary<Property, Dictionary<ItemSlot, /*value*/float>> itemProperties = new();
+        private Dictionary<Property, float> primalMatrixProperties = new();
 
         private UpdateTimer relocationTimer = new(TimeSpan.FromSeconds(1));
         private UpdateTimer ghostSpawnTimer;
@@ -844,6 +846,7 @@ namespace NexusForever.Game.Entity
             InlaidAugmentationManager = new InlaidAugmentationManager(model);
             SpellManager            = new SpellManager(this, model, prerequisiteManager, globalSpellManager, gameTableManager);
             SpellManager.Initialise();
+            PrimalMatrixManager     = new PrimalMatrixManager(this, model, gameTableManager);
             PetCustomisationManager = new PetCustomisationManager(this, model, gameTableManager, textFilterManager, prerequisiteManager);
             KeybindingManager       = new CharacterKeybindingManager(this, model);
             DatacubeManager         = new DatacubeManager(this, model, gameTableManager);
@@ -1492,6 +1495,7 @@ namespace NexusForever.Game.Entity
             if (snapshot == null) GuildManager.Save(context); else snapshot.SaveGuildAffiliation(context);
             EntitlementManager.Save(context);
             InlaidAugmentationManager?.Save(context);
+            PrimalMatrixManager?.Save(context);
             AppearanceManager.Save(context);
             snapshot?.Quests.EndContractSave(context);
         }
@@ -1752,6 +1756,7 @@ namespace NexusForever.Game.Entity
             playerCreate.SpecIndex = SpellManager.ActiveActionSet;
             playerCreate.UnlockedInlaidAugmentationIds.AddRange(InlaidAugmentationManager?.Ids ?? []);
             Session.EnqueueMessageEncrypted(playerCreate);
+            PrimalMatrixManager?.SendSnapshot();
 
             TitleManager.SendTitles();
             SpellManager.SendInitialPackets();
@@ -3819,6 +3824,21 @@ namespace NexusForever.Game.Entity
             if (itemProperties.TryGetValue(propertyValue.Property, out Dictionary<ItemSlot, float> properties))
                 foreach (float values in properties.Values)
                     propertyValue.Value += values;
+
+            if (primalMatrixProperties != null && primalMatrixProperties.TryGetValue(propertyValue.Property, out float primalMatrixValue))
+                propertyValue.Value += primalMatrixValue;
+        }
+
+        /// <summary>
+        /// Replace the property totals granted by the player's Primal Matrix allocations.
+        /// </summary>
+        public void SetPrimalMatrixProperties(IReadOnlyDictionary<Property, float> totals)
+        {
+            Property[] affected = (primalMatrixProperties?.Keys ?? Enumerable.Empty<Property>()).Union(totals?.Keys ?? []).ToArray();
+            primalMatrixProperties = totals == null ? new() : new Dictionary<Property, float>(totals);
+
+            foreach (Property property in affected)
+                CalculateProperty(property);
         }
 
         private Dictionary<Property, NetworkPropertyValue> retainedQuestProperties;

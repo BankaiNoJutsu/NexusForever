@@ -1,7 +1,7 @@
 # Primal Matrix: allocation rules read from the client and the tables (2026-11-10)
 
-Status: **Mapped only. Not implemented.** The save request (`ClientPrimalMatrixSave`) is still decoded and dropped, and no snapshot is sent. This note removes the blocker recorded on
-that handler ("authoritative allocation rules are required") for everything except the items listed in section 5. No retail parity claim.
+Status: **Implemented later the same day, inferred where section 5 says so** (see section 6). When the rules were first written down the save request was decoded and dropped
+and no snapshot was sent. No retail parity claim.
 
 Evidence tier per section: native bodies (2, 3), raw tables (1, 4), launch-era press coverage as an independent description (4).
 
@@ -67,8 +67,21 @@ type 4 (6); the 16 cluster centres carry no reward row at all.
 * What the retired server validated. The rules in sections 2 and 3 are the client's own; a server would be expected to enforce the same, but that is an assumption.
 * Refund and reset behaviour (the UI has a `NodeDeallocationPrevented` event; no reset packet was looked for).
 
-## 6. What an implementation needs
-Per-character storage of node id and count (a new table in both the MySQL and the SQLite migration sets), the validation in sections 1 to 3 against the account's four essence balances,
-a snapshot on login and after each save, and the rewards of section 4. The prerequisite check for type 292 already compares a count and only needs the stored value.
-The rewards are the wide part: AMP points and ability points have to enter the totals the action sets and the AMP power publication already own, and the property rewards need a
-source that is neither an item nor a spell.
+## 6. What is implemented
+* **Storage.** `character_primal_matrix_node` (character id, node id, allocation count), with a migration in both the MySQL and the SQLite set.
+* **Validation.** `PrimalMatrixRules.TryApply`: unknown node, maximum allocations, and the open-node rule of section 2 with the neighbours of section 1. The order within one request
+  is not significant: a node may be opened by another node of the same request.
+* **Cost.** The four cost columns are spent from the account currencies Crimson, Cobalt, Viridian and Violet Essence. The mapping red, blue, green, purple to those four is by name.
+* **Snapshot.** Sent after every save request (also a refused one, so the client drops its pending changes) and on login for a character that has allocations. It lists every
+  allocated node and carries the AMP power the matrix contributes.
+* **Rewards.**
+  * UnitProperty: `value` times the node's allocation count, added to the player's property (Heroism and the node's stat). Per allocation is the assumed reading (section 5).
+  * AbilityUnlock: the spell is added to the spellbook.
+  * AMPPoint: a term of its own, added to every action set on top of base and bonus power, and reported in the snapshot.
+  * AbilityPoint: through the existing bonus ability point counter, which is capped at one point. The ability point total is owned by the confirmed spellbook publication and was
+    not widened, so **eight of the nine ability point nodes grant nothing yet**.
+* Prerequisite type 292 reads the stored count.
+
+Not implemented: refunds or a reset; the cluster-centre question of section 5 (a centre opens like any other node); any check beyond the client's own rules.
+
+Verification: `PrimalMatrixTests` (neighbours, the open-node rule, cost, rewards, a save and load round trip through SQLite, the snapshot). Not run in a live session.

@@ -59,7 +59,7 @@ public sealed class PrimalMatrixProtocolTests
     }
 
     [Fact]
-    public void PublicPacketReaderAndRegisteredHandlerDecodeIncrementsWithoutEmittingOrTouchingSessionState()
+    public void PublicPacketReaderAndRegisteredHandlerDecodeIncrementsAndASessionWithoutAPlayerIsLeftAlone()
     {
         MessageManager registry = Registry();
         using var reader = new ClientGamePacketReader();
@@ -76,7 +76,8 @@ public sealed class PrimalMatrixProtocolTests
         Assert.Equal(typeof(ClientPrimalMatrixSaveHandler), registry.GetMessageHandlerType(opcode));
         var session = RecordingDispatchProxy<IWorldSession>.Create(out var state);
         registry.GetMessageHandlerDelegate(opcode)(new ClientPrimalMatrixSaveHandler(NullLogger<ClientPrimalMatrixSaveHandler>.Instance), session, request);
-        Assert.Empty(state.Invocations);
+        // the handler now applies the request through the player's Primal Matrix manager; without a player it reads the session and does nothing else
+        Assert.All(state.Invocations, invocation => Assert.Equal("get_Player", invocation.MethodName));
     }
 
     [Theory]

@@ -75,6 +75,11 @@ namespace NexusForever.Game.Abstract.Spell
         void AddAmpPower(ushort power);
 
         /// <summary>
+        /// Add AMP power granted by the Primal Matrix to <see cref="IActionSet"/>. It is on top of the base and bonus power, so the bonus cap does not apply.
+        /// </summary>
+        void AddPrimalMatrixAmpPower(ushort power) { }
+
+        /// <summary>
         /// Add bonus ability tier points to <see cref="IActionSet"/>.
         /// </summary>
         void AddTierPoints(byte points);

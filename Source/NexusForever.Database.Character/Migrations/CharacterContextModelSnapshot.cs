@@ -2112,6 +2112,28 @@ namespace NexusForever.Database.Character.Migrations
                     b.ToTable("character_pet_flair", (string)null);
                 });
 
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterPrimalMatrixNodeModel", b =>
+                {
+                    b.Property<ulong>("Id")
+                        .HasColumnType("bigint(20) unsigned")
+                        .HasColumnName("id");
+
+                    b.Property<ushort>("NodeId")
+                        .HasColumnType("smallint(5) unsigned")
+                        .HasColumnName("nodeId");
+
+                    b.Property<byte>("Allocations")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(3) unsigned")
+                        .HasDefaultValue((byte)0)
+                        .HasColumnName("allocations");
+
+                    b.HasKey("Id", "NodeId")
+                        .HasName("PRIMARY");
+
+                    b.ToTable("character_primal_matrix_node", (string)null);
+                });
+
             modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterQuestModel", b =>
                 {
                     b.Property<ulong>("Id")
@@ -4408,6 +4430,18 @@ namespace NexusForever.Database.Character.Migrations
                     b.Navigation("Character");
                 });
 
+            modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterPrimalMatrixNodeModel", b =>
+                {
+                    b.HasOne("NexusForever.Database.Character.Model.CharacterModel", "Character")
+                        .WithMany("PrimalMatrixNode")
+                        .HasForeignKey("Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK__character_primal_matrix_node_id__character_id");
+
+                    b.Navigation("Character");
+                });
+
             modelBuilder.Entity("NexusForever.Database.Character.Model.CharacterQuestModel", b =>
                 {
                     b.HasOne("NexusForever.Database.Character.Model.CharacterModel", "Character")
@@ -4733,6 +4767,8 @@ namespace NexusForever.Database.Character.Migrations
                     b.Navigation("PetCustomisation");
 
                     b.Navigation("PetFlair");
+
+                    b.Navigation("PrimalMatrixNode");
 
                     b.Navigation("Quest");
 
