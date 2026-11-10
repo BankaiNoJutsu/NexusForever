@@ -4,7 +4,7 @@ Evidence tier: **raw tables** (`Spell4Effects`, `Spell4`) and **game tooltip tex
 effects, so there is no native consumer. No retail parity claim.
 
 Of 29,445 Damage rows, word 04 is set on 2,194, word 05 on 769 and word 03 on 522. `SpellEffectType.tbl` types all three as floats. Before this pass the server read words 00 (multiplier) and
-01 (flat amount) only.
+01 (flat amount) only. Words 04 and 05 are now read; word 03 needs chained damage, which the server does not have.
 
 ## 1. Word 04 is the fraction of armor the row ignores. Status: Implemented, inferred.
 
@@ -38,20 +38,23 @@ The designers named it in the spell descriptions: "[DEPRECATED] Medic Chain Shoc
 such as Gorganoth Ground Pound and Stone Rain) carry 1.0, which is no reduction. The server has no chained damage, so nothing reads the word. Evidence tier: designer naming on four spell
 families; no tooltip, no native consumer.
 
-## 3. Word 05: unread
+## 3. Word 05 is the fraction shields cannot absorb. Status: Implemented, inferred (added later the same day).
 
-1.0 on 706 rows, fractions on 63. The rows with 1.0 are fixed-amount environmental and consumable damage whose tooltips state an exact number: "Deals 244 damage every second while
-drinking" (`52147`, word 01 = 244), "You are taking 1000 damage every 3s due to Noxious Fumes" (`63534`, word 01 = 1000), "You take 16% of your max health damage every 3s due to Blistering
-Heat" (`27936`, parameter TargetMaxHealth 0.16). One player ability carries a fraction: Engineer Bolt Caster tier 9 has a second Damage row with 0.5 and a higher coefficient.
+| Witness | Row | Word 05 | Text |
+|---|---|---:|---|
+| Stalker AMP Cutthroat | Damage row `181556` of "Stalker - Support - C2 - T2 - Damage" `70965`, reached from the AMP spell `59338` through its proc | 1.0 (word 04 is 0) | tooltip: "at 10 stacks the mark is consumed and deals 21 technology damage. This damage ignores Shields." |
+| "Generic Instakill" `29207` | flat 999,999 damage | 0.99, with 0.99 in word 04 as well | a designer kill spell that sets both mitigation words |
+| Consumable and hazard damage | `52147` (244 flat), `63534` (1000 flat), `27936` (16% of maximum health) | 1.0 | tooltips state the exact amount: "Deals 244 damage every second", "taking 1000 damage every 3s", "16% of your max health damage every 3s" |
 
-Competing readings, neither confirmed:
+1.0 on 706 rows, fractions on 63 (Spellslinger Charged Shot C3 0.75 and C4 0.5, landmines and scripted explosions 0.75, Engineer Bolt Caster tier 9 0.5).
 
-| Reading | For | Against |
-|---|---|---|
-| Fraction of the damage that bypasses shields | fixed-number hazards would otherwise be partly absorbed by a shield and the tooltip number would not hold; pairs naturally with word 04 = 1.0 on 627 of the rows | 70 rows have 1.0 here and 0 in word 04; no tooltip mentions shields |
-| The row deals its stated amount without the random spread | the tooltips state exact numbers | does not explain the fractions 0.5 and 0.75 |
+**One tooltip is not explained.** Medic AMP Chemical Burn (`57506`) says "This damage has 100% Shield Pierce", and its damage row (`147124` of `60765`) carries 0 here. The AMP spell
+itself is a single effect of type 127 with data 745, which was not followed; the pierce may be granted there. It does not carry a different value in this word, so it does not
+contradict the reading, but it shows the word is not the only way damage bypasses shields.
 
-The experiment that separates them: a retail combat log line for one of these hazards against a shielded player (shield absorbed amount zero or not), or for Bolt Caster tier 9.
+Implemented: `SpellEffectDamageSemantics.ShieldPierce` (Damage rows only, clamped to 0..1) and `DamageCalculator.CalculateShieldAmount`, which scales the share of the damage a shield may
+absorb by `1 - pierce`. **Assumed:** that scaling form for fractions; 1.0 and 0.99 are not sensitive to it. The earlier second reading (no random spread) is dropped: it explained none of
+the fractions. No retail parity claim.
 
 ## 4. Reproduce
 ```

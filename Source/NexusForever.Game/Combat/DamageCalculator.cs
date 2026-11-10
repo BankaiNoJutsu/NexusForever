@@ -98,7 +98,7 @@ namespace NexusForever.Game.Combat
             damage -= absorbedAmount;
             damageDescription.AbsorbedAmount = absorbedAmount;
 
-            uint shieldedAmount = CalculateShieldAmount(damage, victim.Shield, victim.GetPropertyValue(Property.ShieldMitigationMax));
+            uint shieldedAmount = CalculateShieldAmount(damage, victim.Shield, victim.GetPropertyValue(Property.ShieldMitigationMax), effect.Damage?.ShieldPierce ?? 0f);
             damage -= shieldedAmount;
             damageDescription.ShieldAbsorbAmount = shieldedAmount;
 
@@ -635,10 +635,17 @@ namespace NexusForever.Game.Combat
         /// <summary>
         /// Calculates and returns the shielded amount of damage.
         /// </summary>
-        internal static uint CalculateShieldAmount(uint damage, uint shield, float shieldMitigationMax)
+        /// <param name="shieldPierce">
+        /// Fraction of the damage shields cannot absorb (Damage DataBits05). Tooltip witness: Stalker Cutthroat (damage row 181556, 1.0) "This damage ignores Shields". That a
+        /// fraction scales the share shields may take is assumed. See Decomp/Analysis/SPELL_EFFECT_DAMAGE_WORDS_20261110.md.
+        /// </param>
+        internal static uint CalculateShieldAmount(uint damage, uint shield, float shieldMitigationMax, float shieldPierce = 0f)
         {
             if (damage == 0u || shield == 0u || !float.IsFinite(shieldMitigationMax) || shieldMitigationMax <= 0f)
                 return 0u;
+
+            if (float.IsFinite(shieldPierce) && shieldPierce > 0f)
+                shieldMitigationMax *= 1f - Math.Min(shieldPierce, 1f);
 
             double maxShieldAmount = damage * (double)shieldMitigationMax;
             uint cappedShieldAmount = maxShieldAmount >= uint.MaxValue

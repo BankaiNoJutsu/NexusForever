@@ -168,6 +168,28 @@ public class DamageCalculatorRetailParityTests
         Assert.Equal(90u, damage);
     }
 
+    // Damage DataBits05 is the fraction shields cannot absorb. Tooltip witness: Stalker Cutthroat (Spell4 70965, row 181556, 1.0) "This damage ignores Shields".
+    // "Generic Instakill" (29207) carries 0.99 in both the armor and the shield word.
+    [Theory]
+    [InlineData(0f, 60u)]
+    [InlineData(0.5f, 30u)]
+    [InlineData(0.99f, 0u)]
+    [InlineData(1f, 0u)]
+    [InlineData(float.NaN, 60u)]
+    public void CalculateShieldAmount_LeavesThePiercedShareToHealth(float shieldPierce, uint expectedShielded)
+    {
+        Assert.Equal(expectedShielded, DamageCalculator.CalculateShieldAmount(100u, 1000u, 0.6f, shieldPierce));
+    }
+
+    [Fact]
+    public void OnlyDamageRowsReadDataBits05AsShieldPierce()
+    {
+        uint one = BitConverter.SingleToUInt32Bits(1f);
+
+        Assert.Equal(1f, SpellEffectInterpreter.Interpret(new Spell4EffectsEntry { Id = 181556u, EffectType = SpellEffectType.Damage, DataBits05 = one }).Damage.ShieldPierce);
+        Assert.Equal(0f, SpellEffectInterpreter.Interpret(new Spell4EffectsEntry { Id = 1u, EffectType = SpellEffectType.Heal, DataBits05 = one }).Damage.ShieldPierce);
+    }
+
     [Fact]
     public void OnlyDamageRowsReadDataBits04AsArmorPierce()
     {

@@ -30,7 +30,10 @@ namespace NexusForever.Game.Spell.Effect
     /// Fraction of the victim's armor a Damage row ignores (Spell4Effects DataBits04, effect type 8 only). Inferred from tooltips, see
     /// Decomp/Analysis/SPELL_EFFECT_DAMAGE_WORDS_20261110.md. No retail parity claim.
     /// </param>
-    public sealed record SpellEffectDamageSemantics(float TypeMultiplier, float TypeBaseValue, float ArmorPierce = 0f);
+    /// <param name="ShieldPierce">
+    /// Fraction of a Damage row that shields cannot absorb (Spell4Effects DataBits05, effect type 8 only); 1.0 is "this damage ignores Shields". Inferred from tooltips, same note.
+    /// </param>
+    public sealed record SpellEffectDamageSemantics(float TypeMultiplier, float TypeBaseValue, float ArmorPierce = 0f, float ShieldPierce = 0f);
 
     public sealed record SpellEffectProxyRandomExclusiveCandidate(uint Spell4Id, uint Weight);
 
@@ -1606,7 +1609,8 @@ namespace NexusForever.Game.Spell.Effect
                     interpretation.Damage = new SpellEffectDamageSemantics(
                         BitConverter.UInt32BitsToSingle(entry.DataBits00),
                         entry.DataBits01,
-                        ReadArmorPierce(entry.DataBits04));
+                        ReadArmorPierce(entry.DataBits04),
+                        ReadArmorPierce(entry.DataBits05));
                     break;
                 case SpellEffectType.Heal:
                 case SpellEffectType.DistanceDependentDamage:
