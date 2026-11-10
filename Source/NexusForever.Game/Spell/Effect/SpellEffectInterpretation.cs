@@ -1603,6 +1603,16 @@ namespace NexusForever.Game.Spell.Effect
                         entry.DataBits01);
                     break;
                 case SpellEffectType.Proxy:
+                    // A Proxy row that ticks keeps the spell to cast in DataBits01 and leaves DataBits00 empty: of the 1,585 retail rows with a tick time, 1,536 have only DataBits01 set
+                    // and 6 have both set to the same id, while 15,054 of the 15,344 rows without a tick have only DataBits00. Example: Esper Mental Boon (Spell4 33257) rows 76772 to 76776,
+                    // tick 500 ms, duration 6000 ms, DataBits00 0, DataBits01 36562 to 36621, execution limit 12. Upstream spells-v2 names the word PeriodicSpellId.
+                    // Only rows with both a tick and a duration are read this way, because only those are pulsed by the scheduler; the 787 tick-only rows stay unread.
+                    // Inferred from the table; see Decomp/Analysis/SPELL_EFFECT_PROXY_20261110.md.
+                    interpretation.Proxy = new SpellEffectProxySemantics(
+                        entry.DataBits00 == 0u && entry.TickTime != 0u && entry.DurationTime != 0u
+                            ? entry.DataBits01
+                            : entry.DataBits00);
+                    break;
                 case SpellEffectType.ProxyLinearAE:
                 case SpellEffectType.ProxyChannel:
                 case SpellEffectType.ProxyChannelVariableTime:

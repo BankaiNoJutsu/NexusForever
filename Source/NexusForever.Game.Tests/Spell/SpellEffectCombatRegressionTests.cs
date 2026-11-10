@@ -886,6 +886,54 @@ public class SpellEffectCombatRegressionTests
         Assert.Equal(2, esperProxy.GetInvocations(nameof(IPlayer.CastSpell)).Count);
     }
 
+    // Retail: Esper Mental Boon (Spell4 33257) row 76772 is a Proxy with tick 500 ms, duration 6000 ms, DataBits00 = 0, DataBits01 = 36562 and an execution limit of 12.
+    [Fact]
+    public void HandleEffectProxy_WithTickAndDuration_CastsThePeriodicSpellFromDataBits01()
+    {
+        IPlayer esper = CreatePlayer(out _, out RecordingDispatchProxy<IPlayer> esperProxy);
+        ISpell spell = CreateSpell(33257u, esper);
+        ISpellTargetEffectInfo info = RecordingDispatchProxy<ISpellTargetEffectInfo>.Create(out RecordingDispatchProxy<ISpellTargetEffectInfo> infoProxy);
+        infoProxy.SetProperty(nameof(ISpellTargetEffectInfo.EffectId), 76772u);
+        infoProxy.SetProperty(nameof(ISpellTargetEffectInfo.Entry), new Spell4EffectsEntry
+        {
+            Id           = 76772u,
+            SpellId      = 33257u,
+            TargetFlags  = 1u,
+            EffectType   = SpellEffectType.Proxy,
+            TickTime     = 500u,
+            DurationTime = 6000u,
+            DataBits00   = 0u,
+            DataBits01   = 36562u,
+            DataBits04   = 12u
+        });
+
+        // 13 pulses offered, 12 allowed
+        for (int i = 0; i < 13; i++)
+            global::NexusForever.Game.Spell.SpellHandler.HandleEffectProxy(spell, esper, info);
+
+        IReadOnlyList<RecordingDispatchProxy<IPlayer>.Invocation> casts = esperProxy.GetInvocations(nameof(IPlayer.CastSpell));
+        Assert.Equal(12, casts.Count);
+        Assert.All(casts, cast => Assert.Equal(36562u, (uint)cast.Arguments[0]));
+    }
+
+    // A row without a tick never falls back to DataBits01 (174 retail rows have only DataBits01 and no tick; what they do is not known).
+    [Fact]
+    public void HandleEffectProxy_WithoutTick_DoesNotCastDataBits01()
+    {
+        IPlayer caster = CreatePlayer(out _, out RecordingDispatchProxy<IPlayer> casterProxy);
+        ISpell spell = CreateSpell(2923u, caster);
+        ISpellTargetEffectInfo info = RecordingDispatchProxy<ISpellTargetEffectInfo>.Create(out RecordingDispatchProxy<ISpellTargetEffectInfo> infoProxy);
+        infoProxy.SetProperty(nameof(ISpellTargetEffectInfo.EffectId), 1u);
+        infoProxy.SetProperty(nameof(ISpellTargetEffectInfo.Entry), new Spell4EffectsEntry
+        {
+            Id = 1u, SpellId = 2923u, TargetFlags = 1u, EffectType = SpellEffectType.Proxy, DataBits01 = 2609u, DataBits04 = uint.MaxValue
+        });
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectProxy(spell, caster, info);
+
+        Assert.Empty(casterProxy.GetInvocations(nameof(IPlayer.CastSpell)));
+    }
+
     // DataBits04 = 0xFFFFFFFF is unlimited (7,846 retail rows); a finite value such as 12 with tick 500 ms and duration 6000 ms (44 retail rows) allows exactly that many executions.
     [Theory]
     [InlineData(uint.MaxValue, 20, 20)]

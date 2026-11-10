@@ -33,7 +33,26 @@ Rejected reading: a stack limit on the child spell. Spell `30900` is an instant 
 * **Word 04 = 0** (about 115 rows) is treated as unlimited; nothing shows what it means.
 * **DataBits03** (float, 1.0 on 15,873 rows, 100.0 on 604, fractions on others) and **DataBits05** (60 on 10,099 rows, 1 on 2,444, 120, 30, 900, 1000) are still unread. A trigger chance and an internal
   cooldown or range are candidates; the two scales in word 03 are unexplained.
-* Upstream `spells-v2` names word 01 `PeriodicSpellId` and word 06 `PrerequisiteId`; the server reads neither for plain Proxy. 791 + 751 ticking rows have word 01 set.
+* Upstream `spells-v2` names word 06 `PrerequisiteId` (470 rows set); the server does not read it.
+
+## 1b. A ticking Proxy keeps its spell in DataBits01 (added later the same day)
+
+| Tick time | Duration | Only word 00 set | Only word 01 set | Both set | Neither |
+|---|---|---:|---:|---:|---:|
+| no | no | 14,975 | 174 | 17 | 81 |
+| no | yes | 79 | 7 | 1 | 7 |
+| yes | no | 39 | 787 | 4 | 1 |
+| yes | yes | 4 | 749 | 2 | 2 |
+
+Where both are set on a ticking row they hold the same id. Example: Esper Mental Boon (Spell4 `33257`) rows `76772` to `76776`: tick 500 ms, duration 6000 ms, word 00 = 0, word 01 = 36562 to 36621, execution limit 12
+(= 6000 / 500). The server read only word 00, so these rows cast nothing. The interpreter now uses word 01 when word 00 is 0 and the row has both a tick and a duration (749 rows), which are the rows the
+scheduler pulses. Status: Implemented, inferred from the table split; upstream `spells-v2` names the word `PeriodicSpellId`.
+
+Not changed: the 787 tick-only rows (the scheduler does not pulse rows without their own duration, and where their lifetime comes from is not known) and the 174 rows with only word 01 and no tick.
+
+**DataBits03 is not simply a chance.** One tooltip agrees with a chance reading (Spell4 42566, word 03 = 0.1, "10% chance to disorient"), but Mental Boon has five rows to the same child (`87375`) and the same
+caster-apply prerequisite with word 03 = 1.0, 0.8, 0.6, 0.4 and 0.2, next to a tooltip that scales per Psi Point, and Warrior Breaching Strikes has 0.25 on a row whose tooltip states no chance. Of 40 rows
+with a fractional word 03 and a Jabbithole tooltip, only that one tooltip states the same percentage. Left unread.
 
 ## 2. The parent's caster casts the child
 
