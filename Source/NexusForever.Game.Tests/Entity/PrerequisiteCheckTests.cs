@@ -1393,6 +1393,87 @@ public class PrerequisiteCheckTests
         Assert.True(check.Meets(player, PrerequisiteComparison.NotEqual, 1u, 9999u, new PrerequisiteParameters { Target = creature }));
     }
 
+    // Ids the client switch does not name go through the class row: the slot whose vitalEnumResource word equals the id.
+    [Theory]
+    [InlineData(Class.Warrior, (uint)Vital.KineticCell, 30u, true)]   // slot 1
+    [InlineData(Class.Stalker, (uint)Vital.StalkerA, 30u, false)]     // slot 3, which holds nothing here
+    [InlineData(Class.Spellslinger, (uint)Vital.SpellSurge, 30u, false)]
+    public void UnnamedVitalsResolveThroughTheClassRow(Class playerClass, uint vitalId, uint required, bool expected)
+    {
+        IPlayer player = VitalPlayer(playerClass, (Vital.Resource1, 42f));
+        var check = new PrerequisiteCheckVital(ClassTables(), NullLogger<PrerequisiteCheckVital>.Instance);
+
+        Assert.Equal(expected, check.Meets(player, PrerequisiteComparison.GreaterThanOrEqual, required, vitalId, new PrerequisiteParameters()));
+    }
+
+    [Fact]
+    public void UnnamedVitalComparesZeroWhenNoClassSlotMatches()
+    {
+        IPlayer player = VitalPlayer(Class.Warrior, (Vital.Resource1, 42f));
+        var check = new PrerequisiteCheckVital(ClassTables(), NullLogger<PrerequisiteCheckVital>.Instance);
+
+        // Retail row 22352 asks for vital 0 >= 80; a Warrior row has no 0 word, so the value is 0 and the comparison still runs.
+        Assert.False(check.Meets(player, PrerequisiteComparison.GreaterThanOrEqual, 80u, 0u, new PrerequisiteParameters()));
+        Assert.True(check.Meets(player, PrerequisiteComparison.LessThan, 80u, 0u, new PrerequisiteParameters()));
+
+        IUnitEntity creature = RecordingDispatchProxy<IUnitEntity>.Create(out _);
+        Assert.True(check.MeetsUnit(creature, PrerequisiteComparison.Equal, 0u, (uint)Vital.KineticCell, new PrerequisiteParameters()));
+    }
+
+    [Fact]
+    public void BreathIsNotModelledAndFailsClosed()
+    {
+        IPlayer player = VitalPlayer(Class.Warrior);
+        var check = new PrerequisiteCheckVital(ClassTables(), NullLogger<PrerequisiteCheckVital>.Instance);
+
+        Assert.False(check.Meets(player, PrerequisiteComparison.LessThanOrEqual, 0u, (uint)Vital.Breath, new PrerequisiteParameters()));
+    }
+
+    private static IPlayer VitalPlayer(Class playerClass, params (Vital Vital, float Value)[] resources)
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.Class), playerClass);
+        playerProxy.SetMethodHandler(nameof(IPlayer.TryGetVitalValue), args =>
+        {
+            foreach ((Vital vital, float value) in resources)
+            {
+                if ((Vital)args[0] == vital)
+                {
+                    args[1] = value;
+                    return true;
+                }
+            }
+
+            args[1] = 0f;
+            return true;
+        });
+        return player;
+    }
+
+    // The vitalEnumResource words of the retail Class rows.
+    private static IGameTableManager ClassTables()
+    {
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out var proxy);
+        proxy.SetProperty(nameof(IGameTableManager.Class), CreateGameTable(
+            ClassRow(Class.Warrior, 5, 4, 6, 6, 4, 4, 4, 16),
+            ClassRow(Class.Stalker, 5, 13, 13, 12, 9, 10, 11, 16),
+            ClassRow(Class.Spellslinger, 5, 0, 0, 0, 19, 0, 0, 16)));
+        return tables;
+    }
+
+    private static ClassEntry ClassRow(Class id, params uint[] vitals) => new()
+    {
+        Id = (uint)id,
+        VitalEnumResource00 = vitals[0],
+        VitalEnumResource01 = vitals[1],
+        VitalEnumResource02 = vitals[2],
+        VitalEnumResource03 = vitals[3],
+        VitalEnumResource04 = vitals[4],
+        VitalEnumResource05 = vitals[5],
+        VitalEnumResource06 = vitals[6],
+        VitalEnumResource07 = vitals[7]
+    };
+
     private static IGameTableManager QuestTables(uint questId)
     {
         IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out var tableProxy);

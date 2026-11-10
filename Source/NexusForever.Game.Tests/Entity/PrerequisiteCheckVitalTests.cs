@@ -24,23 +24,45 @@ public class PrerequisiteCheckVitalTests
         uint requiredValue,
         bool expected)
     {
-        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
-        playerProxy.SetMethodHandler(nameof(IPlayer.TryGetVitalValue), args =>
-        {
-            if ((Vital)args[0] == Vital.Resource1)
-            {
-                args[1] = 42f;
-                return true;
-            }
-
-            args[1] = 0f;
-            return false;
-        });
-
-        var check = new PrerequisiteCheckVital(NullLogger<PrerequisiteCheckVital>.Instance);
+        IPlayer player = PlayerWithResources(Class.Warrior, (Vital.Resource1, 42f));
+        var check = new PrerequisiteCheckVital(null, NullLogger<PrerequisiteCheckVital>.Instance);
 
         bool result = check.Meets(player, comparison, requiredValue, (uint)Vital.Resource1, new PrerequisiteParameters());
 
         Assert.Equal(expected, result);
+    }
+
+    // Retail row 43654: the Engineer tank rune set buff persists while Absorption (0x15) > 0.
+    [Theory]
+    [InlineData(0u, false)]
+    [InlineData(250u, true)]
+    public void AbsorptionReadsTheUnitAbsorptionPool(uint absorption, bool expected)
+    {
+        IUnitEntity unit = RecordingDispatchProxy<IUnitEntity>.Create(out var proxy);
+        proxy.SetProperty(nameof(IUnitEntity.CurrentAbsorption), absorption);
+        var check = new PrerequisiteCheckVital(null, NullLogger<PrerequisiteCheckVital>.Instance);
+
+        Assert.Equal(expected, check.MeetsUnit(unit, PrerequisiteComparison.GreaterThan, 0u, (uint)Vital.Absorption, new PrerequisiteParameters()));
+    }
+
+    private static IPlayer PlayerWithResources(Class playerClass, params (Vital Vital, float Value)[] resources)
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.Class), playerClass);
+        playerProxy.SetMethodHandler(nameof(IPlayer.TryGetVitalValue), args =>
+        {
+            foreach ((Vital vital, float value) in resources)
+            {
+                if ((Vital)args[0] == vital)
+                {
+                    args[1] = value;
+                    return true;
+                }
+            }
+
+            args[1] = 0f;
+            return true;
+        });
+        return player;
     }
 }

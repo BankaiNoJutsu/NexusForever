@@ -79,6 +79,7 @@ public class VitalPrerequisiteScalarClientTests
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddGamePrerequisite();
+        services.AddSingleton(RecordingDispatchProxy<NexusForever.GameTable.IGameTableManager>.Create(out _));
         using var provider = services.BuildServiceProvider();
         var check = Assert.IsType<PrerequisiteCheckVital>(provider.GetRequiredKeyedService<IPrerequisiteCheck>((PrerequisiteType)73));
         var player = RecordingDispatchProxy<IPlayer>.Create(out var proxy);
@@ -91,7 +92,7 @@ public class VitalPrerequisiteScalarClientTests
             => proxy.SetMethodHandler(nameof(IPlayer.TryGetVitalValue), args => { args[1] = 300.5f; return true; });
     }
 
-    private static PrerequisiteCheckVital Check() => new(NullLogger<PrerequisiteCheckVital>.Instance);
+    private static PrerequisiteCheckVital Check() => new(null, NullLogger<PrerequisiteCheckVital>.Instance);
 
     private static IUnitEntity Unit(float resource)
     {

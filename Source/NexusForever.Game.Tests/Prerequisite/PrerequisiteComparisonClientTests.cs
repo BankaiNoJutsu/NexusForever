@@ -43,8 +43,8 @@ public class PrerequisiteComparisonClientTests
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var proxy);
         proxy.SetMethodHandler(nameof(IPlayer.TryGetVitalValue), args => { args[1] = (float)level; return true; });
-        var check = new PrerequisiteCheckVital(NullLogger<PrerequisiteCheckVital>.Instance);
-        Assert.Equal(expected, check.Meets(player, (PrerequisiteComparison)mode, 10, 0, new PrerequisiteParameters()));
+        var check = new PrerequisiteCheckVital(null, NullLogger<PrerequisiteCheckVital>.Instance);
+        Assert.Equal(expected, check.Meets(player, (PrerequisiteComparison)mode, 10, 1, new PrerequisiteParameters()));
     }
 
     [Theory]
@@ -58,7 +58,7 @@ public class PrerequisiteComparisonClientTests
         proxy.SetMethodHandler(nameof(IPlayer.TryGetVitalValue), args => { args[1] = 10f; return true; });
         Assert.False(new PrerequisiteCheckLevel(NullLogger<PrerequisiteCheckLevel>.Instance)
             .Meets(player, (PrerequisiteComparison)mode, 10, 0, new PrerequisiteParameters()));
-        Assert.False(new PrerequisiteCheckVital(NullLogger<PrerequisiteCheckVital>.Instance)
-            .Meets(player, (PrerequisiteComparison)mode, 10, 0, new PrerequisiteParameters()));
+        Assert.False(new PrerequisiteCheckVital(null, NullLogger<PrerequisiteCheckVital>.Instance)
+            .Meets(player, (PrerequisiteComparison)mode, 10, 1, new PrerequisiteParameters()));
     }
 }

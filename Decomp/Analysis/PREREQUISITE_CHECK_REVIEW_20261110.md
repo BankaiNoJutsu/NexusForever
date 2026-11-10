@@ -143,13 +143,59 @@ every creature of a checklist. Not modelled: types 13, 18, 27 and 28, which the 
 (SpellSuccess2) and 18 (TalkToTargetGroup) as checklist objectives contradicts `QuestObjective.IsChecklist`; recorded, not changed. Status: Implemented from the native bodies; meaning
 inferred from the objective types.
 
+### Type 73 (added later the same day)
+The default branch of `140466520` asks the class object of the local player (`DAT_140c65898 + 0x6d90`) through virtual `+0x60`. The object is built in `1403c9f30` from the Class row
+(`1401f31e0`): base constructor `1405e7330` (vtable `140b6e4a0`), with a subclass vtable chosen by the row's `mechanic` word (1 `140b6e570`, 2 `140b6e3d0`, 4 `140b66550`,
+5 `140b66630`, 6 `140b66700`). All five subclasses share the base `+0x60` body, `1405e78c0(classObject, vitalId)`: it walks the eight `vitalEnumResource` words of the Class row
+(row `+0x64`), and returns the first index whose word equals the id and whose unit resource float (`unit + 0x21c + 4 * index`) is positive; otherwise 11, which the caller turns into 0.
+A unit that is not the local player gets 0. The comparison always runs.
+
+* Retail Class rows: Warrior `5,4,6,6,4,4,4,16`; Engineer `5,26,7,7,7,7,7,16`; Esper `5,0,0,0,0,0,0,16`; Medic `5,18,18,18,18,18,0,16`; Stalker `5,13,13,12,9,10,11,16`;
+  Spellslinger `5,0,0,0,19,0,0,16`. So KineticCell (4), Volatility (26) and MedicCore (18) resolve to slot 1, StalkerA (12) to slot 3, SpellSurge (19) to slot 4, which is what the
+  server mapped by hand. StalkerB (13) resolves to slot 1 or 2 and StalkerC (14) to nothing, where the server answered slot 3 for both; no retail row asks for them.
+* The decompiled loop also calls virtual `+0x38` with the index and discards the result as printed; what that call contributes was not read.
+* Implemented in `PrerequisiteCheckVital`: the ids the switch names keep their direct read; Absorption (`0x15`) now reads the unit absorption pool (retail row `43654`, the
+  persistence prerequisite of the Engineer tank rune set buff `87408`, `> 0`); every other id goes through the Class row and compares 0 when nothing matches (retail row `22352`,
+  vital 0 `>= 80`).
+* Still answered false without comparing: Breath (2), the three public event resources and Resource8 to 10. Breath has no server model; its one retail row (`30476`, `<= 0`) gates
+  the damage row of a creature aura ("Ikthian Triton Guard - Aquatic Buffer") whose SapVital row drains Breath, so false is also what a player who never runs out of breath would get.
+
+Status: Implemented from the native bodies. No retail parity claim.
+
+### Type 94, objective types 13 and 18 (added later the same day; not changed)
+Three native consumers treat objective types 13 (SpellSuccess2) and 18 (TalkToTargetGroup) as checklists whose progress word is a bit mask: prerequisite type 94, the item-use
+check in `ItemUse_SendClientItemUse` (`140398cc0`: for a checklist objective the target must carry a checklist index and its bit must not be set yet), and the count the quest
+tracker shows (`Lua_Quest_GetObjectiveCompleted` `140665900` -> `1405515c0`, which reads virtual `+0x48` of the objective for checklist types and `+0x40`, the raw word, for the
+others; what `+0x48` computes was not read, a bit count is assumed).
+
+World spawn data (`nexus_forever_world.entity.questChecklistIdx`), for the type 18 objectives whose target group creatures have spawns:
+
+| Objective | Count | Spawns | Distinct index values |
+|---:|---:|---:|---|
+| 7149 | 3 | 3 | 0 to 2 |
+| 8209 | 5 | 5 | 0 to 4 |
+| 8029 | 3 | 4 | 0 to 3 |
+| 12685 | 5 | 12 | 0 to 14 |
+| 7338 | 7 | 21 | 0 to 21 |
+| 21319, 21378 | 2 | 7 | all 0 |
+| 21332, 21379 | 2 | 6 | all 0 |
+
+Competing readings:
+
+| Reading | For | Against |
+|---|---|---|
+| Types 13 and 18 keep a bit mask indexed by the creature's checklist index, like 14 and 10 | the three native consumers; distinct indices on five objectives | the four objectives of creatures `73422` and `73662` need 2 and every spawn has index 0, so a mask could never complete them |
+| They keep a count (the server's current model) | completes every objective | the client would show a bit count of the number, and item use would be refused on the wrong creatures |
+
+The all-zero spawns may be incomplete world data (map 3460, late content) rather than retail values; the entity table does not say where each row came from. The experiment that
+separates the readings is a retail capture of the objective update for one type 18 objective with a count above 1. Not changed; type 94 keeps answering from types 14 and 10 only.
+
 ## 3. Differences found and not changed
 
 | Type | Check | Finding | Why not changed |
 |---:|---|---|---|
-| 73 | Vital | re-read: native switch `140466520` reads Breath (id 2, virtual `+0x58`), Absorption (`0x15`, virtual `+0x88`), three public-event resources (`0x16` to `0x18`) and Resource8 to 10 (`0x1b` to `0x1d`), and for any other id returns the class resource slot of the local player or 0, then always compares. The server returns false without comparing for ids it cannot resolve. Retail slots hit: id 0 (1 slot, `>= 80`), id 2 (1 slot, `<= 0`), id 21 (1 slot, `> 0`) | re-checked: blocked on server features, not on evidence. Comparing 0 for an unresolved id would make the retail Breath row (`<= 0`) permanently true, so the early false stays until Breath exists; the class-resource fallback needs the class object's resource index (virtual `+0x60`), which was not read |
 | 292 | PrimalMatrixNode | native: local player only, `PrimalMatrix_LookupAllocatedNode(1, ObjectId)` compared with Value; server always false; 24 slots | understood; blocked on a server feature, not on evidence: the player has no primal matrix allocation state to query |
-| 148 | InfrastructureState | lookup miss: native answers NotEqual only; server substitutes state 0 | server API cannot distinguish a miss from state 0 |
+| 148 | InfrastructureState | lookup miss: native answers NotEqual only; server substitutes state 0 | re-checked: not recoverable. The client list holds whatever states the retired server sent; whether it sent a row for an infrastructure nobody had built is not in the client. 34 retail slots are `== 0` and depend on it |
 | 88 | Pet | native tests whether the primary unit id is in a list on the second unit (`+0x2b8` / `+0x2c0`); server tests the vanity pet against Value; 1 slot (row 15631), no referencing row found. An instruction scan for `+0x2b8` returns 309 hits and no labelled unit function, so the list stays unidentified | list not identified; nothing references the row |
 | 41 | ZoneExplored | native compares an untruncated float ratio; server a truncated integer. Re-checked: none of the 14 rows using type 41 is referenced by any table. 13 are early rows (ids 716 to 1250) with ObjectId 0 and a zone-like id in Value under Equal, which the current native body cannot satisfy; only row 7964 (zone 1, `>= 25`) has the current shape | no live reference |
 | 179, 80, 172, 218, 246, 78, 140, 81, 173, 174 | | latent or zero-row differences | no retail slot affected, or reported and not re-read |

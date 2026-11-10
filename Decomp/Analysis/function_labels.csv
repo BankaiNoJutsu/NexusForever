@@ -6358,3 +6358,10 @@ WildStar64.exe,14022e1c0,ClientDB_GetRealmDataCenterEntry,Returns the RealmDataC
 WildStar64.exe,140552f50,QuestRuntime_IsQuestInActiveMap,True when the quest of the supplied quest node is present in the active quest map of the quest runtime (DAT_140c65b80).
 WildStar64.exe,140551730,Quest_IsObjectiveChecklistBitSet,Quest node; objective index; slot: active quest; objective exists and passes Quest_IsChecklistObjectiveType; slot below 32; returns objective word (virtual +0x40) masked with 1 << slot. Used by prerequisite type 94 with unit +0x35f8.
 WildStar64.exe,1405517a0,Quest_IsChecklistObjectiveType,True for objective types 10; 13; 14; 18 and for 27/28 when the settler mission mode is 1 or 2.
+WildStar64.exe,1403c9f30,LocalPlayer_CreateClassMechanicObject,Builds the class object stored at game +0x6d90 from the Class row: base constructor 1405e7330; subclass vtable chosen by the row mechanic word (1; 2; 4; 5; 6).
+WildStar64.exe,1405e7330,ClassMechanic_Construct,Base constructor of the class object (vtable 140b6e4a0); copies the innate ability spell ids of the Class row.
+WildStar64.exe,1405e78c0,ClassMechanic_FindResourceSlotForVital,Class object virtual +0x60 (shared by all subclasses): first index of the eight Class.vitalEnumResource words equal to the vital id whose unit resource float (+0x21c + 4 * index) is positive; else 11. Default branch of Unit_GetCurrentVitalForPrerequisite.
+WildStar64.exe,1401f31e0,ClientDB_GetClassEntry,Class table row by id; used by LocalPlayer_CreateClassMechanicObject.
+WildStar64.exe,1405515c0,Quest_GetObjectiveCompletedCount,Objective progress for Lua GetObjectiveCompleted: virtual +0x48 of the objective for checklist types (Quest_IsChecklistObjectiveType); +0x40 (raw word) otherwise; scaled for percentage objectives.
+WildStar64.exe,140551630,Quest_GetObjectiveCompletedPercent,Percentage branch of Lua GetObjectiveCompleted for objectives with a count above 1 and without flag 0x400.
+WildStar64.exe,140551840,Quest_GetObjectiveNeededCount,Objective count word; 100 for percentage-style objective types (2; 8; 15; 16; 46) without flag 0x200.
