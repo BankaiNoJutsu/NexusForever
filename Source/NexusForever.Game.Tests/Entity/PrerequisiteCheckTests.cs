@@ -849,7 +849,7 @@ public class PrerequisiteCheckTests
     }
 
     [Fact]
-    public void PrimalMatrixNode_UsesTableButRemainsFailClosedUntilAllocationStateExists()
+    public void PrimalMatrixNode_ComparesAnAllocationCountOfZeroUntilAllocationStateExists()
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
         IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out var tableProxy);
@@ -864,7 +864,9 @@ public class PrerequisiteCheckTests
             NullLogger<PrerequisiteCheckPrimalMatrixNode>.Instance);
 
         Assert.False(check.Meets(player, PrerequisiteComparison.Equal, value: 1u, objectId: 123u, new PrerequisiteParameters()));
-        Assert.False(check.Meets(player, PrerequisiteComparison.NotEqual, value: 1u, objectId: 123u, new PrerequisiteParameters()));
+        Assert.True(check.Meets(player, PrerequisiteComparison.NotEqual, value: 1u, objectId: 123u, new PrerequisiteParameters()));
+        Assert.True(check.Meets(player, PrerequisiteComparison.LessThan, value: 1u, objectId: 123u, new PrerequisiteParameters()));
+        Assert.False(check.Meets(null, PrerequisiteComparison.NotEqual, value: 1u, objectId: 123u, new PrerequisiteParameters()));
     }
 
     // Native type 175 (14049f190): "ObjectId is one of the ten talent ids of an active tradeskill"; Equal / NotEqual, Value not read. Retail: ObjectId 153, a TradeskillBonus of talent tier 42.

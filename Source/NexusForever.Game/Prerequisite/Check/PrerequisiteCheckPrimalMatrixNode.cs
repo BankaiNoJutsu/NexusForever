@@ -20,16 +20,18 @@ namespace NexusForever.Game.Prerequisite.Check
             this.log = log;
         }
 
+        /// <remarks>
+        /// Native 1404a18f0: for the local player, the saved allocation count of node ObjectId (PrimalMatrix_LookupAllocatedNode 1404d6a60) is compared with Value.
+        /// The server keeps no Primal Matrix allocations (the save request is decoded and dropped), so the count of every node is 0 and that is what is compared.
+        /// All 24 retail slots are "== 1", which stays false. Evidence tier: native body. No retail parity claim.
+        /// </remarks>
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {
-            if (gameTableManager.PrimalMatrixNode?.GetEntry(objectId) == null)
+            if (player == null)
                 return false;
 
-            log.LogTrace(
-                "PrimalMatrixNode prerequisite is not fully implemented (nodeId={NodeId}); comparison={Comparison} value={Value}.",
-                objectId, comparison, value);
-
-            return false;
+            const uint allocatedCount = 0u;
+            return PrerequisiteCompare.Compare(comparison, allocatedCount, value);
         }
     }
 }

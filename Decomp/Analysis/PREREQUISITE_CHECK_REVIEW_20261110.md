@@ -190,11 +190,17 @@ Competing readings:
 The all-zero spawns may be incomplete world data (map 3460, late content) rather than retail values; the entity table does not say where each row came from. The experiment that
 separates the readings is a retail capture of the objective update for one type 18 objective with a count above 1. Not changed; type 94 keeps answering from types 14 and 10 only.
 
+### Type 245, native lookup read (added later the same day)
+`1403c16e0(manager, ObjectId)`: DyeColorRamp row by id (`1401fcf20`; the row's `prerequisiteId` is at `+0x18`, matching the table layout), a generic unlock entry of type 1 for the same id
+(`1404530f0` on `DAT_140c65910`, with `+4` or `+8` nonzero), then true when the ramp has no prerequisite or the prerequisite manager passes it for the local player. This confirms
+natively the dye reading that was inferred from the 220 "Learn Dye" spells. Only ramps 355 and 371 carry a prerequisite (`39265`, `39251`); the server check does not evaluate it.
+The function and its caller `1404a1790` were relabelled (they named a tradeskill requirement).
+
 ## 3. Differences found and not changed
 
 | Type | Check | Finding | Why not changed |
 |---:|---|---|---|
-| 292 | PrimalMatrixNode | native: local player only, `PrimalMatrix_LookupAllocatedNode(1, ObjectId)` compared with Value; server always false; 24 slots | understood; blocked on a server feature, not on evidence: the player has no primal matrix allocation state to query |
+| 292 | PrimalMatrixNode | native: local player only, `PrimalMatrix_LookupAllocatedNode(1, ObjectId)` (the saved count byte, 0 when the node is not in the map) compared with Value; 24 slots, all `== 1` | changed later the same day to compare a count of 0 instead of answering false for every comparison. The allocation feature itself is missing: the save request is decoded and dropped, so no node is ever allocated |
 | 148 | InfrastructureState | lookup miss: native answers NotEqual only; server substitutes state 0 | re-checked: not recoverable. The client list holds whatever states the retired server sent; whether it sent a row for an infrastructure nobody had built is not in the client. 34 retail slots are `== 0` and depend on it |
 | 88 | Pet | native tests whether the primary unit id is in a list on the second unit (`+0x2b8` / `+0x2c0`); server tests the vanity pet against Value; 1 slot (row 15631), no referencing row found. An instruction scan for `+0x2b8` returns 309 hits and no labelled unit function, so the list stays unidentified | list not identified; nothing references the row |
 | 41 | ZoneExplored | native compares an untruncated float ratio; server a truncated integer. Re-checked: none of the 14 rows using type 41 is referenced by any table. 13 are early rows (ids 716 to 1250) with ObjectId 0 and a zone-like id in Value under Equal, which the current native body cannot satisfy; only row 7964 (zone 1, `>= 25`) has the current shape | no live reference |

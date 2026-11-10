@@ -13,7 +13,8 @@ namespace NexusForever.Game.Prerequisite.Check
     /// The lookup is a dye-colour test, not a tradeskill requirement: all 220 spells gated by type 245 rows are "Learn Dye - ..." spells whose caster-cast prerequisite is (NotEqual, ObjectId), and in 219
     /// of them ObjectId equals DataBits00 of the spell's LearnDyeColor effect. The row therefore reads "this dye is not known yet". The previous non-account path compared a tradeskill tier rank with
     /// Value behind a "needs an NPC target" gate (the Player/Ghost type test read backwards), which failed every Learn Dye cast.
-    /// What <c>1403c16e0</c> reads natively was not re-derived; its existing label names a tradeskill requirement and is contradicted by this data.
+    /// Read natively later the same day: <c>1403c16e0</c> takes the DyeColorRamp row of ObjectId, requires a generic unlock entry of type 1 for the same id, and then requires the ramp's own
+    /// prerequisite (row <c>+0x18</c>, set on ramps 355 and 371 only) to pass. That confirms the dye reading. The ramp prerequisite is not evaluated here.
     /// Status: Implemented, inferred. See Decomp/Analysis/PREREQUISITE_CHECK_REVIEW_20261110.md. No retail parity claim.
     /// </remarks>
     [PrerequisiteCheck(PrerequisiteType.Unknown245)]
