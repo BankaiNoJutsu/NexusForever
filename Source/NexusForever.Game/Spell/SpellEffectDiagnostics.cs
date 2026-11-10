@@ -1475,11 +1475,11 @@ namespace NexusForever.Game.Spell
                 spell.CastingId,
                 target.Guid,
                 playerGuid,
-                questAdvance.ObjectiveId,
+                questAdvance.QuestId,
                 questAdvance.Progress,
                 applied,
                 skippedReason,
-                questAdvance.DataBits01,
+                questAdvance.ObjectiveIndex,
                 questAdvance.DataBits03,
                 questAdvance.DataBits04,
                 questAdvance.DataBits05);

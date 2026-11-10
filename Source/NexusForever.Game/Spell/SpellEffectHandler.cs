@@ -8,6 +8,7 @@ using NexusForever.Game.Abstract.Housing;
 using NexusForever.Game.Abstract.Loot;
 using NexusForever.Game.Abstract.Map;
 using NexusForever.Game.Abstract.Map.Lock;
+using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Combat;
 using NexusForever.Game.Combat.CrowdControl;
@@ -4242,14 +4243,30 @@ namespace NexusForever.Game.Spell
                 return;
             }
 
-            if (questAdvance.ObjectiveId == 0u)
+            if (questAdvance.QuestId == 0u)
             {
-                SpellEffectDiagnostics.TraceQuestAdvanceObjective(spell, target, questAdvance, player.Guid, false, "missing-objective");
+                SpellEffectDiagnostics.TraceQuestAdvanceObjective(spell, target, questAdvance, player.Guid, false, "missing-quest");
+                return;
+            }
+
+            // DataBits00 is the quest and DataBits01 the objective index within it. It was previously passed as a QuestObjective id, which advanced nothing for the quest it names and
+            // could advance an unrelated objective that happens to share the number.
+            IQuest quest = player.QuestManager.GetActiveQuests().FirstOrDefault(q => q.Id == questAdvance.QuestId);
+            if (quest == null)
+            {
+                SpellEffectDiagnostics.TraceQuestAdvanceObjective(spell, target, questAdvance, player.Guid, false, "quest-not-active");
+                return;
+            }
+
+            IQuestObjective objective = quest.FirstOrDefault(o => o.Index == questAdvance.ObjectiveIndex);
+            if (objective == null)
+            {
+                SpellEffectDiagnostics.TraceQuestAdvanceObjective(spell, target, questAdvance, player.Guid, false, "missing-objective-index");
                 return;
             }
 
             uint progress = questAdvance.Progress == 0u ? 1u : questAdvance.Progress;
-            player.QuestManager.ObjectiveUpdate(questAdvance.ObjectiveId, progress);
+            quest.ObjectiveUpdate(objective.ObjectiveInfo.Id, progress);
             SpellEffectDiagnostics.TraceQuestAdvanceObjective(spell, target, questAdvance, player.Guid, true, null);
         }
 

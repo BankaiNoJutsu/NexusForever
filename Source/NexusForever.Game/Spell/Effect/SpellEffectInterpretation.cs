@@ -465,9 +465,14 @@ namespace NexusForever.Game.Spell.Effect
         uint DataBits08,
         uint DataBits09);
 
+    /// <summary>
+    /// DataBits00 is a Quest2 id, DataBits01 the index of the objective within that quest (0 to 5) and DataBits02 the amount (1 on 248 of 251 retail rows, 2 on the rest).
+    /// Inferred from the table: 250 of 251 DataBits00 values are Quest2 ids and 200 of the carrying spell names contain "Q" followed by that id (for example Spell4 83778
+    /// "Galeras - 4 - Q5324 - Chain Lock" with DataBits00 5324), while only 116 are also QuestObjective ids. See Decomp/Analysis/SPELL_EFFECT_ID_SPACES_20261110.md.
+    /// </summary>
     public sealed record SpellEffectQuestAdvanceObjectiveSemantics(
-        uint ObjectiveId,
-        uint DataBits01,
+        uint QuestId,
+        uint ObjectiveIndex,
         uint Progress,
         uint DataBits03,
         uint DataBits04,

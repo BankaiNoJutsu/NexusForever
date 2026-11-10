@@ -9,6 +9,7 @@ using NexusForever.Game.Abstract.Entity.Movement.Force;
 using NexusForever.Game.Abstract.Housing;
 using NexusForever.Game.Abstract.Loot;
 using NexusForever.Game.Abstract.Map.Lock;
+using NexusForever.Game.Abstract.Quest;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Static.Spell;
 using NexusForever.Game.Tests.TestSupport;
@@ -84,6 +85,56 @@ public class SpellCollectionEffectTests
         global::NexusForever.Game.Spell.SpellHandler.HandleEffectLearnDyeColor(spell, player, CreateLearnDyeColorInfo(2u));
 
         Assert.Empty(unlockProxy.GetInvocations(nameof(IGenericUnlockManager.Unlock)));
+    }
+
+    // Retail: Spell4 83778 "Galeras - 4 - Q5324 - Chain Lock - Activate" has QuestAdvanceObjective with DataBits00 = 5324 (the quest), DataBits01 = 0 (objective index), DataBits02 = 1.
+    [Fact]
+    public void QuestAdvanceObjective_AdvancesTheIndexedObjectiveOfTheNamedQuest()
+    {
+        IQuestObjectiveInfo firstInfo = RecordingDispatchProxy<IQuestObjectiveInfo>.Create(out RecordingDispatchProxy<IQuestObjectiveInfo> firstInfoProxy);
+        firstInfoProxy.SetProperty(nameof(IQuestObjectiveInfo.Id), 9001u);
+        IQuestObjectiveInfo secondInfo = RecordingDispatchProxy<IQuestObjectiveInfo>.Create(out RecordingDispatchProxy<IQuestObjectiveInfo> secondInfoProxy);
+        secondInfoProxy.SetProperty(nameof(IQuestObjectiveInfo.Id), 9002u);
+
+        IQuestObjective first = RecordingDispatchProxy<IQuestObjective>.Create(out RecordingDispatchProxy<IQuestObjective> firstProxy);
+        firstProxy.SetProperty(nameof(IQuestObjective.Index), (byte)0);
+        firstProxy.SetProperty(nameof(IQuestObjective.ObjectiveInfo), firstInfo);
+        IQuestObjective second = RecordingDispatchProxy<IQuestObjective>.Create(out RecordingDispatchProxy<IQuestObjective> secondProxy);
+        secondProxy.SetProperty(nameof(IQuestObjective.Index), (byte)1);
+        secondProxy.SetProperty(nameof(IQuestObjective.ObjectiveInfo), secondInfo);
+
+        IQuest quest = RecordingDispatchProxy<IQuest>.Create(out RecordingDispatchProxy<IQuest> questProxy);
+        questProxy.SetProperty(nameof(IQuest.Id), (ushort)5324);
+        questProxy.SetMethodHandler("GetEnumerator", _ => new List<IQuestObjective> { first, second }.GetEnumerator());
+        IQuest otherQuest = RecordingDispatchProxy<IQuest>.Create(out RecordingDispatchProxy<IQuest> otherQuestProxy);
+        otherQuestProxy.SetProperty(nameof(IQuest.Id), (ushort)77);
+
+        IQuestManager questManager = RecordingDispatchProxy<IQuestManager>.Create(out RecordingDispatchProxy<IQuestManager> questManagerProxy);
+        questManagerProxy.SetMethodHandler(nameof(IQuestManager.GetActiveQuests), _ => new List<IQuest> { otherQuest, quest });
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.Guid), 42u);
+        playerProxy.SetProperty(nameof(IPlayer.QuestManager), questManager);
+
+        ISpell spell = CreateSpell(player);
+        ISpellTargetEffectInfo info = RecordingDispatchProxy<ISpellTargetEffectInfo>.Create(out RecordingDispatchProxy<ISpellTargetEffectInfo> infoProxy);
+        infoProxy.SetProperty(nameof(ISpellTargetEffectInfo.Entry), new Spell4EffectsEntry
+        {
+            Id         = 701u,
+            SpellId    = 83778u,
+            EffectType = SpellEffectType.QuestAdvanceObjective,
+            DataBits00 = 5324u,
+            DataBits01 = 1u,
+            DataBits02 = 2u
+        });
+
+        global::NexusForever.Game.Spell.SpellHandler.HandleEffectQuestAdvanceObjective(spell, player, info);
+
+        // the quest's own objective at index 1 advances by the amount; the id is never used as an objective id on other quests
+        RecordingDispatchProxy<IQuest>.Invocation update = Assert.Single(questProxy.GetInvocations(nameof(IQuest.ObjectiveUpdate)));
+        Assert.Equal(9002u, update.Arguments[0]);
+        Assert.Equal(2u, update.Arguments[1]);
+        Assert.Empty(otherQuestProxy.GetInvocations(nameof(IQuest.ObjectiveUpdate)));
+        Assert.Empty(questManagerProxy.GetInvocations(nameof(IQuestManager.ObjectiveUpdate)));
     }
 
     [Fact]
