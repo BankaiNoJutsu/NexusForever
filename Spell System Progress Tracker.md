@@ -8,6 +8,8 @@ This is the working implementation tracker for the global `Spell4` / `Spell4Effe
 - `Spell Effect Evidence Matrix.md`
 - `Spell Reverse Engineering Runtime Candidates.md`
 - `Tools/SpellReverseEngineering/world_context_queries.sql`
+- `Decomp/Analysis/PREREQUISITE_HANDLER_TABLE_AUDIT_20261110.md` and `PREREQUISITE_CHECK_REVIEW_20261110.md` (prerequisites that gate casts and effects, audited against the client evaluator)
+- `Decomp/Analysis/SPELL_EFFECT_DATA_TYPING_AUDIT_20261110.md` (effect data words against the client typing table)
 
 ## Current Completion
 
@@ -48,7 +50,7 @@ This is the working implementation tracker for the global `Spell4` / `Spell4Effe
 | `SpellDispel` | Conservative | Removes locally tracked dispellable spell state by `SpellClass`, emits dispel logs, and shares buff/CC cleanup with force-remove; stacking, priority, and externally-owned aura parity remain. |
 | `ForceFacing` / `NpcForceFacing` | Conservative | Forces affected units to face the spell target/position or applies decoded NPC degree offsets through movement rotation commands; exact blend/mode flags and player-control parity remain. |
 | `ForcedMove` | Conservative | Applies timed velocity impulse; exact movement physics and type semantics remain. |
-| `Proxy` / non-random variants | Conservative | Chained casts and target forwarding exist, and plain `Proxy` now also runs on activation-object world targets by casting the child spell from the original caster while forwarding the object target as the child primary target; random-exclusive, channel ownership, and shape forwarding remain. |
+| `Proxy` / non-random variants | Conservative | Chained casts and target forwarding exist, and plain `Proxy` now also runs on activation-object world targets by casting the child spell from the original caster while forwarding the object target as the child primary target; random-exclusive, channel ownership, and shape forwarding remain. The handler reads only `DataBits00`; the client types `DataBits04` as an integer (1 or -1 on 97% of 16,929 rows) and `DataBits03` as a float, both unread. A per-cast trigger cap is the leading reading of `DataBits04` but is unwitnessed (`Decomp/Analysis/SPELL_EFFECT_DATA_TYPING_AUDIT_20261110.md`). |
 | `SummonCreature` | Conservative | Creates `INonPlayerEntity` from `Creature2`, places it, tracks duration cleanup; ownership, AI, service payloads, and formation parity remain. |
 | `SummonTrap` | Conservative | Creates duration-backed trap/probe entities from decoded `Creature2` ids through `SummonTrapEvidenceBoundary`; witness `Spell4=34094` pinned in tests. Trigger/ownership AI remains blocked. |
 | `SummonVehicle` | Conservative | Creates `IVehicleEntity` from decoded `Creature2`/`UnitVehicle` ids, optionally boards a player when the row requests it, and traces vehicle creation; seat modes, despawn ownership, and scripted deployables remain. |
