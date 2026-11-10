@@ -73,6 +73,16 @@ namespace NexusForever.Game.Entity
                     // A modifier from another source may have replaced our instance. Never
                     // overwrite or claim that source, even when it uses the same spell.
                     var existing = player.GetSpellPropertyInstances(id);
+                    // A periodic AMP that also holds property modifiers, and whose spell has ended (the caster died): take back the modifiers this AMP owns so that the cast
+                    // below starts both parts again and nothing is applied twice.
+                    if (augmentationLifetimes.Contains(id) && !player.HasSpellLifetime(id)
+                        && augmentationProperties.TryGetValue(id, out var ownedProperties) && ownedProperties.Count != 0)
+                    {
+                        foreach (var instance in ownedProperties)
+                            player.RemoveSpellPropertyInstance(instance);
+                        augmentationProperties.Remove(id);
+                        existing = player.GetSpellPropertyInstances(id);
+                    }
                     var existingCooldowns = GetSpellCooldownModifiers().Where(m => m.Spell4Id == id).ToArray();
                     var existingProcs = player.CaptureSpellProcInstances(id) ?? [];
                     if (augmentationCooldowns.TryGetValue(id, out var ownedCooldowns))

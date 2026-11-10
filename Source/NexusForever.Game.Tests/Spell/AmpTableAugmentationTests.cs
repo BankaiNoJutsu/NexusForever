@@ -212,6 +212,7 @@ public class AmpTableAugmentationTests
     [InlineData(SpellEffectType.Proxy, 500u, 0u, 2u, 4u, true)]       // area rows: the aura follows its caster (Medic Danger Zone, Spell4 58912)
     [InlineData(SpellEffectType.Proxy, 500u, 0u, 2u, 8u, false)]      // a target flag outside caster, target and area
     [InlineData(SpellEffectType.Damage, 1000u, 0u, 2u, 1u, false)]
+    [InlineData(SpellEffectType.UnitPropertyModifier, 1000u, 0u, 2u, 1u, false)]    // a property modifier does not tick
     public void PeriodicAmpsThatTickOnTheCasterAreOwnedAsARunningSpell(SpellEffectType type, uint tick, uint delay, uint flags, uint targetFlags, bool expected)
     {
         var f = new Fixture(initialise: false);

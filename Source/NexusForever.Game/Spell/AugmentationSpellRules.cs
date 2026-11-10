@@ -70,7 +70,8 @@ namespace NexusForever.Game.Spell
         }
 
         /// <summary>
-        /// Every row either ticks for the life of the spell or is a visual. Area rows are allowed: the aura of a permanent AMP follows its caster, for example Medic Danger Zone
+        /// Every row either ticks for the life of the spell, is a visual, or is a plain property modifier (Warrior Fortitude, Spell4 59166, has one next to its ticking row; the
+        /// AMP lifecycle already owns and retires property modifiers). Area rows are allowed: the aura of a permanent AMP follows its caster, for example Medic Danger Zone
         /// (Spell4 58912, Proxy on area targets every 500 ms plus one Fluff row) "While within 8m of a foe gain an Empower for 8s".
         /// </summary>
         private static bool IsPeriodicGroup(IEnumerable<Spell4EffectsEntry> rows)
@@ -78,7 +79,7 @@ namespace NexusForever.Game.Spell
             Spell4EffectsEntry[] group = rows as Spell4EffectsEntry[] ?? rows.ToArray();
             return group.Any(e => e.TickTime != 0)
                 && group.All(e => IsSupportedPeriodicEffect(e)
-                    || e.EffectType == SpellEffectType.Fluff && e.TickTime == 0 && e.DelayTime == 0);
+                    || e.EffectType is SpellEffectType.Fluff or SpellEffectType.UnitPropertyModifier && e.TickTime == 0 && e.DelayTime == 0);
         }
 
         private static bool IsSupportedPeriodicEffect(Spell4EffectsEntry effect)
