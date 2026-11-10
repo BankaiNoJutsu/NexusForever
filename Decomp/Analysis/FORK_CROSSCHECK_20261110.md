@@ -46,7 +46,7 @@ the number of set bits reaches the count. That is the reading the three native c
 * The world data that argued against the mask (objectives 21319, 21378, 21332, 21379: creatures `73422` and `73662`, every spawn index 0) looks like incomplete data rather than retail values:
   objective 8029 is also a single creature id (`23379`) with four spawns, and those carry indices 0 to 3.
 
-Not changed here. Changing it is a quest-progress behaviour change that also needs the 13 spawns of those two creatures given distinct indices, and the producers for types 13 and 18
+Changed in a later commit the same day on the owner's decision (see `PREREQUISITE_CHECK_REVIEW_20261110.md`). When this note was written it read: changing it is a quest-progress behaviour change that also needs the 13 spawns of those two creatures given distinct indices, and the producers for types 13 and 18
 (`SpellQuestObjectiveUpdater`, `InteractionObjectiveUpdater`) to pass the creature's checklist index instead of a count of 1. Left as a decision for the repository owner.
 
 ### Prerequisite type 88 - a hypothesis, not confirmed

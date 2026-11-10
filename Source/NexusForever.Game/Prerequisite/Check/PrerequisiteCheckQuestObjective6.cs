@@ -1,6 +1,7 @@
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Abstract.Quest;
+using NexusForever.Game.Quest;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Static.Prerequisite;
 using NexusForever.Game.Static.Quest;
@@ -80,8 +81,8 @@ namespace NexusForever.Game.Prerequisite.Check
                     if (objective.Index != objectiveIndex)
                         continue;
 
-                    // the server stores checklist bits for these two types only
-                    if (objective.ObjectiveInfo?.Type is not (QuestObjectiveType.ActivateTargetGroupChecklist or QuestObjectiveType.ScriptedTargetGroupChecklist))
+                    // types 10, 13, 14 and 18; the native gate also accepts 27 and 28 for two activate modes, which the server does not keep as bits
+                    if (objective.ObjectiveInfo == null || !QuestObjective.IsChecklistType(objective.ObjectiveInfo.Type))
                         return false;
 
                     return (objective.Progress & (1u << checklistIdx)) != 0u;

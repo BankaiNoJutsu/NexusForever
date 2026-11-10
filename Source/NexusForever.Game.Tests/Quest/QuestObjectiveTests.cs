@@ -136,6 +136,25 @@ public class QuestObjectiveTests
         Assert.Equal(0b1110u, objective.Progress);
     }
 
+    // The client treats types 13 (SpellSuccess2) and 18 (TalkToTargetGroup) as checklists (Quest_IsChecklistObjectiveType 1405517a0): progress is a bit per creature
+    // checklist index. Retail: objective 21319 (tutorial quest 10525, TalkToTargetGroup, count 2); objective 12643 (SpellSuccess2, count 3).
+    [Theory]
+    [InlineData(QuestObjectiveType.TalkToTargetGroup)]
+    [InlineData(QuestObjectiveType.SpellSuccess2)]
+    public void TalkAndSpellChecklistObjectivesCountDistinctCreaturesNotInteractions(QuestObjectiveType type)
+    {
+        QuestObjective objective = CreateObjective(type, count: 2u);
+
+        objective.ObjectiveUpdate(0u);
+        objective.ObjectiveUpdate(0u);
+        Assert.Equal(0b01u, objective.Progress);
+        Assert.False(objective.IsComplete());
+
+        objective.ObjectiveUpdate(4u);
+        Assert.Equal(0b10001u, objective.Progress);
+        Assert.True(objective.IsComplete());
+    }
+
     private static QuestObjective CreateObjective(QuestObjectiveType type, uint count, uint flags = 0u)
     {
         IPlayer player = CreatePlayer();

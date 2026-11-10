@@ -90,7 +90,8 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Entity
                 player.QuestManager.ObjectiveUpdate(QuestObjectiveType.SucceedCSI, entity.CreatureId, 1u);
                 player.QuestManager.ObjectiveUpdate(QuestObjectiveType.TalkTo, entity.CreatureId, 1u);
 
-                player.QuestManager.ObjectiveUpdate(QuestObjectiveType.TalkToTargetGroup, entity.CreatureId, 1u);
+                // TalkToTargetGroup is a checklist: progress is the bit of the creature's checklist index, not a count.
+                player.QuestManager.ObjectiveUpdate(QuestObjectiveType.TalkToTargetGroup, entity.CreatureId, entity.QuestChecklistIdx);
                 player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateTargetGroup, entity.CreatureId, 1u);
                 player.QuestManager.ObjectiveUpdate(QuestObjectiveType.ActivateTargetGroupChecklist, entity.CreatureId, entity.QuestChecklistIdx);
                 player.QuestManager.ObjectiveUpdate(QuestObjectiveType.GatheResource, entity.CreatureId, 1u);

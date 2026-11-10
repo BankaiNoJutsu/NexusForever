@@ -485,7 +485,8 @@ function Get-RuntimeWorldSeedPaths {
         (Join-Path $RepoRoot 'Tools\DataMapping\sql\laughingws_live_event_wip_seed.sql'),
         (Join-Path $RepoRoot 'Tools\DataMapping\sql\laughingws_housing_skyplot_wip_seed.sql'),
         (Join-Path $RepoRoot 'Tools\DataMapping\sql\laughingws_store_catalog_seed.sql'),
-        (Join-Path $RepoRoot 'Tools\DataMapping\sql\laughingws_quest_loot_seed.sql')
+        (Join-Path $RepoRoot 'Tools\DataMapping\sql\laughingws_quest_loot_seed.sql'),
+        (Join-Path $RepoRoot 'Tools\DataMapping\sql\quest_checklist_index_seed.sql')
     ) | Where-Object { ![string]::IsNullOrWhiteSpace($_) }
 }
 
@@ -2057,6 +2058,13 @@ function Import-RuntimeWorldSeedSqlFiles {
         -SeedPath $laughingWsQuestLootSeedPath `
         -Label 'LaughingWS quest loot seed' `
         -MarkerPrefix 'LaughingWS'
+
+    # Runs after every entity import: it only renumbers checklist indices of spawns that already exist.
+    $questChecklistIndexSeedPath = Join-Path $RepoRoot 'Tools\DataMapping\sql\quest_checklist_index_seed.sql'
+    Import-RuntimeWorldSeedSqlFile `
+        -SeedPath $questChecklistIndexSeedPath `
+        -Label 'quest checklist index seed' `
+        -MarkerPrefix 'NexusForever'
 }
 
 function Get-RabbitMqCtlCommandInvocation {

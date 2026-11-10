@@ -92,7 +92,7 @@ public class TutorialMapScriptCacheTests
 
         InvokePrivate(script, "EnsureCryopodNpcs");
 
-        uint[] expectedCreatureIds = [73664u, 73422u, 73662u, 73421u, 73741u, 73741u];
+        uint[] expectedCreatureIds = [73664u, 73422u, 73422u, 73662u, 73662u, 73421u, 73741u, 73741u];
         IReadOnlyList<RecordingDispatchProxy<IBaseMap>.Invocation> adds = mapProxy.GetInvocations(nameof(IBaseMap.EnqueueAdd));
         Assert.Equal(expectedCreatureIds.Length, adds.Count);
         Assert.Equal(expectedCreatureIds.Length, createdEntities.Count);
@@ -251,7 +251,7 @@ public class TutorialMapScriptCacheTests
             new EntityCache(ImmutableList<EntityModel>.Empty));
 
         Queue<CreatedEntity> entities = new();
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 6; i++)
             entities.Enqueue(CreateEntity<INonPlayerEntity>());
         for (int i = 0; i < 2; i++)
             entities.Enqueue(CreateEntity<ISimpleCollidableEntity>());

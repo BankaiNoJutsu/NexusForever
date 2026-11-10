@@ -148,10 +148,22 @@ namespace NexusForever.Game.Quest
                     or QuestObjectiveType.KillCreature2;
         }
 
-        private bool IsChecklist()
+        /// <summary>
+        /// Return if progress is a bit mask of creature checklist indices rather than a count.
+        /// </summary>
+        /// <remarks>
+        /// The client treats objective types 10, 13, 14 and 18 as checklists (Quest_IsChecklistObjectiveType 1405517a0) in three places: prerequisite type 94, the item-use check and
+        /// the completed count the quest tracker shows. Types 13 and 18 kept a count here until 2026-11-10; see Decomp/Analysis/PREREQUISITE_CHECK_REVIEW_20261110.md.
+        /// Types 27 and 28 are checklists natively for two activate modes and are not modelled. Evidence tier: native bodies. No retail parity claim.
+        /// </remarks>
+        private bool IsChecklist() => IsChecklistType(ObjectiveInfo.Type);
+
+        public static bool IsChecklistType(QuestObjectiveType type)
         {
-            return ObjectiveInfo.Type is QuestObjectiveType.ActivateTargetGroupChecklist
-                or QuestObjectiveType.ScriptedTargetGroupChecklist;
+            return type is QuestObjectiveType.ActivateTargetGroupChecklist
+                or QuestObjectiveType.ScriptedTargetGroupChecklist
+                or QuestObjectiveType.SpellSuccess2
+                or QuestObjectiveType.TalkToTargetGroup;
         }
 
         private bool UsesTargetGroups()

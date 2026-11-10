@@ -1365,6 +1365,8 @@ public class PrerequisiteCheckTests
     [InlineData(QuestObjectiveType.ActivateTargetGroupChecklist, 0b0100u, (byte)1, PrerequisiteComparison.Equal, false)]      // another creature of the same checklist is not
     [InlineData(QuestObjectiveType.ActivateTargetGroupChecklist, 0b0100u, (byte)1, PrerequisiteComparison.NotEqual, true)]
     [InlineData(QuestObjectiveType.ScriptedTargetGroupChecklist, 0b0001u, (byte)0, PrerequisiteComparison.Equal, true)]
+    [InlineData(QuestObjectiveType.TalkToTargetGroup, 0b0010u, (byte)1, PrerequisiteComparison.Equal, true)]                 // types 13 and 18 are checklists too
+    [InlineData(QuestObjectiveType.SpellSuccess2, 0b0010u, (byte)0, PrerequisiteComparison.Equal, false)]
     [InlineData(QuestObjectiveType.KillCreature, 0b0111u, (byte)0, PrerequisiteComparison.Equal, false)]                      // a counter is not a checklist
     [InlineData(QuestObjectiveType.ActivateTargetGroupChecklist, 0xFFFFFFFFu, (byte)40, PrerequisiteComparison.Equal, false)] // index beyond the mask
     [InlineData(QuestObjectiveType.ActivateTargetGroupChecklist, 0b0100u, (byte)2, PrerequisiteComparison.GreaterThan, false)]

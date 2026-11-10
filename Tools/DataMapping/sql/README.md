@@ -569,3 +569,15 @@ focused review. Local verification after cleanup reported
 `northern_wilds_unsafe_datamapping_spawns=0`,
 `northern_wilds_legacy_manual_spawns=738`, Granok Mercenary `4`, and Yeti
 Snowstalker `18`.
+
+## Quest checklist index seed
+
+`quest_checklist_index_seed.sql` is hand-written and imported by setup after the LaughingWS seeds. It gives the spawns of the tutorial cryopod NPCs (creatures 73422 and 73662, world 3460)
+distinct `questChecklistIdx` values, because TalkToTargetGroup objectives are checklists (one bit per index) and the imported spawns all carry index 0. The indices are assigned in entity id
+order and are a guess, not retail values. The script is idempotent and only touches a creature whose spawns all share one index. Setup skips it once its hash is recorded in `version`; run it
+by hand after re-importing the world database outside setup:
+
+```powershell
+Get-Content -Raw Tools\DataMapping\sql\quest_checklist_index_seed.sql |
+  & "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" --host=127.0.0.1 --user=bankai --password=bankai
+```

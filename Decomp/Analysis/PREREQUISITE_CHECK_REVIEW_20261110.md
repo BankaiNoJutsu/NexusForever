@@ -162,7 +162,7 @@ A unit that is not the local player gets 0. The comparison always runs.
 
 Status: Implemented from the native bodies. No retail parity claim.
 
-### Type 94, objective types 13 and 18 (added later the same day; not changed)
+### Type 94, objective types 13 and 18 (added later the same day; changed after the fork cross-check, see the end of this section)
 Three native consumers treat objective types 13 (SpellSuccess2) and 18 (TalkToTargetGroup) as checklists whose progress word is a bit mask: prerequisite type 94, the item-use
 check in `ItemUse_SendClientItemUse` (`140398cc0`: for a checklist objective the target must carry a checklist index and its bit must not be set yet), and the count the quest
 tracker shows (`Lua_Quest_GetObjectiveCompleted` `140665900` -> `1405515c0`, which reads virtual `+0x48` of the objective for checklist types and `+0x40`, the raw word, for the
@@ -188,7 +188,14 @@ Competing readings:
 | They keep a count (the server's current model) | completes every objective | the client would show a bit count of the number, and item use would be refused on the wrong creatures |
 
 The all-zero spawns may be incomplete world data (map 3460, late content) rather than retail values; the entity table does not say where each row came from. The experiment that
-separates the readings is a retail capture of the objective update for one type 18 objective with a count above 1. Not changed; type 94 keeps answering from types 14 and 10 only.
+separates the readings is a retail capture of the objective update for one type 18 objective with a count above 1.
+
+**Changed (owner decision, 2026-11-10).** Types 13 and 18 now keep a bit mask (`QuestObjective.IsChecklistType`), their producers pass the creature's checklist index
+(`InteractionObjectiveUpdater`, `SpellQuestObjectiveUpdater` with the primary target of the cast), and type 94 reads all four types. The all-zero spawns were judged incomplete data: objective
+8029 is also a single creature id with four spawns, carrying indices 0 to 3, and world 3460 comes from a community world database rather than a capture. The two creatures get distinct indices
+from `Tools/DataMapping/sql/quest_checklist_index_seed.sql` (guessed, entity id order), and the tutorial fallback now spawns two NPCs of each group with indices 0 and 1. Known consequences:
+objective 7207 (type 18, count 500, 15 spawns with indices 1 to 15) cannot complete under either model; a character with one of these objectives in progress has its saved count read as a
+mask. Types 27 and 28 are still not modelled. No retail capture exists; no retail parity claim.
 
 ### Type 245, native lookup read (added later the same day)
 `1403c16e0(manager, ObjectId)`: DyeColorRamp row by id (`1401fcf20`; the row's `prerequisiteId` is at `+0x18`, matching the table layout), a generic unlock entry of type 1 for the same id

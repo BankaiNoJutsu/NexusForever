@@ -631,8 +631,12 @@ namespace NexusForever.Script.Main.Tutorial
             int spawned = 0;
             spawned += EnsureTutorialEntity<INonPlayerEntity>(CryopodNpcA, ToVector3(wlA));
             spawned += EnsureTutorialEntity<INonPlayerEntity>(CryopodNpcB, ToVector3(wlB));
-            spawned += EnsureTutorialEntity<INonPlayerEntity>(CryopodTargetGroupNpcA, ToVector3(wlA) + new Vector3(2f, 0f, 2f));
-            spawned += EnsureTutorialEntity<INonPlayerEntity>(CryopodTargetGroupNpcB, ToVector3(wlB) + new Vector3(2f, 0f, 2f));
+            // The cryopod objectives (TalkToTargetGroup, count 2) are checklists: each talk sets the bit of the NPC's checklist index, so the fallback needs two NPCs
+            // of each group with different indices. Positions and indices are server-chosen, not retail placement.
+            spawned += EnsureTutorialEntity<INonPlayerEntity>(CryopodTargetGroupNpcA, ToVector3(wlA) + new Vector3(2f, 0f, 2f), questChecklistIdx: 0);
+            spawned += EnsureTutorialEntity<INonPlayerEntity>(CryopodTargetGroupNpcA, ToVector3(wlA) + new Vector3(-2f, 0f, 2f), questChecklistIdx: 1);
+            spawned += EnsureTutorialEntity<INonPlayerEntity>(CryopodTargetGroupNpcB, ToVector3(wlB) + new Vector3(2f, 0f, 2f), questChecklistIdx: 0);
+            spawned += EnsureTutorialEntity<INonPlayerEntity>(CryopodTargetGroupNpcB, ToVector3(wlB) + new Vector3(-2f, 0f, 2f), questChecklistIdx: 1);
             spawned += EnsureTutorialEntity<INonPlayerEntity>(SkyplotReceiverNpc, ToVector3(receiverWl));
             spawned += EnsureTutorialEntity<ISimpleCollidableEntity>(
                 HousingProjectorCreatureId,

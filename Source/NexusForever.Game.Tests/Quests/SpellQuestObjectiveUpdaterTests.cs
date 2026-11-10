@@ -15,12 +15,30 @@ public class SpellQuestObjectiveUpdaterTests
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
         playerProxy.SetProperty(nameof(IPlayer.QuestManager), questManager);
 
-        SpellQuestObjectiveUpdater.UpdateSpellSuccessObjectives(player, 87298u);
+        IWorldEntity target = RecordingDispatchProxy<IWorldEntity>.Create(out RecordingDispatchProxy<IWorldEntity> targetProxy);
+        targetProxy.SetProperty(nameof(IWorldEntity.QuestChecklistIdx), (byte)3);
+
+        SpellQuestObjectiveUpdater.UpdateSpellSuccessObjectives(player, 87298u, target);
 
         AssertObjectiveUpdate(questProxy, QuestObjectiveType.SpellSuccess, 87298u, 1u);
-        AssertObjectiveUpdate(questProxy, QuestObjectiveType.SpellSuccess2, 87298u, 1u);
+        // SpellSuccess2 is a checklist: the update is the target's checklist index, not a count
+        AssertObjectiveUpdate(questProxy, QuestObjectiveType.SpellSuccess2, 87298u, 3u);
         AssertObjectiveUpdate(questProxy, QuestObjectiveType.SpellSuccess3, 87298u, 1u);
         AssertObjectiveUpdate(questProxy, QuestObjectiveType.SpellSuccess4, 87298u, 1u);
+    }
+
+    [Fact]
+    public void UpdateSpellSuccessObjectives_WithoutACreatureTarget_DoesNotAdvanceTheChecklistFamily()
+    {
+        IQuestManager questManager = RecordingDispatchProxy<IQuestManager>.Create(out RecordingDispatchProxy<IQuestManager> questProxy);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out RecordingDispatchProxy<IPlayer> playerProxy);
+        playerProxy.SetProperty(nameof(IPlayer.QuestManager), questManager);
+
+        SpellQuestObjectiveUpdater.UpdateSpellSuccessObjectives(player, 87298u);
+        SpellQuestObjectiveUpdater.UpdateSpellSuccessObjectives(player, 87298u, player);
+
+        Assert.DoesNotContain(GetTypedObjectiveUpdates(questProxy), i => (QuestObjectiveType)i.Arguments[0] == QuestObjectiveType.SpellSuccess2);
+        AssertObjectiveUpdate(questProxy, QuestObjectiveType.SpellSuccess, 87298u, 1u);
     }
 
     [Fact]

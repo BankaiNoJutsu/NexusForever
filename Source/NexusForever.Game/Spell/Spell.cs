@@ -1143,7 +1143,7 @@ namespace NexusForever.Game.Spell
             ScheduleClientSideInteractionTimeout();
 
             if (Caster is IPlayer executingPlayer)
-                SpellQuestObjectiveUpdater.UpdateSpellSuccessObjectives(executingPlayer, Parameters.SpellInfo.Entry.Id);
+                SpellQuestObjectiveUpdater.UpdateSpellSuccessObjectives(executingPlayer, Parameters.SpellInfo.Entry.Id, GetPrimaryTargetWorldEntity());
 
             if (chargeReleaseThresholdSpell)
             {
