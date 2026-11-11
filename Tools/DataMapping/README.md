@@ -305,6 +305,8 @@ When several client creatures have the same localized name, candidates are score
 
 Ambiguous rows are still emitted with the best deterministic candidate so the maps remain complete, but they should be reviewed before destructive imports.
 
+Template health: Jabbithole health of 10 or less (placeholders such as a level-50 1 HP "Pulsating Cocoon") and exactly 1,410,065,408 (10,000,000,000 mod 2^32, an int32 overflow of an invulnerable value) are not used as template health; the client default scaling applies instead.
+
 Scoring notes (2026-11-11 audit, measured against the live reference databases):
 
 - Jabbithole `difficulty` (enum 0-7) and `Creature2.creature2DifficultyId` (a row id, 0-24+) are different domains. The old equality bonus was coincidence (about a third of `unique_name` rows "matched"), so it is no longer scored.
@@ -502,9 +504,11 @@ Jabbithole stores vendor gating as free text ("Requires Level 50", "Requires 800
 `resolve_vendor_prerequisites.py` (run automatically by `map_wildstar_data.py`, or with `--from-staging-db`) writes `vendor_prerequisite_map.csv`. Resolution is deliberately narrow:
 
 - `semantic_equivalent_row`: a single-clause client `Prerequisite` row with a >= comparison and equal type/object/value (Level, or Reputation with a resolved `Faction2`). The client has many identical rows; the lowest id is used. Which row retail used is unknown, so this is no retail parity claim.
-- `unresolved`: everything else, imported with no gate and listed with a reason: path rank, medals/instance completion, class, arena rating, "research ... prototype", guild perks, compound texts, and **side-specific faction pairs** ("<Exile faction> or <Dominion faction>", about 290 promoted pairs) that need the vendor's side. These are tracked blockers, not guesses.
+- Class texts ("Must be a Medic") resolve to the equality `Class` row.
+- `side_specific_pair`: "<Exile faction> or <Dominion faction>" texts resolve one row per side (`prerequisite_id_exile` / `prerequisite_id_dominion`); the import picks by the vendor's side, `creature_map.source_side`, which is set only when exactly one of Jabbithole's `disposition_exile` / `disposition_dominion` is friendly (2). Evidence tier: inferred vendor side; an unknown or contradictory side stays ungated.
+- `unresolved`: everything else, imported with no gate and listed with a reason: path rank (the client has no equivalent `PathLevel` rows), medals/instance completion, arena rating, "research ... prototype", guild perks and compound texts. These are tracked blockers, not guesses.
 
-After the full 2026-11-11 mapper run, 124 of 340 distinct texts resolve and 899 vendor rows are gated (of 1,625 promoted pairs that carry a prerequisite; the rest stay ungated until those blockers are closed).
+After the 2026-11-11 mapper runs, 147 of 340 distinct texts resolve (130 single-clause, 17 side-specific pairs) and 1,082 vendor rows are gated (of 1,625 promoted pairs that carry a prerequisite; the rest stay ungated until those blockers are closed).
 
 ## LaughingWS World Database Audit
 

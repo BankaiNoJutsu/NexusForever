@@ -63,6 +63,23 @@ class CreatureScoringTests(unittest.TestCase):
         self.assertEqual(4, rows[0]["match_tiebreak_score"])
 
 
+class HealthAndSideTests(unittest.TestCase):
+    def test_placeholder_and_int32_overflow_health_are_not_template_health(self) -> None:
+        for value in ["1", "5", "10", "1410065408"]:
+            with self.subTest(value=value):
+                self.assertIsNone(mapper.template_health_value(value, value))
+
+    def test_real_health_is_kept(self) -> None:
+        self.assertEqual(341575936.0, mapper.template_health_value("341575936", "341575936"))
+        self.assertEqual(11.0, mapper.template_health_value("11", "11"))
+
+    def test_vendor_side_needs_exactly_one_friendly_side(self) -> None:
+        self.assertEqual("exile", mapper.creature_side({"disposition_exile": "2", "disposition_dominion": "0"}))
+        self.assertEqual("dominion", mapper.creature_side({"disposition_exile": "", "disposition_dominion": "2"}))
+        self.assertEqual("", mapper.creature_side({"disposition_exile": "2", "disposition_dominion": "2"}))
+        self.assertEqual("", mapper.creature_side({}))
+
+
 class ReviewEvidenceTierTests(unittest.TestCase):
     def test_spatial_heuristic_rows_are_tagged(self) -> None:
         row = {"reason": "existing_entity_spatial: only candidate with existing entity near Jabbithole spawn",

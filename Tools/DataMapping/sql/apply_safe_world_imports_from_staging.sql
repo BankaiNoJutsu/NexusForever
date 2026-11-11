@@ -483,11 +483,22 @@ SELECT
   IF(IFNULL(alt_currency_id, 0) <> 0 AND IFNULL(alt_price, 0) > 0, IFNULL(alt_currency_id, 0), 0) AS extraCost2ItemOrCurrencyId,
   -- Resolved from the Jabbithole prerequisite text (resolve_vendor_prerequisites.py). 0 = no gate, which also
   -- covers texts that stay unresolved (multi-clause, path rank, side-specific faction pairs); see sql/README.md.
-  IFNULL(p.prerequisite_id, 0) AS prerequisiteId
+  CASE
+    WHEN p.resolution = 'semantic_equivalent_row' THEN IFNULL(p.prerequisite_id, 0)
+    -- "<Exile faction> or <Dominion faction>": the vendor's side (Jabbithole disposition flags) picks the row;
+    -- an unknown or contradictory side stays ungated.
+    WHEN p.resolution = 'side_specific_pair' AND c.source_side = 'exile' THEN p.prerequisite_id_exile
+    WHEN p.resolution = 'side_specific_pair' AND c.source_side = 'dominion' THEN p.prerequisite_id_dominion
+    ELSE 0
+  END AS prerequisiteId
 FROM tmp_nf_vendor_item_latest l
 LEFT JOIN nexus_forever_mapping.nf_map_vendor_prerequisite p
   ON p.prerequisite_text = l.prerequisite
- AND p.resolution = 'semantic_equivalent_row';
+LEFT JOIN (
+  SELECT jabbithole_creature_id AS side_creature_id, source_side
+  FROM nexus_forever_mapping.nf_map_creature
+) c
+  ON c.side_creature_id = l.jabbithole_creature_id;
 
 ALTER TABLE tmp_nf_vendor_item_import
   ADD KEY ix_tmp_nf_vendor_item_import_creature (creature2_id),

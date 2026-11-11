@@ -2026,13 +2026,23 @@ def clean_cell(value) -> str:
     return str(value)
 
 
+# Jabbithole health values that are not real template health:
+#  * 10 or less: placeholders (a level-50 "Pulsating Cocoon" with 1 HP); the client default scaling is safer.
+#  * 1410065408: exactly 10,000,000,000 mod 2**32, i.e. an int32 overflow of an "effectively invulnerable"
+#    value ("Mondo's Crate"), not 1.41 billion health.
+HEALTH_PLACEHOLDER_MAX = 10
+HEALTH_INT32_OVERFLOW_VALUES = {1_410_065_408.0}
+
+
+def usable_template_health(value: Optional[float]) -> Optional[float]:
+    if value is None or value <= HEALTH_PLACEHOLDER_MAX or value in HEALTH_INT32_OVERFLOW_VALUES:
+        return None
+    return value
+
+
 def template_health_value(health_min_value, health_max_value) -> Optional[float]:
-    health_min = to_float(health_min_value)
-    health_max = to_float(health_max_value)
-    if health_min is not None and health_min <= 0:
-        health_min = None
-    if health_max is not None and health_max <= 0:
-        health_max = None
+    health_min = usable_template_health(to_float(health_min_value))
+    health_max = usable_template_health(to_float(health_max_value))
     if health_min is not None and health_max is not None:
         if health_min == health_max:
             return health_min
@@ -2582,6 +2592,8 @@ def load_jabbithole_creatures(args: argparse.Namespace) -> List[Dict[str, str]]:
         "archetype_id",
         "is_veteran",
         "is_rare",
+        "disposition_exile",
+        "disposition_dominion",
     ]
     query = """
 SELECT
@@ -2623,7 +2635,9 @@ SELECT
     gender,
     archetype_id,
     is_veteran,
-    is_rare
+    is_rare,
+    disposition_exile,
+    disposition_dominion
 FROM creatures
 ORDER BY id
 """.strip()
@@ -2637,6 +2651,21 @@ def map_entity_type(row: Dict[str, object]) -> int:
             return entity_type
     creature_type = normalize_name(row.get("creature_type")).replace(" ", "")
     return ENTITY_TYPE_BY_CREATURE_TYPE.get(creature_type, 0)
+
+
+def creature_side(jabbit: Dict[str, str]) -> str:
+    """'exile' / 'dominion' when exactly one faction side is friendly (disposition 2), else ''.
+
+    Used only to pick the side of a "<Exile faction> or <Dominion faction>" vendor prerequisite. Sides that are
+    both friendly, both unknown or contradictory stay '' so the prerequisite stays unresolved.
+    """
+    exile = (to_int(jabbit.get("disposition_exile")) or 0) >= 2
+    dominion = (to_int(jabbit.get("disposition_dominion")) or 0) >= 2
+    if exile and not dominion:
+        return "exile"
+    if dominion and not exile:
+        return "dominion"
+    return ""
 
 
 def score_creature_match(jabbit: Dict[str, str], client: Dict[str, object]) -> int:
@@ -3110,6 +3139,7 @@ def build_creature_map(
             "last_seen_in": jabbit.get("last_seen_in", ""),
             "source_is_veteran": jabbit.get("is_veteran", ""),
             "source_is_rare": jabbit.get("is_rare", ""),
+            "source_side": creature_side(jabbit),
             "match_tiebreak_score": tiebreaks.get(to_int(best.get("ID"), 0) or 0, "") if best else "",
             "original_creature2_id": "",
             "original_client_name": "",
@@ -13280,8 +13310,13 @@ def write_vendor_prerequisite_map(args: argparse.Namespace) -> Dict[str, int]:
     )
     prerequisite_rows = resolver.load_prerequisite_rows(resolver_args)
     faction_ids_by_name = resolver.load_faction_ids_by_name(args.output_dir)
+    class_ids_by_name = resolver.load_class_ids_by_name(args.output_dir)
+    faction_sides = resolver.load_faction_sides(args.output_dir)
     texts = resolver.distinct_prerequisite_texts(args.output_dir)
-    rows = [resolver.resolve_text(text, prerequisite_rows, faction_ids_by_name) for text in texts]
+    rows = [
+        resolver.resolve_text(text, prerequisite_rows, faction_ids_by_name, class_ids_by_name, faction_sides)
+        for text in texts
+    ]
     count = write_csv(args.output_dir / "vendor_prerequisite_map.csv", resolver.OUTPUT_FIELDS, rows)
     return {"vendor_prerequisite_map.csv": count}
 

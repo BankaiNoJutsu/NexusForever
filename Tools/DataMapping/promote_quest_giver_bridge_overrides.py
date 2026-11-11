@@ -82,12 +82,35 @@ def load_source_quests(args: argparse.Namespace) -> Dict[int, Set[int]]:
     return quests
 
 
+MIN_FUZZY_NAME_SIMILARITY = 0.6
+# Reviewed rejections: the quest link exists but the client NPC has a different person name, which looks like a
+# quest handed to another NPC between game versions (version drift), not a rename of the same NPC.
+REVIEWED_REJECTIONS = {
+    129: "Tech Sergeant Kreng vs client 'Tech Sergeant Prox': different person",
+    7883: "Pilot Paska vs client 'Pilot Frazza': different person",
+}
+
+
 def load_ambiguous_candidates(review_csv: Path) -> Dict[int, List[dict]]:
+    """Exact-name candidates of ambiguous creatures, and fuzzy-name candidates of unmatched (renamed) ones.
+
+    A fuzzy candidate needs a name similarity of at least MIN_FUZZY_NAME_SIMILARITY so a quest link alone
+    cannot pair unrelated names; the quest link then decides among those similar-named candidates.
+    """
     candidates: Dict[int, List[dict]] = defaultdict(list)
     with review_csv.open("r", encoding="utf-8", newline="") as handle:
         for row in csv.DictReader(handle):
-            if row.get("current_status") == "ambiguous_name" and row.get("candidate_reason") == "exact_name":
+            status = row.get("current_status")
+            reason = row.get("candidate_reason", "")
+            if status == "ambiguous_name" and reason == "exact_name":
                 candidates[int(row["source_id"])].append(row)
+            elif status == "unmatched" and reason.startswith("fuzzy"):
+                try:
+                    similarity = float(row.get("name_similarity") or 0)
+                except ValueError:
+                    similarity = 0.0
+                if similarity >= MIN_FUZZY_NAME_SIMILARITY:
+                    candidates[int(row["source_id"])].append(row)
     return candidates
 
 
@@ -120,7 +143,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     new_rows: List[dict] = []
     changed_guess = 0
     for source_id in sorted(candidates):
-        if str(source_id) in tracked_ids:
+        if str(source_id) in tracked_ids or source_id in REVIEWED_REJECTIONS:
             continue
         rows = candidates[source_id]
         ids = [int(r["candidate_creature2_id"]) for r in rows]
@@ -128,8 +151,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if resolved is None:
             continue
         chosen, matched = resolved
-        if str(chosen) != rows[0]["current_creature2_id"]:
+        unmatched = rows[0].get("current_status") == "unmatched"
+        if not unmatched and str(chosen) != rows[0]["current_creature2_id"]:
             changed_guess += 1
+        chosen_name = next(r["candidate_client_name"] for r in rows if int(r["candidate_creature2_id"]) == chosen)
         quest_list = "/".join(str(q) for q in sorted(matched))
         new_rows.append(
             {
@@ -140,8 +165,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 "decision": "approved",
                 "reason": (
                     f"client_quest_giver: Creature2 {chosen} lists Quest2 {quest_list} in questIdGiven/questIdReceive "
-                    f"and none of the other {len(ids) - 1} exact-name candidates list any of this creature's "
-                    f"{len(source_quests[source_id])} Jabbithole starter/finisher quests"
+                    f"and none of the other {len(ids) - 1} {'similar-name' if unmatched else 'exact-name'} candidates list any of "
+                    f"this creature's {len(source_quests[source_id])} Jabbithole starter/finisher quests"
+                    + (f"; renamed NPC (client name '{chosen_name}', no exact-name match)" if unmatched else "")
                 ),
                 "reviewer": REVIEWER,
                 "reviewed_at": args.reviewed_at,
@@ -149,7 +175,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             }
         )
 
-    print(f"ambiguous sources: {len(candidates)}; newly resolvable by client quest-giver data: {len(new_rows)} "
+    print(f"candidate sources (ambiguous + unmatched with similar names): {len(candidates)}; newly resolvable by client quest-giver data: {len(new_rows)} "
           f"(replaces a different current best guess for {changed_guess})")
     if not args.apply:
         print("dry run; pass --apply to append to", args.tracked)

@@ -107,7 +107,18 @@ def chunked(values: Sequence[int], size: int = 500) -> Iterable[Sequence[int]]:
         yield values[index : index + size]
 
 
-def load_prerequisite_ids(path: Path) -> Dict[str, int]:
+def load_creature_sides(path: Path) -> Dict[int, str]:
+    """Jabbithole creature id -> 'exile' / 'dominion' (creature_map.csv `source_side`), for side-specific gates."""
+    sides: Dict[int, str] = {}
+    if path.exists():
+        with path.open("r", encoding="utf-8", newline="") as handle:
+            for row in csv.DictReader(handle):
+                if row.get("source_side"):
+                    sides[to_int(row.get("jabbithole_creature_id"))] = row["source_side"]
+    return sides
+
+
+def load_prerequisite_ids(path: Path) -> Dict[str, Dict[str, int]]:
     """Raw Jabbithole prerequisite text -> client Prerequisite id, from resolve_vendor_prerequisites.py.
 
     Only `semantic_equivalent_row` resolutions are used. Unresolved texts import as 0 (no gate) and are listed in
@@ -118,16 +129,29 @@ def load_prerequisite_ids(path: Path) -> Dict[str, int]:
             f"{path} not found. Run resolve_vendor_prerequisites.py first; importing vendor rows without it would "
             "sell level/reputation-gated items to everyone."
         )
-    ids: Dict[str, int] = {}
+    ids: Dict[str, Dict[str, int]] = {}
     with path.open("r", encoding="utf-8", newline="") as handle:
         for row in csv.DictReader(handle):
-            if row.get("resolution") == "semantic_equivalent_row":
-                ids[row.get("prerequisite_text", "")] = to_int(row.get("prerequisite_id"))
+            resolution = row.get("resolution")
+            if resolution == "semantic_equivalent_row":
+                ids[row.get("prerequisite_text", "")] = {"any": to_int(row.get("prerequisite_id"))}
+            elif resolution == "side_specific_pair":
+                ids[row.get("prerequisite_text", "")] = {
+                    "exile": to_int(row.get("prerequisite_id_exile")),
+                    "dominion": to_int(row.get("prerequisite_id_dominion")),
+                }
     return ids
+
+
+def resolve_prerequisite_id(entry: Dict[str, int], side: str) -> int:
+    if "any" in entry:
+        return entry["any"]
+    return entry.get(side, 0)  # side-specific pair: unknown side stays ungated
 
 
 def load_vendor_rows(args: argparse.Namespace) -> Tuple[List[VendorRow], Dict[str, int]]:
     prerequisite_ids = load_prerequisite_ids(args.prerequisite_map)
+    creature_sides = load_creature_sides(args.vendor_map.parent / "creature_map.csv")
     status_counter: Counter[str] = Counter()
     latest_by_creature_item: Dict[Tuple[int, int], Dict[str, str]] = {}
     input_count = 0
@@ -195,7 +219,10 @@ def load_vendor_rows(args: argparse.Namespace) -> Tuple[List[VendorRow], Dict[st
                     cost2_type=2 if alt_currency_id and alt_price > 0 else 0,
                     cost2_quantity=alt_price if alt_currency_id and alt_price > 0 else 0,
                     cost2_id=alt_currency_id if alt_currency_id and alt_price > 0 else 0,
-                    prerequisite_id=prerequisite_ids.get(str(row.get("prerequisite", "")), 0),
+                    prerequisite_id=resolve_prerequisite_id(
+                        prerequisite_ids.get(str(row.get("prerequisite", "")), {}),
+                        creature_sides.get(to_int(row.get("jabbithole_creature_id")), ""),
+                    ),
                 )
             )
 

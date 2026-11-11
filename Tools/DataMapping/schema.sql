@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS nf_map_creature (
     last_seen_in INT NULL,
     source_is_veteran VARCHAR(8) NULL,
     source_is_rare VARCHAR(8) NULL,
+    source_side VARCHAR(8) NULL,
     match_tiebreak_score INT NULL,
     original_creature2_id INT NULL,
     original_client_name VARCHAR(255),
@@ -175,6 +176,8 @@ CREATE TABLE IF NOT EXISTS nf_map_vendor_prerequisite (
     faction_text VARCHAR(255),
     faction2_id INT NULL,
     prerequisite_id INT NOT NULL DEFAULT 0,
+    prerequisite_id_exile INT NOT NULL DEFAULT 0,
+    prerequisite_id_dominion INT NOT NULL DEFAULT 0,
     resolution VARCHAR(32),
     detail VARCHAR(255)
 );

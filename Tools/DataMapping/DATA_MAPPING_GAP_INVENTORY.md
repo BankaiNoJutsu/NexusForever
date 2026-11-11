@@ -85,6 +85,11 @@ Fixed in this pass:
 
 - DM-FND-001c: 227 ambiguous creatures resolved from client quest-giver data (`client_quest_giver` tier, `promote_quest_giver_bridge_overrides.py`); `reviewed` is now 1,277 and `ambiguous_name` 6,334. Runtime effect: +3 loot creatures, +12 loot rows, +149 `creature_info_property` rows, no spawn or vendor change. The remaining ambiguous creatures (2,463 with exactly two same-name candidates) tie on every available signal and need retail evidence.
 
+- DM-VEND-002: class texts and side-specific faction pairs now resolve (vendor side from Jabbithole disposition); 1,082 vendor rows gated (was 899). Path rank has no equivalent client rows and stays open.
+- DM-HEALTH-001: Jabbithole health <= 10 and the int32-overflow value 1,410,065,408 are no longer used as template health (37 `creature_info_property` rows no longer promoted).
+- DM-FND-001d: 7 renamed NPCs (unmatched, similar client name) resolved by the same quest-giver evidence; two person-name changes (Kreng/Prox, Paska/Frazza) were rejected as probable quest hand-offs between versions. `unmatched` 977 to 970.
+- Quest-map audit (2026-11-11): quest reward items agree with `Quest2Reward` wherever the client lists them (2,044 of 3,246 JH rows, all amounts equal); JH "Cash" rewards are not in the client table at all, and non-cash currency rewards match the client on currency and amount for about 150 of 365 (the rest differ by game version); quest objective bridge texts match the client except macro expansion and about 1.3% genuine version drift. No encoding error found. Quest-zone partial matches (5,079) were not audited.
+
 Still open (tracked, not guessed):
 
 - Vendor prerequisites: 725 of 1,625 promoted gated pairs remain ungated: side-specific faction pairs (~290, need the vendor's side), path rank, medals/instance completion, class, arena rating, research prerequisites and compound texts. A runtime `Prerequisite` row for these needs row-level evidence.

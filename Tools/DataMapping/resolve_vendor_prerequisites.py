@@ -12,6 +12,10 @@ Evidence tiers (never a retail parity claim):
 * `semantic_equivalent_row` - a single-clause client Prerequisite row whose type, object and value equal the
   parsed text with a >= comparison. The client has many identical rows (one per consumer), so the lowest id
   is taken; which exact row retail used is unknown.
+* `side_specific_pair` - "<Exile faction> or <Dominion faction>" reputation text. Each side resolves to its own
+  equivalent row (`prerequisite_id_exile`, `prerequisite_id_dominion`); the import picks one from the vendor's side
+  (`creature_map.source_side`, from Jabbithole's disposition flags) and leaves the row ungated when the side is
+  unknown or contradictory. Evidence tier: inferred vendor side.
 * `unresolved` - multi-clause text (medals, instance completion, "or" between unrelated requirements),
   an unmatched faction name, or no equivalent row. Left at 0 (no gate) and reported, not guessed.
 
@@ -37,10 +41,13 @@ DEFAULT_MYSQL = r"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"
 # Runtime enum PrerequisiteType / PrerequisiteComparison (Game.Static).
 TYPE_LEVEL = 1
 TYPE_REPUTATION = 5
+TYPE_CLASS = 3
+COMPARISON_EQUAL = 1
 COMPARISON_GREATER_OR_EQUAL = 4
 
 LEVEL_RE = re.compile(r"^(?:requires level (\d+)\.?|you must be level (\d+) to [^.]*\.?)$", re.IGNORECASE)
 REPUTATION_RE = re.compile(r"^requires (\d+) reputation with (.+?)\.?$", re.IGNORECASE)
+CLASS_RE = re.compile(r"^must be an? ([a-z]+)\.?$", re.IGNORECASE)
 
 OUTPUT_FIELDS = [
     "prerequisite_text",
@@ -49,6 +56,8 @@ OUTPUT_FIELDS = [
     "faction_text",
     "faction2_id",
     "prerequisite_id",
+    "prerequisite_id_exile",
+    "prerequisite_id_dominion",
     "resolution",
     "detail",
 ]
@@ -80,6 +89,9 @@ def parse_prerequisite_text(text: object) -> ParsedPrerequisite:
     match = REPUTATION_RE.match(cleaned)
     if match:
         return ParsedPrerequisite("reputation", int(match.group(1)), match.group(2).strip())
+    match = CLASS_RE.match(cleaned)
+    if match:
+        return ParsedPrerequisite("class", 0, match.group(1))
     return ParsedPrerequisite("unparsed")
 
 
@@ -111,15 +123,16 @@ def lowest_equivalent_prerequisite(
     prerequisite_type: int,
     object_id: int,
     value: int,
+    comparison: int = COMPARISON_GREATER_OR_EQUAL,
 ) -> Optional[int]:
-    """Lowest-id single-clause Prerequisite with type/object/value and a >= comparison."""
+    """Lowest-id single-clause Prerequisite with type/object/value and the given comparison (default >=)."""
     best: Optional[int] = None
     for row in rows:
         if (
             row["type0"] == prerequisite_type
             and row["type1"] == 0
             and row["type2"] == 0
-            and row["comparison0"] == COMPARISON_GREATER_OR_EQUAL
+            and row["comparison0"] == comparison
             and row["object0"] == object_id
             and row["value0"] == value
         ):
@@ -132,6 +145,8 @@ def resolve_text(
     text: str,
     prerequisite_rows: Sequence[Dict[str, int]],
     faction_ids_by_name: Dict[str, List[int]],
+    class_ids_by_name: Optional[Dict[str, int]] = None,
+    faction_sides: Optional[Dict[int, str]] = None,
 ) -> Dict[str, object]:
     parsed = parse_prerequisite_text(text)
     row: Dict[str, object] = {
@@ -141,32 +156,74 @@ def resolve_text(
         "faction_text": parsed.faction_text,
         "faction2_id": "",
         "prerequisite_id": 0,
+        "prerequisite_id_exile": 0,
+        "prerequisite_id_dominion": 0,
         "resolution": "unresolved",
         "detail": "",
     }
     if parsed.kind == "unparsed":
-        row["detail"] = "text is not a single level or reputation clause"
+        row["detail"] = "text is not a single level, class or reputation clause"
+        return row
+
+    if parsed.kind == "class":
+        class_id = (class_ids_by_name or {}).get(normalize_name(parsed.faction_text))
+        if class_id is None:
+            row["detail"] = "class name not found in client Class"
+            return row
+        prerequisite_id = lowest_equivalent_prerequisite(prerequisite_rows, TYPE_CLASS, 0, class_id, COMPARISON_EQUAL)
+        if prerequisite_id is None:
+            row["detail"] = "no single-clause equality Class Prerequisite row for this class"
+            return row
+        row["required_value"] = class_id
+        row["prerequisite_id"] = prerequisite_id
+        row["resolution"] = "semantic_equivalent_row"
+        row["detail"] = "lowest-id equivalent client Prerequisite row; retail row identity unknown"
         return row
 
     if parsed.kind == "level":
-        object_id = 0
-        prerequisite_type = TYPE_LEVEL
-    else:
-        faction_id, note = resolve_faction(parsed.faction_text, faction_ids_by_name)
-        if faction_id is None:
-            row["detail"] = note
+        prerequisite_id = lowest_equivalent_prerequisite(prerequisite_rows, TYPE_LEVEL, 0, parsed.value)
+        if prerequisite_id is None:
+            row["detail"] = "no single-clause >= Prerequisite row with this type/object/value"
             return row
-        row["faction2_id"] = faction_id
-        object_id = faction_id
-        prerequisite_type = TYPE_REPUTATION
-
-    prerequisite_id = lowest_equivalent_prerequisite(prerequisite_rows, prerequisite_type, object_id, parsed.value)
-    if prerequisite_id is None:
-        row["detail"] = "no single-clause >= Prerequisite row with this type/object/value"
+        row["prerequisite_id"] = prerequisite_id
+        row["resolution"] = "semantic_equivalent_row"
+        row["detail"] = "lowest-id equivalent client Prerequisite row; retail row identity unknown"
         return row
-    row["prerequisite_id"] = prerequisite_id
-    row["resolution"] = "semantic_equivalent_row"
-    row["detail"] = "lowest-id equivalent client Prerequisite row; retail row identity unknown"
+
+    faction_id, note = resolve_faction(parsed.faction_text, faction_ids_by_name)
+    if faction_id is not None:
+        row["faction2_id"] = faction_id
+        prerequisite_id = lowest_equivalent_prerequisite(prerequisite_rows, TYPE_REPUTATION, faction_id, parsed.value)
+        if prerequisite_id is None:
+            row["detail"] = "no single-clause >= Prerequisite row with this type/object/value"
+            return row
+        row["prerequisite_id"] = prerequisite_id
+        row["resolution"] = "semantic_equivalent_row"
+        row["detail"] = "lowest-id equivalent client Prerequisite row; retail row identity unknown"
+        return row
+
+    # "<name A> or <name B>": try one faction per side.
+    alternatives = faction_alternatives(parsed.faction_text)
+    if len(alternatives) == 2 and faction_sides:
+        by_side: Dict[str, List[int]] = {"exile": [], "dominion": []}
+        for alternative in alternatives:
+            for candidate in faction_ids_by_name.get(alternative, []):
+                side = faction_sides.get(candidate)
+                if side in by_side and candidate not in by_side[side]:
+                    by_side[side].append(candidate)
+        if len(by_side["exile"]) == 1 and len(by_side["dominion"]) == 1:
+            exile_id = lowest_equivalent_prerequisite(prerequisite_rows, TYPE_REPUTATION, by_side["exile"][0], parsed.value)
+            dominion_id = lowest_equivalent_prerequisite(prerequisite_rows, TYPE_REPUTATION, by_side["dominion"][0], parsed.value)
+            if exile_id is not None and dominion_id is not None:
+                row["prerequisite_id_exile"] = exile_id
+                row["prerequisite_id_dominion"] = dominion_id
+                row["resolution"] = "side_specific_pair"
+                row["detail"] = (
+                    f"exile faction {by_side['exile'][0]} / dominion faction {by_side['dominion'][0]}; the vendor's side "
+                    "(creature_map.source_side) selects one, an unknown side stays ungated"
+                )
+                return row
+    row["detail"] = note
     return row
 
 
@@ -184,7 +241,7 @@ def mysql_rows(args: argparse.Namespace, database: str, query: str) -> List[List
 def load_prerequisite_rows(args: argparse.Namespace) -> List[Dict[str, int]]:
     query = (
         "SELECT ID, prerequisiteTypeId0, prerequisiteTypeId1, prerequisiteTypeId2, prerequisiteComparisonId0, "
-        "objectId0, value0 FROM Prerequisite WHERE prerequisiteTypeId0 IN (1, 5)"
+        "objectId0, value0 FROM Prerequisite WHERE prerequisiteTypeId0 IN (1, 3, 5)"
     )
     rows = []
     for fields in mysql_rows(args, args.client_db, query):
@@ -224,6 +281,38 @@ def load_faction_ids_by_name(output_dir: Path) -> Dict[str, List[int]]:
     return index
 
 
+def load_class_ids_by_name(output_dir: Path) -> Dict[str, int]:
+    index: Dict[str, int] = {}
+    with (output_dir / "class_map.csv").open("r", encoding="utf-8", newline="") as handle:
+        for row in csv.DictReader(handle):
+            class_id = row.get("class_id")
+            if class_id:
+                for name in (row.get("jabbithole_class_name"), row.get("client_class_name")):
+                    if name:
+                        index[normalize_name(name)] = int(float(class_id))
+    return index
+
+
+def faction_side(is_exile: object, is_dominion: object) -> Optional[str]:
+    exile = str(is_exile).strip().lower() == "true"
+    dominion = str(is_dominion).strip().lower() == "true"
+    if exile and not dominion:
+        return "exile"
+    if dominion and not exile:
+        return "dominion"
+    return None
+
+
+def load_faction_sides(output_dir: Path) -> Dict[int, str]:
+    sides: Dict[int, str] = {}
+    with (output_dir / "faction_map.csv").open("r", encoding="utf-8", newline="") as handle:
+        for row in csv.DictReader(handle):
+            side = faction_side(row.get("is_exile"), row.get("is_dominion"))
+            if side and row.get("faction2_id"):
+                sides[int(float(row["faction2_id"]))] = side
+    return sides
+
+
 def distinct_prerequisite_texts(output_dir: Path) -> List[str]:
     path = output_dir / "vendor_item_map.csv"
     texts = set()
@@ -235,7 +324,7 @@ def distinct_prerequisite_texts(output_dir: Path) -> List[str]:
     return sorted(texts)
 
 
-def load_from_staging_db(args: argparse.Namespace) -> Tuple[List[str], Dict[str, List[int]]]:
+def load_from_staging_db(args: argparse.Namespace) -> Tuple[List[str], Dict[str, List[int]], Dict[str, int], Dict[int, str]]:
     texts = sorted(
         {
             fields[0]
@@ -248,14 +337,27 @@ def load_from_staging_db(args: argparse.Namespace) -> Tuple[List[str], Dict[str,
         }
     )
     index: Dict[str, List[int]] = {}
+    sides: Dict[int, str] = {}
     for fields in mysql_rows(
         args,
         args.mapping_db,
-        "SELECT jabbithole_faction_name, client_faction_name, faction2_id FROM nf_map_faction WHERE faction2_id IS NOT NULL",
+        "SELECT jabbithole_faction_name, client_faction_name, faction2_id, is_exile, is_dominion FROM nf_map_faction "
+        "WHERE faction2_id IS NOT NULL",
     ):
         add_faction_name(index, fields[0], fields[2])
         add_faction_name(index, fields[1], fields[2])
-    return texts, index
+        side = faction_side(fields[3], fields[4])
+        if side:
+            sides[int(float(fields[2]))] = side
+    classes: Dict[str, int] = {}
+    for fields in mysql_rows(
+        args, args.mapping_db,
+        "SELECT jabbithole_class_name, client_class_name, class_id FROM nf_map_class WHERE class_id IS NOT NULL",
+    ):
+        for name in fields[:2]:
+            if name and name != "NULL":
+                classes[normalize_name(name)] = int(float(fields[2]))
+    return texts, index, classes, sides
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -272,11 +374,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     prerequisite_rows = load_prerequisite_rows(args)
     if args.from_staging_db:
-        texts, faction_ids_by_name = load_from_staging_db(args)
+        texts, faction_ids_by_name, class_ids_by_name, faction_sides = load_from_staging_db(args)
     else:
         faction_ids_by_name = load_faction_ids_by_name(args.output_dir)
+        class_ids_by_name = load_class_ids_by_name(args.output_dir)
+        faction_sides = load_faction_sides(args.output_dir)
         texts = distinct_prerequisite_texts(args.output_dir)
-    rows = [resolve_text(text, prerequisite_rows, faction_ids_by_name) for text in texts]
+    rows = [resolve_text(text, prerequisite_rows, faction_ids_by_name, class_ids_by_name, faction_sides) for text in texts]
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     out_path = args.output_dir / "vendor_prerequisite_map.csv"
@@ -285,7 +389,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         writer.writeheader()
         writer.writerows(rows)
 
-    resolved = sum(1 for r in rows if r["resolution"] == "semantic_equivalent_row")
+    resolved = sum(1 for r in rows if r["resolution"] in ("semantic_equivalent_row", "side_specific_pair"))
     print(f"{out_path}: {len(rows)} distinct texts, {resolved} resolved, {len(rows) - resolved} unresolved")
     return 0
 

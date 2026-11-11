@@ -48,6 +48,12 @@ class ApplyVendorItemsPrerequisiteTests(unittest.TestCase):
         by_item = {row.item2_id: row.prerequisite_id for row in rows}
         self.assertEqual({100: 627, 101: 0, 102: 0}, by_item)
 
+    def test_side_specific_pair_follows_the_vendor_side(self) -> None:
+        self.assertEqual(7, apply_vendor_items.resolve_prerequisite_id({"exile": 7, "dominion": 8}, "exile"))
+        self.assertEqual(8, apply_vendor_items.resolve_prerequisite_id({"exile": 7, "dominion": 8}, "dominion"))
+        self.assertEqual(0, apply_vendor_items.resolve_prerequisite_id({"exile": 7, "dominion": 8}, ""))
+        self.assertEqual(627, apply_vendor_items.resolve_prerequisite_id({"any": 627}, ""))
+
     def test_missing_prerequisite_map_stops_the_import(self) -> None:
         self.args.prerequisite_map = self.dir / "missing.csv"
         with self.assertRaises(FileNotFoundError):
