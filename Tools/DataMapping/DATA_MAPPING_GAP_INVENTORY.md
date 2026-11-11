@@ -83,6 +83,8 @@ Fixed in this pass:
 - DM-FND-001a: the difficulty equality bonus compared an enum with a row id (coincidence); removed. Race and archetype added as a tie-break that cannot change `match_status`. Full mapper re-run result: 508 `scored_name` creatures that only scored by that coincidence are now `ambiguous_name` (`scored_name` 2,816 to 2,262, `ambiguous_name` 6,068 to 6,561, `reviewed` 966 to 1,050 as all tracked overrides now load); no safe creature changed Creature2. Promoted impact: 34 of 3,808 loot creatures, 1 of 169 vendors, 0 spawns, and 98 net `creature_info_property` rows no longer promoted.
 - DM-FND-001b: 939 reviewed decisions existed only in the git-ignored `review/` folder / staging; exported into `creature_bridge_overrides.csv` with an `evidence_tier` (936 `spatial_heuristic`).
 
+- DM-FND-001c: 227 ambiguous creatures resolved from client quest-giver data (`client_quest_giver` tier, `promote_quest_giver_bridge_overrides.py`); `reviewed` is now 1,277 and `ambiguous_name` 6,334. Runtime effect: +3 loot creatures, +12 loot rows, +149 `creature_info_property` rows, no spawn or vendor change. The remaining ambiguous creatures (2,463 with exactly two same-name candidates) tie on every available signal and need retail evidence.
+
 Still open (tracked, not guessed):
 
 - Vendor prerequisites: 725 of 1,625 promoted gated pairs remain ungated: side-specific faction pairs (~290, need the vendor's side), path rank, medals/instance completion, class, arena rating, research prerequisites and compound texts. A runtime `Prerequisite` row for these needs row-level evidence.

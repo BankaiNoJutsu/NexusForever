@@ -325,6 +325,7 @@ The mapper now generates a review queue for uncertain creature bridge rows:
 Every override carries an `evidence_tier` (inferred when the column is blank):
 
 - `manual_evidence`: a person reviewed row-level evidence (TargetGroups, quest rows, scripts, focused tests).
+- `client_quest_giver`: `promote_quest_giver_bridge_overrides.py` picked the one exact-name candidate whose client `Creature2.questIdGiven*` / `questIdReceive*` lists one of the creature's Jabbithole starter/finisher quests (Jabbithole quest ids are exact `Quest2` ids), when no other candidate lists any. A client table link, stronger than the spatial tier and not a retail capture; it says nothing about placement, loot or vendor stock. 227 ambiguous creatures were resolved this way on 2026-11-11 (113 replaced a different best guess); candidates where several creatures or no creature list the quest stay ambiguous.
 - `spatial_heuristic`: promoted by script because the candidate was "the only one with an existing `entity` near the Jabbithole spawn". That supports spawn placement but is not an independent identity proof, so it must not be cited as one. It flows into downstream maps as `reviewed` for compatibility; `creature_map.csv` exposes the tier in `review_evidence_tier`.
 
 Approved decisions live outside the generated output folder so remaps do not overwrite them:
@@ -490,7 +491,7 @@ python Tools\DataMapping\apply_creature_info_overrides.py --apply
 2. Keep only the latest game version that remains.
 3. Pool the remaining Jabbithole creatures: per item `sum(drop_times)` over the sum of the distinct creature aggregates, so one Creature2's shares add to at most 1.
 
-The Python and SQL paths produce identical rows (94,051 rows and zero chance mismatches on the interim 2026-11-11 data; 93,733 rows for 3,780 creatures after the full mapper re-run, see below). `aggregateDropSum` and `aggregateDropCount` are now the pooled denominator and item count. No retail parity claim: this removes a known inflation, it does not recover the real drop rate. `sql/verify_safe_world_imports.sql` reports creatures above 1.0 expected items per kill and creatures with mixed game versions; both should be 0.
+The Python and SQL paths produce identical rows (94,051 rows and zero chance mismatches on the interim 2026-11-11 data; 93,745 rows for 3,783 creatures after the full mapper re-run and the client quest-giver promotions). `aggregateDropSum` and `aggregateDropCount` are now the pooled denominator and item count. No retail parity claim: this removes a known inflation, it does not recover the real drop rate. `sql/verify_safe_world_imports.sql` reports creatures above 1.0 expected items per kill and creatures with mixed game versions; both should be 0.
 
 To adopt the policy on an existing database, re-run the apply SQL with `@nf_safe_import_replace_existing = 1` (the plain upsert would leave rows that the new policy no longer selects), then re-apply the LaughingWS overlays, because replace mode resets their `questChecklistIdx` updates.
 

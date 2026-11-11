@@ -87,7 +87,9 @@ class TrackedOverrideFileTests(unittest.TestCase):
     def test_every_row_parses_without_spilled_columns_and_has_a_tier(self) -> None:
         for row in self.rows:
             self.assertNotIn(None, row)
-            self.assertIn(row["evidence_tier"], {"spatial_heuristic", "manual_evidence"})
+            self.assertIn(row["evidence_tier"], {"spatial_heuristic", "manual_evidence", "client_quest_giver"})
+            if row["evidence_tier"] == "client_quest_giver":
+                self.assertTrue(row["reason"].startswith("client_quest_giver:"))
 
     def test_source_ids_are_unique(self) -> None:
         ids = [row["source_id"] for row in self.rows]
