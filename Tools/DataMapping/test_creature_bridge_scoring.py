@@ -80,6 +80,27 @@ class HealthAndSideTests(unittest.TestCase):
         self.assertEqual("", mapper.creature_side({}))
 
 
+class JabbitholeIdDomainTests(unittest.TestCase):
+    def test_zone_game_id_is_a_map_zone_id_resolved_to_its_world_zone(self) -> None:
+        client = {"map_zones": {2: {"worldZoneId": 137}, 9: {"worldZoneId": 0}}}
+        row = {"world_zone_id": "2"}
+        mapper.apply_jabbithole_zone(row, client)
+        self.assertEqual((2, 137), (row["map_zone_id"], row["world_zone_id"]))
+        unknown = {"world_zone_id": "9999"}
+        mapper.apply_jabbithole_zone(unknown, client)
+        self.assertEqual("", unknown["world_zone_id"])  # unknown MapZone is never passed off as a WorldZone
+
+    def test_title_resolves_by_unique_client_text_not_by_jabbithole_id(self) -> None:
+        client = {"character_titles": {
+            251: {"characterTitleText": "Blade-Wind"},
+            7: {"characterTitleText": "Test All Title 2"},
+            8: {"characterTitleText": "Dup"}, 9: {"characterTitleText": "dup"},
+        }}
+        self.assertEqual("251", mapper.resolve_client_title_id(client, "Blade-Wind"))
+        self.assertEqual("", mapper.resolve_client_title_id(client, "Dup"))  # ambiguous
+        self.assertEqual("", mapper.resolve_client_title_id(client, "Nonexistent"))
+
+
 class ReviewEvidenceTierTests(unittest.TestCase):
     def test_spatial_heuristic_rows_are_tagged(self) -> None:
         row = {"reason": "existing_entity_spatial: only candidate with existing entity near Jabbithole spawn",

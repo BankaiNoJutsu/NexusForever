@@ -2545,6 +2545,56 @@ def load_client_sources(args: argparse.Namespace):
     }
 
 
+def _title_key(value: object) -> str:
+    return re.sub(r"[^a-z0-9]", "", str(value or "").lower())
+
+
+def resolve_client_title_id(client, title_name: object) -> str:
+    """Client CharacterTitle id for a Jabbithole title name, by exact normalized title text, when unique.
+
+    Jabbithole `titles.id` is NOT a client CharacterTitle id (it was used as one before and agreed with the
+    client text for none of 274 titles). Matching on the text finds a unique client row for 265 of them.
+    """
+    index = client.get("_title_text_index")
+    if index is None:
+        index = defaultdict(list)
+        for title_id, row in client["character_titles"].items():
+            key = _title_key(row.get("characterTitleText"))
+            if key:
+                index[key].append(title_id)
+        client["_title_text_index"] = index
+    ids = index.get(_title_key(title_name), [])
+    return str(ids[0]) if len(ids) == 1 else ""
+
+
+_JABBITHOLE_TITLE_NAMES: Optional[Dict[int, str]] = None
+
+
+def jabbithole_title_name(args: argparse.Namespace, title_id: object) -> str:
+    global _JABBITHOLE_TITLE_NAMES
+    if _JABBITHOLE_TITLE_NAMES is None:
+        _JABBITHOLE_TITLE_NAMES = {
+            to_int(row["id"]): row["name"]
+            for row in mysql_rows(args, "SELECT id, name FROM titles", ["id", "name"])
+        }
+    return _JABBITHOLE_TITLE_NAMES.get(to_int(title_id), "")
+
+
+def apply_jabbithole_zone(row: Dict[str, object], client) -> None:
+    """Jabbithole `zones.game_id` is a client MapZone id, not a WorldZone id.
+
+    Evidence: for 238 Jabbithole zones, the root WorldZone of the quests' client `Quest2.worldZoneId` equals
+    `MapZone.worldZoneId` of that game_id (e.g. Whitevale 2 -> 137, Auroria 6 -> 36), while the game_id itself
+    agreed with the quests' WorldZone for none of them. The raw id is kept as `map_zone_id`; `world_zone_id`
+    becomes the MapZone's WorldZone (blank when the MapZone is unknown).
+    """
+    map_zone_id = to_int(row.get("world_zone_id"))
+    row["map_zone_id"] = map_zone_id if map_zone_id is not None else ""
+    map_zone = client["map_zones"].get(map_zone_id, {}) if map_zone_id is not None else {}
+    world_zone_id = to_int(map_zone.get("worldZoneId"))
+    row["world_zone_id"] = world_zone_id if world_zone_id else ""
+
+
 def limited(query: str, limit: Optional[int]) -> str:
     if limit is None or limit <= 0:
         return query
@@ -6891,8 +6941,9 @@ ORDER BY a.game_id, at.id
     def achievement_title_rows():
         for row in mysql_rows(args, limited(achievement_title_query, args.limit_relation_rows), achievement_title_columns):
             row["client_achievement_title"] = lookup_name(client["achievements"], row.get("achievement_id"), "achievementTitle")
-            row["client_character_title_name"] = lookup_name(client["character_titles"], row.get("character_title_id"), "characterTitleName")
-            row["client_character_title_text"] = lookup_name(client["character_titles"], row.get("character_title_id"), "characterTitleText")
+            row["client_character_title_id"] = resolve_client_title_id(client, row.get("jabbithole_title_name"))
+            row["client_character_title_name"] = lookup_name(client["character_titles"], row.get("client_character_title_id"), "characterTitleName")
+            row["client_character_title_text"] = lookup_name(client["character_titles"], row.get("client_character_title_id"), "characterTitleText")
             row["match_status"] = "matched" if row["client_achievement_title"] and row["client_character_title_name"] else "unmatched"
             yield row
 
@@ -6905,6 +6956,7 @@ ORDER BY a.game_id, at.id
             "jabbithole_achievement_title",
             "client_achievement_title",
             "character_title_id",
+            "client_character_title_id",
             "jabbithole_title_name",
             "jabbithole_title_format",
             "client_character_title_name",
@@ -8226,7 +8278,9 @@ ORDER BY id
 
     def title_rows():
         for row in mysql_rows(args, title_query, title_columns):
-            client_title = client["character_titles"].get(to_int(row.get("character_title_id"), -1) or -1, {})
+            client_title_id = resolve_client_title_id(client, row.get("title_name"))
+            row["client_character_title_id"] = client_title_id
+            client_title = client["character_titles"].get(to_int(client_title_id, -1) or -1, {})
             row["client_title_name"] = client_title.get("characterTitleName", "")
             row["client_title_text"] = client_title.get("characterTitleText", "")
             row["client_title_category_id"] = client_title.get("characterTitleCategoryId", "")
@@ -8239,6 +8293,7 @@ ORDER BY id
         [
             "character_title_id",
             "title_name",
+            "client_character_title_id",
             "client_title_name",
             "client_title_text",
             "match_status",
@@ -9691,6 +9746,7 @@ ORDER BY 3, 2, 1
 
     def quest_zone_rows():
         for row in mysql_rows(args, limited(quest_zone_query.strip(), args.limit_relation_rows), quest_zone_columns):
+            apply_jabbithole_zone(row, client)
             quest = client["quests"].get(to_int(row.get("quest2_id"), -1) or -1, {})
             zone = client["world_zones"].get(to_int(row.get("world_zone_id"), -1) or -1, {})
             row["client_quest_name"] = quest.get("questName", "")
@@ -9708,6 +9764,7 @@ ORDER BY 3, 2, 1
             "jabbithole_quest_name",
             "client_quest_name",
             "jabbithole_zone_id",
+            "map_zone_id",
             "world_zone_id",
             "jabbithole_zone_name",
             "client_world_zone_name",
@@ -11178,6 +11235,7 @@ ORDER BY pez.public_event_id, pez.id
 
     def zone_rows():
         for row in mysql_rows(args, limited(zone_query, args.limit_relation_rows), zone_columns):
+            apply_jabbithole_zone(row, client)
             row["client_public_event_name"] = lookup_name(client["public_events"], row.get("public_event_id"), "publicEventName")
             row["client_zone_name"] = lookup_name(client["world_zones"], row.get("world_zone_id"), "worldZoneName")
             yield row
@@ -11191,6 +11249,7 @@ ORDER BY pez.public_event_id, pez.id
             "public_event_name",
             "client_public_event_name",
             "jabbithole_zone_id",
+            "map_zone_id",
             "world_zone_id",
             "jabbithole_zone_name",
             "client_zone_name",
@@ -11468,6 +11527,7 @@ ORDER BY pez.path_episode_id, pez.id
 
     def zone_rows():
         for row in mysql_rows(args, limited(zone_query, args.limit_relation_rows), zone_columns):
+            apply_jabbithole_zone(row, client)
             row["client_path_episode_name"] = lookup_name(client["path_episodes"], row.get("path_episode_id"), "pathEpisodeName")
             row["client_zone_name"] = lookup_name(client["world_zones"], row.get("world_zone_id"), "worldZoneName")
             yield row
@@ -11481,6 +11541,7 @@ ORDER BY pez.path_episode_id, pez.id
             "path_episode_name",
             "client_path_episode_name",
             "jabbithole_zone_id",
+            "map_zone_id",
             "world_zone_id",
             "zone_name",
             "client_zone_name",
@@ -11539,8 +11600,12 @@ ORDER BY pu.player_path_id, pu.level, pu.id
     def unlock_rows():
         for row in mysql_rows(args, limited(unlock_query, args.limit_relation_rows), unlock_columns):
             row["item_name"] = item_name(client["items"], row.get("item2_id"))
-            row["character_title_name"] = lookup_name(client["character_titles"], row.get("character_title_id"), "characterTitleName")
-            row["character_title_text"] = lookup_name(client["character_titles"], row.get("character_title_id"), "characterTitleText")
+            row["client_character_title_id"] = (
+                resolve_client_title_id(client, jabbithole_title_name(args, row.get("character_title_id")))
+                if to_int(row.get("character_title_id")) else ""
+            )
+            row["character_title_name"] = lookup_name(client["character_titles"], row.get("client_character_title_id"), "characterTitleName")
+            row["character_title_text"] = lookup_name(client["character_titles"], row.get("client_character_title_id"), "characterTitleText")
             yield row
 
     counts["path_unlock_map.csv"] = write_csv(
@@ -11564,6 +11629,7 @@ ORDER BY pu.player_path_id, pu.level, pu.id
             "spell_name",
             "side",
             "character_title_id",
+            "client_character_title_id",
             "character_title_name",
             "character_title_text",
         ],

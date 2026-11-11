@@ -90,6 +90,12 @@ Fixed in this pass:
 - DM-FND-001d: 7 renamed NPCs (unmatched, similar client name) resolved by the same quest-giver evidence; two person-name changes (Kreng/Prox, Paska/Frazza) were rejected as probable quest hand-offs between versions. `unmatched` 977 to 970.
 - Quest-map audit (2026-11-11): quest reward items agree with `Quest2Reward` wherever the client lists them (2,044 of 3,246 JH rows, all amounts equal); JH "Cash" rewards are not in the client table at all, and non-cash currency rewards match the client on currency and amount for about 150 of 365 (the rest differ by game version); quest objective bridge texts match the client except macro expansion and about 1.3% genuine version drift. No encoding error found. Quest-zone partial matches (5,079) were not audited.
 
+- DM-ID-001 (ID-domain errors found by a name-agreement sweep of every staging map that carries both a Jabbithole and a client name):
+  - Jabbithole `zones.game_id` is a client **MapZone** id, not a WorldZone id. For 238 zones the quests' real client root zone equals `MapZone.worldZoneId` of that id (Whitevale 2 -> 137, Auroria 6 -> 36), while the old direct use agreed for none. `quest_zone_map`, `public_event_zone_map` and `path_episode_zone_map` now resolve through MapZone and keep the raw id as `map_zone_id`. Quest-zone partial rows fell from 1,683 to 46; 67% of matched `quest_zones` rows now sit in the quest's client WorldZone chain (the rest are deeper hierarchies or quests that start elsewhere). Closes the "quest zone bridge is often partial" gap (DM-FND-005) for zone identity.
+  - Jabbithole `titles.id` was used as the client CharacterTitle id and agreed with the client text for none of 274 titles. Titles now resolve by exact normalized client text (265 unique matches); `title_map`, `achievement_title_map` and `path_unlock_map` carry `client_character_title_id` (their `character_title_id` column remains the Jabbithole id).
+  - Not errors: 222 schematics, 138 circuit and 36 microchip rows point at client rows literally named "Deprecate" (removed schematics), and quest-reward / objective maps agree with the client.
+  - Runtime seed unaffected (staging-only maps); features that read these maps must use the new columns.
+
 Still open (tracked, not guessed):
 
 - Vendor prerequisites: 725 of 1,625 promoted gated pairs remain ungated: side-specific faction pairs (~290, need the vendor's side), path rank, medals/instance completion, class, arena rating, research prerequisites and compound texts. A runtime `Prerequisite` row for these needs row-level evidence.
