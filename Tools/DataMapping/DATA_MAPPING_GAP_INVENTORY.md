@@ -96,6 +96,8 @@ Fixed in this pass:
   - Not errors: 222 schematics, 138 circuit and 36 microchip rows point at client rows literally named "Deprecate" (removed schematics), and quest-reward / objective maps agree with the client.
   - Runtime seed unaffected (staging-only maps); features that read these maps must use the new columns.
 
+- DM-FND-001e: client evidence promotions regenerated with every candidate verified (an earlier pass had checked only the first 8 candidates for 53 of its rows): 345 `client_quest_giver` + 252 `client_target_group` resolutions, 190 of which replace a different best guess (including `scored_name` corrections). `reviewed` 1,647, `scored_name` 2,053, `ambiguous_name` 6,186, `unmatched` 964. Runtime effect: loot 94,699 rows, `creature_info_property` 7,829, no spawn or vendor-stock change. Challenge target groups are a second independent ground truth: `unique_name` 99.6%, `reviewed` 77%, `scored_name` 87%, ambiguous best guess 92%.
+
 Still open (tracked, not guessed):
 
 - Vendor prerequisites: 725 of 1,625 promoted gated pairs remain ungated: side-specific faction pairs (~290, need the vendor's side), path rank, medals/instance completion, class, arena rating, research prerequisites and compound texts. A runtime `Prerequisite` row for these needs row-level evidence.

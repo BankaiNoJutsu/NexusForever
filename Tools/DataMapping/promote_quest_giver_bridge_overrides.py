@@ -29,6 +29,7 @@ from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple
 
 DEFAULT_MYSQL = r"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"
 EVIDENCE_TIER = "client_quest_giver"
+GROUP_EVIDENCE_TIER = "client_target_group"
 REVIEWER = "Codex client quest-giver evidence"
 FIELDS = [
     "source_table", "source_id", "source_name", "chosen_creature2_id", "decision", "reason", "reviewer",
@@ -71,6 +72,44 @@ def load_client_quests(args: argparse.Namespace) -> Dict[int, Set[int]]:
     return quests
 
 
+def expand_target_group(groups: Mapping[int, Tuple[int, List[int]]], group_id: int, seen: Optional[Set[int]] = None) -> Set[int]:
+    """Creature2 ids in a client TargetGroup: type 1 lists creatures, type 11 nests other groups."""
+    seen = seen if seen is not None else set()
+    if group_id in seen or group_id not in groups:
+        return set()
+    seen.add(group_id)
+    group_type, data = groups[group_id]
+    if group_type == 1:
+        return set(data)
+    if group_type == 11:
+        members: Set[int] = set()
+        for child in data:
+            members |= expand_target_group(groups, child, seen)
+        return members
+    return set()
+
+
+def load_challenge_membership(args: argparse.Namespace) -> Tuple[Dict[int, Set[int]], Dict[int, Set[int]]]:
+    """(Creature2 id -> challenges whose target / reward-pane group contains it, Jabbithole creature -> challenges)."""
+    groups: Dict[int, Tuple[int, List[int]]] = {}
+    for row in mysql_rows(args, args.client_db, "SELECT ID, type, data0, data1, data2, data3, data4, data5, data6 FROM TargetGroup"):
+        groups[int(row[0])] = (int(row[1]), [int(x) for x in row[2:] if x not in ("0", "NULL")])
+    creature_challenges: Dict[int, Set[int]] = defaultdict(set)
+    for challenge, target, reward_group in mysql_rows(
+        args, args.client_db, "SELECT ID, target, targetGroupIdRewardPane FROM Challenge"
+    ):
+        members = expand_target_group(groups, int(target)) | expand_target_group(groups, int(reward_group))
+        for creature in members:
+            creature_challenges[creature].add(int(challenge))
+    source_challenges: Dict[int, Set[int]] = defaultdict(set)
+    for source, challenge in mysql_rows(
+        args, args.mapping_db,
+        "SELECT jabbithole_creature_id, challenge_id FROM nf_map_challenge_creature WHERE challenge_id IS NOT NULL",
+    ):
+        source_challenges[int(source)].add(int(challenge))
+    return creature_challenges, source_challenges
+
+
 def load_source_quests(args: argparse.Namespace) -> Dict[int, Set[int]]:
     quests: Dict[int, Set[int]] = defaultdict(set)
     for source, quest in mysql_rows(
@@ -102,7 +141,7 @@ def load_ambiguous_candidates(review_csv: Path) -> Dict[int, List[dict]]:
         for row in csv.DictReader(handle):
             status = row.get("current_status")
             reason = row.get("candidate_reason", "")
-            if status == "ambiguous_name" and reason == "exact_name":
+            if status in ("ambiguous_name", "scored_name") and reason == "exact_name":
                 candidates[int(row["source_id"])].append(row)
             elif status == "unmatched" and reason.startswith("fuzzy"):
                 try:
@@ -117,6 +156,12 @@ def load_ambiguous_candidates(review_csv: Path) -> Dict[int, List[dict]]:
 def read_tracked(path: Path) -> List[dict]:
     with path.open("r", encoding="utf-8", newline="") as handle:
         return list(csv.DictReader(handle))
+
+
+def load_candidate_counts(creature_map: Path) -> Dict[int, int]:
+    """Jabbithole creature id -> number of exact-name client candidates (creature_map.csv `candidate_count`)."""
+    with creature_map.open("r", encoding="utf-8", newline="") as handle:
+        return {int(r["jabbithole_creature_id"]): int(r.get("candidate_count") or 0) for r in csv.DictReader(handle)}
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -135,9 +180,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = parser.parse_args(argv)
 
     tracked = read_tracked(args.tracked)
+    # Client-evidence rows are regenerated every time: they are a pure function of the client tables, and a
+    # previous row would otherwise hide its source from the review queue (and from re-validation).
+    tracked = [row for row in tracked if not row.get("evidence_tier", "").startswith("client_")]
+    candidate_counts = load_candidate_counts(args.review_csv.parent / "creature_map.csv")
     tracked_ids = {row["source_id"] for row in tracked}
     client_quests = load_client_quests(args)
     source_quests = load_source_quests(args)
+    creature_challenges, source_challenges = load_challenge_membership(args)
     candidates = load_ambiguous_candidates(args.review_csv)
 
     new_rows: List[dict] = []
@@ -146,12 +196,21 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if str(source_id) in tracked_ids or source_id in REVIEWED_REJECTIONS:
             continue
         rows = candidates[source_id]
+        if rows[0].get("current_status") != "unmatched" and len(rows) < candidate_counts.get(source_id, 0):
+            continue  # not every same-name candidate is in the queue: "no other candidate lists it" is unverified
         ids = [int(r["candidate_creature2_id"]) for r in rows]
         resolved = resolve_by_quest_giver(ids, client_quests, source_quests.get(source_id, set()))
+        group_resolved = resolve_by_quest_giver(ids, creature_challenges, source_challenges.get(source_id, set()))
+        evidence = EVIDENCE_TIER
+        if resolved is None and group_resolved is not None:
+            resolved, evidence = group_resolved, GROUP_EVIDENCE_TIER
+        elif resolved is not None and group_resolved is not None and resolved[0] != group_resolved[0]:
+            continue  # independent evidence disagrees: leave ambiguous
         if resolved is None:
             continue
         chosen, matched = resolved
         unmatched = rows[0].get("current_status") == "unmatched"
+        scored = rows[0].get("current_status") == "scored_name"
         if not unmatched and str(chosen) != rows[0]["current_creature2_id"]:
             changed_guess += 1
         chosen_name = next(r["candidate_client_name"] for r in rows if int(r["candidate_creature2_id"]) == chosen)
@@ -164,6 +223,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 "chosen_creature2_id": chosen,
                 "decision": "approved",
                 "reason": (
+                    f"client_target_group: Creature2 {chosen} is in the target group of Challenge {quest_list} "
+                    f"(Challenge.target / targetGroupIdRewardPane, nested groups expanded) and none of the other "
+                    f"{len(ids) - 1} {'similar-name' if unmatched else 'exact-name'} candidates are in a group of this creature's "
+                    f"{len(source_challenges[source_id])} Jabbithole challenges"
+                    + (f"; renamed NPC (client name '{chosen_name}', no exact-name match)" if unmatched else "")
+                    if evidence == GROUP_EVIDENCE_TIER else
                     f"client_quest_giver: Creature2 {chosen} lists Quest2 {quest_list} in questIdGiven/questIdReceive "
                     f"and none of the other {len(ids) - 1} {'similar-name' if unmatched else 'exact-name'} candidates list any of "
                     f"this creature's {len(source_quests[source_id])} Jabbithole starter/finisher quests"
@@ -171,7 +236,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 ),
                 "reviewer": REVIEWER,
                 "reviewed_at": args.reviewed_at,
-                "evidence_tier": EVIDENCE_TIER,
+                "evidence_tier": evidence,
             }
         )
 

@@ -3227,7 +3227,9 @@ def build_creature_map(
             row["reviewed_at"] = override.get("reviewed_at", "")
             row["review_evidence_tier"] = override.get("evidence_tier", "")
             row["match_tiebreak_score"] = score_creature_tiebreak(jabbit, chosen) if chosen else ""
-        elif status in {"ambiguous_name", "unmatched"}:
+        elif status in {"ambiguous_name", "unmatched", "scored_name"}:
+            # scored_name rows are queued too: independent client evidence (quest giver / target group) can confirm
+            # or correct the scored guess (about 25% of them disagree with the client's quest-giver data).
             if scored:
                 best_candidate_score = scored[0][0]
                 for rank, (candidate_score, _, candidate) in enumerate(scored[: args.review_candidate_limit], start=1):
