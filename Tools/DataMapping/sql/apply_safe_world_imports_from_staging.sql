@@ -74,6 +74,25 @@ PREPARE nfMissingRuntimeTablesStatement FROM @nf_missing_runtime_tables_sql;
 EXECUTE nfMissingRuntimeTablesStatement;
 DEALLOCATE PREPARE nfMissingRuntimeTablesStatement;
 
+-- entity_vendor_item.prerequisiteId arrives with EF migration EntityVendorItemPrerequisite. Importing vendor rows
+-- without it would silently sell reputation/level-gated items to everyone, so stop instead.
+SET @nf_missing_vendor_prerequisite_column := (
+  SELECT IF(COUNT(*) = 0, 'entity_vendor_item.prerequisiteId', NULL)
+  FROM information_schema.columns
+  WHERE table_schema = DATABASE()
+    AND table_name = 'entity_vendor_item'
+    AND column_name = 'prerequisiteId'
+);
+-- SIGNAL cannot be prepared, so a missing column is reported through a self-describing failing SELECT.
+SET @nf_missing_vendor_prerequisite_column_sql := IF(
+  @nf_missing_vendor_prerequisite_column IS NULL,
+  'DO 0',
+  'SELECT 1 FROM `ERR_entity_vendor_item_prerequisiteId_missing_run_EF_migrations`'
+);
+PREPARE nfMissingVendorPrerequisiteStatement FROM @nf_missing_vendor_prerequisite_column_sql;
+EXECUTE nfMissingVendorPrerequisiteStatement;
+DEALLOCATE PREPARE nfMissingVendorPrerequisiteStatement;
+
 DROP TEMPORARY TABLE IF EXISTS tmp_nf_required_mapping_tables;
 CREATE TEMPORARY TABLE tmp_nf_required_mapping_tables (
   table_name VARCHAR(128) NOT NULL PRIMARY KEY
@@ -84,6 +103,7 @@ INSERT INTO tmp_nf_required_mapping_tables (table_name) VALUES
   ('nf_map_world_entity_stats_candidate'),
   ('nf_map_creature'),
   ('nf_map_vendor_item'),
+  ('nf_map_vendor_prerequisite'),
   ('nf_map_creature_loot'),
   ('nf_map_item_container'),
   ('nf_map_item_salvage'),
@@ -460,8 +480,14 @@ SELECT
   IF(IFNULL(main_currency_id, 0) <> 0 AND IFNULL(main_price, 0) > 0, IFNULL(main_currency_id, 0), 0) AS extraCost1ItemOrCurrencyId,
   IF(IFNULL(alt_currency_id, 0) <> 0 AND IFNULL(alt_price, 0) > 0, 2, 0) AS extraCost2Type,
   IF(IFNULL(alt_currency_id, 0) <> 0 AND IFNULL(alt_price, 0) > 0, IFNULL(alt_price, 0), 0) AS extraCost2Quantity,
-  IF(IFNULL(alt_currency_id, 0) <> 0 AND IFNULL(alt_price, 0) > 0, IFNULL(alt_currency_id, 0), 0) AS extraCost2ItemOrCurrencyId
-FROM tmp_nf_vendor_item_latest;
+  IF(IFNULL(alt_currency_id, 0) <> 0 AND IFNULL(alt_price, 0) > 0, IFNULL(alt_currency_id, 0), 0) AS extraCost2ItemOrCurrencyId,
+  -- Resolved from the Jabbithole prerequisite text (resolve_vendor_prerequisites.py). 0 = no gate, which also
+  -- covers texts that stay unresolved (multi-clause, path rank, side-specific faction pairs); see sql/README.md.
+  IFNULL(p.prerequisite_id, 0) AS prerequisiteId
+FROM tmp_nf_vendor_item_latest l
+LEFT JOIN nexus_forever_mapping.nf_map_vendor_prerequisite p
+  ON p.prerequisite_text = l.prerequisite
+ AND p.resolution = 'semantic_equivalent_row';
 
 ALTER TABLE tmp_nf_vendor_item_import
   ADD KEY ix_tmp_nf_vendor_item_import_creature (creature2_id),
@@ -498,7 +524,8 @@ JOIN tmp_nf_vendor_item_import m ON m.creature2_id = e.creature;
 INSERT IGNORE INTO entity_vendor_item (
   id, `index`, categoryIndex, itemId,
   extraCost1ItemOrCurrencyId, extraCost1Quantity, extraCost1Type,
-  extraCost2ItemOrCurrencyId, extraCost2Quantity, extraCost2Type
+  extraCost2ItemOrCurrencyId, extraCost2Quantity, extraCost2Type,
+  prerequisiteId
 )
 SELECT
   e.id,
@@ -510,10 +537,17 @@ SELECT
   m.extraCost1Type,
   m.extraCost2ItemOrCurrencyId,
   m.extraCost2Quantity,
-  m.extraCost2Type
+  m.extraCost2Type,
+  m.prerequisiteId
 FROM entity e
 JOIN tmp_nf_vendor_item_import m ON m.creature2_id = e.creature;
 
+-- Loot selection policy (mirrors creature_loot_policy.py; see its docstring for the evidence):
+--   1. drop veteran-sourced Jabbithole creatures when a non-veteran source exists for the same Creature2;
+--   2. keep only the latest game version that remains;
+--   3. pool the remaining Jabbithole creatures: per item sum(drop_times) over the sum of the distinct creature
+--      aggregates, so the shares of one Creature2 add to at most 1.
+-- `chance` is each item's share of observed drops, not a per-kill probability (Jabbithole has no kill counts).
 INSERT INTO creature_loot (
   creatureId,
   itemId,
@@ -530,34 +564,82 @@ INSERT INTO creature_loot (
   sourceName,
   itemName
 )
-SELECT
-  creature2_id,
-  item2_id,
-  CAST(LEAST(1, GREATEST(0, IFNULL(drop_probability, 0))) AS DECIMAL(12,8)),
-  IFNULL(drop_times, 0),
-  IFNULL(aggregate_drop_sum, 0),
-  IFNULL(aggregate_drop_count, 0),
-  IFNULL(game_version, 0),
-  source_drop_id,
-  IFNULL(versioned_item_drop_aggregate_id, 0),
-  IFNULL(versioned_creature_drop_aggregate_id, 0),
-  IFNULL(last_seen_in, 0),
-  IFNULL(match_status, ''),
-  IFNULL(source_name, ''),
-  IFNULL(item_name, '')
-FROM (
+WITH eligible AS (
   SELECT
     l.*,
-    ROW_NUMBER() OVER (
-      PARTITION BY l.creature2_id, l.item2_id
-      ORDER BY IFNULL(l.game_version, 0) DESC, l.source_drop_id DESC
-    ) AS import_rank
+    (LOWER(IFNULL(c.source_is_veteran, '')) = 'true') AS is_vet
   FROM nexus_forever_mapping.nf_map_creature_loot l
+  JOIN nexus_forever_mapping.nf_map_creature c ON c.jabbithole_creature_id = l.jabbithole_creature_id
   WHERE l.match_status IN ('unique_name', 'scored_name', 'reviewed')
     AND IFNULL(l.creature2_id, 0) > 0
     AND IFNULL(l.item2_id, 0) > 0
-) ranked
-WHERE ranked.import_rank = 1
+),
+creature_has_normal AS (
+  SELECT creature2_id, MAX(NOT is_vet) AS has_normal
+  FROM eligible
+  GROUP BY creature2_id
+),
+selected AS (
+  SELECT e.*
+  FROM eligible e
+  JOIN creature_has_normal h ON h.creature2_id = e.creature2_id
+  WHERE NOT (e.is_vet AND h.has_normal = 1)
+),
+creature_version AS (
+  SELECT creature2_id, MAX(IFNULL(game_version, 0)) AS latest_version
+  FROM selected
+  GROUP BY creature2_id
+),
+latest AS (
+  SELECT s.*
+  FROM selected s
+  JOIN creature_version v
+    ON v.creature2_id = s.creature2_id
+   AND IFNULL(s.game_version, 0) = v.latest_version
+),
+creature_denominator AS (
+  SELECT creature2_id, SUM(aggregate_sum) AS denominator
+  FROM (
+    SELECT creature2_id, versioned_creature_drop_aggregate_id, MAX(IFNULL(aggregate_drop_sum, 0)) AS aggregate_sum
+    FROM latest
+    GROUP BY creature2_id, versioned_creature_drop_aggregate_id
+  ) per_aggregate
+  GROUP BY creature2_id
+),
+pooled AS (
+  SELECT
+    l.*,
+    SUM(IFNULL(l.drop_times, 0)) OVER (PARTITION BY l.creature2_id, l.item2_id) AS pooled_drop_times,
+    MAX(IFNULL(l.last_seen_in, 0)) OVER (PARTITION BY l.creature2_id, l.item2_id) AS pooled_last_seen_in,
+    MIN(CASE l.match_status WHEN 'scored_name' THEN 0 WHEN 'reviewed' THEN 1 ELSE 2 END)
+      OVER (PARTITION BY l.creature2_id, l.item2_id) AS weakest_status,
+    ROW_NUMBER() OVER (PARTITION BY l.creature2_id, l.item2_id ORDER BY l.source_drop_id DESC) AS item_rank
+  FROM latest l
+),
+pooled_items AS (
+  SELECT
+    p.*,
+    COUNT(*) OVER (PARTITION BY p.creature2_id) AS item_count
+  FROM pooled p
+  WHERE p.item_rank = 1
+)
+SELECT
+  i.creature2_id,
+  i.item2_id,
+  CAST(LEAST(1, GREATEST(0, IF(d.denominator > 0, i.pooled_drop_times / d.denominator, 0))) AS DECIMAL(12,8)),
+  i.pooled_drop_times,
+  IFNULL(d.denominator, 0),
+  i.item_count,
+  IFNULL(i.game_version, 0),
+  i.source_drop_id,
+  IFNULL(i.versioned_item_drop_aggregate_id, 0),
+  IFNULL(i.versioned_creature_drop_aggregate_id, 0),
+  i.pooled_last_seen_in,
+  CASE i.weakest_status WHEN 0 THEN 'scored_name' WHEN 1 THEN 'reviewed' ELSE 'unique_name' END,
+  IFNULL(i.source_name, ''),
+  IFNULL(i.item_name, '')
+FROM pooled_items i
+JOIN creature_denominator d ON d.creature2_id = i.creature2_id
 ON DUPLICATE KEY UPDATE
   chance = VALUES(chance),
   dropTimes = VALUES(dropTimes),

@@ -45,6 +45,7 @@ class VendorRow:
     cost2_type: int
     cost2_quantity: int
     cost2_id: int
+    prerequisite_id: int = 0
 
 
 def to_int(value, default: int = 0) -> int:
@@ -106,7 +107,27 @@ def chunked(values: Sequence[int], size: int = 500) -> Iterable[Sequence[int]]:
         yield values[index : index + size]
 
 
+def load_prerequisite_ids(path: Path) -> Dict[str, int]:
+    """Raw Jabbithole prerequisite text -> client Prerequisite id, from resolve_vendor_prerequisites.py.
+
+    Only `semantic_equivalent_row` resolutions are used. Unresolved texts import as 0 (no gate) and are listed in
+    the same CSV with the reason, so the gap stays visible instead of being guessed.
+    """
+    if not path.exists():
+        raise FileNotFoundError(
+            f"{path} not found. Run resolve_vendor_prerequisites.py first; importing vendor rows without it would "
+            "sell level/reputation-gated items to everyone."
+        )
+    ids: Dict[str, int] = {}
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        for row in csv.DictReader(handle):
+            if row.get("resolution") == "semantic_equivalent_row":
+                ids[row.get("prerequisite_text", "")] = to_int(row.get("prerequisite_id"))
+    return ids
+
+
 def load_vendor_rows(args: argparse.Namespace) -> Tuple[List[VendorRow], Dict[str, int]]:
+    prerequisite_ids = load_prerequisite_ids(args.prerequisite_map)
     status_counter: Counter[str] = Counter()
     latest_by_creature_item: Dict[Tuple[int, int], Dict[str, str]] = {}
     input_count = 0
@@ -174,6 +195,7 @@ def load_vendor_rows(args: argparse.Namespace) -> Tuple[List[VendorRow], Dict[st
                     cost2_type=2 if alt_currency_id and alt_price > 0 else 0,
                     cost2_quantity=alt_price if alt_currency_id and alt_price > 0 else 0,
                     cost2_id=alt_currency_id if alt_currency_id and alt_price > 0 else 0,
+                    prerequisite_id=prerequisite_ids.get(str(row.get("prerequisite", "")), 0),
                 )
             )
 
@@ -271,6 +293,7 @@ def build_apply_sql(
         "  extraCost2Type TINYINT UNSIGNED NOT NULL,",
         "  extraCost2Quantity INT UNSIGNED NOT NULL,",
         "  extraCost2ItemOrCurrencyId INT UNSIGNED NOT NULL,",
+        "  prerequisiteId INT UNSIGNED NOT NULL DEFAULT 0,",
         "  source_id INT UNSIGNED NOT NULL,",
         "  source_name VARCHAR(255) NOT NULL,",
         "  item_name VARCHAR(255) NOT NULL,",
@@ -289,7 +312,7 @@ def build_apply_sql(
                 "("
                 f"{row.creature2_id},{row.item_index},{row.item2_id},"
                 f"{row.cost1_type},{row.cost1_quantity},{row.cost1_id},"
-                f"{row.cost2_type},{row.cost2_quantity},{row.cost2_id},"
+                f"{row.cost2_type},{row.cost2_quantity},{row.cost2_id},{row.prerequisite_id},"
                 f"{row.source_id},{sql_string(row.source_name)},{sql_string(row.item_name)},"
                 f"{sql_string(row.match_status)},{row.game_version}"
                 ")"
@@ -297,7 +320,7 @@ def build_apply_sql(
         lines.append(
             "INSERT INTO tmp_nf_vendor_item_import "
             "(creature2_id,item_index,item2_id,extraCost1Type,extraCost1Quantity,extraCost1ItemOrCurrencyId,"
-            "extraCost2Type,extraCost2Quantity,extraCost2ItemOrCurrencyId,source_id,source_name,item_name,match_status,game_version) VALUES\n"
+            "extraCost2Type,extraCost2Quantity,extraCost2ItemOrCurrencyId,prerequisiteId,source_id,source_name,item_name,match_status,game_version) VALUES\n"
             + ",\n".join(values)
             + ";"
         )
@@ -331,7 +354,8 @@ def build_apply_sql(
             "INSERT IGNORE INTO entity_vendor_item (",
             "  id, `index`, categoryIndex, itemId,",
             "  extraCost1ItemOrCurrencyId, extraCost1Quantity, extraCost1Type,",
-            "  extraCost2ItemOrCurrencyId, extraCost2Quantity, extraCost2Type",
+            "  extraCost2ItemOrCurrencyId, extraCost2Quantity, extraCost2Type,",
+            "  prerequisiteId",
             ")",
             "SELECT",
             "  e.id,",
@@ -343,7 +367,8 @@ def build_apply_sql(
             "  m.extraCost1Type,",
             "  m.extraCost2ItemOrCurrencyId,",
             "  m.extraCost2Quantity,",
-            "  m.extraCost2Type",
+            "  m.extraCost2Type,",
+            "  m.prerequisiteId",
             "FROM entity e",
             "JOIN tmp_nf_vendor_item_import m ON m.creature2_id = e.creature;",
             "COMMIT;",
@@ -376,6 +401,7 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo-root", type=Path, default=Path.cwd())
     parser.add_argument("--vendor-map", type=Path)
+    parser.add_argument("--prerequisite-map", type=Path)
     parser.add_argument("--report-out", type=Path)
     parser.add_argument("--sql-out", type=Path)
     parser.add_argument("--mysql-exe", type=Path, default=Path(DEFAULT_MYSQL))
@@ -391,6 +417,7 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     args = parser.parse_args(argv)
     args.repo_root = args.repo_root.resolve()
     args.vendor_map = (args.vendor_map or args.repo_root / "Tools" / "DataMapping" / "output" / "vendor_item_map.csv").resolve()
+    args.prerequisite_map = (args.prerequisite_map or args.vendor_map.parent / "vendor_prerequisite_map.csv").resolve()
     args.report_out = (args.report_out or args.repo_root / "Tools" / "DataMapping" / "output" / "vendor_item_apply_report.json").resolve()
     if args.sql_out:
         args.sql_out = args.sql_out.resolve()

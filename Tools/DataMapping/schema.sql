@@ -38,6 +38,9 @@ CREATE TABLE IF NOT EXISTS nf_map_creature (
     creature2_outfit_group_id INT NULL,
     default_outfit_info INT NULL,
     last_seen_in INT NULL,
+    source_is_veteran VARCHAR(8) NULL,
+    source_is_rare VARCHAR(8) NULL,
+    match_tiebreak_score INT NULL,
     original_creature2_id INT NULL,
     original_client_name VARCHAR(255),
     original_match_status VARCHAR(32),
@@ -45,6 +48,7 @@ CREATE TABLE IF NOT EXISTS nf_map_creature (
     review_reason TEXT,
     reviewer VARCHAR(255),
     reviewed_at VARCHAR(64),
+    review_evidence_tier VARCHAR(32) NULL,
     KEY ix_nf_map_creature_creature2 (creature2_id),
     KEY ix_nf_map_creature_status (match_status)
 );
@@ -162,6 +166,17 @@ CREATE TABLE IF NOT EXISTS nf_map_vendor_item (
     KEY ix_nf_map_vendor_creature (jabbithole_creature_id),
     KEY ix_nf_map_vendor_creature2 (creature2_id),
     KEY ix_nf_map_vendor_item2 (item2_id)
+);
+
+CREATE TABLE IF NOT EXISTS nf_map_vendor_prerequisite (
+    prerequisite_text VARCHAR(255) NOT NULL PRIMARY KEY,
+    kind VARCHAR(16),
+    required_value INT NULL,
+    faction_text VARCHAR(255),
+    faction2_id INT NULL,
+    prerequisite_id INT NOT NULL DEFAULT 0,
+    resolution VARCHAR(32),
+    detail VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS nf_map_creature_spell (

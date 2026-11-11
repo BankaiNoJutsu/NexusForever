@@ -460,6 +460,16 @@ query staging/reference tables and reports mismatches when `nf_map_*`,
 `verify_authoring_safe_world_imports.sql` on authoring machines after applying
 staging-backed imports.
 
+## Loot And Vendor Import Policy - 2026-11-11
+
+`apply_safe_world_imports_from_staging.sql` now selects and normalizes creature loot instead of unioning rows (policy and evidence: `creature_loot_policy.py`, README "Loot Selection Policy"). Per Creature2 it drops veteran-sourced rows when a normal source exists, keeps the latest game version, and pools the remaining Jabbithole creatures, so `chance` shares add to at most 1. `creature_loot.chance` is a share of observed drops, not a per-kill probability. The statement needs `nf_map_creature.source_is_veteran` (re-run the mapper and load staging).
+
+The vendor import fills `entity_vendor_item.prerequisiteId` from `nf_map_vendor_prerequisite` (`semantic_equivalent_row` rows only). The script stops before changing anything if the column is missing (apply EF migration `EntityVendorItemPrerequisite` first) or if `nf_map_vendor_prerequisite` is not loaded.
+
+`verify_safe_world_imports.sql` adds `creature_loot_creatures_expected_items_per_kill_above_1` and `creature_loot_creatures_with_mixed_game_versions` (both expected 0) and `entity_vendor_item_with_prerequisite` (899 on the 2026-11-11 data).
+
+`runtime_world_seed.sql` was regenerated on 2026-11-11 after a full mapper re-run and staging reload, by applying the safe-import SQL in replace mode to a scratch copy of the world DB and exporting it. Only the data sections that legitimately changed were taken from that export: `entity_vendor_item`, `creature_loot`, `loot_group`, `entity_loot`, `loot_item`, `creature_info_property` and `creature_info_stat`. `entity`, `entity_stats`, `entity_vendor`, `entity_vendor_category`, `item_loot` and `item_salvage` are unchanged (salvage content is identical; the export only orders its rows differently). Effects: loot is normalized (93,733 rows for 3,780 creatures); 899 vendor rows are gated; vendor entity 18056 now follows current staging; 508 creatures that were `scored_name` only through the difficulty coincidence are no longer promoted (34 loot creatures, 1 vendor, 98 net `creature_info_property` rows); 9 `creature_info_property` rows belonging to the newest tracked overrides are restored. Import the seed only after the EF migration has added `prerequisiteId`. Replace mode of the apply SQL resets the LaughingWS `questChecklistIdx` updates, so re-apply the overlays after using it.
+
 ## Verified Run - 2026-06-17
 
 Local operational reconciliation:

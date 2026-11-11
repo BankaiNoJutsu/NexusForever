@@ -39,6 +39,7 @@ CREATURE_BRIDGE_OVERRIDE_FIELDS = [
     "reason",
     "reviewer",
     "reviewed_at",
+    "evidence_tier",
 ]
 
 CREATURE_RELATION_BRIDGE_OVERRIDE_FIELDS = [
@@ -99,6 +100,7 @@ CREATURE_FIELDS = [
     "localizedTextIdName",
     "creature2DifficultyId",
     "creature2ArcheTypeId",
+    "unitRaceId",
     "creature2TierId",
     "creature2ModelInfoId",
     "creature2DisplayGroupId",
@@ -2575,6 +2577,11 @@ def load_jabbithole_creatures(args: argparse.Namespace) -> List[Dict[str, str]]:
         "interrupt_armor_max",
         "enabled",
         "last_seen_in",
+        "race",
+        "gender",
+        "archetype_id",
+        "is_veteran",
+        "is_rare",
     ]
     query = """
 SELECT
@@ -2611,7 +2618,12 @@ SELECT
     deflect_critical_chance,
     interrupt_armor_max,
     enabled,
-    last_seen_in
+    last_seen_in,
+    race,
+    gender,
+    archetype_id,
+    is_veteran,
+    is_rare
 FROM creatures
 ORDER BY id
 """.strip()
@@ -2647,15 +2659,66 @@ def score_creature_match(jabbit: Dict[str, str], client: Dict[str, object]) -> i
         if j_min == c_min and j_max == c_max:
             score += 5
 
-    j_difficulty = to_int(jabbit.get("difficulty"))
-    c_difficulty = to_int(client.get("creature2DifficultyId"))
-    if j_difficulty is not None and c_difficulty is not None and j_difficulty == c_difficulty:
-        score += 4
+    # Jabbithole `difficulty` is a small enum (0-7) while `creature2DifficultyId` is a row id into
+    # Creature2Difficulty (0-24+). Equality between them is coincidence, not evidence, so it is not scored.
+    # Measured on unique_name rows, equality held for ~1/3 of rows and had no relation to the real tier.
 
     j_datacube = to_int(jabbit.get("datacube_id"))
     c_datacube = to_int(client.get("datacubeId"))
     if j_datacube and c_datacube and j_datacube == c_datacube:
         score += 4
+    return score
+
+
+RACE_COMPAT_FILE = Path(__file__).resolve().parent / "creature_race_compat.csv"
+RACE_COMPAT_MIN_ROWS = 20
+_RACE_COMPAT: Optional[Dict[Tuple[int, int], set]] = None
+
+
+def race_compat_table() -> Dict[Tuple[int, int], set]:
+    """(Jabbithole race, gender) -> client unitRaceId values seen in at least RACE_COMPAT_MIN_ROWS unique_name rows.
+
+    The client UnitRace table has no race/gender columns, so this is an empirical, inferred relation
+    (evidence tier: empirical_unique_name). It only ranks candidates; it never changes match_status.
+    """
+    global _RACE_COMPAT
+    if _RACE_COMPAT is None:
+        table: Dict[Tuple[int, int], set] = defaultdict(set)
+        if RACE_COMPAT_FILE.exists():
+            with RACE_COMPAT_FILE.open("r", encoding="utf-8", newline="") as handle:
+                for row in csv.DictReader(handle):
+                    race = to_int(row.get("jabbithole_race"))
+                    gender = to_int(row.get("jabbithole_gender"))
+                    unit_race = to_int(row.get("unit_race_id"))
+                    rows = to_int(row.get("unique_name_rows"), 0) or 0
+                    if None in (race, gender, unit_race) or rows < RACE_COMPAT_MIN_ROWS:
+                        continue
+                    table[(race, gender)].add(unit_race)
+        _RACE_COMPAT = dict(table)
+    return _RACE_COMPAT
+
+
+def score_creature_tiebreak(jabbit: Dict[str, str], client: Dict[str, object]) -> int:
+    """Secondary ranking among candidates the primary score cannot separate.
+
+    Archetype agreed on 598/629 unique_name rows that carry one, and race/gender follows a stable
+    UnitRace pairing. These signals order candidates inside a tie so the emitted best guess and the
+    review queue are better, but they are deliberately NOT part of score_creature_match: match_status
+    (and therefore what the safe imports promote) is decided by the primary score alone.
+    """
+    score = 0
+    j_archetype = to_int(jabbit.get("archetype_id"))
+    c_archetype = to_int(client.get("creature2ArcheTypeId"))
+    if j_archetype and c_archetype and j_archetype == c_archetype:
+        score += 2
+
+    j_race = to_int(jabbit.get("race"))
+    j_gender = to_int(jabbit.get("gender"), 0) or 0
+    c_race = to_int(client.get("unitRaceId"))
+    if j_race and c_race is not None:
+        compatible = race_compat_table().get((j_race, j_gender))
+        if compatible and c_race in compatible:
+            score += 2
     return score
 
 
@@ -2757,6 +2820,28 @@ def ensure_review_templates(args: argparse.Namespace) -> None:
         write_csv(relation_override_path, CREATURE_RELATION_BRIDGE_OVERRIDE_FIELDS, [])
 
 
+EVIDENCE_TIER_SPATIAL_HEURISTIC = "spatial_heuristic"
+EVIDENCE_TIER_MANUAL = "manual_evidence"
+
+
+def infer_review_evidence_tier(row: Dict[str, object]) -> str:
+    """Tier of a reviewed creature bridge override.
+
+    `spatial_heuristic` rows were promoted by script from "the only candidate with an existing entity near
+    the Jabbithole spawn". That supports spawn placement, but it is not an independent identity proof:
+    measured against Creature2.questIdGiven it agreed for only ~73% of quest-giver rows. An explicit
+    `evidence_tier` column wins over inference.
+    """
+    explicit = clean_cell(row.get("evidence_tier"))
+    if explicit:
+        return explicit
+    reason = clean_cell(row.get("reason")).lower()
+    reviewer = clean_cell(row.get("reviewer")).lower()
+    if reason.startswith("existing_entity_spatial") or "spatial evidence review" in reviewer:
+        return EVIDENCE_TIER_SPATIAL_HEURISTIC
+    return EVIDENCE_TIER_MANUAL
+
+
 def load_creature_bridge_overrides(
     args: argparse.Namespace,
     client_creatures: Dict[int, Dict[str, object]],
@@ -2806,6 +2891,7 @@ def load_creature_bridge_overrides(
                         "reason": row.get("reason", ""),
                         "reviewer": row.get("reviewer", ""),
                         "reviewed_at": row.get("reviewed_at", ""),
+                        "evidence_tier": infer_review_evidence_tier(row),
                         "row_number": row_number,
                     }
                 audit_rows.append(
@@ -2965,10 +3051,13 @@ def build_creature_map(
         normalized = normalize_name(jabbit.get("source_name"))
         candidates = by_name.get(normalized, [])
         scored: List[Tuple[int, int, Dict[str, object]]] = []
+        tiebreaks: Dict[int, int] = {}
         for candidate in candidates:
             client_id = to_int(candidate.get("ID"), 0) or 0
+            tiebreaks[client_id] = score_creature_tiebreak(jabbit, candidate)
             scored.append((score_creature_match(jabbit, candidate), client_id, candidate))
-        scored.sort(key=lambda item: (-item[0], item[1]))
+        # status uses the primary score only; the tie-break only orders equal primary scores.
+        scored.sort(key=lambda item: (-item[0], -tiebreaks[item[1]], item[1]))
 
         best = scored[0][2] if scored else {}
         best_score = scored[0][0] if scored else 0
@@ -3019,6 +3108,9 @@ def build_creature_map(
             "creature2_outfit_group_id": best.get("creature2OutfitGroupId", ""),
             "default_outfit_info": best.get("defaultOutfitInfo", ""),
             "last_seen_in": jabbit.get("last_seen_in", ""),
+            "source_is_veteran": jabbit.get("is_veteran", ""),
+            "source_is_rare": jabbit.get("is_rare", ""),
+            "match_tiebreak_score": tiebreaks.get(to_int(best.get("ID"), 0) or 0, "") if best else "",
             "original_creature2_id": "",
             "original_client_name": "",
             "original_match_status": "",
@@ -3026,6 +3118,7 @@ def build_creature_map(
             "review_reason": "",
             "reviewer": "",
             "reviewed_at": "",
+            "review_evidence_tier": "",
         }
         jabbit_id = to_int(jabbit.get("jabbithole_creature_id"))
         override = overrides.get(jabbit_id) if jabbit_id is not None else None
@@ -3052,6 +3145,8 @@ def build_creature_map(
             row["review_reason"] = override.get("reason", "")
             row["reviewer"] = override.get("reviewer", "")
             row["reviewed_at"] = override.get("reviewed_at", "")
+            row["review_evidence_tier"] = override.get("evidence_tier", "")
+            row["match_tiebreak_score"] = score_creature_tiebreak(jabbit, chosen) if chosen else ""
         elif status in {"ambiguous_name", "unmatched"}:
             if scored:
                 best_candidate_score = scored[0][0]
@@ -13113,7 +13208,6 @@ def validate_sources(args: argparse.Namespace) -> None:
         "vendor_items.sql",
         "versioned_item_drop_aggregates.sql",
         "_characters_.sql",
-        ".sql",
         "items.sql",
         "schema_migrations.sql",
     ]
@@ -13126,6 +13220,10 @@ def validate_sources(args: argparse.Namespace) -> None:
             missing.append(str(args.jabbithole_sql_dir / filename))
     if missing:
         raise FileNotFoundError("Missing required split dump files:\n" + "\n".join(missing))
+    # `.sql` (the unknown-table loot scrape) is optional: the mapper already emits no rows for it when absent.
+    # Without it unknown_table_loot_map.csv is empty, so load staging with --skip-table nf_map_unknown_table_loot.
+    if not (args.jabbithole_sql_dir / ".sql").exists():
+        log("WARNING: jabbithole split file .sql (unknown-table loot) is missing; unknown_table_loot_map.csv will be empty")
     if not Path(args.mysql_exe).exists():
         raise FileNotFoundError(f"MySQL client not found: {args.mysql_exe}")
 
@@ -13163,6 +13261,29 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     args.output_dir = (args.output_dir or args.repo_root / "Tools" / "DataMapping" / "output").resolve()
     args.review_dir = (args.review_dir or args.repo_root / "Tools" / "DataMapping" / "review").resolve()
     return args
+
+
+def write_vendor_prerequisite_map(args: argparse.Namespace) -> Dict[str, int]:
+    """Resolve vendor prerequisite text onto client Prerequisite rows (needs vendor_item_map.csv and faction_map.csv)."""
+    import resolve_vendor_prerequisites as resolver
+
+    log("Resolving vendor prerequisites")
+    resolver_args = argparse.Namespace(
+        output_dir=args.output_dir,
+        client_db="wildstar_client",
+        mapping_db="nexus_forever_mapping",
+        from_staging_db=False,
+        mysql_exe=args.mysql_exe,
+        host=args.host,
+        user=args.user,
+        password=args.password,
+    )
+    prerequisite_rows = resolver.load_prerequisite_rows(resolver_args)
+    faction_ids_by_name = resolver.load_faction_ids_by_name(args.output_dir)
+    texts = resolver.distinct_prerequisite_texts(args.output_dir)
+    rows = [resolver.resolve_text(text, prerequisite_rows, faction_ids_by_name) for text in texts]
+    count = write_csv(args.output_dir / "vendor_prerequisite_map.csv", resolver.OUTPUT_FIELDS, rows)
+    return {"vendor_prerequisite_map.csv": count}
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -13239,6 +13360,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     counts.update(write_housing_cosmetic_maps(args, client))
     counts.update(write_tradeskill_schematic_maps(args, client))
     counts.update(write_world_faction_maps(args, creature_map, client))
+    counts.update(write_vendor_prerequisite_map(args))
     counts.update(write_quest_detail_maps(args, client))
     counts.update(write_public_event_detail_maps(args, client))
     counts.update(write_path_detail_maps(args, client))

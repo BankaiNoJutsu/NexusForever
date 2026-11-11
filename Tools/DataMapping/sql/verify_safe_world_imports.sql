@@ -280,6 +280,11 @@ UNION ALL SELECT 'expected_entity_vendor_laughingws_live_event_wip_8_mismatch', 
 UNION ALL SELECT 'expected_entity_vendor_category_laughingws_live_event_wip_24_mismatch', IF(COUNT(*) = 24, 0, 1) FROM entity_vendor_category WHERE id BETWEEN @laughingws_live_event_entity_id_base AND @laughingws_live_event_entity_id_max
 UNION ALL SELECT 'expected_entity_vendor_item_laughingws_live_event_wip_142_mismatch', IF(COUNT(*) = 142, 0, 1) FROM entity_vendor_item WHERE id BETWEEN @laughingws_live_event_entity_id_base AND @laughingws_live_event_entity_id_max
 UNION ALL SELECT 'creature_loot', COUNT(*) FROM creature_loot
+-- creature_loot.chance is a share of observed drops (see creature_loot_policy.py), so one creature's rows must not
+-- add up to more than 1, must come from a single game version, and an unpooled/unversioned import trips these.
+UNION ALL SELECT 'creature_loot_creatures_expected_items_per_kill_above_1', COUNT(*) FROM (SELECT creatureId FROM creature_loot GROUP BY creatureId HAVING SUM(chance) > 1.0001) over_one
+UNION ALL SELECT 'creature_loot_creatures_with_mixed_game_versions', COUNT(*) FROM (SELECT creatureId FROM creature_loot GROUP BY creatureId HAVING COUNT(DISTINCT gameVersion) > 1) mixed
+UNION ALL SELECT 'entity_vendor_item_with_prerequisite', COUNT(*) FROM entity_vendor_item WHERE prerequisiteId > 0
 UNION ALL SELECT 'loot_group_mapped_creature', COUNT(*) FROM loot_group WHERE comment LIKE 'DataMapping creature_loot%'
 UNION ALL SELECT 'entity_loot_mapped', COUNT(*) FROM entity_loot WHERE comment LIKE 'DataMapping creature_loot%'
 UNION ALL SELECT 'loot_item_mapped_creature', COUNT(*) FROM loot_item li JOIN loot_group lg ON lg.id = li.id WHERE lg.comment LIKE 'DataMapping creature_loot%'

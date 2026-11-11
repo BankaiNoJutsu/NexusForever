@@ -3,6 +3,8 @@
 Apply mapped creature loot to the NexusForever world database.
 
 This creates/populates a `creature_loot` table from `creature_loot_map.csv`.
+Rows are selected and normalized by `creature_loot_policy.py` (latest game version, veteran sources
+excluded, pooled denominators); `chance` is a share of observed drops, not a per-kill probability.
 Runtime loot generation is separate; this script makes the mapped loot data
 available in the real world database in a repeatable, idempotent way.
 """
@@ -18,7 +20,10 @@ import time
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, Optional, Sequence, Tuple
+from typing import Dict, Iterable, Optional, Sequence, Set, Tuple
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from creature_loot_policy import normalize_creature_loot  # noqa: E402
 
 
 DEFAULT_MYSQL = r"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"
@@ -103,9 +108,24 @@ def mysql_rows(args: argparse.Namespace, database: str, query: str) -> list[list
     return [line.split("\t") for line in result.stdout.splitlines() if line]
 
 
+def load_veteran_jabbithole_creature_ids(creature_map: Path) -> Set[int]:
+    """Jabbithole creature ids flagged `is_veteran`, from creature_map.csv (`source_is_veteran`)."""
+    with creature_map.open("r", encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        if "source_is_veteran" not in (reader.fieldnames or []):
+            raise RuntimeError(
+                f"{creature_map} has no source_is_veteran column; re-run map_wildstar_data.py before applying loot."
+            )
+        return {
+            to_int(row.get("jabbithole_creature_id"))
+            for row in reader
+            if str(row.get("source_is_veteran", "")).strip().lower() == "true"
+        }
+
+
 def load_loot_rows(args: argparse.Namespace) -> Tuple[list[LootRow], Dict[str, int]]:
     status_counter: Counter[str] = Counter()
-    latest_by_creature_item: Dict[Tuple[int, int], dict[str, str]] = {}
+    eligible: list[dict[str, str]] = []
     input_count = 0
     rows_after_status_filter = 0
     skipped_missing_creature_id_rows = 0
@@ -126,42 +146,35 @@ def load_loot_rows(args: argparse.Namespace) -> Tuple[list[LootRow], Dict[str, i
             if match_status not in allowed_statuses:
                 continue
             rows_after_status_filter += 1
-            creature2_id = to_int(row.get("creature2_id"))
-            item2_id = to_int(row.get("item2_id"))
-            if creature2_id == 0:
+            if to_int(row.get("creature2_id")) == 0:
                 skipped_missing_creature_id_rows += 1
                 continue
-            if item2_id == 0:
+            if to_int(row.get("item2_id")) == 0:
                 skipped_missing_item2_id_rows += 1
                 continue
-            key = (creature2_id, item2_id)
-            current = latest_by_creature_item.get(key)
-            if current is None:
-                latest_by_creature_item[key] = row
-                continue
-            current_rank = (to_int(current.get("game_version")), to_int(current.get("source_drop_id")))
-            next_rank = (to_int(row.get("game_version")), to_int(row.get("source_drop_id")))
-            if next_rank > current_rank:
-                latest_by_creature_item[key] = row
+            eligible.append(row)
+
+    veteran_ids = load_veteran_jabbithole_creature_ids(args.creature_map)
+    pooled, policy_stats = normalize_creature_loot(eligible, veteran_ids)
 
     rows: list[LootRow] = []
-    for (creature2_id, item2_id), row in sorted(latest_by_creature_item.items()):
+    for row in pooled:
         rows.append(
             LootRow(
-                creature2_id=creature2_id,
-                item2_id=item2_id,
-                chance=to_probability(row.get("drop_probability")),
-                drop_times=to_int(row.get("drop_times")),
-                aggregate_drop_sum=to_int(row.get("aggregate_drop_sum")),
-                aggregate_drop_count=to_int(row.get("aggregate_drop_count")),
-                game_version=to_int(row.get("game_version")),
-                source_drop_id=to_int(row.get("source_drop_id")),
-                versioned_item_drop_aggregate_id=to_int(row.get("versioned_item_drop_aggregate_id")),
-                versioned_creature_drop_aggregate_id=to_int(row.get("versioned_creature_drop_aggregate_id")),
-                last_seen_in=to_int(row.get("last_seen_in")),
-                match_status=str(row.get("match_status", "")),
-                source_name=str(row.get("source_name", "")),
-                item_name=str(row.get("item_name", "")),
+                creature2_id=row["creature2_id"],
+                item2_id=row["item2_id"],
+                chance=to_probability(row["chance"]),
+                drop_times=row["drop_times"],
+                aggregate_drop_sum=row["aggregate_drop_sum"],
+                aggregate_drop_count=row["aggregate_drop_count"],
+                game_version=row["game_version"],
+                source_drop_id=row["source_drop_id"],
+                versioned_item_drop_aggregate_id=row["versioned_item_drop_aggregate_id"],
+                versioned_creature_drop_aggregate_id=row["versioned_creature_drop_aggregate_id"],
+                last_seen_in=row["last_seen_in"],
+                match_status=row["match_status"],
+                source_name=row["source_name"],
+                item_name=row["item_name"],
             )
         )
 
@@ -172,16 +185,13 @@ def load_loot_rows(args: argparse.Namespace) -> Tuple[list[LootRow], Dict[str, i
         "skipped_missing_creature_id_rows": skipped_missing_creature_id_rows,
         "skipped_missing_item2_id_rows": skipped_missing_item2_id_rows,
         "invalid_item2_id_rows": skipped_missing_item2_id_rows,
-        "skipped_duplicate_creature_item_rows": (
-            rows_after_status_filter
-            - skipped_missing_creature_id_rows
-            - skipped_missing_item2_id_rows
-            - len(rows)
-        ),
+        "skipped_policy_rows": len(eligible) - len(rows),
         "skipped_rows_total": input_count - len(rows),
         "deduped_creature_item_rows": len(rows),
         "allowed_statuses": ",".join(sorted(allowed_statuses)),
     }
+    for key, value in policy_stats.items():
+        stats[f"policy_{key}"] = value
     for status, count in sorted(status_counter.items()):
         stats[f"source_status_{status}"] = count
     return rows, stats
@@ -313,6 +323,7 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo-root", type=Path, default=Path.cwd())
     parser.add_argument("--loot-map", type=Path)
+    parser.add_argument("--creature-map", type=Path)
     parser.add_argument("--report-out", type=Path)
     parser.add_argument("--sql-out", type=Path)
     parser.add_argument("--mysql-exe", type=Path, default=Path(DEFAULT_MYSQL))
@@ -329,6 +340,7 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     args = parser.parse_args(argv)
     args.repo_root = args.repo_root.resolve()
     args.loot_map = (args.loot_map or args.repo_root / "Tools" / "DataMapping" / "output" / "creature_loot_map.csv").resolve()
+    args.creature_map = (args.creature_map or args.loot_map.parent / "creature_map.csv").resolve()
     args.report_out = (args.report_out or args.repo_root / "Tools" / "DataMapping" / "output" / "creature_loot_apply_report.json").resolve()
     if args.sql_out:
         args.sql_out = args.sql_out.resolve()

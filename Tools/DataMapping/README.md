@@ -70,8 +70,9 @@ Spawn and world import candidates:
 
 Creature relationships:
 
-- `creature_loot_map.csv` maps creatures to `Item2` drops from `versioned_item_drops`.
-- `vendor_item_map.csv` maps vendor creatures to `Item2` vendor stock.
+- `creature_loot_map.csv` maps creatures to `Item2` drops from `versioned_item_drops`. `drop_probability` here is an item's **share of the creature's observed drops** (`drop_times / aggregate_drop_sum`), not a per-kill probability; Jabbithole has no kill counts. See "Loot Selection Policy".
+- `vendor_item_map.csv` maps vendor creatures to `Item2` vendor stock, including the free-text `prerequisite`.
+- `vendor_prerequisite_map.csv` resolves each distinct vendor prerequisite text onto a client `Prerequisite` row (see "Vendor Prerequisites").
 - `creature_spell_map.csv` maps creature spell observations to client `Spell4` IDs when Jabbithole has that bridge.
 - `creature_quest_map.csv` maps starter, finisher, and objective quest creature relationships to `Quest2`.
 - `quest_objective_map.csv` maps Jabbithole quest objective text/order to client `QuestObjective` rows through the `Quest2` objective slots.
@@ -295,7 +296,7 @@ Jabbithole creature IDs are not client `Creature2.ID` values. The mapper bridges
 2. `wildstar_client_mysql\en-US.bin.sql` text
 3. `Creature2.localizedTextIdName`
 
-When several client creatures have the same localized name, candidates are scored by exact text, faction, level overlap, exact level range, difficulty, and datacube. The `match_status` column explains the result:
+When several client creatures have the same localized name, candidates are scored by exact text, faction, level overlap, exact level range, and datacube. The `match_status` column explains the result:
 
 - `unique_name`: exactly one client creature had that normalized name.
 - `scored_name`: multiple client creatures had that normalized name, and one scored higher.
@@ -303,6 +304,13 @@ When several client creatures have the same localized name, candidates are score
 - `unmatched`: no client creature name matched.
 
 Ambiguous rows are still emitted with the best deterministic candidate so the maps remain complete, but they should be reviewed before destructive imports.
+
+Scoring notes (2026-11-11 audit, measured against the live reference databases):
+
+- Jabbithole `difficulty` (enum 0-7) and `Creature2.creature2DifficultyId` (a row id, 0-24+) are different domains. The old equality bonus was coincidence (about a third of `unique_name` rows "matched"), so it is no longer scored.
+- `match_tiebreak_score` orders candidates that the primary score cannot separate: matching archetype (agreed on 598/629 `unique_name` rows that carry one) and race/gender compatibility from `creature_race_compat.csv`. The client `UnitRace` table has no race/gender columns, so that file is an **empirical** relation learned from `unique_name` rows only (evidence tier `empirical_unique_name`, pairs with at least 20 rows). The tie-break never changes `match_status`, so it cannot promote an `ambiguous_name` row into the safe imports; it only improves the emitted best guess and the review queue.
+- `source_is_veteran` and `source_is_rare` carry the Jabbithole flags through. `is_veteran` has no clean client counterpart, so it is not scored; it is used by the loot import (below).
+- Independent check: `Creature2.questIdGiven*` / `questIdReceive*` agreed with the Jabbithole quest-giver rows for 99% of `unique_name` creatures but only about 75% of `scored_name` and about 73-77% of `reviewed` rows (excluding work-order and bounty boards). Treat `scored_name` and spatially reviewed rows as an inferred reading, not parity.
 
 ## Reviewing Uncertain Creature Mappings
 
@@ -314,12 +322,19 @@ The mapper now generates a review queue for uncertain creature bridge rows:
 
 `creature_bridge_review.csv` contains one row per candidate for every `ambiguous_name` creature, plus fuzzy-name candidates for `unmatched` creatures when a plausible name exists. It includes the source creature, current selected candidate, candidate rank, score delta, name similarity, faction match, level overlap, exact level match, difficulty match, datacube match, and blank review columns.
 
+Every override carries an `evidence_tier` (inferred when the column is blank):
+
+- `manual_evidence`: a person reviewed row-level evidence (TargetGroups, quest rows, scripts, focused tests).
+- `spatial_heuristic`: promoted by script because the candidate was "the only one with an existing `entity` near the Jabbithole spawn". That supports spawn placement but is not an independent identity proof, so it must not be cited as one. It flows into downstream maps as `reviewed` for compatibility; `creature_map.csv` exposes the tier in `review_evidence_tier`.
+
 Approved decisions live outside the generated output folder so remaps do not overwrite them:
 
 - `Tools\DataMapping\creature_bridge_overrides.csv` for tracked, reviewed decisions
 - `Tools\DataMapping\review\creature_bridge_overrides.csv`
 - `Tools\DataMapping\creature_relation_bridge_overrides.csv` for tracked relation-scoped decisions
 - `Tools\DataMapping\review\creature_relation_bridge_overrides.csv`
+
+The local `review/` folder is git-ignored, so decisions that only live there are lost on a clean checkout and silently revert to ambiguous/scored matches on the next run. `export_reviewed_creature_overrides.py` copies every `reviewed` row from authoring staging that is not yet tracked into `creature_bridge_overrides.csv` (existing tracked rows always win); run it with `--apply` after any review session. The 2026-11-11 run recovered 939 untracked decisions (936 `spatial_heuristic`, 3 manual) and tagged the file.
 
 The mapper reads the tracked file first, then the local ignored review file.
 It creates the local review file with the required header when it is missing.
@@ -362,6 +377,8 @@ review and import workflows, not as the final NexusForever runtime schema.
 Authoring loads use the separate `nexus_forever_mapping` database by default so
 fresh runtime deployments do not need `nf_map_*`, `jabbithole`, or
 `wildstar_client`.
+
+`load_mapping_staging_tables.py` also loads `nf_map_vendor_prerequisite` from `vendor_prerequisite_map.csv`; the safe-import SQL refuses to run without it, and without the `entity_vendor_item.prerequisiteId` column (apply EF migrations first).
 
 Preferred repeatable loader:
 
@@ -462,6 +479,31 @@ python Tools\DataMapping\apply_creature_info_overrides.py --apply
 ```
 
 `map_wildstar_data.py` reads tracked approved bridge decisions from `Tools\DataMapping\creature_bridge_overrides.csv` first, then local ignored review work from `Tools\DataMapping\review\creature_bridge_overrides.csv`; relation-scoped quest creature reviews follow the same tracked/local pattern through `creature_relation_bridge_overrides.csv`. `apply_creature_info_overrides.py` imports high-confidence creature template overrides from `creature_map.csv` into `creature_info_property` and `creature_info_stat`. By default it inserts only missing `BaseHealth`, `ShieldCapacityMax`, and `InterruptArmour` rows for `unique_name`/`scored_name`/`reviewed` creature bridges, and skips duplicate creature mappings with conflicting values. `BaseHealth` uses the mapper-generated `template_base_health` value, so source health ranges such as `353-844` are not promoted as template-wide overrides.
+
+## Loot Selection Policy
+
+`creature_loot.chance` is each item's **share of a creature's observed drops**, not a per-kill probability: Jabbithole's creature aggregate `versioned_item_drops_sum` is the total of `drop_times` over all of that creature's item rows, and it records no kill counts. The runtime rolls every row independently at `chance`, so a consistent source yields about one item per kill. The original import inflated that (352 creatures above 1.5 items per kill, one at 42) by unioning game versions 4, 6 and 7, unioning several Jabbithole creatures that bridge to one Creature2, and letting veteran-difficulty Jabbithole creatures (about 20% of promoted rows) feed the normal creature.
+
+`creature_loot_policy.py` (used by `apply_creature_loot.py`) and the equivalent SQL in `sql/apply_safe_world_imports_from_staging.sql` now apply, per Creature2:
+
+1. Drop veteran-sourced rows when a non-veteran source has loot. Veteran-only Creature2s (266 locally) keep their loot.
+2. Keep only the latest game version that remains.
+3. Pool the remaining Jabbithole creatures: per item `sum(drop_times)` over the sum of the distinct creature aggregates, so one Creature2's shares add to at most 1.
+
+The Python and SQL paths produce identical rows (94,051 rows and zero chance mismatches on the interim 2026-11-11 data; 93,733 rows for 3,780 creatures after the full mapper re-run, see below). `aggregateDropSum` and `aggregateDropCount` are now the pooled denominator and item count. No retail parity claim: this removes a known inflation, it does not recover the real drop rate. `sql/verify_safe_world_imports.sql` reports creatures above 1.0 expected items per kill and creatures with mixed game versions; both should be 0.
+
+To adopt the policy on an existing database, re-run the apply SQL with `@nf_safe_import_replace_existing = 1` (the plain upsert would leave rows that the new policy no longer selects), then re-apply the LaughingWS overlays, because replace mode resets their `questChecklistIdx` updates.
+
+## Vendor Prerequisites
+
+Jabbithole stores vendor gating as free text ("Requires Level 50", "Requires 8000 reputation with The Algoroc Accord"). Before 2026-11-11 the import dropped it, so 1,625 of 7,154 promoted vendor item pairs (954 reputation, 181 level, 88 medal gated) were sold ungated. The runtime vendor packet already carried a `PrerequisiteId`; it is now stored in `entity_vendor_item.prerequisiteId` (EF migration `EntityVendorItemPrerequisite`, MySQL and SQLite), sent to the client, and enforced by `ClientVendorPurchaseHandler` (fails closed if the id cannot be evaluated).
+
+`resolve_vendor_prerequisites.py` (run automatically by `map_wildstar_data.py`, or with `--from-staging-db`) writes `vendor_prerequisite_map.csv`. Resolution is deliberately narrow:
+
+- `semantic_equivalent_row`: a single-clause client `Prerequisite` row with a >= comparison and equal type/object/value (Level, or Reputation with a resolved `Faction2`). The client has many identical rows; the lowest id is used. Which row retail used is unknown, so this is no retail parity claim.
+- `unresolved`: everything else, imported with no gate and listed with a reason: path rank, medals/instance completion, class, arena rating, "research ... prototype", guild perks, compound texts, and **side-specific faction pairs** ("<Exile faction> or <Dominion faction>", about 290 promoted pairs) that need the vendor's side. These are tracked blockers, not guesses.
+
+After the full 2026-11-11 mapper run, 124 of 340 distinct texts resolve and 899 vendor rows are gated (of 1,625 promoted pairs that carry a prerequisite; the rest stay ungated until those blockers are closed).
 
 ## LaughingWS World Database Audit
 
@@ -770,8 +812,8 @@ unresolved `extract_additive_world_overlay` bucket is `7` files.
 - Display and outfit IDs are selected from the first/highest-weight client display and outfit group entries.
 - AI actions skip `creature2ActionSetId = 0` because the client has no matching `Creature2ActionSet` row for ID 0.
 - Spline mapping is spatial only and disabled by default.
-- Vendor import is live for existing world entities only; mapped vendor creatures without an `entity` row are reported but not inserted.
-- Loot import is database-live and runtime-supported for mapped creature drops and mapped item-container loot bags. Generated creature loot rows default to one item per successful roll until aggregate stack semantics are reviewed further; generated item-container groups roll one weighted item per bag use.
+- Vendor import is live for existing world entities only; mapped vendor creatures without an `entity` row are reported but not inserted. About 45% of the promoted prerequisite gates (725 of 1,625) remain unresolved (see "Vendor Prerequisites").
+- Loot import is database-live and runtime-supported for mapped creature drops and mapped item-container loot bags. Generated creature loot rows default to one item per successful roll until aggregate stack semantics are reviewed further; `chance` is a share of observed drops, not a per-kill probability (see "Loot Selection Policy"); generated item-container groups roll one weighted item per bag use.
 - Creature info overrides are runtime-supported creature template data. Existing entity-specific stats/properties still take precedence over template overrides.
 - `nf_map_*` staging imports are development/reference data only. Runtime code must not query them; feature work must promote reviewed rows into explicit runtime tables, scripts, or code-owned assets first.
 - Quest, path mission, and public event maps preserve Jabbithole game version and source IDs so later import logic can choose version policy explicitly.

@@ -72,6 +72,25 @@ Promoted runtime rows observed by `verify_safe_world_imports.sql`:
 | DM-FND-006 | Spline mapping is candidate-only. | 188,480 spline candidate rows; no direct source creature-to-spline foreign key. | Patrols and movement loops remain visually/static incomplete. | Review movement one row at a time with client/runtime smoke before any `entity_spline` promotion. |
 | DM-FND-007 | Generic `client_source_*` exports are complete but semantic-light. | 272 generic client-source maps preserve every unmapped client table. | Polymorphic `objectId*`, flags, formulas, visuals, sound, tutorials, random text, and UI rows cannot be imported safely from raw labels. | Promote table families into curated maps only after owner semantics and conflict policy are known. |
 
+### 2026-11-11 DataMapping audit and fixes
+
+Evidence tier: measured against the local `jabbithole`, `wildstar_client`, `nexus_forever_mapping` and `nexus_forever_world` databases, with `Creature2.questIdGiven*` / `questIdReceive*` as the independent check where noted. No retail parity claim.
+
+Fixed in this pass:
+
+- DM-LOOT-001: `creature_loot.chance` was a drop share, but treated as a per-kill probability, and was inflated by unioning game versions 4/6/7, unioning several Jabbithole creatures per Creature2, and veteran sources feeding normal creatures (352 creatures above 1.5 expected items per kill, max 42; 39,509 rows / 20% from veteran sources). Now normalized per `creature_loot_policy.py`: 93,733 rows for 3,780 creatures after the full mapper re-run (94,051 / 3,808 before the 508 reclassified creatures were removed), max 1.0 expected items per kill. The true per-kill rate remains **unknown** (no kill counts in Jabbithole).
+- DM-VEND-001: vendor `prerequisite` text was dropped (1,625 of 7,154 promoted pairs). Now stored, sent and enforced for single-clause Level and Reputation gates (899 rows). Remaining gates stay blocked, see below.
+- DM-FND-001a: the difficulty equality bonus compared an enum with a row id (coincidence); removed. Race and archetype added as a tie-break that cannot change `match_status`. Full mapper re-run result: 508 `scored_name` creatures that only scored by that coincidence are now `ambiguous_name` (`scored_name` 2,816 to 2,262, `ambiguous_name` 6,068 to 6,561, `reviewed` 966 to 1,050 as all tracked overrides now load); no safe creature changed Creature2. Promoted impact: 34 of 3,808 loot creatures, 1 of 169 vendors, 0 spawns, and 98 net `creature_info_property` rows no longer promoted.
+- DM-FND-001b: 939 reviewed decisions existed only in the git-ignored `review/` folder / staging; exported into `creature_bridge_overrides.csv` with an `evidence_tier` (936 `spatial_heuristic`).
+
+Still open (tracked, not guessed):
+
+- Vendor prerequisites: 725 of 1,625 promoted gated pairs remain ungated: side-specific faction pairs (~290, need the vendor's side), path rank, medals/instance completion, class, arena rating, research prerequisites and compound texts. A runtime `Prerequisite` row for these needs row-level evidence.
+- `scored_name` agrees with the client quest-giver data only ~75% (129/172 starters, 150/195 finishers) and `reviewed` ~73-77%; 818 `scored_name` creatures supply ~30% of promoted loot rows. They remain in the safe set (unchanged); this is a recorded discrepancy, not a fix.
+- 977 `unmatched` creatures, mostly renamed/removed NPCs (505 last seen in game version 5 or earlier); a few valuable ones (for example level-50 vendor "Supplier Dakara", 90 items) need a fallback matcher with evidence.
+- The unknown-table loot scrape (`jabbithole_mysql/.sql`, `nf_map_unknown_table_loot`) is not present in any dump on this machine, so it cannot be regenerated. `map_wildstar_data.py` now treats it as optional and warns; load staging with `--skip-table nf_map_unknown_table_loot` so the existing rows are kept. The full mapper was re-run on 2026-11-11 from `D:/temp/wildstar` and staging was reloaded (95 tables).
+- `Tools/DataMapping/test_laughingws_worlddb_classifications.py` looks for the legacy `Source/NexusForever.sln` and fails to find the repo root (pre-existing).
+
 ### 2026-06-17 DM-FND next-slice review note
 
 - 2026-07-28 DM-FND-001 / public-event bridge review: promoted the
