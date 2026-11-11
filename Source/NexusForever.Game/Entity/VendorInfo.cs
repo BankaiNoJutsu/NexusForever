@@ -57,6 +57,7 @@ namespace NexusForever.Game.Entity
                     StaticDbId    = item.ItemId,
                     VendorGroupId = item.CategoryIndex,
                     ExchangeRate  = 0,
+                    PrerequisiteId = item.PrerequisiteId,
                     ExtraCost1 = new ServerVendorItemsUpdated.VendorItem.ItemExtraCost()
                     {
                         ExtraCostType    = item.ExtraCost1Type,

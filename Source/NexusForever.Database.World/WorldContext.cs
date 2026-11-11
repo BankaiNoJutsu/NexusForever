@@ -624,6 +624,11 @@ namespace NexusForever.Database.World
                     .HasColumnType("int(10) unsigned")
                     .HasDefaultValue(0);
 
+                entity.Property(e => e.PrerequisiteId)
+                    .HasColumnName("prerequisiteId")
+                    .HasColumnType("int(10) unsigned")
+                    .HasDefaultValue(0);
+
                 entity.HasOne(d => d.Entity)
                     .WithMany(p => p.EntityVendorItem)
                     .HasForeignKey(d => d.Id)

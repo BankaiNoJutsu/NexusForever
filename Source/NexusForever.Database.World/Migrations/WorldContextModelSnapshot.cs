@@ -594,6 +594,12 @@ namespace NexusForever.Database.World.Migrations
                         .HasDefaultValue(0u)
                         .HasColumnName("itemId");
 
+                    b.Property<uint>("PrerequisiteId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10) unsigned")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("prerequisiteId");
+
                     b.HasKey("Id", "Index")
                         .HasName("PRIMARY");
 

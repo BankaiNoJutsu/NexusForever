@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Entity;
 using NexusForever.Game.Tests.TestSupport;
@@ -113,6 +114,87 @@ public sealed class ClientVendorPurchaseHandlerTests
         Assert.Equal(paymentStack, remaining.StackCount);
         var error = Assert.Single(messages.OfType<ServerItemError>());
         Assert.Equal(GenericError.ItemInventoryFull, error.ErrorCode);
+
+        void SetInventoryField(string name, object value)
+            => typeof(Inventory).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(inventory, value);
+    }
+
+    /// <summary>
+    /// Vendor stock can carry a client Prerequisite (level, reputation). The server must enforce it, not rely on the
+    /// client greying the row out, and must fail closed when the id cannot be evaluated.
+    /// </summary>
+    [Theory]
+    [InlineData("met", true)]
+    [InlineData("unmet", false)]
+    [InlineData("noManager", false)]
+    public void PurchaseEnforcesStockPrerequisite(string manager, bool purchaseSucceeds)
+    {
+        const uint purchasedId = 100;
+        const uint prerequisiteId = 55;
+        IItemInfo purchase = CreateInfo(purchasedId, stackable: false);
+        IItemManager items = RecordingDispatchProxy<IItemManager>.Create(out var itemManager);
+        itemManager.SetMethodHandler(nameof(IItemManager.GetItemInfo), _ => purchase);
+        ulong nextId = 1000;
+        itemManager.SetMethodReturnFactory("get_" + nameof(IItemManager.NextItemId), () => nextId++);
+
+        IWorldSession session = RecordingDispatchProxy<IWorldSession>.Create(out var network);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var actor);
+        actor.SetProperty(nameof(IPlayer.CharacterId), 42ul);
+        actor.SetProperty(nameof(IPlayer.IsLoading), true);
+        actor.SetProperty(nameof(IPlayer.Session), session);
+        network.SetProperty(nameof(IWorldSession.Player), player);
+
+        ulong credits = 100;
+        ICurrencyManager wallet = RecordingDispatchProxy<ICurrencyManager>.Create(out var balance);
+        balance.SetMethodHandler(nameof(ICurrencyManager.CanAfford), args => credits >= (ulong)args[1]);
+        balance.SetMethodHandler(nameof(ICurrencyManager.CurrencySubtractAmount), args =>
+        {
+            credits -= (ulong)args[1];
+            return null;
+        });
+        actor.SetProperty(nameof(IPlayer.CurrencyManager), wallet);
+
+        var inventory = (Inventory)RuntimeHelpers.GetUninitializedObject(typeof(Inventory));
+        var bag = new Bag(InventoryLocation.Inventory, 1, items);
+        SetInventoryField("bags", new Dictionary<InventoryLocation, IBag> { [InventoryLocation.Inventory] = bag });
+        SetInventoryField("deletedItems", new List<IItem>());
+        SetInventoryField("player", player);
+        SetInventoryField("characterId", 42ul);
+        SetInventoryField("itemManager", items);
+        actor.SetProperty(nameof(IPlayer.Inventory), inventory);
+        actor.SetProperty(nameof(IPlayer.IsLoading), false);
+
+        var stock = new EntityVendorItemModel { ItemId = purchasedId, PrerequisiteId = prerequisiteId };
+        IVendorInfo vendor = RecordingDispatchProxy<IVendorInfo>.Create(out var offers);
+        offers.SetMethodReturn(nameof(IVendorInfo.GetItemAtIndex), stock);
+        actor.SetProperty(nameof(IPlayer.SelectedVendorInfo), vendor);
+
+        IPrerequisiteManager prerequisites = null;
+        RecordingDispatchProxy<IPrerequisiteManager> prerequisiteProxy = null;
+        if (manager != "noManager")
+        {
+            prerequisites = RecordingDispatchProxy<IPrerequisiteManager>.Create(out prerequisiteProxy);
+            prerequisiteProxy.SetMethodHandler(
+                nameof(IPrerequisiteManager.Meets),
+                args => manager == "met");
+        }
+
+        new ClientVendorPurchaseHandler(items, prerequisites).HandleMessage(session, CreateRequest(1));
+
+        if (purchaseSucceeds)
+        {
+            Assert.Equal(85ul, credits);
+            Assert.Equal(purchasedId, Assert.Single(bag).Id);
+        }
+        else
+        {
+            Assert.Equal(100ul, credits);
+            Assert.Empty(bag);
+            Assert.Empty(balance.GetInvocations(nameof(ICurrencyManager.CurrencySubtractAmount)));
+        }
+
+        if (prerequisiteProxy != null)
+            Assert.Contains(prerequisiteProxy.GetInvocations(nameof(IPrerequisiteManager.Meets)), call => (uint)call.Arguments[1] == prerequisiteId);
 
         void SetInventoryField(string name, object value)
             => typeof(Inventory).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(inventory, value);

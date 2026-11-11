@@ -589,6 +589,12 @@ namespace NexusForever.Database.Sqlite.Migrations.World
                         .HasDefaultValue(0u)
                         .HasColumnName("itemId");
 
+                    b.Property<uint>("PrerequisiteId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int(10)")
+                        .HasDefaultValue(0u)
+                        .HasColumnName("prerequisiteId");
+
                     b.HasKey("Id", "Index")
                         .HasName("PRIMARY");
 

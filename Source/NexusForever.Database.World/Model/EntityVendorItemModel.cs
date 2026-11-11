@@ -15,6 +15,11 @@ namespace NexusForever.Database.World.Model
         public uint ExtraCost2Quantity { get; set; }
         public uint ExtraCost2ItemOrCurrencyId { get; set; }
 
+        /// <summary>
+        /// Client <c>Prerequisite</c> id a player must meet to buy this item, or 0 for none.
+        /// </summary>
+        public uint PrerequisiteId { get; set; }
+
         public EntityModel Entity { get; set; }
     }
 }

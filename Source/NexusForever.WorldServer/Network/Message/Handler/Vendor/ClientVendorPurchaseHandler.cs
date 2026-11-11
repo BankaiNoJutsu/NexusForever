@@ -2,6 +2,7 @@
 using NexusForever.Database.World.Model;
 using NexusForever.Game.Abstract;
 using NexusForever.Game.Abstract.Entity;
+using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Entity;
 using NexusForever.Game.Static.Account;
 using NexusForever.Game.Static.Entity;
@@ -16,11 +17,14 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
         #region Dependency Injection
 
         private readonly IItemManager itemManager;
+        private readonly IPrerequisiteManager prerequisiteManager;
 
         public ClientVendorPurchaseHandler(
-            IItemManager itemManager)
+            IItemManager itemManager,
+            IPrerequisiteManager prerequisiteManager = null)
         {
-            this.itemManager = itemManager;
+            this.itemManager         = itemManager;
+            this.prerequisiteManager = prerequisiteManager;
         }
 
         #endregion
@@ -38,6 +42,12 @@ namespace NexusForever.WorldServer.Network.Message.Handler.Vendor
 
             EntityVendorItemModel vendorItem = vendorInfo.GetItemAtIndex(vendorPurchase.StockUniqueId);
             if (vendorItem == null)
+                return;
+
+            // A stock row can carry a client Prerequisite (level, reputation, ...). The client already greys the
+            // row out from the same id, but the server must not trust that; fail closed if it cannot be evaluated.
+            if (vendorItem.PrerequisiteId != 0u
+                && (prerequisiteManager == null || !prerequisiteManager.Meets(player, vendorItem.PrerequisiteId)))
                 return;
 
             IItemInfo info = itemManager.GetItemInfo(vendorItem.ItemId);
