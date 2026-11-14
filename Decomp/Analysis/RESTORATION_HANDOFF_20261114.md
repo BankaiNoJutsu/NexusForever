@@ -1,11 +1,28 @@
 # Restoration handoff (2026-11-14)
 
 Current branch: `feature/spell-effects-remaining`. Latest continuation starts from
-published `ca826690`; it recovers type 102's native node ID/lifetime and
-corrects cross-target false positives in the existing Source lookup. Static/headless analysis
+published `983f8934`; it adds type 102 receiving-unit property discovery and
+continues the native untimed marker/removal read. Static/headless analysis
 only; no native client execution or Computer Use.
 
-## Latest type-102 node continuation
+## Latest type-102 receiving continuation
+
+[Receiving-unit state](PREREQUISITE_102_RECEIVING_STATE_20261114.md): **Verified
+native receiver/ID; Implemented / Source** for installed property modifiers,
+conversions and personal-healing states. Their existing receiving-unit row IDs
+are queried directly; stale pending-spell timers cannot resurrect removed state.
+Admission, stacking and timers are unchanged. Thirteen new cases ran red
+(11 failed / two passed); rebuilt focused gate: **3,014 passed**. Owning Game
+build has zero warnings/errors. Full-suite follow-through is deferred until the
+coherent receiving/marker slices finish; prior full-suite limits still apply.
+
+The current native read distinguishes Source 0x0813 buff-count removal from
+0x0819 shape-specific pruning. Count-zero display cleanup does not establish
+child destruction. Continue that chain before implementing the empty Fluff
+handler's untimed registration/removal model; it reaches 197 resolved type-102
+slots / 164 effect rows (49 flag-2 slots). No retail parity claim.
+
+## Previous type-102 node continuation (983f8934)
 
 Evidence tier: **Verified native ID/ownership/registration lifecycle; Source
 correction with explicit coverage limits**. [Native node evidence](PREREQUISITE_102_NODE_LIFETIME_20261114.md)

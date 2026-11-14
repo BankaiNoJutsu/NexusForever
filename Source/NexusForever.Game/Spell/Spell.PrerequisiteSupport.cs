@@ -25,6 +25,12 @@ namespace NexusForever.Game.Spell
                     if (effectInfo is not SpellTargetInfo.SpellTargetEffectInfo concrete)
                         continue;
 
+                    // Property identity belongs to the receiving unit's accepted state. A queued
+                    // lifetime event must not resurrect a property instance removed explicitly.
+                    if (concrete.Entry.EffectType is SpellEffectType.UnitPropertyModifier
+                        or SpellEffectType.UnitPropertyConversion or SpellEffectType.PersonalDmgHealMod)
+                        continue;
+
                     if (concrete.LifetimeEnded || concrete.Entry.Id != spell4EffectsId)
                         continue;
 

@@ -2583,14 +2583,17 @@ namespace NexusForever.Game.Entity
         }
 
         /// <summary>
-        /// Returns whether this unit's pending spells have a persistent effect with the supplied <c>Spell4Effects</c> id on this unit.
-        /// Verified native ID/target ownership; receiving-unit discovery and untimed registration remain outside this existing Source model.
-        /// See Decomp/Analysis/PREREQUISITE_102_NODE_LIFETIME_20261114.md. No retail parity claim.
+        /// Tests the supplied <c>Spell4Effects</c> row ID against accepted property states on this receiving unit, including untimed states.
+        /// Other effect families retain the existing pending-spell fallback and its coverage limits.
+        /// Evidence tier: Verified native ID/target ownership; Source state lookup. See Decomp/Analysis/PREREQUISITE_102_RECEIVING_STATE_20261114.md. No retail parity claim.
         /// </summary>
         public bool HasActiveSpellEffectId(uint spell4EffectsId)
         {
             if (spell4EffectsId == 0u)
                 return false;
+
+            if (spellProperties.Values.Any(states => states.Values.Any(state => state.EffectEntryId == spell4EffectsId)))
+                return true;
 
             foreach (ISpell spell in pendingSpells)
             {

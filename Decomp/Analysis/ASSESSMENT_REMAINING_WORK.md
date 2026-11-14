@@ -1,5 +1,17 @@
 # Assessment follow-through goal
 
+[Type-102 receiving property state](PREREQUISITE_102_RECEIVING_STATE_20261114.md)
+(2026-11-14): the existing accepted property records already hold receiving-unit
+Spell4Effects IDs; type 102 now reads them, including untimed records, and no
+longer resurrects removed property state through an old pending-spell timer.
+Evidence tier: Verified native receiver/ID; Implemented / Source for the three
+property producer families. Thirteen new cases ran red (11 failed / two passed),
+then 3,014 focused cases passed; owning build has zero warnings/errors. Native
+0x0813 is a separate count-update path from 0x0819; count-zero display cleanup
+alone does not prove child-node retirement. Fluff marker follow-through remains
+in progress (197 resolved prerequisite slots / 164 effect rows, 49 flag-2 slots).
+Full-suite follow-through follows the coherent slices. No retail parity claim.
+
 [Type-102 native node ID/lifetime](PREREQUISITE_102_NODE_LIFETIME_20261114.md)
 (2026-11-14): native accessor `1405da910` returns the Spell4Effects row ID through
 node `+0xb0`, bound to the runtime builder/ID map and named table descriptor.
