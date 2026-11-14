@@ -1,5 +1,15 @@
 # Assessment follow-through goal
 
+[Type-179 accessor follow-through](PREREQUISITE_179_NATIVE_ACCESSOR_20261114.md)
+(2026-11-14): direct disassembly resolves the primary unit's virtual `+0x10`
+through the constructor-installed base vtable to `14045ba40`. It reads unit
+`+0x30` with a 25 threshold/sentinel and falls back to record `+0x14`; assigning
+those fields the server's difficulty-id meaning still needs a loader/consumer or
+writer witness. The manager and spell shortcut disagree on zero handling and
+must not be unified from the selector alone. Reach: 41 slots / 504 direct spell
+column references / 517 weighted references. Evidence tier: Mapped native flow,
+mapped only; exact next reads recorded, no behavior change, no retail parity claim.
+
 [Primary-subject prerequisite correction](PREREQUISITE_PRIMARY_SUBJECT_20261114.md)
 (2026-11-14): native evaluator cases 38, 59 and 129 retain the primary unit,
 whereas the player wrappers substituted the relationship target. Corrected the

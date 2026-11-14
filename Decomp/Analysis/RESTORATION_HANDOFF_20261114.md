@@ -12,9 +12,12 @@ Types 38, 59 and 129 now retain the primary player at their player entry point,
 matching the native dispatcher and their explicit-unit entry points. They no
 longer substitute the relationship Target. See
 [the evidence and validation record](PREREQUISITE_PRIMARY_SUBJECT_20261114.md).
-The commit containing this handoff also contains the three wrappers, 18 new
+Commit `ff3cf41f` contains the three wrappers, 18 new
 regressions, three rewritten tests, ledger and focused-tracker corrections.
-Find its hash with `git log -1 --format=%H -- Decomp/Analysis/RESTORATION_HANDOFF_20261114.md`.
+
+The subsequent [type-179 accessor record](PREREQUISITE_179_NATIVE_ACCESSOR_20261114.md)
+maps virtual `+0x10` to `14045ba40` through the constructor-installed base vtable.
+Evidence tier: Mapped native flow, no additional Source change.
 
 Source checks: owning baseline build passed; new regressions were red first
 (15 failed / 3 passed); final Prerequisite/Spell rebuild passed 2,882 cases.
@@ -35,8 +38,10 @@ player wrapper, manager helper and pure-179 spell shortcut disagree on subject
 selection/default handling. Raw reach: 41 slots, 504 direct spell-column
 references, 517 slot-weighted references. Dispatcher case `0xb3` and direct
 disassembly of `14049eeb0` establish the primary selector and zero when no
-creature record exists. Recover the meaning of unit virtual `+0x10` and qualify
-non-unit world-object caller policy before unifying the three paths. Do not
+creature record exists. The base accessor now resolves mechanically: unit
+`+0x30` below 25, otherwise record `+0x14` (or accessor default 25). Recover the
+writers/field meanings and relevant derived overrides, then qualify non-unit
+world-object caller policy before unifying the three paths. Do not
 present this pending native read as an unavailable asset or a completed fix.
 
 Lower remaining target-substituting wrappers require individual dispatcher/body
