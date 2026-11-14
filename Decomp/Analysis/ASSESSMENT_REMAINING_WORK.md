@@ -1,5 +1,20 @@
 # Assessment follow-through goal
 
+[Type-44 primary-subject correction](PREREQUISITE_44_PRIMARY_SUBJECT_20261114.md)
+(2026-11-14): native case `0x2c` / `14049ee40` constructs its group proxy from
+the primary unit and never reads the second unit. The player wrapper now retains
+the player; explicit-unit/spell routes retain their existing subject selection.
+Sixteen new Source cases ran red (14 failed / two passed), then the rebuilt
+Prerequisite/Spell gate passed 2,934 cases; owning build has zero warnings/errors.
+Reference reach: 214 slots / 201 prerequisite rows / 278 direct spell-column
+references / 281 weighted references, not affected-cast counts. The TargetGroup
+getter's stale Spell4ValidTargets label is corrected and three labels re-exported;
+8,332 mapping rows validate. Full suite: 15,100 passed / 15 failed / two skipped;
+all 40 type-44 cases passed. All ten failed methods pass isolated reruns covering
+66 cases; this does not make the full suite green. Evidence tier: Verified
+native selector; Implemented / Source. Shared group-model and
+non-unit/activation caller qualifications remain separate. No retail parity claim.
+
 [Type-179 field binding and shared comparison](PREREQUISITE_179_FIELD_BINDING_20261114.md)
 (2026-11-14): the native Creature2 builder maps raw `creature2DifficultyId`
 (`+0x1c`) into the intermediate record (`+0x14`), then the unit setter caches it

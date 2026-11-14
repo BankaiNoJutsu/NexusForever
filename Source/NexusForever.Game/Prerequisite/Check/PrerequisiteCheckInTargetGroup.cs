@@ -8,11 +8,12 @@ using NexusForever.GameTable.Model;
 namespace NexusForever.Game.Prerequisite.Check
 {
     /// <summary>
-    /// Prerequisite type 44: native test <c>FUN_14049ee40</c>. <c>Value</c> is a TargetGroup id (214 of 214 retail slots; <c>ObjectId</c> is 0) and the unit is tested with the
+    /// Prerequisite type 44: native evaluator case 0x2c calls vtable +0x370 (<c>14049ee40</c>) with the primary unit, comparison and <c>Value</c> (a TargetGroup id in all 214 retail slots).
+    /// <c>ObjectId</c> is not read (zero in 213 slots). The primary unit is tested with the
     /// target-group evaluator <c>FUN_1403b4a20</c> (<see cref="TargetGroupCriteriaEvaluator"/>), where 0 means member. Equal meets for a member, NotEqual for a non-member, other
-    /// comparisons never meet, and a zero or unknown group id is never a member (so only NotEqual can meet). The subject follows the <c>CreatureDifficulty</c> precedent
-    /// (<c>parameters.Target ?? player</c>); a player has no creature id, so creature-list groups only match when a creature target is supplied.
-    /// See Decomp/Analysis/PREREQUISITE_TYPE_COVERAGE_20261107.md.
+    /// comparisons never meet. A zero group id fails both comparisons; an unknown nonzero group is not a member. Both entry points retain their supplied primary subject;
+    /// Target is separate relationship context. Evidence tier: Verified native selector; shared group-model limits remain separate. No retail parity claim.
+    /// See Decomp/Analysis/PREREQUISITE_44_PRIMARY_SUBJECT_20261114.md.
     /// </summary>
     [PrerequisiteCheck(PrerequisiteType.InTargetGroup)]
     public class PrerequisiteCheckInTargetGroup : IPrerequisiteCheck
@@ -25,7 +26,7 @@ namespace NexusForever.Game.Prerequisite.Check
         }
 
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
-            => MeetsUnit(parameters.Target ?? player, comparison, value, objectId, parameters);
+            => MeetsUnit(player, comparison, value, objectId, parameters);
 
         public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {

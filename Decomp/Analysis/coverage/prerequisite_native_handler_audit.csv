@@ -40,7 +40,7 @@
 "41","ZoneExplored","16","0","PrerequisiteCheckZoneExplored.cs","","vtable","+0x2b0","14049e6b0","FUN_14049e6b0","1/2/3","","","no citation",""
 "42","IsGroupLeader","1","0","PrerequisiteCheckIsGroupLeader.cs","entry","vtable","+0x310","14049e850","Prerequisite_CheckIsGroupLeader_LiveCase2A","1","14049e540","14049e540->141","citation contradicted","Source/NexusForever.Game.Static/Prerequisite/PrerequisiteType.cs:47"
 "43","IsObjectiveActive","3631","103","PrerequisiteCheckIsObjectiveActive.cs","entry","vtable","+0x3f8","14049f3d0","Prerequisite_CheckIsObjectiveActive_LiveCase2B","1/2/3","14049e610","14049e610->232","citation contradicted","Source/NexusForever.Game.Static/Prerequisite/PrerequisiteType.cs:48"
-"44","InTargetGroup","214","281","PrerequisiteCheckInTargetGroup.cs","entry","vtable","+0x370","14049ee40","FUN_14049ee40","1/3","","","no citation",""
+"44","InTargetGroup","214","281","PrerequisiteCheckInTargetGroup.cs","entry/offset/case","vtable","+0x370","14049ee40","Prerequisite_CheckInTargetGroup_LiveCase44","1/3","","","no citation",""
 "46","Waypoint","8","0","PrerequisiteCheckWaypoint.cs","","vtable","+0x2b8","140001ba0","ClientCraftingAbandon_WritePayload","1/3","14049e680","14049e680->26","citation contradicted","Source/NexusForever.Game.Static/Prerequisite/PrerequisiteType.cs:51 Source/NexusForever.Game/Prerequisite/Check/PrerequisiteCheckWaypoint.cs:10"
 "47","QuestObjective47","1788","616","","","vtable","+0x2f8","140001ba0","ClientCraftingAbandon_WritePayload","1/3","","","no citation",""
 "48","Unknown48","2","5","","","vtable","+0x1e8","140001ba0","ClientCraftingAbandon_WritePayload","1","","","no citation",""

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Prerequisite;
@@ -11,7 +12,7 @@ using NexusForever.GameTable.Model;
 
 namespace NexusForever.Game.Tests.Entity;
 
-// Native evaluator (Decomp/Analysis/PREREQUISITE_TYPE_COVERAGE_20261107.md): type 44 (FUN_14049ee40) takes the TargetGroup id from Value (214 of 214 retail slots; ObjectId is 0),
+// Native evaluator (Decomp/Analysis/PREREQUISITE_44_PRIMARY_SUBJECT_20261114.md): type 44 (14049ee40) takes the TargetGroup id from Value (214 of 214 retail slots; ObjectId is ignored),
 // evaluates the group against the unit with FUN_1403b4a20 (0 means member, 0x59 not) and returns Equal: member, NotEqual: not member, others false; a zero group id is false.
 // The group is evaluated by the shared TargetGroupCriteriaEvaluator (type 1 creature id list, 2 its exclusion, 3..9 faction/race/class/creature lists, 10 every sub-group, 11 any
 // sub-group, 12/13 unit race). Retail slots: group type 1 (146), 11 (48), 3 (16), 12 (3), 10 (1). An unknown group row is not a member (native lookup failure).
@@ -33,6 +34,67 @@ public class PrerequisiteCheckInTargetGroupTests
         Group(10, 11, 10, 1),                 // refers to itself and to a passing group
         Group(11, 10, 9, 1)                   // all of: the Dominion faction group and the creature list
     ];
+
+    // Native case 0x2c builds the group proxy from the primary unit, not the relationship target.
+    [Theory]
+    [InlineData(1u, PrerequisiteComparison.Equal, false)]
+    [InlineData(1u, PrerequisiteComparison.NotEqual, true)]
+    [InlineData(5u, PrerequisiteComparison.Equal, false)]
+    [InlineData(5u, PrerequisiteComparison.NotEqual, true)]
+    [InlineData(7u, PrerequisiteComparison.Equal, false)]
+    [InlineData(7u, PrerequisiteComparison.NotEqual, true)]
+    [InlineData(9u, PrerequisiteComparison.Equal, true)]
+    [InlineData(9u, PrerequisiteComparison.NotEqual, false)]
+    [InlineData(11u, PrerequisiteComparison.Equal, false)]
+    [InlineData(11u, PrerequisiteComparison.NotEqual, true)]
+    public void PlayerAndExplicitUnitPathsKeepTheSamePrimarySubject(uint groupId, PrerequisiteComparison comparison, bool expected)
+    {
+        var row = new PrerequisiteEntry
+        {
+            Id = 1u,
+            Flags = EvaluationMode.EvaluateAND,
+            PrerequisiteTypeId = [PrerequisiteType.InTargetGroup],
+            PrerequisiteComparisonId = [comparison],
+            Value = [groupId],
+            ObjectId = [999u] // Native type 44 never reads ObjectId.
+        };
+        using ServiceProvider services = Services(row);
+        IPrerequisiteManager manager = services.GetRequiredService<IPrerequisiteManager>();
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var proxy);
+        proxy.SetProperty(nameof(IWorldEntity.Faction2), (Faction)166u);
+        IUnitEntity target = Unit(Creature, (Faction)(groupId == 9u ? 167u : 166u));
+        var parameters = new PrerequisiteParameters { Target = target };
+
+        Assert.Equal(expected, manager.MeetsUnit(player, row.Id, parameters));
+        Assert.Equal(expected, manager.Meets(player, row.Id, parameters));
+        Assert.Equal(expected, Game.Spell.Spell.MeetsApplyPrerequisite(row, player, manager, target));
+        Assert.Same(target, parameters.Target);
+        Assert.Equal(!expected, manager.MeetsUnit(target, row.Id, new PrerequisiteParameters { Target = player }));
+    }
+
+    [Theory]
+    [InlineData(PrerequisiteComparison.Equal, true)]
+    [InlineData(PrerequisiteComparison.NotEqual, false)]
+    public void PlayerMembershipDoesNotNeedRelationshipParameters(PrerequisiteComparison comparison, bool expected)
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var proxy);
+        proxy.SetProperty(nameof(IWorldEntity.Faction2), (Faction)166u);
+
+        Assert.Equal(expected, Check().Meets(player, comparison, 9u, 0u, null));
+    }
+
+    [Theory]
+    [InlineData(1u, PrerequisiteComparison.Equal)]
+    [InlineData(1u, PrerequisiteComparison.NotEqual)]
+    [InlineData(2u, PrerequisiteComparison.Equal)]
+    [InlineData(2u, PrerequisiteComparison.NotEqual)]
+    public void NullPrimaryCannotBeReplacedByARelationshipTarget(uint groupId, PrerequisiteComparison comparison)
+    {
+        var parameters = new PrerequisiteParameters { Target = Unit(Creature) };
+
+        Assert.False(Check().MeetsUnit(null, comparison, groupId, 0u, parameters));
+        Assert.False(Check().Meets(null, comparison, groupId, 0u, parameters));
+    }
 
     [Theory]
     [InlineData(1u, PrerequisiteComparison.Equal, true)]
@@ -90,15 +152,16 @@ public class PrerequisiteCheckInTargetGroupTests
     }
 
     [Fact]
-    public void ThePlayerEntryPointEvaluatesTheTargetWhenOneIsSupplied()
+    public void ThePlayerEntryPointRetainsThePlayerAndAllowsExplicitTargetEvaluation()
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
         playerProxy.SetProperty(nameof(IWorldEntity.CreatureId), 12345u);
 
         var parameters = new PrerequisiteParameters { Target = Unit(Creature) };
 
-        Assert.True(Check().Meets(player, PrerequisiteComparison.Equal, 1u, 0u, parameters));
+        Assert.False(Check().Meets(player, PrerequisiteComparison.Equal, 1u, 0u, parameters));
         Assert.False(Check().Meets(player, PrerequisiteComparison.Equal, 1u, 0u, new PrerequisiteParameters()));
+        Assert.True(Check().MeetsUnit(parameters.Target, PrerequisiteComparison.Equal, 1u, 0u, new PrerequisiteParameters { Target = player }));
     }
 
     private static PrerequisiteCheckInTargetGroup Check()
@@ -106,6 +169,16 @@ public class PrerequisiteCheckInTargetGroupTests
         IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out var proxy);
         proxy.SetProperty(nameof(IGameTableManager.TargetGroup), PlayerBindPointTests.Table(Groups));
         return new PrerequisiteCheckInTargetGroup(tables);
+    }
+
+    private static ServiceProvider Services(PrerequisiteEntry row)
+    {
+        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out var proxy);
+        proxy.SetProperty(nameof(IGameTableManager.TargetGroup), PlayerBindPointTests.Table(Groups));
+        proxy.SetProperty(nameof(IGameTableManager.Prerequisite), PlayerBindPointTests.Table(row));
+        var services = new ServiceCollection().AddLogging().AddSingleton(tables);
+        services.AddGamePrerequisite();
+        return services.BuildServiceProvider();
     }
 
     private static TargetGroupEntry Group(uint id, uint type, params uint[] data)

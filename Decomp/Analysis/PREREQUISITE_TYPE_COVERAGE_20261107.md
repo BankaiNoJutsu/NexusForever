@@ -196,6 +196,12 @@ no files on `C:` were deleted.
 
 ## Type 44 (InTargetGroup) implemented for the creature-list and composite group types (same day)
 
+Later correction (2026-11-14): [the primary-subject pass](PREREQUISITE_44_PRIMARY_SUBJECT_20261114.md)
+replaces the historical `parameters.Target ?? player` wrapper below with the
+native primary selector. ObjectId is ignored, but is nonzero in one of 214
+reference slots; the older all-zero statement is superseded. Shared membership
+model limits remain separate; no retail parity claim.
+
 - **44 (InTargetGroup, 214 slots)**: `FUN_14049ee40` returns false when the unit or the argument is 0, evaluates a TargetGroup against the unit with `FUN_1403b4a20` (0 means member) and returns Equal: member, NotEqual: not
   member, other comparisons false. The group id is `Value` (214 of 214 retail slots are TargetGroup ids; `ObjectId` is 0 in 213). The group evaluator switches on the group's `Type`: 1/2 creature id in/not in the seven data ids
   (unit virtual +0x10, the first int of the unit's creature record), 3/4, 5/6, 7/8 and 12/13 the same shape against other unit fields (virtuals +0x30, +0x20, +0x28, +0x38 reading `unit+0x118`, `+0xd8`, `+0xdc`,
