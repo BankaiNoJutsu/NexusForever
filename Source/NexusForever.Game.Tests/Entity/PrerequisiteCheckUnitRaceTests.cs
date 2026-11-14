@@ -8,9 +8,8 @@ using NexusForever.GameTable.Model;
 
 namespace NexusForever.Game.Tests.Entity;
 
-// Native evaluator (Decomp/Analysis/PREREQUISITE_TYPE_COVERAGE_20261107.md): type 196 (FUN_14049c520) reads the first int of the pointer at unit+0xd0 (the unit race id also read by TargetGroup
-// types 12/13, 0 when the pointer is null) and compares it with Value: Equal returns equality, NotEqual inequality, others false; a missing unit is false. All 40 retail Values (33, 35, 61,
-// 69 to 81, ...) are UnitRace ids, comparisons Equal 34 and NotEqual 6, ObjectId unused.
+// Verified native type196 default predicate14049c520: primary UnitRace ID at *[unit+0xd0] or0; full Value Equal/NotEqual, null false, ObjectId/relationship unread.
+// Independent native Lua GetUnitRaceId confirms attribute identity. Source CreatureEntry bridge is retained with writer/dynamic assignment limits; see PREREQUISITE_196_PRIMARY_SUBJECT_20261114.md.
 public class PrerequisiteCheckUnitRaceTests
 {
     [Theory]
@@ -38,13 +37,41 @@ public class PrerequisiteCheckUnitRaceTests
     }
 
     [Fact]
-    public void ThePlayerEntryPointEvaluatesTheTargetWhenOneIsSupplied()
+    public void ThePlayerEntryPointRetainsPrimaryWhenARelationshipIsSupplied()
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
         var parameters = new PrerequisiteParameters { Target = Unit(new Creature2Entry { UnitRaceId = 70u }) };
 
-        Assert.True(new PrerequisiteCheckUnitRace().Meets(player, PrerequisiteComparison.Equal, 70u, 0u, parameters));
+        Assert.False(new PrerequisiteCheckUnitRace().Meets(player, PrerequisiteComparison.Equal, 70u, 0u, parameters));
+        Assert.True(new PrerequisiteCheckUnitRace().Meets(player, PrerequisiteComparison.Equal, 0u, 0u, parameters));
+        Assert.True(new PrerequisiteCheckUnitRace().MeetsUnit(parameters.Target, PrerequisiteComparison.Equal, 70u, 0u, new PrerequisiteParameters { Target = player }));
         Assert.False(new PrerequisiteCheckUnitRace().Meets(player, PrerequisiteComparison.Equal, 70u, 0u, new PrerequisiteParameters()));
+    }
+
+    [Theory]
+    [InlineData((PrerequisiteComparison)0)]
+    [InlineData(PrerequisiteComparison.GreaterThan)]
+    [InlineData(PrerequisiteComparison.GreaterThanOrEqual)]
+    [InlineData(PrerequisiteComparison.LessThan)]
+    [InlineData(PrerequisiteComparison.LessThanOrEqual)]
+    [InlineData((PrerequisiteComparison)7)]
+    public void UnsupportedRawModesFail(PrerequisiteComparison comparison)
+    {
+        Assert.False(new PrerequisiteCheckUnitRace().MeetsUnit(Unit(new Creature2Entry { UnitRaceId = 70u }), comparison, 70u, uint.MaxValue, null));
+    }
+
+    [Theory]
+    [InlineData(0u, 0u, true)]
+    [InlineData(uint.MaxValue, uint.MaxValue, true)]
+    [InlineData(0x10046u, 70u, false)]
+    [InlineData(70u, 0x10046u, false)]
+    public void TheFullUnitRaceAndValueAreComparedWithoutReadingObjectId(uint unitRace, uint value, bool equal)
+    {
+        IUnitEntity unit = Unit(new Creature2Entry { UnitRaceId = unitRace });
+        var check = new PrerequisiteCheckUnitRace();
+
+        Assert.Equal(equal, check.MeetsUnit(unit, PrerequisiteComparison.Equal, value, unitRace, null));
+        Assert.Equal(!equal, check.MeetsUnit(unit, PrerequisiteComparison.NotEqual, value, unitRace, null));
     }
 
     private static IUnitEntity Unit(Creature2Entry entry)

@@ -286,6 +286,14 @@ model limits remain separate; no retail parity claim.
   group row is not a member. `PrerequisiteCheckInTargetGroupTests` was updated (the "unmodelled type" case became faction-group cases).
 - **196 (Racial, 40 slots)**: `FUN_14049c520` compares the first int of the pointer at `unit+0xd0` (0 when null; the same field TargetGroup types 12/13 test) with `Value`; all 40 retail Values are UnitRace ids, Equal 34 and
   NotEqual 6. Implemented as `PrerequisiteCheckUnitRace` over `CreatureEntry.UnitRaceId` (`parameters.Target ?? player`). `PrerequisiteCheckUnitRaceTests` (9 cases) were written together with the class (no separate red run).
+  **2026-11-14 supersession:** [primary-subject Racial](PREREQUISITE_196_PRIMARY_SUBJECT_20261114.md)
+  re-derives the indexed default-manager primary selector, null/record-zero/full
+  Value comparison and independent Lua UnitRace/Race bindings (**Verified native**).
+  Player wrapper corrected with Source verification; CreatureEntry bridge stays
+  correlated with native writer/dynamic assignment limits. Fresh reach40 slots/
+  36 rows/20 direct and weighted references. New23-case contribution runs red
+  in31-case scope11 failed/20 passed; current old-test baseline is eight cases.
+  Type102 remains Blocked. No retail parity claim.
 - Also read: **49 Schedule** (68 slots) and **30 FacilityWithinDistance** (54 slots) point at the shared `return 0` client stub (`FUN_140001ba0`), so they are server-side concepts like 47/153/154/163/164. **149 State** (46 slots)
   tests `unit+0x1e4`/`+0x2ac` presence (Value 0/1) with unidentified fields; **141 IsOutOfBounds** (36) compares the unit position with a world-location record's radius (`FUN_14024b980(ObjectId)`, record `+0x4` radius, `+0xc` position,
   `+0x28` world id) and the current world; **146 ItemTradeSkillLevel** (34) and **252 Personal3V3ArenaRating** (27, reads a rating through `FUN_1405bffe0(…, 1, -1)`) need further field mapping.

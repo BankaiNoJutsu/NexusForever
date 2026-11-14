@@ -1,12 +1,53 @@
 # Restoration handoff (2026-11-14)
 
 Current branch: `feature/spell-effects-remaining`. Latest continuation starts from
-published `450be0b7` after the type-149 primary-subject correction;
+published `287c2b1b` after the type-93 primary-subject correction;
 type 102 remains Blocked on the missing retail trace by user direction, and
 the next highest-reach primary-subject wrapper is continued instead.
 Static/headless investigation only; no native client execution or Computer Use.
 
-## Latest type-93 primary-subject SpellClass correction
+## Latest type-196 primary-subject Racial correction
+
+[Type-196 Racial](PREREQUISITE_196_PRIMARY_SUBJECT_20261114.md): **Verified native
+default primary/null/UnitRace/Value/comparison; Implemented / Source wrapper;
+retained CreatureEntry bridge correlated**. Indexed case0xc4 ->1404a2217 passes
+primary to default+38 slot140b67778 ->14049c520. Null unit fails; present unit
+with absent+d0 record supplies numeric0; otherwise first DWORD of that record
+is compared with full Value. Equal/NotEqual only; ObjectId/relationship unread.
+Alternate manager slot is _purecall and supplies no second rule.
+
+**Verified independent attribute witnesses:** PE Lua GetUnitRaceId entry
+140c5a7d0 ->14064a100 reads unit+d0 record ID; separate GetRaceId entry
+140c5a7c0 ->14064a080 reads+d8. Lua missing-record result is nil, while type196
+itself supplies0. CriteriaProxy accessor1403b49e0 independently reads the same
+record with zero fallback. Complete native field-writer/dynamic assignment
+and Source CreatureEntry lifetime equivalence remain unqualified. No new
+transform/race state, native writer or runtime policy added.
+
+**Supported correction:** player wrapper retains player. Existing null guard,
+CreatureEntry.UnitRaceId bridge and shared boolean equality helper unchanged.
+Old target-first fact rewritten with explicit target-as-primary control.
+Observed reach40 slots/36 rows/20 direct/weighted references, all target-apply;
+31 distinct Values resolve to UnitRace rows. Shipped type196/text419856 names
+Racial.23 new cases run red in31-case scope11 failed/20 passed, then expanded
+related filter passes all3,286,zero failed/skipped. Owning Game build zero
+warnings/errors. Existing test/config warnings remain; full suite not repeated
+and earlier non-green result below remains. No retail parity claim.
+
+**Observed evidence publication:** three label/inventory records updated with
+no row-count changes; read-only application3/created1/missing0 re-exports the
+64-byte predicate and two independent getters. Durable CSV persists; project
+changes discarded, default export/cache/manifest not refreshed.8,350 mapping
+rows, native/name/hash/census/coverage/diff checks pass. Raw native output and
+shipped payloads stay ignored. No deployment/native acceptance qualification.
+
+**Next ranked wrapper candidate:** type105 SpellEffectTypeOnUnit,10 weighted /
+four direct references,seven slots/five rows. Review its indexed/body/list
+coverage independently; do not infer lifetime from Source tests. Type76 remains
+a shared native stub. Type102 remains **Blocked** on the missing attributable
+retail untimed-Fluff lifecycle trace. Native client/CUA remain stopped.
+
+## Previous type-93 primary-subject SpellClass correction (287c2b1b)
 
 [Type-93 legacy Spell4EffectCategoryOnUnit](PREREQUISITE_93_PRIMARY_SUBJECT_20261114.md):
 **Verified native primary/null/ObjectId/SpellClass/comparison and receiving-list

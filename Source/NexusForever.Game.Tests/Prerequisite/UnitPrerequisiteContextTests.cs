@@ -605,6 +605,65 @@ public sealed class UnitPrerequisiteContextTests
     }
 
     [Theory]
+    [InlineData(70u, 70u, PrerequisiteComparison.Equal)]
+    [InlineData(71u, 70u, PrerequisiteComparison.Equal)]
+    [InlineData(70u, 70u, PrerequisiteComparison.NotEqual)]
+    [InlineData(71u, 70u, PrerequisiteComparison.NotEqual)]
+    [InlineData(null, 0u, PrerequisiteComparison.Equal)]
+    [InlineData(null, 0u, PrerequisiteComparison.NotEqual)]
+    [InlineData(0u, 0u, PrerequisiteComparison.Equal)]
+    [InlineData(0u, 0u, PrerequisiteComparison.NotEqual)]
+    public void RacialManagerEntryPointsRetainPrimaryUnitRace(uint? primaryRace, uint value, PrerequisiteComparison comparison)
+    {
+        PrerequisiteEntry row = Row(1u, PrerequisiteType.Racial, value, uint.MaxValue);
+        row.PrerequisiteComparisonId = [comparison];
+        using var fixture = new Fixture(row);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        playerProxy.SetProperty(nameof(IWorldEntity.CreatureEntry), primaryRace.HasValue ? new Creature2Entry { UnitRaceId = primaryRace.Value } : null);
+        playerProxy.SetProperty(nameof(IPlayer.Race), Race.Human);
+        IUnitEntity target = Unit(2u, 20u, out var targetProxy);
+        targetProxy.SetProperty(nameof(IWorldEntity.CreatureEntry), new Creature2Entry { UnitRaceId = (primaryRace ?? 0u) == value ? value + 1u : value });
+        var parameters = new PrerequisiteParameters { Target = target };
+        bool matches = (primaryRace ?? 0u) == value;
+        bool expected = comparison == PrerequisiteComparison.Equal ? matches : !matches;
+
+        Assert.Equal(expected, fixture.Manager.MeetsUnit(player, 1u, parameters));
+        Assert.Equal(expected, fixture.Manager.Meets(player, 1u, parameters));
+        Assert.Equal(!expected, fixture.Manager.MeetsUnit(target, 1u, new PrerequisiteParameters { Target = player }));
+        Assert.Same(target, parameters.Target);
+    }
+
+    [Theory]
+    [InlineData(PrerequisiteComparison.Equal, 70u)]
+    [InlineData(PrerequisiteComparison.NotEqual, 71u)]
+    public void RacialNullPrimaryIsNotReplacedByTheRelationship(PrerequisiteComparison comparison, uint value)
+    {
+        IUnitEntity target = Unit(2u, 20u, out var proxy);
+        proxy.SetProperty(nameof(IWorldEntity.CreatureEntry), new Creature2Entry { UnitRaceId = 70u });
+
+        Assert.False(new PrerequisiteCheckUnitRace().Meets(null, comparison, value, 0u, new PrerequisiteParameters { Target = target }));
+    }
+
+    [Theory]
+    [InlineData(PrerequisiteComparison.Equal)]
+    [InlineData(PrerequisiteComparison.NotEqual)]
+    public void RacialNullUnitFailsBeforeComparison(PrerequisiteComparison comparison)
+    {
+        Assert.False(new PrerequisiteCheckUnitRace().MeetsUnit(null, comparison, 0u, 0u, null));
+    }
+
+    [Fact]
+    public void RacialDoesNotRequireRelationshipParameters()
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var proxy);
+        proxy.SetProperty(nameof(IWorldEntity.CreatureEntry), new Creature2Entry { UnitRaceId = 70u });
+        var check = new PrerequisiteCheckUnitRace();
+
+        Assert.True(check.MeetsUnit(player, PrerequisiteComparison.Equal, 70u, 0u, null));
+        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 70u, 0u, null));
+    }
+
+    [Theory]
     [InlineData(EvaluationMode.EvaluateAND, false)]
     [InlineData(EvaluationMode.EvaluateOR, true)]
     public void MixedNpcRowsRetainAndOrSemanticsAndUnsupportedPlayerChecksFailClosed(EvaluationMode mode, bool expected)

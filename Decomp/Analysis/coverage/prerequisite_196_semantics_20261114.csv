@@ -1,0 +1,13 @@
+scope,native_witness,source_binding,evidence_tier,remaining_limit
+primary_selector,Indexed1404a4848+(196-1)*4 ->1404a2217;1404a2222 loads primary,Wrapper delegates with player,Verified native; Implemented Source,Relationship context remains available to callers
+default_slot,Default140b67778 ->14049c520; alternate140b67e58 ->1407db510,Default-manager rule only,Verified native pointer/body,Alternate purecall supplies no rule
+null_unit,14049c523..14049c52a null returns false,Existing subject null guard retained,Verified native; Source,Distinct from absent record on present unit
+record_fallback,14049c52b reads unit+d0;14049c53e supplies0 if absent,CreatureEntry null supplies0,Verified native fallback; Source bridge correlated,Complete record assignment chain unqualified
+full_value,14049c539 record first DWORD;14049c541 compares full Value,Full UnitRaceId and Value retained,Verified native; Source,No mask/rank/enum-range/truthiness rule
+comparison,14049c549..14049c55f Equal/NotEqual only,CompareCompletion retained,Verified native; Source,Unsupported modes false; ObjectId ignored
+unit_race_getter,140c5a7d0 GetUnitRaceId ->14064a100;14064a12b unit+d0 and14064a152 first DWORD,UnitRace attribute meaning,Verified native independent accessor,Lua absent record is nil; predicate fallback independently0
+race_control,140c5a7c0 GetRaceId ->14064a080 reads+d8 at14064a0ab,Separate Player.Race ignored,Verified native; Source fixture control,Character Race differs from UnitRace
+criteria_getter,1403b49e0 proxy+8 entity ->entity+d0 ->ID or0,Independent record consumer,Verified native,Full TargetGroup dispatcher not requalified here
+source_bridge,Native UnitRace record ID,Existing CreatureEntry.UnitRaceId retained,Correlated Source bridge,Complete native writer/dynamic assignment/lifetime equivalence unqualified
+reach,All3 raw slots and13 spell prerequisite columns,40 slots/36 rows/20 direct and weighted references; all target-apply,Observed imported census,Nested/non-spell consumers and cast impact outside scope
+type_name,Shipped type196 ->text419856 Racial requirement not met,Legacy Racial enum name retained,Verified shipped name witness,Name does not itself define tested attribute

@@ -1,5 +1,20 @@
 # Assessment follow-through goal
 
+[Type-196 primary-subject Racial](PREREQUISITE_196_PRIMARY_SUBJECT_20261114.md)
+(2026-11-14, from287c2b1b): Verified native default case0xc4 ->1404a2217 passes
+primary through+38/14049c520. Null fails; absent unit+d0 record supplies0;
+record ID compares with full Value for Equal/NotEqual only. Independent native
+Lua GetUnitRaceId and separate GetRaceId distinguish UnitRace from player Race;
+CriteriaProxy confirms record/zero read. Only player wrapper corrected; existing
+CreatureEntry.UnitRaceId bridge stays correlated with full native writer/dynamic
+assignment/lifetime limits. Observed reach40 slots/36 rows/20 direct and weighted
+references, all target-apply; shipped error419856 names Racial.23 new cases,
+red31-case scope11 failed/20 passed; all3,286 related Source cases pass. Owning
+Game build zero warnings/errors; three labels applied/re-exported read-only,
+8,350 mapping rows validate; native/hash/census/coverage/diff checks pass.
+Implemented / Source wrapper; no retail parity claim. Type102 stays Blocked;
+next ranked wrapper105 (10 weighted) needs its own body/list-coverage review.
+
 [Type-93 primary-subject SpellClass](PREREQUISITE_93_PRIMARY_SUBJECT_20261114.md)
 (2026-11-14, from450be0b7): Verified native case0x5d ->1404a2b0b walks primary's
 receiving-target list+15c8; any runtime SpellClass equals full ObjectId gives
