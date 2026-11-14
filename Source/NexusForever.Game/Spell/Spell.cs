@@ -635,62 +635,41 @@ namespace NexusForever.Game.Spell
             if (prerequisite.PrerequisiteTypeId.Any(t => t != PrerequisiteType.None && t != PrerequisiteType.CreatureDifficulty))
                 return false;
 
-            uint creatureDifficultyId = entity?.CreatureInfo?.DifficultyEntry?.Id ?? entity?.CreatureEntry?.Creature2DifficultyId ?? 0u;
-            if (creatureDifficultyId == 0u)
-            {
-                result = true;
-                return true;
-            }
-
             result = prerequisite.Flags switch
             {
-                EvaluationMode.EvaluateAND => EvaluateCreatureDifficultyAnd(prerequisite, creatureDifficultyId),
-                EvaluationMode.EvaluateOR  => EvaluateCreatureDifficultyOr(prerequisite, creatureDifficultyId),
+                EvaluationMode.EvaluateAND => EvaluateCreatureDifficultyAnd(prerequisite, entity),
+                EvaluationMode.EvaluateOR  => EvaluateCreatureDifficultyOr(prerequisite, entity),
                 _                          => false
             };
             return true;
         }
 
-        private static bool EvaluateCreatureDifficultyAnd(PrerequisiteEntry prerequisite, uint creatureDifficultyId)
+        private static bool EvaluateCreatureDifficultyAnd(PrerequisiteEntry prerequisite, IWorldEntity entity)
         {
             for (int i = 0; i < prerequisite.PrerequisiteTypeId.Length; i++)
             {
                 if (prerequisite.PrerequisiteTypeId[i] == PrerequisiteType.None)
-                    continue;
+                    break;
 
-                if (!ComparePrerequisiteValue(creatureDifficultyId, prerequisite.PrerequisiteComparisonId[i], prerequisite.ObjectId[i]))
+                if (!CreatureDifficultyPrerequisiteHelper.MeetsPrerequisite(entity, prerequisite.PrerequisiteComparisonId[i], prerequisite.ObjectId[i]))
                     return false;
             }
 
             return true;
         }
 
-        private static bool EvaluateCreatureDifficultyOr(PrerequisiteEntry prerequisite, uint creatureDifficultyId)
+        private static bool EvaluateCreatureDifficultyOr(PrerequisiteEntry prerequisite, IWorldEntity entity)
         {
             for (int i = 0; i < prerequisite.PrerequisiteTypeId.Length; i++)
             {
                 if (prerequisite.PrerequisiteTypeId[i] == PrerequisiteType.None)
-                    continue;
+                    break;
 
-                if (ComparePrerequisiteValue(creatureDifficultyId, prerequisite.PrerequisiteComparisonId[i], prerequisite.ObjectId[i]))
+                if (CreatureDifficultyPrerequisiteHelper.MeetsPrerequisite(entity, prerequisite.PrerequisiteComparisonId[i], prerequisite.ObjectId[i]))
                     return true;
             }
 
             return false;
-        }
-
-        private static bool ComparePrerequisiteValue(uint currentValue, PrerequisiteComparison comparison, uint expectedValue)
-        {
-            return comparison switch
-            {
-                PrerequisiteComparison.Equal              => currentValue == expectedValue,
-                PrerequisiteComparison.NotEqual           => currentValue != expectedValue,
-                PrerequisiteComparison.GreaterThanOrEqual => currentValue >= expectedValue,
-                PrerequisiteComparison.GreaterThan        => currentValue > expectedValue,
-                PrerequisiteComparison.LessThanOrEqual    => currentValue <= expectedValue,
-                PrerequisiteComparison.LessThan           => currentValue < expectedValue,
-                _                                         => false
-            };
         }
 
         private bool MeetsPersistencePrerequisites(SpellEffectInterpretation effect, IWorldEntity target)

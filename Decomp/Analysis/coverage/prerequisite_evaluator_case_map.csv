@@ -162,7 +162,7 @@
 "176","0xb0","vtable","+0x470","14049fc70","Prerequisite_CheckChallengeObject_LiveCaseB0","1/2","2",""
 "177","0xb1","inline","","","","1/3","7",""
 "178","0xb2","vtable","+0x140","14049d2c0","FUN_14049d2c0","1/2","2",""
-"179","0xb3","vtable","+0x378","14049eeb0","FUN_14049eeb0","1/2","2",""
+"179","0xb3","vtable","+0x378","14049eeb0","Prerequisite_CheckCreatureDifficulty_LiveCase179","1/2","2",""
 "180","0xb4","vtable","+0x3b0","140001ba0","ClientCraftingAbandon_WritePayload","1/3","2","shared stub"
 "182","0xb6","vtable","+0x620","1404a1070","FUN_1404a1070","1","2",""
 "183","0xb7","vtable","+0x328","14049e9e0","Prerequisite_CheckGuildMembership","1","2",""

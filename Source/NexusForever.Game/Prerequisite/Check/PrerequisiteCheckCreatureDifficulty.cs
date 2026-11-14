@@ -1,38 +1,22 @@
 using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Prerequisite;
 using NexusForever.Game.Static.Prerequisite;
-using NexusForever.GameTable;
 
 namespace NexusForever.Game.Prerequisite.Check
 {
     /// <summary>
-    /// Mirrors spell apply-path checks in <see cref="NexusForever.Game.Spell.Spell"/> for rows typed
-    /// <see cref="PrerequisiteType.CreatureDifficulty"/>. Handler table[179] at <c>1404a18f0</c> calls
-    /// <c>PrimalMatrix_LookupAllocatedNode</c> (<c>1404d6a60</c>) and is a separate dead-path cluster.
+    /// Native type 179: evaluator case 0xb3 calls manager vtable +0x378 (14049eeb0) with
+    /// the primary entity, comparison and ObjectId; Value and the relationship target are not read.
+    /// Uses the same slot rule as the pure-179 spell path. Evidence tier: Verified native field
+    /// binding; Source implementation, no retail parity claim. See PREREQUISITE_179_FIELD_BINDING_20261114.md.
     /// </summary>
     [PrerequisiteCheck(PrerequisiteType.CreatureDifficulty)]
     public class PrerequisiteCheckCreatureDifficulty : IPrerequisiteCheck
     {
-        private readonly IGameTableManager gameTableManager;
-
-        public PrerequisiteCheckCreatureDifficulty(IGameTableManager gameTableManager)
-        {
-            this.gameTableManager = gameTableManager;
-        }
-
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
-            => MeetsEntity(parameters.Target ?? player, comparison, value, objectId);
+            => MeetsUnit(player, comparison, value, objectId, parameters);
 
         public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
-            => MeetsEntity(subject, comparison, value, objectId);
-
-        private bool MeetsEntity(IWorldEntity entity, PrerequisiteComparison comparison, uint value, uint objectId)
-        {
-            if (!CreatureDifficultyPrerequisiteHelper.TryGetCreatureDifficultyId(entity, gameTableManager, out uint creatureDifficultyId))
-                return false;
-
-            return PrerequisiteCompare.Compare(comparison, creatureDifficultyId, objectId);
-        }
-
+            => CreatureDifficultyPrerequisiteHelper.MeetsPrerequisite(subject, comparison, objectId);
     }
 }

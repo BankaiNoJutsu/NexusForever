@@ -2326,21 +2326,17 @@ public class PrerequisiteCheckTests
     }
 
     [Fact]
-    public void CreatureDifficulty_ComparesTargetCreatureDifficultyId()
+    public void CreatureDifficulty_ComparesTheExplicitSubjectCreatureDifficultyId()
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
         IUnitEntity target = RecordingDispatchProxy<IUnitEntity>.Create(out var targetProxy);
         targetProxy.SetProperty(nameof(IWorldEntity.CreatureEntry), new Creature2Entry { Creature2DifficultyId = 8u });
 
-        IGameTableManager tables = RecordingDispatchProxy<IGameTableManager>.Create(out var tableProxy);
-        tableProxy.SetProperty(nameof(IGameTableManager.Creature2Difficulty), CreateGameTable(
-            new Creature2DifficultyEntry { Id = 8u, RankValue = 2u }));
+        var check = new PrerequisiteCheckCreatureDifficulty();
+        var parameters = new PrerequisiteParameters { Target = player };
 
-        var check = new PrerequisiteCheckCreatureDifficulty(tables);
-        var parameters = new PrerequisiteParameters { Target = target };
-
-        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 0u, 8u, parameters));
-        Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 0u, 9u, parameters));
+        Assert.True(check.MeetsUnit(target, PrerequisiteComparison.Equal, 0u, 8u, parameters));
+        Assert.False(check.MeetsUnit(target, PrerequisiteComparison.Equal, 0u, 9u, parameters));
     }
 
     [Fact]

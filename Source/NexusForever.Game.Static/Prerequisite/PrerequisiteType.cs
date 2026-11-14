@@ -184,7 +184,7 @@
         ChallengeObject             = 176, // Challenge object requirement not met - handler table[176] stub 140001ba0; NF proxies activated challenge for objectId0 Challenge.tbl id
         TrueLevel                   = 177, // Native case 0xB1 compares unit+0x38 (base level) with Value via FUN_1404a2090; not a challenge lookup
         ProgressTrackOnMatchingEntity = 178, // Requirements not met - older name; live case 0xb2 vtable +0x140 -> 14049d2c0: an item is equipped in ItemSlot ObjectId (lowest bit of equippedSlotFlags); see PrerequisiteCheckItemSlotEquipped
-        CreatureDifficulty          = 179, // Requirements not met - objectId0 is Creature2Difficulty id; spell apply path + NF PrerequisiteCheckCreatureDifficulty; handler table[179] 1404a18f0 calls PrimalMatrix_LookupAllocatedNode 1404d6a60 (separate dead-path cluster — not difficulty compare)
+        CreatureDifficulty          = 179, // Live case 0xb3, vtable +0x378 -> 14049eeb0: primary's effective Creature2DifficultyId vs ObjectId; no creature record = 0, record with raw ID 0 = native default 25. See PREREQUISITE_179_FIELD_BINDING_20261114.md.
         CreatureDifficultyRank      = 180, // Requirements not met - handler table[180] stub 140001ba0; value0 is Creature2Difficulty.RankValue on target (optional objectId0 filters difficulty id); spell path also handles type 179 inline
         // 181 is unused in PrerequisiteType.tbl
         HouseOwnership              = 182, // Housing ownership requirement not met - handler table[182] Prerequisite_CheckHouseOwnership 1404a5150; NF checks IResidenceManager residence OwnerId + optional PropertyInfoId objectId0

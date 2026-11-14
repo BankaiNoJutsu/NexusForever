@@ -1513,7 +1513,7 @@ WildStar64.exe,14050b150,FUN_14050b150,Consumer dispatch candidate — may route
 WildStar64.exe,140792280,FUN_140792280,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,140798770,FUN_140798770,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,14079b560,FUN_14079b560,Consumer dispatch candidate — may route server→client packets.
-WildStar64.exe,140482720,FUN_140482720,Consumer dispatch candidate — may route server→client packets.
+WildStar64.exe,140482720,CreatureInfo_ConstructWithDefaults,Verified native field binding: initializes intermediate creature record +0x14 to default difficulty ID 25 before the raw Creature2 builder; not a packet consumer. See PREREQUISITE_179_FIELD_BINDING_20261114.md.
 WildStar64.exe,14055c6a0,FUN_14055c6a0,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,14039c720,FUN_14039c720,Consumer dispatch candidate — may route server→client packets.
 WildStar64.exe,1407a0610,FUN_1407a0610,Consumer dispatch candidate — may route server→client packets.
@@ -6369,3 +6369,6 @@ WildStar64.exe,140458ec0,Unit_RegisterWithOwnerOnCreate,Unit-created path for en
 WildStar64.exe,14047c1e0,Unit_OwnsEntityId,Membership test on the owned-entity list of a unit (+0x2b8 / +0x2c0).
 WildStar64.exe,1404826c0,Unit_GetMaxBreath_GameFormula55,Unit virtual +0x60: caches and returns the first integer of GameFormula row 0x37 (55) as the maximum Breath (100 in the retail table).
 WildStar64.exe,140454380,Unit_Construct_SetsTable140b66fd0,Constructor that installs the Unit virtual table at 140b66fd0 (destructor side 1404550d0).
+WildStar64.exe,140458a40,Unit_SetCreatureInfoRecord,Verified native field binding: installs intermediate creature record at unit +0x18; caches its difficulty ID +0x14 at unit +0x30 independently of the Creature2Difficulty lookup stored at unit +0x100. See PREREQUISITE_179_FIELD_BINDING_20261114.md.
+WildStar64.exe,14045ba40,Unit_GetEffectiveCreatureDifficultyId,Verified native field binding: base vtable +0x10 returns cached difficulty below 25 otherwise intermediate record +0x14 or default 25. Prerequisite type 179 separately uses zero with no record. See PREREQUISITE_179_FIELD_BINDING_20261114.md.
+WildStar64.exe,14049eeb0,Prerequisite_CheckCreatureDifficulty_LiveCase179,Verified native evaluator case 0xb3 vtable +0x378: null primary fails; no creature record compares zero otherwise primary virtual +0x10 supplies difficulty ID; unsigned integer comparison against ObjectId. See PREREQUISITE_179_FIELD_BINDING_20261114.md.

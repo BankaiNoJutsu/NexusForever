@@ -1,5 +1,10 @@
 # Type 179: primary subject and native accessor (2026-11-14)
 
+Superseded field-meaning gate: [the follow-through binding](PREREQUISITE_179_FIELD_BINDING_20261114.md)
+recovers the intermediate record builder/setter and the default 25 for a present
+record whose raw difficulty is zero. The hypotheses and pending reads below are
+the earlier checkpoint, not the current implementation recommendation.
+
 Provenance: lead direct LLVM 21.1.8 disassembly and PE pointer reads of build
 16042, SHA256 `231bb2bb3fc6c37f3e8a43a0ba965cc3645287bbc6ccad83d073a495c396b3e5`.
 The executable identity was checked through REA in the preceding

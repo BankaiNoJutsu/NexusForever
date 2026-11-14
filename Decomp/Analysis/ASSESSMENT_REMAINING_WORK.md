@@ -1,5 +1,22 @@
 # Assessment follow-through goal
 
+[Type-179 field binding and shared comparison](PREREQUISITE_179_FIELD_BINDING_20261114.md)
+(2026-11-14): the native Creature2 builder maps raw `creature2DifficultyId`
+(`+0x1c`) into the intermediate record (`+0x14`), then the unit setter caches it
+at `+0x30`. Crucially the intermediate constructor defaults to 25 and the builder
+skips a raw zero: present record/raw zero means 25; absent creature record means
+zero in the prerequisite. The former affects 17,990 of 53,137 imported Creature2
+rows (not a count of affected casts). The player manager, explicit-unit check and
+pure-179 spell path now share one slot rule, retain the primary subject, compare
+unresolved IDs without table-lookup gating, and stop pure rows at None. Native
+field binding/evaluator evidence is Verified; implementation is Source tier,
+2,918 Prerequisite/Spell cases pass after rebuilding; owning build has zero
+warnings/errors. Four labels were reapplied and re-exported; 8,331 mapping rows
+validate. Full suite: 15,069 passed / 30 failed / two skipped; all failed methods
+pass isolated reruns covering 94 cases, not a green full-suite claim. Type 180,
+mixed non-unit row policy and native/client/retail qualification remain separate.
+No retail parity claim.
+
 [Type-179 accessor follow-through](PREREQUISITE_179_NATIVE_ACCESSOR_20261114.md)
 (2026-11-14): direct disassembly resolves the primary unit's virtual `+0x10`
 through the constructor-installed base vtable to `14045ba40`. It reads unit
