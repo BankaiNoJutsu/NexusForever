@@ -44,8 +44,10 @@ Two gaps in the preceding search scope were corrected:
   path failure did not establish that the corpus was unavailable everywhere.
 
 The machine-readable [source inventory](coverage/prerequisite_102_retail_trace_sources_20261114.csv)
-records **23 reviewed source scopes**, their identities, tiers, results and
-remaining limits. Source/tool availability is not an additional retail witness.
+recorded **23 reviewed source scopes as of `4388354d`**, their identities, tiers,
+results and remaining limits. The later [issue-lead follow-through](PREREQUISITE_102_SNIFF_COLLECTION_LEADS_20261114.md)
+extends that inventory to 32 scopes. Source/tool availability is not an
+additional retail witness.
 
 ## Local evidence review (Observed)
 

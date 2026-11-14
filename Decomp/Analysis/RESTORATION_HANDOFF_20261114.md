@@ -1,11 +1,44 @@
 # Restoration handoff (2026-11-14)
 
 Current branch: `feature/spell-effects-remaining`. Latest continuation starts from
-published `9419040d` after the type-102 Fluff admission/native teardown mapping;
-it seeks an attributable original-server spell trace. Static/headless investigation
-only; no native client execution or Computer Use.
+published `4388354d` after the type-102 bounded trace search;
+it follows upstream issues 370/372 toward an attributable original-server trace.
+Static/headless investigation only; no native client execution or Computer Use.
 
-## Latest type-102 original-server trace search
+## Latest type-102 sniff-collection lead follow-through
+
+[Lead follow-through](PREREQUISITE_102_SNIFF_COLLECTION_LEADS_20261114.md):
+**Observed primary statements/excerpt / Correlated provenance / Mapped Source
+outputs / Blocked original-server witness**. The two open issues' complete
+returned timelines have two/five events, with no recording or linked-PR location.
+WorldDatabase attributes initial data to custom tooling ingesting retail-era
+sniffs; checklist changes predate 370 and fit its extraction workflow. The
+reviewed SQL keeps entity/stat/spline data, not cast IDs or ordered spell traffic.
+Vendor/store PRs likewise supply static SQL. SpellWorks loads client archives
+and tables. These outputs cannot recover Fluff order.
+
+A public PR 62 comment (2018-12-09) contains a parsed player-entity excerpt,
+attributed by its author to a sniff shared by lucas-jones on Discord. It supplies
+neither independent recording provenance/build nor Start/Go/remove/Finish.
+The cited participant's five listed public fork branch trees and empty releases
+list provide no named capture candidate. Sharing attribution does not establish
+collection custody or current access. Related checklist code and later sniff
+citations provide no raw-file location in reviewed records.
+
+The source inventory now has **32 scopes**, including nine new scopes and
+expanded issue timeline review. Exact refs, direct links and unreviewed-history/
+external-payload limits are in the finding. No application/native-label changes.
+Identity/SQL-shape/CSV/diff checks pass; no build/test repeat. No retail parity claim.
+
+**Next gate remains Blocked:** actual attributable recording bytes (or complete
+extraction) retaining build/context, concrete Spell4/effect, wrapper/receiver IDs
+and ordered lifecycle for untimed Fluff; include a multi-target survivor before
+generalizing retirement scope. The reported collections and historical sharing
+route are leads, not known available inputs. No third-party messages, login or
+private-channel access performed. Do not invent custody/access or persist Fluff
+markers/parents from derived data or the player excerpt.
+
+## Previous type-102 original-server trace search (4388354d)
 
 [Trace search](PREREQUISITE_102_RETAIL_TRACE_SEARCH_20261114.md): **Mapped Source
 capture format / Observed source inventory / Blocked original-server witness**.
@@ -15,7 +48,8 @@ now include it and another local client/addon corpus. All 911 ZIP / 122 7z membe
 listings succeed; no applicable capture candidate. Reviewed public default trees,
 three Internet Archive ZIP catalogs plus 37 selected indexes, and two wiki XML
 histories supply code/addon/reference material rather than a verified sequence.
-The 23-row source inventory retains exact scope and unreviewed-payload limits.
+The then-23-row source inventory retains exact scope and unreviewed-payload limits;
+the latest pass above extends it.
 
 Upstream issues **370 and 372** are the strongest remaining leads: they refer to
 sniffs/a collection, but their reviewed bodies/comments/events provide no trace

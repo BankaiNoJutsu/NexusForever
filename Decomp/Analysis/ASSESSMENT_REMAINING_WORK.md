@@ -1,5 +1,18 @@
 # Assessment follow-through goal
 
+[Type-102 sniff-collection leads](PREREQUISITE_102_SNIFF_COLLECTION_LEADS_20261114.md)
+(2026-11-14, from 4388354d): Observed primary timelines for upstream 370/372
+provide no recording/linked-PR location. WorldDatabase's retail-origin statement
+and historical checklist exports give Correlated provenance; Mapped Source
+entity/vendor/store SQL and SpellWorks input paths do not preserve spell order.
+An Observed public 2018 parsed player-entity excerpt names a historical sharing
+route, but supplies no Fluff lifecycle or raw recording. Five cited-sharer fork
+branches and related PR/code leads yield no qualifying trace in reviewed scopes.
+The inventory grows from 23 to 32 scopes with explicit limits. Original-server
+Fluff policy stays Blocked; no behavior/native-label changes or new retail
+promotion. Identity/shape/inventory/diff checks pass; no C# build/test repeat.
+Mapped only with the witness blocked. No retail parity claim.
+
 [Type-102 original-server trace search](PREREQUISITE_102_RETAIL_TRACE_SEARCH_20261114.md)
 (2026-11-14, from 9419040d): no qualifying untimed-Fluff Start/Go/remove/Finish
 trace was located in the bounded review. Mapped parser source adds the omitted
