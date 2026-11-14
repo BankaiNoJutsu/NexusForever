@@ -1036,14 +1036,16 @@ public class PrerequisiteCheckTests
     [InlineData(PrerequisiteComparison.NotEqual, 80u, false)]
     [InlineData(PrerequisiteComparison.GreaterThan, 79u, true)]
     [InlineData(PrerequisiteComparison.LessThanOrEqual, 79u, false)]
-    public void Health_ComparesHealthPercentOnTarget(
+    public void Health_ComparesHealthPercentOnPrimaryPlayer(
         PrerequisiteComparison comparison,
         uint value,
         bool expected)
     {
-        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        playerProxy.SetProperty(nameof(IWorldEntity.Health), 800u);
+        playerProxy.SetProperty(nameof(IWorldEntity.MaxHealth), 1000u);
         IUnitEntity target = RecordingDispatchProxy<IUnitEntity>.Create(out var targetProxy);
-        targetProxy.SetProperty(nameof(IWorldEntity.Health), 800u);
+        targetProxy.SetProperty(nameof(IWorldEntity.Health), 100u);
         targetProxy.SetProperty(nameof(IWorldEntity.MaxHealth), 1000u);
 
         var check = new PrerequisiteCheckHealth();

@@ -1,12 +1,47 @@
 # Restoration handoff (2026-11-14)
 
 Current branch: `feature/spell-effects-remaining`. Latest continuation starts from
-published `d15cedbb` after the type-28 primary-subject correction;
+published `85b11fbe` after the type-39 primary-subject correction;
 type 102 remains Blocked on the missing retail trace by user direction, and
 the next highest-reach primary-subject wrapper is continued instead.
 Static/headless investigation only; no native client execution or Computer Use.
 
-## Latest type-39 primary-subject correction
+## Latest type-40 primary-subject health correction
+
+[Type-40 health subject](PREREQUISITE_40_PRIMARY_SUBJECT_20261114.md): **Verified
+native selector/arithmetic + ISA comparison; Implemented / Source**. Re-derived
+case 0x28 switch entry 1404a2367 -> 1404a4d90 and actual parameter registers;
+the subject is primary. Named Lua GetHealth/GetMaxHealth registration/bodies
+independently bind virtual +0x40/+0x48. Single-precision uint conversion,
+multiply100 then divide, threshold conversion and null-primary guard agree with
+the existing calculation; the player wrapper now retains player.
+
+**New native discrepancy recovered:** 1404a2010's Equal/NotEqual arms use
+UCOMISS/JNE and UCOMISS/JE without PF rejection. Intel ISA flags establish
+unordered Equal true, NotEqual false, all ordering comparisons false when
+comparison is reached with masked FP exceptions. The earlier C decompile/IEEE
+comment missed this distinction. A named native comparison is used only by type
+40; existing other float paths retain behavior pending their own caller/NaN
+review. Do not globally promote their earlier native-parity comments. Zero/zero
+still produces NaN, positive/zero infinity; no clamp or guessed default. Retail
+zero-max reachability and client exception-mask configuration remain unknown.
+
+**Observed reach/verification:** 406 slots / 338 rows / 623 direct / 705 weighted
+spell references. Of 31 new cases, nine fail red and 22 pass; the final related
+Prerequisite/Spell/Cooldown gate passes all 3,057, zero failed/skipped. Owning
+Game build has zero warnings/errors. Eight-mode comparison CSV, native identity/
+switch/constant/Lua binding, census and diff checks pass. Unchanged test/config
+warnings and earlier non-green full suite are retained; no full-suite repeat,
+deployment, provider/socket or native execution qualification. No retail parity claim.
+
+**Next selector candidate:** type 12 DeadState (168 slots/rows, 364 weighted
+spell references), with its own native/body/caller read first. Type 102 remains
+Blocked on the missing attributable untimed-Fluff retail lifecycle trace, per
+user direction. No client/CUA launch. Current type-40 finding supersedes the
+earlier health note's IEEE claim; the native helper's existing generic label
+does not need a rename or new export.
+
+## Previous type-39 primary-subject correction (85b11fbe)
 
 [Type-39 player subject](PREREQUISITE_39_PRIMARY_SUBJECT_20261114.md): **Verified
 native selector/kind; Implemented / Source**. Re-read case 0x27, switch entry

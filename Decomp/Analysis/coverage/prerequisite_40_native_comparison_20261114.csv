@@ -1,0 +1,9 @@
+comparison_id,comparison,native_arm,unordered_result,positive_infinity_vs_100,finite_50_vs_50,evidence_tier,remaining_limit
+0,Invalid,1404a2015->1404a2067,false,false,false,Verified native + ISA,Type-40 mapped call site; no retail parity claim
+1,Equal,1404a202d,true,false,true,Verified native + ISA,Masked FP exceptions when comparison reached; zero-max retail reach unknown
+2,NotEqual,1404a2038,false,true,false,Verified native + ISA,Masked FP exceptions when comparison reached; zero-max retail reach unknown
+3,GreaterThan,1404a2043,false,true,false,Verified native + ISA,Masked FP exceptions when comparison reached; zero-max retail reach unknown
+4,GreaterThanOrEqual,1404a204c,false,true,true,Verified native + ISA,Masked FP exceptions when comparison reached; zero-max retail reach unknown
+5,LessThan,1404a2055,false,false,false,Verified native + ISA,Masked FP exceptions when comparison reached; zero-max retail reach unknown
+6,LessThanOrEqual,1404a205e,false,false,true,Verified native + ISA,Masked FP exceptions when comparison reached; zero-max retail reach unknown
+7,Invalid,1404a2015->1404a2067,false,false,false,Verified native + ISA,Type-40 mapped call site; no retail parity claim

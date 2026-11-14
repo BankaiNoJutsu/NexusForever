@@ -26,8 +26,8 @@ namespace NexusForever.Game.Prerequisite
             };
 
         /// <summary>
-        /// The evaluator's float compare helper <c>FUN_1404a2010(…, comparison, actual, expected)</c>: 1 ==, 2 !=, 3 actual &gt; expected, 4 &gt;=, 5 &lt;, 6 &lt;=, anything else false, with IEEE
-        /// semantics (a NaN actual only satisfies !=).
+        /// Managed IEEE comparisons retained for callers whose native instruction-level
+        /// correspondence is separate from the type-40 read. A NaN operand only satisfies !=.
         /// </summary>
         public static bool CompareFloat(PrerequisiteComparison comparison, float actual, float expected)
             => comparison switch
@@ -40,6 +40,20 @@ namespace NexusForever.Game.Prerequisite
                 PrerequisiteComparison.LessThanOrEqual    => actual <= expected,
                 _                                         => false
             };
+
+        /// <summary>
+        /// Verified native helper <c>1404a2010</c>: UCOMISS/JNE and UCOMISS/JE
+        /// use ZF without rejecting unordered operands. With masked FP exceptions,
+        /// NaN therefore satisfies Equal only. Type 40's direct call is mapped in
+        /// Decomp/Analysis/PREREQUISITE_40_PRIMARY_SUBJECT_20261114.md.
+        /// </summary>
+        public static bool CompareNativeFloat(PrerequisiteComparison comparison, float actual, float expected)
+        {
+            if (float.IsNaN(actual) || float.IsNaN(expected))
+                return comparison == PrerequisiteComparison.Equal;
+
+            return CompareFloat(comparison, actual, expected);
+        }
 
         public static bool Compare(PrerequisiteComparison comparison, uint current, uint expected)
         {

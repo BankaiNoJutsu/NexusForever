@@ -282,6 +282,61 @@ public sealed class UnitPrerequisiteContextTests
     }
 
     [Theory]
+    [InlineData(PrerequisiteComparison.Equal, true)]
+    [InlineData(PrerequisiteComparison.NotEqual, false)]
+    [InlineData(PrerequisiteComparison.GreaterThan, false)]
+    [InlineData(PrerequisiteComparison.GreaterThanOrEqual, true)]
+    [InlineData(PrerequisiteComparison.LessThan, false)]
+    [InlineData(PrerequisiteComparison.LessThanOrEqual, true)]
+    public void HealthPlayerAndUnitEntryPointsRetainThePrimarySubject(PrerequisiteComparison comparison, bool expected)
+    {
+        PrerequisiteEntry row = Row(1, PrerequisiteType.Health, 50);
+        row.PrerequisiteComparisonId = [comparison];
+        using var fixture = new Fixture(row);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        playerProxy.SetProperty(nameof(IWorldEntity.Health), 150u);
+        playerProxy.SetProperty(nameof(IWorldEntity.MaxHealth), 300u);
+        IUnitEntity target = Unit(2, 20, out var targetProxy);
+        targetProxy.SetProperty(nameof(IWorldEntity.Health), 900u);
+        targetProxy.SetProperty(nameof(IWorldEntity.MaxHealth), 1000u);
+        var parameters = new PrerequisiteParameters { Target = target };
+        bool explicitTargetExpected = comparison is PrerequisiteComparison.NotEqual
+            or PrerequisiteComparison.GreaterThan or PrerequisiteComparison.GreaterThanOrEqual;
+
+        Assert.Equal(expected, fixture.Manager.MeetsUnit(player, 1, parameters));
+        Assert.Equal(expected, fixture.Manager.Meets(player, 1, parameters));
+        Assert.Equal(explicitTargetExpected, fixture.Manager.MeetsUnit(target, 1, new PrerequisiteParameters { Target = player }));
+        Assert.Same(target, parameters.Target);
+    }
+
+    [Theory]
+    [InlineData(PrerequisiteComparison.Equal)]
+    [InlineData(PrerequisiteComparison.GreaterThanOrEqual)]
+    public void HealthNullPrimaryIsNotReplacedByTheRelationship(PrerequisiteComparison comparison)
+    {
+        IUnitEntity target = Unit(2, 20, out var targetProxy);
+        targetProxy.SetProperty(nameof(IWorldEntity.Health), 150u);
+        targetProxy.SetProperty(nameof(IWorldEntity.MaxHealth), 300u);
+        var check = new PrerequisiteCheckHealth();
+        var parameters = new PrerequisiteParameters { Target = target };
+
+        Assert.False(check.Meets(null, comparison, 50u, 0u, parameters));
+        Assert.False(check.MeetsUnit(null, comparison, 50u, 0u, parameters));
+    }
+
+    [Fact]
+    public void HealthDoesNotRequireRelationshipParameters()
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        playerProxy.SetProperty(nameof(IWorldEntity.Health), 150u);
+        playerProxy.SetProperty(nameof(IWorldEntity.MaxHealth), 300u);
+        var check = new PrerequisiteCheckHealth();
+
+        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 50u, 0u, null));
+        Assert.True(check.MeetsUnit(player, PrerequisiteComparison.Equal, 50u, 0u, null));
+    }
+
+    [Theory]
     [InlineData(EvaluationMode.EvaluateAND, false)]
     [InlineData(EvaluationMode.EvaluateOR, true)]
     public void MixedNpcRowsRetainAndOrSemanticsAndUnsupportedPlayerChecksFailClosed(EvaluationMode mode, bool expected)

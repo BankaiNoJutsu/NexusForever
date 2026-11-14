@@ -2,6 +2,13 @@
 
 Evidence tier: **native body read**, with the retail values (50, 30, 25, 75, 10, 100) corroborating the percentage reading. Source/SQLite only. No retail parity claim.
 
+2026-11-14 correction: [type-40 selector/instruction re-read](PREREQUISITE_40_PRIMARY_SUBJECT_20261114.md)
+supersedes this note's IEEE claim for `1404a2010`: unordered Equal returns true
+and NotEqual false through the actual UCOMISS/ZF branches. The percentage formula
+is retained. The later note also corrects the player wrapper's primary subject;
+other comparison consumers require separate review. **Verified native + ISA**,
+not a retail zero-capacity witness; no retail parity claim.
+
 ## Native
 
 Evaluator case `0x28` calls `FUN_1404a4d90(unit, comparison, Value)`: false for a null unit; otherwise it takes the unit's virtual `+0x40` (current health) times the constant `DAT_140b7a0dc` (**100.0f**), divides by the unit's virtual `+0x48`

@@ -1,5 +1,19 @@
 # Assessment follow-through goal
 
+[Type-40 primary-subject health semantics](PREREQUISITE_40_PRIMARY_SUBJECT_20261114.md)
+(2026-11-14, from 85b11fbe): Verified native selector/arithmetic and independent
+Lua health accessor binding retain primary unit and float health*100/max health.
+Disassembly plus Intel ISA flags correct the prior helper's IEEE interpretation:
+unordered Equal is true, NotEqual false when comparison is reached with masked
+FP exceptions. Type 40 alone uses the recovered comparison; other float paths
+need their own caller/NaN review. Player wrapper now retains player. Observed
+reach: 406 slots / 338 rows / 623 direct / 705 weighted references. New 31-case
+red run: nine failed, 22 passed; all 3,057 related Source cases then pass. Owning
+Game build zero warnings/errors; eight-mode coverage/native/census/diff checks
+pass. Retail zero-max reach/exception configuration unknown, type 102 stays
+Blocked. Next selector: type 12 (364 weighted). Implemented / Source;
+Verified native + ISA, no retail parity claim.
+
 [Type-39 primary-subject player identity](PREREQUISITE_39_PRIMARY_SUBJECT_20261114.md)
 (2026-11-14, from d15cedbb): Verified native case 0x27 tests primary-unit kind
 20; independently re-read Lua GetType binds that kind to Player. The next
