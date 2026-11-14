@@ -1100,12 +1100,13 @@ public class PrerequisiteCheckTests
     [InlineData(PrerequisiteComparison.Equal, 1u, true)]
     [InlineData(PrerequisiteComparison.Equal, 0u, true)]
     [InlineData(PrerequisiteComparison.NotEqual, 0u, false)]
-    public void IsPlayer_ComparesTargetEntityKind(PrerequisiteComparison comparison, uint value, bool expected)
+    public void IsPlayer_ComparesPrimaryPlayerKind(PrerequisiteComparison comparison, uint value, bool expected)
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
         var check = new PrerequisiteCheckIsPlayer();
 
-        Assert.Equal(expected, check.Meets(player, comparison, value, 0u, new PrerequisiteParameters { Target = player }));
+        IUnitEntity target = RecordingDispatchProxy<IUnitEntity>.Create(out _);
+        Assert.Equal(expected, check.Meets(player, comparison, value, 0u, new PrerequisiteParameters { Target = target }));
     }
 
     // Native type 38 compares the unit's creature id with Value (Creature2 ids in retail), not a creature-kind flag (PREREQUISITE_CREATURE_ITEM_CHALLENGE_20261107.md).

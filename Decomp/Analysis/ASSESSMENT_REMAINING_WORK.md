@@ -1,5 +1,16 @@
 # Assessment follow-through goal
 
+[Type-39 primary-subject player identity](PREREQUISITE_39_PRIMARY_SUBJECT_20261114.md)
+(2026-11-14, from d15cedbb): Verified native case 0x27 tests primary-unit kind
+20; independently re-read Lua GetType binds that kind to Player. The next
+highest-reach wrapper now retains player and fails null primary for both boolean
+comparisons. Observed reach: 200 slots/rows, 1,140 direct/weighted spell-column
+references. Six new cases fail red (two existing controls pass); all 3,026 related
+Source cases pass after correction; owning Game build has zero warnings/errors.
+Existing non-player flag controls remain. No entity-model/native-label change.
+Type 102 stays Blocked. Next raw-reach candidate: type 40 (705 weighted).
+Implemented / Source, Verified native selector; no retail parity claim.
+
 [Type-28 primary-subject combat state](PREREQUISITE_28_PRIMARY_SUBJECT_20261114.md)
 (2026-11-14, from 7702f101): Verified native case 0x1c reads primary unit +0x2ac;
 the separately registered Lua IsInCombat body binds the field. The highest-reach

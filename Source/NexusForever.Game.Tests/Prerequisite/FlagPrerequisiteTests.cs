@@ -56,7 +56,9 @@ public class FlagPrerequisiteTests
         Assert.Equal(expected, check.MeetsUnit(subject, comparison, value, 0u, new PrerequisiteParameters()));
 
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
-        Assert.Equal(expected, check.Meets(player, comparison, value, 0u, new PrerequisiteParameters { Target = subject }));
+        // The primary player is kind 20 regardless of the relationship target's kind.
+        Assert.Equal(comparison == PrerequisiteComparison.Equal,
+            check.Meets(player, comparison, value, 0u, new PrerequisiteParameters { Target = subject }));
     }
 
     [Theory]

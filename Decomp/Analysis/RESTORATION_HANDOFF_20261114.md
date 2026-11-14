@@ -1,12 +1,37 @@
 # Restoration handoff (2026-11-14)
 
 Current branch: `feature/spell-effects-remaining`. Latest continuation starts from
-published `7702f101` after the type-102 sniff-collection lead review;
+published `d15cedbb` after the type-28 primary-subject correction;
 type 102 remains Blocked on the missing retail trace by user direction, and
-the highest-reach remaining primary-subject wrapper is continued instead.
+the next highest-reach primary-subject wrapper is continued instead.
 Static/headless investigation only; no native client execution or Computer Use.
 
-## Latest type-28 primary-subject correction
+## Latest type-39 primary-subject correction
+
+[Type-39 player subject](PREREQUISITE_39_PRIMARY_SUBJECT_20261114.md): **Verified
+native selector/kind; Implemented / Source**. Re-read case 0x27, switch entry
+1404a22d4 and null/boolean tail against the matching build-16042 binary.
+Independently re-read Lua GetType registration and stack string array: kind20
+maps to Player. The player wrapper now uses its player as primary; relationship
+Target cannot replace it or rescue a null subject. Existing explicit-unit kind
+test and entity models remain unchanged. Source activation routing is observed,
+but native activation policy is not promoted by this selector correction.
+
+**Observed reach/verification:** 200 slots / 200 rows / 1,140 direct/weighted
+spell-column references. Six new cases fail red; two existing explicit-NPC
+controls selected by the red filter pass. Final Prerequisite/Spell/Cooldown gate
+passes 3,026 cases, zero failed/skipped; owning Game build has zero warnings/errors.
+Unchanged test/config warnings and preceding non-green full-suite result are
+retained; no full-suite repeat or new provider/native execution qualification.
+No retail parity claim. Published preceding type-28 correction: `d15cedbb`.
+
+**Next candidate:** type 40 Health (406 slots / 338 rows / 623 direct / 705
+weighted spell references), then type 12 (364 weighted). Re-read each native
+selector/body/caller before changing its remaining substituting player wrapper.
+Type 102 stays Blocked on the attributable untimed-Fluff retail lifecycle trace;
+do not reopen the exhausted search without new evidence. No client/CUA launch.
+
+## Previous type-28 primary-subject correction (d15cedbb)
 
 [Type-28 combat subject](PREREQUISITE_28_PRIMARY_SUBJECT_20261114.md): **Verified
 native selector/field; Implemented / Source**. Direct switch bytes select

@@ -235,6 +235,53 @@ public sealed class UnitPrerequisiteContextTests
     }
 
     [Theory]
+    [InlineData(PrerequisiteComparison.Equal, true)]
+    [InlineData(PrerequisiteComparison.NotEqual, false)]
+    public void IsPlayerPlayerAndUnitEntryPointsRetainThePrimarySubject(PrerequisiteComparison comparison, bool expected)
+    {
+        PrerequisiteEntry row = Row(1, PrerequisiteType.IsPlayer, 0);
+        row.PrerequisiteComparisonId = [comparison];
+        using var fixture = new Fixture(row);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        playerProxy.SetProperty(nameof(IWorldEntity.Type), EntityType.Player);
+        IUnitEntity target = Unit(2, 20, out var targetProxy);
+        targetProxy.SetProperty(nameof(IWorldEntity.Type), EntityType.NonPlayer);
+        var parameters = new PrerequisiteParameters { Target = target };
+
+        Assert.Equal(expected, fixture.Manager.MeetsUnit(player, 1, parameters));
+        Assert.Equal(expected, fixture.Manager.Meets(player, 1, parameters));
+        Assert.Equal(!expected, fixture.Manager.MeetsUnit(target, 1, new PrerequisiteParameters { Target = player }));
+        Assert.Same(target, parameters.Target);
+    }
+
+    [Theory]
+    [InlineData(true, PrerequisiteComparison.Equal)]
+    [InlineData(false, PrerequisiteComparison.NotEqual)]
+    public void IsPlayerNullPrimaryIsNotReplacedByTheRelationship(bool targetIsPlayer, PrerequisiteComparison comparison)
+    {
+        IUnitEntity target = targetIsPlayer
+            ? RecordingDispatchProxy<IPlayer>.Create(out _)
+            : Unit(2, 20, out _);
+        var check = new PrerequisiteCheckIsPlayer();
+        var parameters = new PrerequisiteParameters { Target = target };
+
+        Assert.False(check.Meets(null, comparison, 0u, 0u, parameters));
+        Assert.False(check.MeetsUnit(null, comparison, 0u, 0u, parameters));
+    }
+
+    [Theory]
+    [InlineData(PrerequisiteComparison.Equal, true)]
+    [InlineData(PrerequisiteComparison.NotEqual, false)]
+    public void IsPlayerDoesNotRequireRelationshipParameters(PrerequisiteComparison comparison, bool expected)
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+        var check = new PrerequisiteCheckIsPlayer();
+
+        Assert.Equal(expected, check.Meets(player, comparison, 0u, 0u, null));
+        Assert.Equal(expected, check.MeetsUnit(player, comparison, 0u, 0u, null));
+    }
+
+    [Theory]
     [InlineData(EvaluationMode.EvaluateAND, false)]
     [InlineData(EvaluationMode.EvaluateOR, true)]
     public void MixedNpcRowsRetainAndOrSemanticsAndUnsupportedPlayerChecksFailClosed(EvaluationMode mode, bool expected)
