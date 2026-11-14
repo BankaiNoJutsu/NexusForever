@@ -92,7 +92,7 @@
 "99","0x63","vtable","+0x1c8","140001ba0","ClientCraftingAbandon_WritePayload","1","2","shared stub"
 "100","0x64","vtable","+0x1d0","140001ba0","ClientCraftingAbandon_WritePayload","1","2","shared stub"
 "101","0x65","vtable","+0x1d8","140001ba0","ClientCraftingAbandon_WritePayload","1","2","shared stub"
-"102","0x66","inline","","1404a4fe0","Prerequisite_CheckSpellCooldownNodeOnUnit","1/2","3",""
+"102","0x66","inline","","1404a4fe0","Prerequisite_CheckPrimaryListNodeId_LiveCase66","1/2","3",""
 "103","0x67","inline","","14046a190","Prerequisite_CheckSpellCooldownNodeOnTarget","1/2","13",""
 "104","0x68","inline","","14046a210","Prerequisite_CheckSpellCooldownNodeInServiceSet","1/2","7",""
 "105","0x69","inline","","","","1/2","23",""

@@ -1,5 +1,13 @@
 # Prerequisite type 102: an active spell effect id on the unit (2026-11-07)
 
+Later correction (2026-11-14): [the primary-subject pass](PREREQUISITE_102_PRIMARY_SUBJECT_20261114.md)
+replaces the historical target-substituting player wrapper below with the native
+primary selector. The 353 slots have 302 direct spell-column / 352 weighted
+references. Evidence tier: Verified native selector; Implemented / Source.
+The element class, effect ID interpretation and effect lifetime were not
+re-derived; their table-correlation/inference limits remain. The historical
+wording below does not qualify those models. No retail parity claim.
+
 Evidence tier: **native body read; the id space is established from the retail tables**, not from the class of the list's elements. Source/SQLite only. No retail parity claim.
 
 ## Found by

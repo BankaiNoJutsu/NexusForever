@@ -11,8 +11,11 @@ Usage:
     python prerequisite_evaluator_case_map.py <evaluator.txt> [--slots <tsv>] [--spell-refs <tsv>]
 
     --slots       TSV "type<TAB>slotCount" for Prerequisite.tbl (all three type columns)
-    --spell-refs  TSV "type<TAB>references<TAB>distinctPrerequisites" counting Spell4 / Spell4Effects prerequisite
-                  columns whose prerequisite row uses the type
+    --spell-refs  TSV "type<TAB>slotWeightedReferences<TAB>distinctReferencedPrerequisites" for Spell4 /
+                  Spell4Effects prerequisite columns. Count each matching type slot in a referenced prerequisite;
+                  a table-row/column referencing a row with two matching slots contributes two, not one.
+                  The output's historical spellReferences column retains this weighted meaning. Type 102's
+                  352 weighted / 302 direct reference census is recorded in PREREQUISITE_102_PRIMARY_SUBJECT_20261114.md.
 
 Outputs (under Decomp/Analysis/coverage):
     prerequisite_evaluator_case_map.csv      one row per evaluator case

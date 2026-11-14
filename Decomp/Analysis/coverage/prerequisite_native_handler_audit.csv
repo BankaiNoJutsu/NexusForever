@@ -93,7 +93,7 @@
 "99","AccountItemListItem2CountNpc99","2","0","PrerequisiteCheckAccountItemListItem2CountNpc.cs","","vtable","+0x1c8","140001ba0","ClientCraftingAbandon_WritePayload","1","","","no citation",""
 "100","AccountItemListItem2Count100","1","0","PrerequisiteCheckAccountItemListItem2Count.cs","","vtable","+0x1d0","140001ba0","ClientCraftingAbandon_WritePayload","1","","","no citation",""
 "101","AccountItemListItem2Count101","4","0","PrerequisiteCheckAccountItemListItem2Count.cs","","vtable","+0x1d8","140001ba0","ClientCraftingAbandon_WritePayload","1","","","no citation",""
-"102","SpellCooldownNodeOnUnit","353","352","PrerequisiteCheckSpellCooldownNodeOnUnit.cs","entry","inline","","1404a4fe0","Prerequisite_CheckSpellCooldownNodeOnUnit","1/2","","","no citation",""
+"102","SpellCooldownNodeOnUnit","353","352","PrerequisiteCheckSpellCooldownNodeOnUnit.cs","entry","inline","","1404a4fe0","Prerequisite_CheckPrimaryListNodeId_LiveCase66","1/2","","","no citation",""
 "103","SpellCooldownNodeOnTarget","36","46","PrerequisiteCheckSpellCooldownNodeOnTarget.cs","entry","inline","","14046a190","Prerequisite_CheckSpellCooldownNodeOnTarget","1/2","","","no citation",""
 "104","SpellCooldownNodeInServiceSet","3","1","PrerequisiteCheckSpellCooldownNodeInServiceSet.cs","entry","inline","","14046a210","Prerequisite_CheckSpellCooldownNodeInServiceSet","1/2","","","no citation",""
 "105","SpellEffectTypeOnUnit","7","10","PrerequisiteCheckSpellEffectTypeOnUnit.cs","","inline","","","","1/2","","","no citation",""

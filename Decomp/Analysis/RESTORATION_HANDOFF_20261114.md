@@ -1,10 +1,37 @@
 # Restoration handoff (2026-11-14)
 
 Current branch: `feature/spell-effects-remaining`. Latest continuation starts from
-published `3d1c6aa0`; it verifies and corrects type 44's player subject. Static/headless analysis
+published `6f69d108`; it verifies and corrects type 102's player subject and
+reconciles its reference counts. Static/headless analysis
 only; no native client execution or Computer Use.
 
-## Latest type-44 continuation
+## Latest type-102 continuation
+
+Evidence tier: **Verified native selector; Implemented / Source**.
+[Type-102 primary subject and census](PREREQUISITE_102_PRIMARY_SUBJECT_20261114.md)
+re-derives the direct dispatcher call and helper `1404a4fe0`: primary unit list,
+ObjectId comparison, unread Value and relationship unit. The player wrapper now
+retains the player; explicit-unit, cast, apply and persistence routes already
+retain their supplied subject. The existing substitution expectation is rewritten
+with an explicit-target control. Fourteen new cases ran red (10 failed / four
+passed); rebuilt Prerequisite/Spell/Cooldown gate: **2,996 passed**. Owning Game
+build: zero warnings/errors. One conservative native label re-exported;
+8,332 mapping rows validate. Full suite: **15,112 passed / 17 failed / two
+skipped**; all 23 type-102 cases passed. Fifteen failures reported EF
+provider-cache warnings; two were challenge/title assertions. All 13 failed
+methods pass isolated reruns covering 19 cases. This does not establish their
+cause or make the full suite green. Commands/outputs are in the linked note.
+
+Reference-data census: **353 slots / 303 prerequisite rows / 302 direct columns /
+352 weighted references**. The audit's 352 remains correct as a weighted count.
+The earlier 102/121 result is incomplete: excluding Effects target apply and
+target persistence reproduces that lower total. Its historical cause is unknown;
+the original query shape now returns 302/352. A tracked read-only SQL census
+reproduces the counts and anchors. These are dependency reach, not affected casts.
+The effect ID/producer/lifetime interpretation, mixed non-unit-row policy and
+native activation caller policy are not newly qualified. No retail parity claim.
+
+## Previous type-44 continuation (6f69d108)
 
 Evidence tier: **Verified native selector; Implemented / Source**.
 [Type-44 primary subject](PREREQUISITE_44_PRIMARY_SUBJECT_20261114.md) re-derives
@@ -76,17 +103,15 @@ rank helper and mixed non-unit prerequisite-row policy remain unchanged; native
 acceptance, live UI/timing and retail qualification were not performed.
 
 The broader restoration queue remains open. Lower remaining target-substituting
-wrappers require their own dispatcher/body and caller checks. Previous counts
-must be re-queried:
-type 102 gave 102 direct / 121 weighted references where the old audit said 352
-spell references. That count discrepancy remains unexplained. Type 102 was not
-changed in this continuation. Generic player-manager null logging is outside
-type 179; the null-capable explicit-unit manager remains tested.
+wrappers require their own dispatcher/body and caller checks. Type 102's full
+reference census is resolved above; the cause of the earlier incomplete result
+remains unknown. Generic player-manager null logging is outside these selector
+corrections; the null-capable explicit-unit manager remains tested.
 
 ## Not claimed
 
 No retail parity, native client run, Computer Use, runtime deployment, provider
 qualification or broad restoration completion. Original runtime data and
 entitlements are preserved. Continue normal scoped commits/pushes on the branch
-above; no force push. The commit containing this handoff carries the type-44
-correction, regressions, labels and evidence record together.
+above; no force push. The commit containing this handoff carries the type-102
+correction, regressions, label, census and evidence record together.

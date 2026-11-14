@@ -1,5 +1,22 @@
 # Assessment follow-through goal
 
+[Type-102 primary subject and count reconciliation](PREREQUISITE_102_PRIMARY_SUBJECT_20261114.md)
+(2026-11-14): native case `0x66` / `1404a4fe0` compares ObjectId with nodes in
+the primary unit's `+0x15d0` list; the relationship unit and Value are unread.
+The player wrapper now retains the player; explicit-unit/spell paths already
+select their subject. Fourteen new Source cases ran red (10 failed / four
+passed), then 2,996 Prerequisite/Spell/Cooldown cases passed; owning build has
+zero warnings/errors. Reference-data census: 353 slots / 303 prerequisite rows /
+302 direct spell-column references / 352 weighted references. The old audit's
+352 is reproduced; 102/121 is superseded. Excluding the two effect-target
+apply/persistence columns reproduces that lower result, but why the original
+query returned it is unknown. One native label re-exported; 8,332 mapping rows
+validate. Full suite: 15,112 passed / 17 failed / two skipped; all 23 type-102
+cases passed. All 13 failed methods pass isolated reruns covering 19 cases;
+the full suite is not green and the cause is not established. Evidence tier:
+Verified native selector; Implemented / Source. Existing effect ID/lifetime
+model and native activation caller policy remain separate. No retail parity claim.
+
 [Type-44 primary-subject correction](PREREQUISITE_44_PRIMARY_SUBJECT_20261114.md)
 (2026-11-14): native case `0x2c` / `14049ee40` constructs its group proxy from
 the primary unit and never reads the second unit. The player wrapper now retains
