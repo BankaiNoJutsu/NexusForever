@@ -38,7 +38,7 @@ Separate world data at `I:\GIT\NexusForever.WorldDatabase` contains entity place
 | 8 | `Damage` | 29,445 | 23,834 | 3,534 | 2,854 | 2,148 | Implemented but partial retail parity. |
 | 11 | `UnitPropertyModifier` | 20,105 | 10,001 | 476 | 132 | 11,385 | Tracks effect-owned modifiers, removes timed modifiers, and rechecks player-scoped persistence prerequisites; stack groups and non-player persistence remain incomplete. |
 | 26 | `Proxy` | 16,929 | 10,804 | 2,439 | 1,588 | 851 | Plain proxy implemented with diagnostics; non-random chained proxy variants use the same conservative cast path. |
-| 17 | `Fluff` | 10,790 | 10,164 | 252 | 0 | 4,554 | Empty handler. |
+| 17 | `Fluff` | 10,790 | 10,164 | 252 | 0 | 4,554 | Empty Source handler. [Verified native admission/removal](Decomp/Analysis/PREREQUISITE_102_FLUFF_ADMISSION_20261114.md): received base-node membership, CastMethod-10 prune, wrapper teardown and removal readers; original-server admission/Finish policy remains blocked. No retail parity claim. |
 | 4 | `CCStateSet` | 7,185 | 6,081 | 887 | 1 | 6,400 | Timed set/remove packets, combat log, active-state mask, and conservative cast/movement coupling implemented; DR, stun breakout, and tether/additional-data behavior remain incomplete. |
 | 81 | `RavelSignal` | 5,262 | 4,322 | 551 | 103 | 109 | Structural diagnostics implemented; receiver behavior not restored. |
 | 3 | `ForcedMove` | 4,645 | 4,078 | 689 | 0 | 14 | Decoded and conservative velocity impulse implemented; movement-type semantics need sniff validation. |

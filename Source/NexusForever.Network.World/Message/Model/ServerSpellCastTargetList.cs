@@ -5,6 +5,7 @@ namespace NexusForever.Network.World.Message.Model
     /// <summary>
     /// Removes the listed receiving units' target nodes from a spell wrapper.
     /// Verified native consumer: 0x0811 -> 1405a5aa0; destroys matching nodes and children.
+    /// Registration 14006c290 binds reader 14007a550: wrapper ID, UInt32 count, then receiving-unit IDs.
     /// Original server emission policy remains unqualified; no retail parity claim.
     /// </summary>
     [Message(GameMessageOpcode.ServerSpellCastTargetList)]

@@ -1,5 +1,20 @@
 # Assessment follow-through goal
 
+[Type-102 Fluff admission and Finish ordering](PREREQUISITE_102_FLUFF_ADMISSION_20261114.md)
+(2026-11-14, from 2193ecbd): Verified native plus shipped-table witnesses bind
+the 0x0819 gate to Spell4Base CastMethod 10; only 20 of 49 untimed Fluff slots
+use it (29 use other methods). Fluff type 17 passes the runtime-effect copy
+gate and uses the registered base node. Native 0x0811's reader/registration is
+recovered and agrees with Source; four removal wire contracts are recorded.
+Registered nonzero wrapper teardown prevents late Go/tier re-admission without
+fresh registration. Two stale table getters and the misleading SprintStateUpdated
+cleanup label are corrected; ten labels re-exported, 8,348 mapping rows validate.
+Read-only census and shipped-anchor checks pass. Evidence/packet comments only;
+no new state, timer, layout or emission behavior. Original-server Fluff admission
+and Finish scheduling remain mapped only / Blocked after bounded corpus review;
+exact next trace is recorded. Previous non-green Source suite is unchanged.
+No retail parity claim.
+
 [Type-102 receiving property state](PREREQUISITE_102_RECEIVING_STATE_20261114.md)
 (2026-11-14): the existing accepted property records already hold receiving-unit
 Spell4Effects IDs; type 102 now reads them, including untimed records, and no

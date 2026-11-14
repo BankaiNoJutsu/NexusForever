@@ -128,9 +128,13 @@ retention, transport and original-server lifetime are not newly qualified.
 wrapper ID second. `140718af0` runs only when the wrapper runtime record's
 +0x70 record has +0x18 equal to **10**. It destroys flag-2 children from the
 active list, keeps finite children and recomputes their remaining window. If
-the active list is empty it destroys the target node. The runtime field is
-kept as an unnamed shape here; the Source enum's value 10 alone does not bind
-that native field to CastMethod. Do not emit this as universal untimed removal.
+the active list is empty it destroys the target node. The follow-through in
+[Fluff admission](PREREQUISITE_102_FLUFF_ADMISSION_20261114.md) now binds that
+field to Spell4Base CastMethod through its native builder and shipped table;
+the earlier unnamed-shape limit is superseded. Do not emit this as universal
+untimed removal. That follow-through also recovers 0x0811's native reader and
+the registration block for all four removal contracts; the original-server
+admission/Finish policy limits in this note remain open.
 
 `1404550d0` also destroys the departing receiving entity's wrapper-local
 target nodes and detaches its native lists. It is an entity destructor, not

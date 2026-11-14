@@ -1,11 +1,43 @@
 # Restoration handoff (2026-11-14)
 
 Current branch: `feature/spell-effects-remaining`. Latest continuation starts from
-published `c6eee3bc` after the type-102 receiving-unit property correction;
-it recovers the native untimed removal boundaries. Static/headless analysis
+published `2193ecbd` after the type-102 receiver/removal correction;
+it binds Fluff client admission, CastMethod and wrapper teardown. Static/headless analysis
 only; no native client execution or Computer Use.
 
-## Latest type-102 receiving continuation
+## Latest type-102 Fluff admission continuation
+
+[Fluff admission and ordering](PREREQUISITE_102_FLUFF_ADMISSION_20261114.md):
+**Verified native + shipped-table witnesses**. Fluff type 17's flags 27 pass
+the runtime copy gate; received variants use the base effect node and register
+on the receiver before apply/timers. No-op apply/expiry virtuals do not establish
+a server lifetime. The 0x0819 guard is **Spell4Base CastMethod 10**: raw +0x50
+copies to runtime +0x18, with 196 joined slots matching the shipped table.
+Of 49 untimed Fluff slots / 42 effect rows, only 20 slots / 16 rows use that
+method; 29 slots / 26 rows use other methods. Overall Fluff reach remains
+197 slots / 164 rows. One parent join is unresolved and is retained explicitly.
+
+0x0811 reader `14007a550` and registration `14006c290` independently confirm
+the existing Source counted receiver-ID writer. All four removal contracts now
+have reader/registration/consumer evidence. `140561ad0` unregisters/deletes a
+wrapper, with SprintStateUpdated only a conditional side effect. The nonzero
+registered-ID map is removed on Finish; later Go/tier lookup cannot re-admit
+under it without fresh registration. Two wrong table getter labels are corrected.
+Ten labels applied/re-exported; **8,348 mapping rows** validate; read-only census
+and shipped-anchor checks pass. Source edits are packet comments only; no new
+behavior tests/build/full-suite repeat. The previous non-green suite below stands.
+
+**Mapped only / Blocked server policy:** no available trace establishes when
+the original server admitted an identified untimed Fluff row, retained/replaced
+its wrapper, or emitted target removal/Finish. Local packet-file inventory,
+retail video leads and a pinned 2016 addon source do not close that gate. Seek
+an original-server Start/Go/remove/Finish trace with wrapper/effect/receiver IDs
+and a multi-target survivor, or the corresponding original-server producer.
+Do not replace Source's empty-queue Finish with guessed retention or add a marker
+that outlives native teardown. No state/packet emission or deployment change.
+No retail parity claim.
+
+## Previous type-102 receiving continuation (c6eee3bc / 2193ecbd)
 
 [Receiving-unit state](PREREQUISITE_102_RECEIVING_STATE_20261114.md): **Verified
 native receiver/ID; Implemented / Source** for installed property modifiers,
