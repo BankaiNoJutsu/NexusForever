@@ -1,5 +1,18 @@
 # Assessment follow-through goal
 
+[Type-12 primary-subject DeadState](PREREQUISITE_12_PRIMARY_SUBJECT_20261114.md)
+(2026-11-14, from 2c35012c): Verified native primary-unit selector, boolean-versus-
+Value comparison and independent Lua IsDead/Ghost bindings. The player wrapper
+now retains player. Field +0x250 maps to native UI IsDead; a Mapped writer copies
+one input to +0x250/+0x254, but full Source !IsAlive equivalence remains inferred.
+No death/ghost model change. Observed reach: 168 slots/rows, 364 direct/weighted
+spell references. Red 39-case scope: 15 failed / 24 passed, including 29 new cases;
+all 3,086 related Source cases then pass. Owning Game build zero warnings/errors;
+native/census/seven-scope coverage/diff checks pass. Native null-return and real
+Ghost admission are not qualified. Type 102 stays Blocked. Type76's actual native
+slot is a shared false stub, so next native-backed selector candidate is type86
+(67 weighted). Implemented / Source selector; proxy inferred; no retail parity claim.
+
 [Type-40 primary-subject health semantics](PREREQUISITE_40_PRIMARY_SUBJECT_20261114.md)
 (2026-11-14, from 85b11fbe): Verified native selector/arithmetic and independent
 Lua health accessor binding retain primary unit and float health*100/max health.

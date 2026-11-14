@@ -1,0 +1,8 @@
+surface,witness,evidence_tier,meaning,source_mapping,remaining_limit
+primary-subject,1404a24e7..1404a24f8 -> vtable140b677c0 -> 14049c800,Verified native,Reads primary unit; relationship unit and ObjectId unread,Player wrapper delegates with player,Native activation-caller policy not qualified
+dead-field-250,Lua table140c5b140 IsDead -> 1406535f0 -> 140653621,Verified native,Native Lua IsDead tests nonzero unit+250,Part of existing !IsAlive proxy,Full Source proxy equivalence remains inferred
+field-254,14049c80a; writer14045ecd6,Mapped,Additional nonzero field ORed by prerequisite; shared writer copies same input,Part of existing !IsAlive proxy,Independent writers and complete input authority/transition meaning pending
+ghost-kind,14049c812; Lua GetType index23 -> string140b2bc58,Verified native,Kind23 Ghost forces predicate1,Existing unit-kind branch retained,Concrete Source Ghost is not IUnitEntity; real Ghost admission not qualified
+comparison-value,14049c822..14049c83e,Verified native,Boolean0/1 compared with full Value for Equal/NotEqual only,Existing comparison retained,Value2/max tests are synthetic controls; retail values0/1
+null-primary,Source PrerequisiteManager and DeadState.MeetsUnit,Implemented Source,Existing explicit-unit null guard reused by player wrapper,Fail closed; Target cannot rescue missing subject,Native helper has no local null guard; no native null-return claim
+source-dead-proxy,UnitEntity.IsAlive Health>0 and deathState absent,Implemented inferred,Existing !IsAlive proxy retained,No new death flags or transition policy,Native field/Source model equivalence unverified; no retail parity claim

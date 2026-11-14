@@ -1132,14 +1132,16 @@ public class PrerequisiteCheckTests
     [Theory]
     [InlineData(PrerequisiteComparison.Equal, 1u, true)]
     [InlineData(PrerequisiteComparison.Equal, 0u, false)]
-    public void DeadState_ComparesAliveState(PrerequisiteComparison comparison, uint value, bool expected)
+    public void DeadState_ComparesPrimaryPlayerAliveState(PrerequisiteComparison comparison, uint value, bool expected)
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
         playerProxy.SetProperty(nameof(IUnitEntity.IsAlive), false);
+        IUnitEntity target = RecordingDispatchProxy<IUnitEntity>.Create(out var targetProxy);
+        targetProxy.SetProperty(nameof(IUnitEntity.IsAlive), true);
 
         var check = new PrerequisiteCheckDeadState();
 
-        Assert.Equal(expected, check.Meets(player, comparison, value, 0u, new PrerequisiteParameters()));
+        Assert.Equal(expected, check.Meets(player, comparison, value, 0u, new PrerequisiteParameters { Target = target }));
     }
 
     [Fact]

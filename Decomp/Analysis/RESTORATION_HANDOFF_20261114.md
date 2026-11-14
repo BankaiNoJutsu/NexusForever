@@ -1,12 +1,46 @@
 # Restoration handoff (2026-11-14)
 
 Current branch: `feature/spell-effects-remaining`. Latest continuation starts from
-published `85b11fbe` after the type-39 primary-subject correction;
+published `2c35012c` after the type-40 primary-subject correction;
 type 102 remains Blocked on the missing retail trace by user direction, and
 the next highest-reach primary-subject wrapper is continued instead.
 Static/headless investigation only; no native client execution or Computer Use.
 
-## Latest type-40 primary-subject health correction
+## Latest type-12 primary-subject DeadState correction
+
+[Type-12 DeadState subject](PREREQUISITE_12_PRIMARY_SUBJECT_20261114.md):
+**Verified native selector/comparison and IsDead/Ghost bindings; Implemented /
+Source wrapper; retained death proxy inferred**. Direct switch/vtable bytes bind
+case0xc -> 1404a24e7 -> slot140b677c0 -> 14049c800. The primary unit's +0x250,
++0x254 or kind23 normalize to 0/1 and compare with full Value for Equal/NotEqual;
+other modes fail. ObjectId/relationship unit are unread. Only the player wrapper
+changes to retain player; existing explicit-unit null guard is reused. The native
+helper itself has no local null guard, so do not claim native null returns false.
+
+**Mapped field evidence and retained limits:** native Lua IsDead names only
++0x250. Structural setter14045ec90 writes the same input to +0x254/+0x250, but
+its complete authority/alias-writer and transition chain is not recovered.
+Source !IsAlive means zero health or a Source deathState; equivalence to the
+native fields remains inferred. No new death state or timing rule. Concrete
+GhostEntity is not IUnitEntity; kind23 unit-proxy tests do not qualify real Ghost
+admission. The seven-scope CSV and bounded instruction/write-candidate review
+retain those distinctions. No native-label changes are needed.
+
+**Observed verification/reach:** 168 slots / 168 rows / 364 direct/weighted spell
+references. Of 39 red-scope cases, 15 fail and 24 pass; 29 are new cases. Final
+Prerequisite/Spell/Cooldown gate passes 3,086, zero failed/skipped; owning Game
+build has zero warnings/errors. Identity/table/census/coverage/diff checks pass.
+Unchanged test/config warnings and earlier non-green full-suite result remain;
+no full-suite repeat, deployment or provider/native qualification. No retail parity claim.
+
+**Next:** the full type12 native-field/Source bridge remains pending research.
+For selector work, type76 has 102 weighted references but the re-read native
+slot+0x300 points at shared false stub140001ba0; it cannot supply a server rule.
+Next native-backed selector candidate: type86 Jump (67 weighted), with its own
+body/caller read. Type102 stays Blocked on the missing attributable retail Fluff
+trace, per user direction. Client/CUA remain stopped.
+
+## Previous type-40 primary-subject health correction (2c35012c)
 
 [Type-40 health subject](PREREQUISITE_40_PRIMARY_SUBJECT_20261114.md): **Verified
 native selector/arithmetic + ISA comparison; Implemented / Source**. Re-derived

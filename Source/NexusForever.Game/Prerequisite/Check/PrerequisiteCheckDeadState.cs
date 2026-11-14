@@ -7,17 +7,15 @@ namespace NexusForever.Game.Prerequisite.Check
 {
     /// <summary>
     /// Prerequisite type 12: native <c>FUN_14049c800</c> computes <c>flag = unit+0x250 != 0 || unit+0x254 != 0 || entity type (unit+0x80) == 0x17</c> and ends with the boolean tail:
-    /// Equal is <c>flag == Value</c>, NotEqual is <c>flag != Value</c>, every other comparison is false. <c>0x17</c> is <see cref="EntityType.Ghost"/>; the two fields are not mapped and are
-    /// represented by <see cref="IUnitEntity.IsAlive"/> (inferred). See Decomp/Analysis/PREREQUISITE_DEAD_STATE_BOOLEAN_20261107.md.
+    /// Equal is <c>flag == Value</c>, NotEqual is <c>flag != Value</c>, every other comparison is false. <c>0x17</c> is <see cref="EntityType.Ghost"/>. Native Lua IsDead binds +0x250,
+    /// but the complete field predicate's representation by !<see cref="IUnitEntity.IsAlive"/> remains inferred. Verified native selector retains the primary unit.
+    /// See Decomp/Analysis/PREREQUISITE_12_PRIMARY_SUBJECT_20261114.md and PREREQUISITE_DEAD_STATE_BOOLEAN_20261107.md.
     /// </summary>
     [PrerequisiteCheck(PrerequisiteType.DeadState)]
     public class PrerequisiteCheckDeadState : IPrerequisiteCheck
     {
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
-        {
-            IWorldEntity entity = parameters.Target as IWorldEntity ?? player;
-            return entity is IUnitEntity unit && MeetsUnit(unit, comparison, value, objectId, parameters);
-        }
+            => MeetsUnit(player, comparison, value, objectId, parameters);
 
         public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {

@@ -337,6 +337,82 @@ public sealed class UnitPrerequisiteContextTests
     }
 
     [Theory]
+    [InlineData(true, PrerequisiteComparison.Equal, 0u)]
+    [InlineData(false, PrerequisiteComparison.Equal, 0u)]
+    [InlineData(true, PrerequisiteComparison.NotEqual, 0u)]
+    [InlineData(false, PrerequisiteComparison.NotEqual, 0u)]
+    [InlineData(true, PrerequisiteComparison.Equal, 1u)]
+    [InlineData(false, PrerequisiteComparison.Equal, 1u)]
+    [InlineData(true, PrerequisiteComparison.NotEqual, 1u)]
+    [InlineData(false, PrerequisiteComparison.NotEqual, 1u)]
+    public void DeadStatePlayerAndUnitEntryPointsRetainThePrimarySubject(bool alive, PrerequisiteComparison comparison, uint value)
+    {
+        PrerequisiteEntry row = Row(1, PrerequisiteType.DeadState, value);
+        row.PrerequisiteComparisonId = [comparison];
+        using var fixture = new Fixture(row);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        playerProxy.SetProperty(nameof(IUnitEntity.IsAlive), alive);
+        playerProxy.SetProperty(nameof(IWorldEntity.Type), EntityType.Player);
+        IUnitEntity target = Unit(2, 20, out var targetProxy);
+        targetProxy.SetProperty(nameof(IUnitEntity.IsAlive), !alive);
+        targetProxy.SetProperty(nameof(IWorldEntity.Type), EntityType.NonPlayer);
+        var parameters = new PrerequisiteParameters { Target = target };
+        bool expected = comparison == PrerequisiteComparison.Equal
+            ? (alive ? 0u : 1u) == value
+            : (alive ? 0u : 1u) != value;
+
+        Assert.Equal(expected, fixture.Manager.MeetsUnit(player, 1, parameters));
+        Assert.Equal(expected, fixture.Manager.Meets(player, 1, parameters));
+        Assert.Equal(!expected, fixture.Manager.MeetsUnit(target, 1, new PrerequisiteParameters { Target = player }));
+        Assert.Same(target, parameters.Target);
+    }
+
+    [Theory]
+    [InlineData(true, PrerequisiteComparison.Equal, 0u)]
+    [InlineData(false, PrerequisiteComparison.Equal, 1u)]
+    [InlineData(true, PrerequisiteComparison.NotEqual, 1u)]
+    [InlineData(false, PrerequisiteComparison.NotEqual, 0u)]
+    public void DeadStateNullPrimaryIsNotReplacedByTheRelationship(bool targetAlive, PrerequisiteComparison comparison, uint value)
+    {
+        IUnitEntity target = Unit(2, 20, out var targetProxy);
+        targetProxy.SetProperty(nameof(IUnitEntity.IsAlive), targetAlive);
+        var check = new PrerequisiteCheckDeadState();
+        var parameters = new PrerequisiteParameters { Target = target };
+
+        Assert.False(check.Meets(null, comparison, value, 0u, parameters));
+        Assert.False(check.MeetsUnit(null, comparison, value, 0u, parameters));
+    }
+
+    [Fact]
+    public void DeadStateDoesNotRequireRelationshipParameters()
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        playerProxy.SetProperty(nameof(IUnitEntity.IsAlive), true);
+        playerProxy.SetProperty(nameof(IWorldEntity.Type), EntityType.Player);
+        var check = new PrerequisiteCheckDeadState();
+
+        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 0u, 0u, null));
+        Assert.True(check.MeetsUnit(player, PrerequisiteComparison.Equal, 0u, 0u, null));
+    }
+
+    [Theory]
+    [InlineData(PrerequisiteComparison.Equal, true)]
+    [InlineData(PrerequisiteComparison.NotEqual, false)]
+    public void DeadStateGhostRelationshipDoesNotReplaceALivingPrimary(PrerequisiteComparison comparison, bool expected)
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        playerProxy.SetProperty(nameof(IUnitEntity.IsAlive), true);
+        playerProxy.SetProperty(nameof(IWorldEntity.Type), EntityType.Player);
+        IUnitEntity ghost = Unit(2, 20, out var ghostProxy);
+        ghostProxy.SetProperty(nameof(IUnitEntity.IsAlive), true);
+        ghostProxy.SetProperty(nameof(IWorldEntity.Type), EntityType.Ghost);
+        var check = new PrerequisiteCheckDeadState();
+
+        Assert.Equal(expected, check.Meets(player, comparison, 0u, 0u, new PrerequisiteParameters { Target = ghost }));
+        Assert.Equal(!expected, check.MeetsUnit(ghost, comparison, 0u, 0u, new PrerequisiteParameters { Target = player }));
+    }
+
+    [Theory]
     [InlineData(EvaluationMode.EvaluateAND, false)]
     [InlineData(EvaluationMode.EvaluateOR, true)]
     public void MixedNpcRowsRetainAndOrSemanticsAndUnsupportedPlayerChecksFailClosed(EvaluationMode mode, bool expected)
