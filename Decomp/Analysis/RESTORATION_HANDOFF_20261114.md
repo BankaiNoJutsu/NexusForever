@@ -1,11 +1,34 @@
 # Restoration handoff (2026-11-14)
 
 Current branch: `feature/spell-effects-remaining`. Latest continuation starts from
-published `4388354d` after the type-102 bounded trace search;
-it follows upstream issues 370/372 toward an attributable original-server trace.
+published `7702f101` after the type-102 sniff-collection lead review;
+type 102 remains Blocked on the missing retail trace by user direction, and
+the highest-reach remaining primary-subject wrapper is continued instead.
 Static/headless investigation only; no native client execution or Computer Use.
 
-## Latest type-102 sniff-collection lead follow-through
+## Latest type-28 primary-subject correction
+
+[Type-28 combat subject](PREREQUISITE_28_PRIMARY_SUBJECT_20261114.md): **Verified
+native selector/field; Implemented / Source**. Direct switch bytes select
+1404a3045 for case 0x1c; it reads primary unit +0x2ac and the shared boolean
+tail. Independently re-read Lua IsInCombat registration/body binds that field.
+Only the player wrapper changes to retain player and preserve relationship Target;
+explicit-unit routes, comparison and combat producers/timing remain unchanged.
+
+**Observed reach:** fresh read-only reference census ranks remaining substituting
+wrappers 28 (1,293), 39 (1,140), 40 (705), 12 (364), by weighted spell-column
+references. Type 28 has 230 slots / 230 rows; its direct count is also 1,293.
+These are dependencies, not affected casts. Seven new context cases fail red,
+then all 3,020 Prerequisite/Spell/Cooldown cases pass. Owning Game build has zero
+warnings/errors. Unchanged test/config warnings are recorded in the finding;
+no full-suite repeat or green full-suite claim. No retail parity claim.
+
+Next unblocked selector candidate is type 39; re-read its dispatcher/body and
+caller contract before correction. Type 102's missing attributable untimed-Fluff
+Start/Go/remove/Finish trace remains the exact Blocked input; do not reopen that
+search without new evidence. Native labels need no change in this slice.
+
+## Previous type-102 sniff-collection lead follow-through (7702f101)
 
 [Lead follow-through](PREREQUISITE_102_SNIFF_COLLECTION_LEADS_20261114.md):
 **Observed primary statements/excerpt / Correlated provenance / Mapped Source

@@ -1,5 +1,16 @@
 # Assessment follow-through goal
 
+[Type-28 primary-subject combat state](PREREQUISITE_28_PRIMARY_SUBJECT_20261114.md)
+(2026-11-14, from 7702f101): Verified native case 0x1c reads primary unit +0x2ac;
+the separately registered Lua IsInCombat body binds the field. The highest-reach
+remaining target-substituting wrapper now retains player as primary. Observed
+reference reach: 230 slots/rows and 1,293 direct/weighted spell-column references,
+not broken casts. Seven context cases fail red, then 3,020 related Source cases
+pass; owning Game build has zero warnings/errors. No combat timing/production or
+native-label change. Type 102 stays Blocked on the missing retail lifecycle
+trace, per user direction. Next raw-reach selector candidate: type 39 (1,140).
+Implemented / Source, Verified native selector; no retail parity claim.
+
 [Type-102 sniff-collection leads](PREREQUISITE_102_SNIFF_COLLECTION_LEADS_20261114.md)
 (2026-11-14, from 4388354d): Observed primary timelines for upstream 370/372
 provide no recording/linked-PR location. WorldDatabase's retail-origin statement

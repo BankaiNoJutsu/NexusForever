@@ -185,18 +185,53 @@ public sealed class UnitPrerequisiteContextTests
         Assert.True(fixture.Manager.MeetsUnit(subject, 1, new PrerequisiteParameters { Target = Unit(3, 10, out _) }));
     }
 
-    [Fact]
-    public void OldPlayerTargetApiRetainsTargetProxyWhileUnitApiUsesExplicitSubject()
+    // Native case 0x1c reads the primary unit's combat field, not the relationship unit.
+    [Theory]
+    [InlineData(true, PrerequisiteComparison.Equal)]
+    [InlineData(false, PrerequisiteComparison.Equal)]
+    [InlineData(true, PrerequisiteComparison.NotEqual)]
+    [InlineData(false, PrerequisiteComparison.NotEqual)]
+    public void InCombatPlayerAndUnitEntryPointsRetainThePrimarySubject(bool inCombat, PrerequisiteComparison comparison)
     {
-        using var fixture = new Fixture(Row(1, PrerequisiteType.InCombat, 1));
+        PrerequisiteEntry row = Row(1, PrerequisiteType.InCombat, 0);
+        row.PrerequisiteComparisonId = [comparison];
+        using var fixture = new Fixture(row);
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
         IUnitEntity target = Unit(2, 20, out var targetProxy);
-        playerProxy.SetProperty(nameof(IPlayer.InCombat), false);
-        targetProxy.SetProperty(nameof(IUnitEntity.InCombat), true);
+        playerProxy.SetProperty(nameof(IUnitEntity.InCombat), inCombat);
+        targetProxy.SetProperty(nameof(IUnitEntity.InCombat), !inCombat);
         var parameters = new PrerequisiteParameters { Target = target };
-        Assert.True(fixture.Manager.Meets(player, 1, parameters));
-        Assert.False(fixture.Manager.MeetsUnit(player, 1, parameters));
-        Assert.True(fixture.Manager.MeetsUnit(target, 1, parameters));
+        bool expected = comparison == PrerequisiteComparison.Equal ? inCombat : !inCombat;
+
+        Assert.Equal(expected, fixture.Manager.MeetsUnit(player, 1, parameters));
+        Assert.Equal(expected, fixture.Manager.Meets(player, 1, parameters));
+        Assert.Equal(!expected, fixture.Manager.MeetsUnit(target, 1, new PrerequisiteParameters { Target = player }));
+        Assert.Same(target, parameters.Target);
+    }
+
+    [Theory]
+    [InlineData(true, PrerequisiteComparison.Equal)]
+    [InlineData(false, PrerequisiteComparison.NotEqual)]
+    public void InCombatNullPrimaryIsNotReplacedByTheRelationship(bool targetInCombat, PrerequisiteComparison comparison)
+    {
+        IUnitEntity target = Unit(2, 20, out var targetProxy);
+        targetProxy.SetProperty(nameof(IUnitEntity.InCombat), targetInCombat);
+        var check = new PrerequisiteCheckInCombat();
+        var parameters = new PrerequisiteParameters { Target = target };
+
+        Assert.False(check.Meets(null, comparison, 0u, 0u, parameters));
+        Assert.False(check.MeetsUnit(null, comparison, 0u, 0u, parameters));
+    }
+
+    [Fact]
+    public void InCombatDoesNotRequireRelationshipParameters()
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        playerProxy.SetProperty(nameof(IUnitEntity.InCombat), true);
+        var check = new PrerequisiteCheckInCombat();
+
+        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 0u, 0u, null));
+        Assert.True(check.MeetsUnit(player, PrerequisiteComparison.Equal, 0u, 0u, null));
     }
 
     [Theory]

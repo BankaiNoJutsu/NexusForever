@@ -1082,11 +1082,12 @@ public class PrerequisiteCheckTests
     [InlineData(PrerequisiteComparison.Equal, 0u, true)]
     [InlineData(PrerequisiteComparison.NotEqual, 0u, false)]
     [InlineData(PrerequisiteComparison.GreaterThan, 1u, false)]
-    public void InCombat_ComparesTargetCombatState(PrerequisiteComparison comparison, uint value, bool expected)
+    public void InCombat_ComparesPrimaryPlayerCombatState(PrerequisiteComparison comparison, uint value, bool expected)
     {
-        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        playerProxy.SetProperty(nameof(IUnitEntity.InCombat), true);
         IUnitEntity target = RecordingDispatchProxy<IUnitEntity>.Create(out var targetProxy);
-        targetProxy.SetProperty(nameof(IUnitEntity.InCombat), true);
+        targetProxy.SetProperty(nameof(IUnitEntity.InCombat), false);
 
         var check = new PrerequisiteCheckInCombat();
         var parameters = new PrerequisiteParameters { Target = target };
