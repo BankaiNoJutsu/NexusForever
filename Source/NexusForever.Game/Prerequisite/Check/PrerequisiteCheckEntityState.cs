@@ -6,14 +6,15 @@ namespace NexusForever.Game.Prerequisite.Check
 {
     /// <summary>
     /// Prerequisite type 149: native <c>FUN_14049c840</c> computes <c>state = (unit+0x1e4 != 0) || (unit+0x2ac != 0)</c> and compares it with <c>Value</c>: Equal <c>state == Value</c>, NotEqual
-    /// <c>state != Value</c>. <c>unit+0x2ac</c> is the in-combat flag (prerequisite 28) and <c>unit+0x1e4</c> is the in-use flag the client sets from <c>ServerUnitInUse</c> (0x0755), which the server sends
-    /// from <see cref="IWorldEntity.IsBusy"/>. The writer was read by an agent and not re-derived, see Decomp/Analysis/PREREQUISITE_9_149_WRITERS_NATIVE_READ_20261108.md. Any other comparison is false.
+    /// <c>state != Value</c>. Verified native case <c>0x95</c> retains the primary unit. Field <c>+0x1e4</c> is written by the <c>ServerUnitInUse</c> (0x0755) consumer;
+    /// field <c>+0x2ac</c> by the combat setter reached from 0x089A and read by Lua IsInCombat. Source sends these flags from IsBusy/InCombat. Other comparisons fail; ObjectId/relationship are unread.
+    /// Writer/reader bindings were re-derived by the lead; see Decomp/Analysis/PREREQUISITE_149_PRIMARY_SUBJECT_20261114.md. No retail timing/authority claim.
     /// </summary>
     [PrerequisiteCheck(PrerequisiteType.State)]
     public class PrerequisiteCheckEntityState : IPrerequisiteCheck
     {
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
-            => MeetsUnit(parameters.Target as IUnitEntity ?? player, comparison, value, objectId, parameters);
+            => MeetsUnit(player, comparison, value, objectId, parameters);
 
         public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {

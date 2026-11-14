@@ -1,12 +1,57 @@
 # Restoration handoff (2026-11-14)
 
 Current branch: `feature/spell-effects-remaining`. Latest continuation starts from
-published `bb388844` after the type-86 primary-subject correction;
+published `e5b31c4e` after the type-87 primary-subject correction;
 type 102 remains Blocked on the missing retail trace by user direction, and
 the next highest-reach primary-subject wrapper is continued instead.
 Static/headless investigation only; no native client execution or Computer Use.
 
-## Latest type-87 primary-subject Moving correction
+## Latest type-149 primary-subject State and field writers
+
+[Type-149 State](PREREQUISITE_149_PRIMARY_SUBJECT_20261114.md): **Verified native
+default-manager selector/predicate and named field/reader/writer bindings;
+Implemented / Source**. Indexed case0x95 ->1404a2505 passes primary to+0x88,
+default slot140b677c8 ->14049c840. Nonzero +1e4 OR +2ac normalizes to0/1;
+Equal/NotEqual compare full Value; other modes fail. ObjectId/relationship are
+unread. Alternate slot140b67ea8 is _purecall, not another State rule. Native
+helper has no local null guard; retained Source null rejection is not a native
+null claim.
+
+**Verified native field meanings:**0x0755 ->140641640 stores decoded flag at
++1e4 (14064166a);0x089A ->14045c500 stores combat at+2ac (14045c541).
+Both registrations bind UInt32-plus-bit reader14007c340, decoded size8.
+Independent native Lua IsInCombat ->140653ed0 reads+2ac. Constructor140454380
+zeros both. Whole-text explicit-offset scan211 hits/47 syntactic write
+candidates is bounded; complete alias/bulk/indirect writer coverage is unknown.
+Source IsBusy/InCombat packet producers match those contracts, but original-
+server admissions, initial/replay delivery, timing and lifetime are unqualified.
+
+**Supported correction:** player wrapper retains player through the existing
+explicit-unit check. No OR/comparison, null-guard, producer or packet-model
+behavior changes. The old target-first test is rewritten with explicit-target
+control. Observed reach46 slots/rows,36 direct/weighted references; shipped
+type149/text218077 names State.37 new cases cover primary/relationship separation,
+nulls, integer Values, unsupported modes and both true/false packet payloads.
+Red44-case scope21 failed/23 passed; final related Prerequisite/Spell/Cooldown/
+Movement/state-packet filter passes all3,237,zero failed/skipped. Owning Game
+build zero warnings/errors. Unchanged test/config warnings remain; full suite
+not repeated and preceding non-green result below remains.
+
+**Observed evidence publication:** three labels applied/re-exported in read-only
+Ghidra; durable CSV and exactly three inventory records updated.8,350 mapping
+rows validate. Default export/cache/manifest and project are not persisted or
+refreshed; old cached ownership/no-reference comment is superseded by the new
+finding. Native bindings, census, hashes, coverage and diff checks pass. No raw
+decompilation/payloads committed, deployment or native acceptance. No retail
+parity claim.
+
+**Next ranked native-backed wrapper candidate:** type93 (33 weighted references),
+requiring its own indexed dispatcher/body/caller read. Type76 still supplies
+only a shared native stub; type12's full !IsAlive bridge remains inferred.
+Type102 remains **Blocked** on the missing attributable untimed-Fluff retail
+lifecycle trace. Native client/CUA remain stopped.
+
+## Previous type-87 primary-subject Moving correction (e5b31c4e)
 
 [Type-87 Moving subject](PREREQUISITE_87_PRIMARY_SUBJECT_20261114.md): **Verified
 native selector/null/bit/comparison + shipped type-name witness; Implemented /

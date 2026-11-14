@@ -1,5 +1,20 @@
 # Assessment follow-through goal
 
+[Type-149 primary-subject State and field writers](PREREQUISITE_149_PRIMARY_SUBJECT_20261114.md)
+(2026-11-14, from e5b31c4e): Verified native default-manager case0x95 retains
+primary; +1e4 in-use OR +2ac combat normalizes to0/1 and compares full Value
+for Equal/NotEqual. Field writers, UInt32-plus-bit readers for0x0755/0x089A,
+constructor zeroing and independent Lua IsInCombat binding re-derived. Alternate
+slot is _purecall, not another rule; complete alias-writer coverage and server
+scheduling remain unqualified. Only player wrapper corrected; OR/comparison,
+Source null guard, producers and packet models unchanged. Observed reach46
+slots/rows and36 direct/weighted references; shipped State name corroborates.
+37 new cases, red44-case scope21 failed/23 passed; all3,237 related Source
+cases pass. Owning Game build zero warnings/errors; three focused labels
+applied/re-exported read-only,8,350 mapping rows validate. Implemented / Source;
+no retail parity claim. Type102 stays Blocked. Next ranked candidate93
+(33 weighted) requires its own native/caller read;76 remains a shared stub.
+
 [Type-87 primary-subject Moving](PREREQUISITE_87_PRIMARY_SUBJECT_20261114.md)
 (2026-11-14, from bb388844): Verified native switch entry1404a2894 retains primary,
 fails null and tests only +0x1070 bit2; Value/ObjectId/relationship are unread.

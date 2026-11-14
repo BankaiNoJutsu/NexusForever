@@ -535,6 +535,76 @@ public sealed class UnitPrerequisiteContextTests
     }
 
     [Theory]
+    [InlineData(false, false, PrerequisiteComparison.Equal, 0u)]
+    [InlineData(true, false, PrerequisiteComparison.Equal, 0u)]
+    [InlineData(false, true, PrerequisiteComparison.Equal, 0u)]
+    [InlineData(true, true, PrerequisiteComparison.Equal, 0u)]
+    [InlineData(false, false, PrerequisiteComparison.NotEqual, 0u)]
+    [InlineData(true, false, PrerequisiteComparison.NotEqual, 0u)]
+    [InlineData(false, true, PrerequisiteComparison.NotEqual, 0u)]
+    [InlineData(true, true, PrerequisiteComparison.NotEqual, 0u)]
+    [InlineData(false, false, PrerequisiteComparison.Equal, 1u)]
+    [InlineData(true, false, PrerequisiteComparison.Equal, 1u)]
+    [InlineData(false, true, PrerequisiteComparison.Equal, 1u)]
+    [InlineData(true, true, PrerequisiteComparison.Equal, 1u)]
+    [InlineData(false, false, PrerequisiteComparison.NotEqual, 1u)]
+    [InlineData(true, false, PrerequisiteComparison.NotEqual, 1u)]
+    [InlineData(false, true, PrerequisiteComparison.NotEqual, 1u)]
+    [InlineData(true, true, PrerequisiteComparison.NotEqual, 1u)]
+    public void StatePlayerAndUnitEntryPointsRetainThePrimarySubject(bool busy, bool combat, PrerequisiteComparison comparison, uint value)
+    {
+        PrerequisiteEntry row = Row(1, PrerequisiteType.State, value);
+        row.PrerequisiteComparisonId = [comparison];
+        using var fixture = new Fixture(row);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        playerProxy.SetProperty(nameof(IWorldEntity.IsBusy), busy);
+        playerProxy.SetProperty(nameof(IUnitEntity.InCombat), combat);
+        IUnitEntity target = Unit(2, 20, out var targetProxy);
+        targetProxy.SetProperty(nameof(IWorldEntity.IsBusy), !(busy || combat));
+        targetProxy.SetProperty(nameof(IUnitEntity.InCombat), false);
+        var parameters = new PrerequisiteParameters { Target = target };
+        uint state = busy || combat ? 1u : 0u;
+        bool expected = comparison == PrerequisiteComparison.Equal ? state == value : state != value;
+
+        Assert.Equal(expected, fixture.Manager.MeetsUnit(player, 1, parameters));
+        Assert.Equal(expected, fixture.Manager.Meets(player, 1, parameters));
+        Assert.Equal(!expected, fixture.Manager.MeetsUnit(target, 1, new PrerequisiteParameters { Target = player }));
+        Assert.Same(target, parameters.Target);
+    }
+
+    [Theory]
+    [InlineData(false, PrerequisiteComparison.Equal, 0u)]
+    [InlineData(true, PrerequisiteComparison.Equal, 1u)]
+    [InlineData(false, PrerequisiteComparison.NotEqual, 1u)]
+    [InlineData(true, PrerequisiteComparison.NotEqual, 0u)]
+    public void StateNullPrimaryIsNotReplacedByTheRelationship(bool targetBusy, PrerequisiteComparison comparison, uint value)
+    {
+        IUnitEntity target = Unit(2, 20, out var targetProxy);
+        targetProxy.SetProperty(nameof(IWorldEntity.IsBusy), targetBusy);
+
+        Assert.False(new PrerequisiteCheckEntityState().Meets(null, comparison, value, 0u, new PrerequisiteParameters { Target = target }));
+    }
+
+    [Theory]
+    [InlineData(PrerequisiteComparison.Equal)]
+    [InlineData(PrerequisiteComparison.NotEqual)]
+    public void StateNullUnitFailsForBothBooleanModes(PrerequisiteComparison comparison)
+    {
+        Assert.False(new PrerequisiteCheckEntityState().MeetsUnit(null, comparison, 0u, 0u, null));
+    }
+
+    [Fact]
+    public void StateDoesNotRequireRelationshipParameters()
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        playerProxy.SetProperty(nameof(IUnitEntity.InCombat), true);
+        var check = new PrerequisiteCheckEntityState();
+
+        Assert.True(check.MeetsUnit(player, PrerequisiteComparison.Equal, 1u, 0u, null));
+        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 1u, 0u, null));
+    }
+
+    [Theory]
     [InlineData(EvaluationMode.EvaluateAND, false)]
     [InlineData(EvaluationMode.EvaluateOR, true)]
     public void MixedNpcRowsRetainAndOrSemanticsAndUnsupportedPlayerChecksFailClosed(EvaluationMode mode, bool expected)

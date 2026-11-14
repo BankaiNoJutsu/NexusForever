@@ -1,5 +1,15 @@
 Agent-written native read (Ghidra 12.1.4 headless, WildStar64.exe build 16042); the lead has not re-derived it.
 
+**2026-11-14 scoped supersession:** the lead has now re-derived **type149 only**:
+[primary State and field writers](PREREQUISITE_149_PRIMARY_SUBJECT_20261114.md).
+Tier: **Verified native default selector/predicate, named packet reader/writer
+bindings and constructor zeroing; Implemented / Source player wrapper**.
+The older type149 ownership-blocked/no-reference comment is stale. The raw
+explicit-offset search supports known direct stores, not exhaustive alias,
+bulk or indirect writer coverage; do not promote an unrestricted "only writer"
+claim from it. Type9 remains agent-written and unreviewed in this pass. Original-
+server scheduling remains unknown; type102 remains Blocked. No retail parity claim.
+
 # Prerequisite 9 (EpisodeState) and 149 (State): writers
 
 ## Q1. Type 9: who writes the episode quest-state map (episode+0x50)

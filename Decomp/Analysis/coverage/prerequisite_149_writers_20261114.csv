@@ -1,0 +1,13 @@
+scope,native_witness,source_binding,evidence_tier,remaining_limit
+primary_selector,1404a2505 /1404a2516 ->vtable+0x88,PrerequisiteCheckEntityState player delegates with player,Verified native; Implemented Source,Default manager only; ObjectId and relationship unread
+default_predicate,140b677c8 ->14049c840,IsBusy OR InCombat normalized0/1; Equal/NotEqual full Value,Verified native; Source controls,Helper has no local null guard; Source null rejection retained
+alternate_slot,140b67ea8 ->1407db510,_purecall failure path; no rule added,Verified native bytes,Alternate/abstract manager behavior not implemented
+constructor,140454380 stores1404545d9 and14045462d,Known initial zero for in-use and combat,Verified native,Adjacent word cleared by qword store has no new meaning
+in_use_registration,14006e2f0..14006e31c opcode0x0755 reader14007c340,ServerUnitInUse,Verified native; Source,Decoded size8 is not wire size
+shared_reader,14007c365..14007c384 UInt32 then bit,UnitStateFlagPacketTests four golden payload cases,Verified native; Source payload,No socket or original-server emission test
+in_use_writer,0x0755 ->1403ee6ac ->140641640 store14064166a entity+1e4,WorldEntity BroadcastBusyStateIfChanged sends IsBusy,Verified native; Source correlation,Original-server busy admission and delivery timing unknown
+combat_registration,140074e75..140074ea1 opcode0x089A reader14007c340,ServerUnitEnteredCombat,Verified native; Source,Decoded size8 is not wire size
+combat_writer,0x089A ->1403ed716 ->14045c500 store14045c541 entity+2ac,UnitEntity InCombat emits flag packet,Verified native; Source correlation,Complete transition authority and side effects unqualified
+combat_getter,140c5b1d0 IsInCombat ->140653ed0 compare140653f01 field+2ac,InCombat boolean field meaning,Verified native independent getter,No retail timing/lifetime claim
+writer_scan,Whole-text explicit1e4/2ac scan211 hits and47 syntactic writes,Four entity-region direct stores recorded,Observed bounded search,Alias/computed/bulk/vector stores not exhaustively traced
+reach,All3 raw slots and13 spell prerequisite columns,46 slots/46 rows/36 direct and weighted references,Observed imported reference census,Nested and non-spell consumers outside scope; no cast impact count
