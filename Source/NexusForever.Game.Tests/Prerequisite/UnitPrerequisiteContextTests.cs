@@ -413,6 +413,67 @@ public sealed class UnitPrerequisiteContextTests
     }
 
     [Theory]
+    [InlineData(true, PrerequisiteComparison.Equal)]
+    [InlineData(false, PrerequisiteComparison.Equal)]
+    [InlineData(true, PrerequisiteComparison.NotEqual)]
+    [InlineData(false, PrerequisiteComparison.NotEqual)]
+    public void JumpPlayerAndUnitEntryPointsRetainThePrimarySubject(bool jumping, PrerequisiteComparison comparison)
+    {
+        PrerequisiteEntry row = Row(1, PrerequisiteType.Jump, 0);
+        row.PrerequisiteComparisonId = [comparison];
+        using var fixture = new Fixture(row);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        IMovementManager playerMovement = RecordingDispatchProxy<IMovementManager>.Create(out var playerMovementProxy);
+        playerMovementProxy.SetMethodReturn(nameof(IMovementManager.GetState), jumping ? StateFlags.Jump : StateFlags.Fall | StateFlags.DoubleJump);
+        playerProxy.SetProperty(nameof(IWorldEntity.MovementManager), playerMovement);
+        IUnitEntity target = Unit(2, 20, out var targetProxy);
+        IMovementManager targetMovement = RecordingDispatchProxy<IMovementManager>.Create(out var targetMovementProxy);
+        targetMovementProxy.SetMethodReturn(nameof(IMovementManager.GetState), jumping ? StateFlags.Fall | StateFlags.DoubleJump : StateFlags.Jump);
+        targetProxy.SetProperty(nameof(IWorldEntity.MovementManager), targetMovement);
+        var parameters = new PrerequisiteParameters { Target = target };
+        bool expected = comparison == PrerequisiteComparison.Equal ? jumping : !jumping;
+
+        Assert.Equal(expected, fixture.Manager.MeetsUnit(player, 1, parameters));
+        Assert.Equal(expected, fixture.Manager.Meets(player, 1, parameters));
+        Assert.Equal(!expected, fixture.Manager.MeetsUnit(target, 1, new PrerequisiteParameters { Target = player }));
+        Assert.Same(target, parameters.Target);
+    }
+
+    [Theory]
+    [InlineData(true, PrerequisiteComparison.Equal)]
+    [InlineData(false, PrerequisiteComparison.NotEqual)]
+    public void JumpNullPrimaryIsNotReplacedByTheRelationship(bool targetJumping, PrerequisiteComparison comparison)
+    {
+        IUnitEntity target = Unit(2, 20, out var targetProxy);
+        IMovementManager movement = RecordingDispatchProxy<IMovementManager>.Create(out var movementProxy);
+        movementProxy.SetMethodReturn(nameof(IMovementManager.GetState), targetJumping ? StateFlags.Jump : StateFlags.None);
+        targetProxy.SetProperty(nameof(IWorldEntity.MovementManager), movement);
+
+        Assert.False(new PrerequisiteCheckJump().Meets(null, comparison, 0u, 0u, new PrerequisiteParameters { Target = target }));
+    }
+
+    [Theory]
+    [InlineData(PrerequisiteComparison.Equal)]
+    [InlineData(PrerequisiteComparison.NotEqual)]
+    public void JumpNullUnitFailsForBothBooleanModes(PrerequisiteComparison comparison)
+    {
+        Assert.False(new PrerequisiteCheckJump().MeetsUnit(null, comparison, 0u, 0u, null));
+    }
+
+    [Fact]
+    public void JumpDoesNotRequireRelationshipParameters()
+    {
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        IMovementManager movement = RecordingDispatchProxy<IMovementManager>.Create(out var movementProxy);
+        movementProxy.SetMethodReturn(nameof(IMovementManager.GetState), StateFlags.Jump);
+        playerProxy.SetProperty(nameof(IWorldEntity.MovementManager), movement);
+        var check = new PrerequisiteCheckJump();
+
+        Assert.True(check.MeetsUnit(player, PrerequisiteComparison.Equal, 0u, 0u, null));
+        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 0u, 0u, null));
+    }
+
+    [Theory]
     [InlineData(EvaluationMode.EvaluateAND, false)]
     [InlineData(EvaluationMode.EvaluateOR, true)]
     public void MixedNpcRowsRetainAndOrSemanticsAndUnsupportedPlayerChecksFailClosed(EvaluationMode mode, bool expected)

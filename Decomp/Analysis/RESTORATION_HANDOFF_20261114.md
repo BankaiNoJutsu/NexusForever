@@ -1,12 +1,45 @@
 # Restoration handoff (2026-11-14)
 
 Current branch: `feature/spell-effects-remaining`. Latest continuation starts from
-published `2c35012c` after the type-40 primary-subject correction;
+published `9366e4f4` after the type-12 primary-subject correction;
 type 102 remains Blocked on the missing retail trace by user direction, and
 the next highest-reach primary-subject wrapper is continued instead.
 Static/headless investigation only; no native client execution or Computer Use.
 
-## Latest type-12 primary-subject DeadState correction
+## Latest type-86 primary-subject Jump correction
+
+[Type-86 Jump subject](PREREQUISITE_86_PRIMARY_SUBJECT_20261114.md): **Verified
+native selector/null/bit/comparison + shipped type-name witness; Implemented /
+Source**. Direct switch bytes bind case0x56 to 1404a2860. It tests primary,
+fails null before reading +0x1070, masks only0x40 and uses the shared boolean
+tail; Value/ObjectId/relationship unit are unread. The player wrapper now retains
+player, and the explicit-unit path fails null before dereference. Exact bit and
+boolean comparison stay unchanged. The stale 14049f190/+0x16a0 table comment is
+replaced by the live inline read. No new label or export refresh is needed.
+
+**Independent shipped witness:** imported type86 points to error158172 but the
+SQL text row contains metadata only. Extracted PrerequisiteType.tbl and en-US.bin
+confirm row86 -> text158172 -> Jump requirement not met through existing owning
+readers. Both payload hashes and a separate row87/Moving control are recorded.
+Raw files and temporary extraction/text-reader wrapper remain ignored. This
+corroborates the type name, not physical Jump/DoubleJump timing or retail physics.
+
+**Observed reach/verification:** 22 slots / 22 rows / 67 direct/weighted spell
+references. New 19-case red scope has nine failed / ten passed; final expanded
+Prerequisite/Spell/Cooldown/Movement filter passes 3,174, zero failed/skipped.
+Owning Game build zero warnings/errors. Native/type/text/hash/census/eight-mask/
+diff checks pass. Unchanged test/config warnings and preceding non-green full
+suite remain; no full-suite repeat, deployment or native acceptance qualification.
+No retail parity claim. State production/CC filtering/interpolation/wire remain
+outside this selector correction.
+
+**Next native-backed selector candidate:** type87 Moving (50 weighted spell
+references), with its own dispatcher/body/caller review. Type76's shared stub
+still cannot recover a server rule. Type12's full native-field/Source !IsAlive
+bridge stays inferred/pending research. Type102 remains Blocked on the missing
+attributable retail Fluff trace. Native client/CUA remain stopped.
+
+## Previous type-12 primary-subject DeadState correction (9366e4f4)
 
 [Type-12 DeadState subject](PREREQUISITE_12_PRIMARY_SUBJECT_20261114.md):
 **Verified native selector/comparison and IsDead/Ghost bindings; Implemented /

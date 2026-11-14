@@ -2,6 +2,13 @@
 
 Evidence tier: **native bodies read** (evaluator cases and the shared tail). Source/SQLite only. No retail parity claim.
 
+2026-11-14 follow-through: [type-86 primary-subject Jump](PREREQUISITE_86_PRIMARY_SUBJECT_20261114.md)
+re-derives the inline selector/null guard/mask/tail and corroborates the Jump name
+with shipped type/text payloads. The player wrapper now retains primary; null
+unit checks fail before reading state. Existing boolean comparison is retained.
+**Verified native + shipped type-name witness; Implemented / Source**, without
+physical movement/timing or retail parity qualification.
+
 ## Native behaviour
 
 Prerequisite types 28 (InCombat), 39 (IsPlayer), 86 (Jump) and 87 (Moving) test one boolean property of the unit and finish through the evaluator's shared tail (`LAB_1404a22ec`, inlined in case `0x1c`):

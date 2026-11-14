@@ -1,0 +1,9 @@
+state_mask,source_flag_names,native_jump_bit_set,expected_equal,expected_not_equal,evidence_tier,remaining_limit
+0x0000,None,false,false,true,Verified native mask; Observed Source names,Input contract only; no physical movement timing or retail parity claim
+0x0002,Move,false,false,true,Verified native mask; Observed Source names,Input contract only; no physical movement timing or retail parity claim
+0x0008,Fall,false,false,true,Verified native mask; Observed Source names,Input contract only; no physical movement timing or retail parity claim
+0x0800,DoubleJump,false,false,true,Verified native mask; Observed Source names,Does not establish which flags a physical double jump carries
+0x0808,Fall|DoubleJump,false,false,true,Verified native mask; Observed Source names,Does not establish which flags a physical double jump carries
+0x0040,Jump,true,true,false,Verified native mask; Observed Source names,Type name corroborated by shipped error text; no retail parity claim
+0x084a,Jump|Move|Fall|DoubleJump,true,true,false,Verified native mask; Observed Source names,Input contract only; no physical movement timing or retail parity claim
+0x0044,Jump|Unknown04,true,true,false,Verified native mask; Observed Source names,Unknown04 meaning is not inferred

@@ -1,5 +1,18 @@
 # Assessment follow-through goal
 
+[Type-86 primary-subject Jump](PREREQUISITE_86_PRIMARY_SUBJECT_20261114.md)
+(2026-11-14, from 9366e4f4): Verified native case0x56 retains primary, fails null,
+tests +0x1070 bit0x40 and ignores Value/ObjectId through the boolean tail.
+Independent shipped type86/text158172 names Jump; payload hashes retained. Player
+wrapper now retains player and explicit-unit null checks fail safely; mask,
+comparison and movement production remain unchanged. Stale handler-table/offset
+comment corrected. Observed reach: 22 slots/rows, 67 direct/weighted references.
+New 19-case red scope: nine failed / ten passed; expanded related Movement gate
+passes all 3,174. Owning Game build zero warnings/errors; native/type/text/census/
+eight-mask/diff checks pass. Type102 stays Blocked; next selector candidate87
+Moving (50 weighted). Implemented / Source, Verified native + shipped-name witness;
+no physical jump/timing or retail parity claim.
+
 [Type-12 primary-subject DeadState](PREREQUISITE_12_PRIMARY_SUBJECT_20261114.md)
 (2026-11-14, from 2c35012c): Verified native primary-unit selector, boolean-versus-
 Value comparison and independent Lua IsDead/Ghost bindings. The player wrapper

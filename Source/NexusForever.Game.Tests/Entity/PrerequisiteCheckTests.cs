@@ -2301,15 +2301,20 @@ public class PrerequisiteCheckTests
     [InlineData(PrerequisiteComparison.Equal, 1u, true)]
     [InlineData(PrerequisiteComparison.Equal, 0u, true)]
     [InlineData(PrerequisiteComparison.NotEqual, 0u, false)]
-    public void Jump_ComparesJumpStateFlag(PrerequisiteComparison comparison, uint required, bool expected)
+    public void Jump_ComparesPrimaryPlayerJumpStateFlag(PrerequisiteComparison comparison, uint required, bool expected)
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
         IMovementManager movementManager = RecordingDispatchProxy<IMovementManager>.Create(out var movementProxy);
         movementProxy.SetMethodReturn(nameof(IMovementManager.GetState), StateFlags.Jump);
         playerProxy.SetProperty(nameof(IWorldEntity.MovementManager), movementManager);
 
+        IUnitEntity target = RecordingDispatchProxy<IUnitEntity>.Create(out var targetProxy);
+        IMovementManager targetMovement = RecordingDispatchProxy<IMovementManager>.Create(out var targetMovementProxy);
+        targetMovementProxy.SetMethodReturn(nameof(IMovementManager.GetState), StateFlags.Fall | StateFlags.DoubleJump);
+        targetProxy.SetProperty(nameof(IWorldEntity.MovementManager), targetMovement);
+
         var check = new PrerequisiteCheckJump();
-        bool result = check.Meets(player, comparison, required, objectId: 0u, new PrerequisiteParameters());
+        bool result = check.Meets(player, comparison, required, objectId: 0u, new PrerequisiteParameters { Target = target });
 
         Assert.Equal(expected, result);
     }
