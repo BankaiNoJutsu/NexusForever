@@ -1,5 +1,19 @@
 # Assessment follow-through goal
 
+[Primary-subject prerequisite correction](PREREQUISITE_PRIMARY_SUBJECT_20261114.md)
+(2026-11-14): native evaluator cases 38, 59 and 129 retain the primary unit,
+whereas the player wrappers substituted the relationship target. Corrected the
+three wrappers; 18 new Source regressions ran red (15 failed / 3 passed), then
+all 371 focused cases passed, including explicit target-as-subject controls and
+rewrites of three superseded target-substitution tests. Final Prerequisite/Spell
+rebuild: 2,882 passed. The initial full run had 19 failures: two additional stale
+assertions were corrected; the other 17 failures passed isolated reruns covering
+40 cases. The full suite is not claimed green. Raw dependency reach
+is 1,182 / 909 / 146 slots respectively; this is not a count of affected casts,
+whose explicit-unit routes already select subjects. Evidence tier: Verified native
+selector, Implemented / Source; existing stack/group models remain inferred.
+Full-suite result is recorded in the linked note. No retail parity claim.
+
 [Coldblood Citadel tracker pass](INSTANCE_COLDBLOOD_TRACKER_PASS_20261109.md) (2026-11-09): the only dated Coldblood clip in the corpus is the official 2017-01-23 developer livestream (solo, Prime), whose tracker frames show Timer Bonus (5322) and Deathless (5323) from the first phase and Deathless vanishing on the developer's death. Implemented activation in the Enter phase and credit at the final boss (40-minute limit from the row text; the clip ends about 26 minutes in with the row still listed, so the limit is not clip-tested); Coldblood tests 47/0 (written with the code, not red first). One demo clip only, so the optional pool stays random; a "Join the Pell" row with no 16042 table row, Pell Protection Plan, the Pell Architect hand-off (5324 to 5325) and failed-row removal are not implemented. All five dungeons with Deathless and Timer Bonus rows now activate them. Observed tier, no parity claim.
 
 [Sanctuary of the Swordmaiden tracker pass](INSTANCE_SANCTUARY_TRACKER_PASS_20261109.md) (2026-11-09): tracker frames from a 2015-11-29 veteran run (plus a May 2015 earlier-build run for which rows appear) show Deathless (1506) and Timer Bonus (3204) from the first phase, no Zealous Torine row in the November run, and "Sabotage Lifeweaver Tech Clusters" first appearing in the Ondu phase. Implemented Deathless and Timer Bonus activation, credit at the final boss (60-minute limit from the row text), 495 moved into the random pool and 496 moved from the first phase to the Ondu phase (two previous test expectations superseded); Sanctuary event and trigger tests 58/0 (written with the code, not red first). One decodable run only, the challenge rows need fight mechanics that do not exist, a failed row cannot disappear, and the Temple route was not read. Coldblood Citadel is the only dungeon left with unactivated Deathless and Timer Bonus rows and has no tracker read. Observed tier, no parity claim.

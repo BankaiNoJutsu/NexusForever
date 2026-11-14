@@ -10,12 +10,13 @@ namespace NexusForever.Game.Prerequisite.Check
     /// Retail: 253 of the 260 distinct <c>ObjectId</c>s are Spell4 ids and <c>Value</c> runs 0..60 (equal to the <c>Spell4StackGroup</c> cap for several spells), so the sum is a stack count rather
     /// than an ability-book tier; the previous implementation compared the player's ability tier.
     /// Status: native body read; "+0x50 is a stack count" is correlated, not read. See Decomp/Analysis/PREREQUISITE_SPELL_STACK_COUNT_20261107.md.
+    /// Both entry points retain the supplied primary unit; Target is relationship context, not a replacement subject (PREREQUISITE_PRIMARY_SUBJECT_20261114.md).
     /// </summary>
     [PrerequisiteCheck(PrerequisiteType.SpellTier)]
     public class PrerequisiteCheckSpellTier : IPrerequisiteCheck
     {
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
-            => MeetsUnit(parameters?.Target ?? player, comparison, value, objectId, parameters);
+            => MeetsUnit(player, comparison, value, objectId, parameters);
 
         public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {

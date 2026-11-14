@@ -1,5 +1,9 @@
 # Prerequisite type 129: an active spell in a spell group (2026-11-07)
 
+Subject-selection correction (2026-11-14): the player entry point now retains the
+primary player, as the native case does; the `parameters.Target ?? player`
+description below is historical. See [the native selector correction](PREREQUISITE_PRIMARY_SUBJECT_20261114.md).
+
 Evidence tier: **native body read**; the id space of `ObjectId` is established from the retail tables (range evidence), the group manager's own body was not read. Source/SQLite only. No retail parity claim.
 
 ## Found by

@@ -70,7 +70,7 @@ public class PrerequisiteCheckSpellStackCountTests
     }
 
     [Fact]
-    public void PlayerChecksUseTheTargetWhenOneIsSupplied()
+    public void PlayerChecksRetainThePlayerWhenARelationshipTargetIsSupplied()
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
         playerProxy.SetMethodReturn(nameof(IUnitEntity.GetActiveSpellStackCount), 1u);
@@ -78,7 +78,9 @@ public class PrerequisiteCheckSpellStackCountTests
 
         var check = new PrerequisiteCheckSpellTier();
         Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 1u, 100u, new PrerequisiteParameters()));
-        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 5u, 100u, new PrerequisiteParameters { Target = target }));
+        Assert.True(check.Meets(player, PrerequisiteComparison.Equal, 1u, 100u, new PrerequisiteParameters { Target = target }));
+        Assert.False(check.Meets(player, PrerequisiteComparison.Equal, 5u, 100u, new PrerequisiteParameters { Target = target }));
+        Assert.True(check.MeetsUnit(target, PrerequisiteComparison.Equal, 5u, 100u, new PrerequisiteParameters { Target = player }));
     }
 
     [Theory]

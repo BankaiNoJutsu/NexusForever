@@ -9,12 +9,13 @@ namespace NexusForever.Game.Prerequisite.Check
     /// it for equality with <c>Value</c>; Equal returns that, NotEqual its negation and every other comparison is false. Retail <c>Value</c>s are Creature2 ids (16623, 20814, 27445, ...; 0 in 7 slots), so the test is
     /// "the unit is the creature with this id". The previous implementation compared a creature-kind flag (1 or 0) with <c>Value</c>, which only held for the 7 zero slots.
     /// See Decomp/Analysis/PREREQUISITE_CREATURE_ITEM_CHALLENGE_20261107.md.
+    /// Both entry points retain the supplied primary unit; Target is relationship context, not a replacement subject (PREREQUISITE_PRIMARY_SUBJECT_20261114.md).
     /// </summary>
     [PrerequisiteCheck(PrerequisiteType.IsCreature)]
     public class PrerequisiteCheckIsCreature : IPrerequisiteCheck
     {
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
-            => MeetsUnit(parameters?.Target ?? player, comparison, value, objectId, parameters);
+            => MeetsUnit(player, comparison, value, objectId, parameters);
 
         public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {

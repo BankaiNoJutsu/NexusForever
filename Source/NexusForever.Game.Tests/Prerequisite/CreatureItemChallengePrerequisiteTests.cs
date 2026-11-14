@@ -34,7 +34,9 @@ public class CreatureItemChallengePrerequisiteTests
         Assert.Equal(expected, check.MeetsUnit(creature, comparison, value, 0u, new PrerequisiteParameters()));
 
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
-        Assert.Equal(expected, check.Meets(player, comparison, value, 0u, new PrerequisiteParameters { Target = creature }));
+        // The primary player has no creature record (id zero); a relationship target must not replace it.
+        Assert.Equal(comparison == PrerequisiteComparison.NotEqual,
+            check.Meets(player, comparison, value, 0u, new PrerequisiteParameters { Target = creature }));
     }
 
     [Fact]

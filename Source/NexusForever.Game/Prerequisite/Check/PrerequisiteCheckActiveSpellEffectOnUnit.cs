@@ -10,12 +10,13 @@ namespace NexusForever.Game.Prerequisite.Check
     /// <c>ObjectId</c>s are at most 784, the largest <c>SpellGroupId</c> in <c>Spell4GroupList</c> (the list ids run to 1579), so <c>ObjectId</c> is a spell group id. The previous implementation read <c>Value</c>
     /// (0 in 102 of 146 slots) as a Spell4 id and fell back to <c>ObjectId</c> as a Spell4 id.
     /// Status: Implemented (ObjectId range evidence; the manager call's body was not read). See Decomp/Analysis/PREREQUISITE_ACTIVE_SPELL_GROUP_20261107.md.
+    /// Both entry points retain the supplied primary unit; Target is relationship context, not a replacement subject (PREREQUISITE_PRIMARY_SUBJECT_20261114.md).
     /// </summary>
     [PrerequisiteCheck(PrerequisiteType.ActiveSpellEffectOnUnit)]
     public class PrerequisiteCheckActiveSpellEffectOnUnit : IPrerequisiteCheck
     {
         public bool Meets(IPlayer player, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
-            => MeetsUnit(parameters?.Target ?? player, comparison, value, objectId, parameters);
+            => MeetsUnit(player, comparison, value, objectId, parameters);
 
         public bool MeetsUnit(IUnitEntity subject, PrerequisiteComparison comparison, uint value, uint objectId, IPrerequisiteParameters parameters)
         {

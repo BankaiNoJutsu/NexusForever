@@ -27,6 +27,72 @@ namespace NexusForever.Game.Tests.Prerequisite;
 
 public sealed class UnitPrerequisiteContextTests
 {
+    // Native evaluator 1404a2100: cases 0x26, 0x3b and 0x81 all read the primary unit.
+    // A relationship target must not silently replace it in the legacy player entry point.
+    [Theory]
+    [InlineData(38, true, PrerequisiteComparison.Equal)]
+    [InlineData(38, false, PrerequisiteComparison.Equal)]
+    [InlineData(38, true, PrerequisiteComparison.NotEqual)]
+    [InlineData(38, false, PrerequisiteComparison.NotEqual)]
+    [InlineData(59, true, PrerequisiteComparison.Equal)]
+    [InlineData(59, false, PrerequisiteComparison.Equal)]
+    [InlineData(59, true, PrerequisiteComparison.NotEqual)]
+    [InlineData(59, false, PrerequisiteComparison.NotEqual)]
+    [InlineData(129, true, PrerequisiteComparison.Equal)]
+    [InlineData(129, false, PrerequisiteComparison.Equal)]
+    [InlineData(129, true, PrerequisiteComparison.NotEqual)]
+    [InlineData(129, false, PrerequisiteComparison.NotEqual)]
+    public void PlayerAndUnitEntryPointsRetainTheSamePrimarySubject(int type, bool primaryMatches, PrerequisiteComparison comparison)
+    {
+        uint value = type == 38 ? 16623u : type == 59 ? 1u : 0u;
+        uint objectId = type == 129 ? 375u : 100u;
+        PrerequisiteEntry row = Row(1u, (PrerequisiteType)type, value, objectId);
+        row.PrerequisiteComparisonId = [comparison];
+        using var fixture = new Fixture(row);
+        IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out var playerProxy);
+        IUnitEntity target = RecordingDispatchProxy<IUnitEntity>.Create(out var targetProxy);
+        playerProxy.SetProperty(nameof(IWorldEntity.CreatureId), primaryMatches ? 16623u : 0u);
+        targetProxy.SetProperty(nameof(IWorldEntity.CreatureId), primaryMatches ? 0u : 16623u);
+        playerProxy.SetMethodReturn(nameof(IUnitEntity.GetActiveSpellStackCount), primaryMatches ? 1u : 0u);
+        targetProxy.SetMethodReturn(nameof(IUnitEntity.GetActiveSpellStackCount), primaryMatches ? 0u : 1u);
+        playerProxy.SetMethodReturn(nameof(IUnitEntity.HasActiveSpellInGroup), primaryMatches);
+        targetProxy.SetMethodReturn(nameof(IUnitEntity.HasActiveSpellInGroup), !primaryMatches);
+        var parameters = new PrerequisiteParameters { Target = target };
+        bool expected = comparison == PrerequisiteComparison.Equal ? primaryMatches : !primaryMatches;
+
+        Assert.Equal(expected, fixture.Manager.MeetsUnit(player, 1u, parameters));
+        Assert.Equal(expected, fixture.Manager.Meets(player, 1u, parameters));
+        Assert.Same(target, parameters.Target);
+        // Callers can still choose the target explicitly; the relationship becomes the player.
+        Assert.Equal(!expected, fixture.Manager.MeetsUnit(target, 1u, new PrerequisiteParameters { Target = player }));
+    }
+
+    [Theory]
+    [InlineData(38, PrerequisiteComparison.Equal)]
+    [InlineData(38, PrerequisiteComparison.NotEqual)]
+    [InlineData(59, PrerequisiteComparison.Equal)]
+    [InlineData(59, PrerequisiteComparison.NotEqual)]
+    [InlineData(129, PrerequisiteComparison.Equal)]
+    [InlineData(129, PrerequisiteComparison.NotEqual)]
+    public void NullPlayerSubjectIsNotReplacedByTheRelationshipTarget(int type, PrerequisiteComparison comparison)
+    {
+        IPrerequisiteCheck check = type switch
+        {
+            38 => new PrerequisiteCheckIsCreature(),
+            59 => new PrerequisiteCheckSpellTier(),
+            _ => new PrerequisiteCheckActiveSpellEffectOnUnit()
+        };
+        IUnitEntity target = RecordingDispatchProxy<IUnitEntity>.Create(out var proxy);
+        proxy.SetProperty(nameof(IWorldEntity.CreatureId), 16623u);
+        proxy.SetMethodReturn(nameof(IUnitEntity.GetActiveSpellStackCount), 1u);
+        proxy.SetMethodReturn(nameof(IUnitEntity.HasActiveSpellInGroup), true);
+        uint value = type == 38 ? 16623u : 1u;
+        var parameters = new PrerequisiteParameters { Target = target };
+
+        Assert.False(check.Meets(null, comparison, value, 100u, parameters));
+        Assert.False(check.MeetsUnit(null, comparison, value, 100u, parameters));
+    }
+
     [Theory]
     [InlineData(1, 20u)]
     [InlineData(4, 17u)]

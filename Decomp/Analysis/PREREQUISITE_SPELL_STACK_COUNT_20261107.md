@@ -1,5 +1,10 @@
 # Prerequisite types 59 and 280 count active spell stacks, not ability tiers (2026-11-07)
 
+Subject-selection correction (2026-11-14): type 59's player entry point now retains
+the primary player, as the native case does; the `parameters.Target ?? player`
+description below is historical. The stack model is unchanged and remains inferred.
+See [the native selector correction](PREREQUISITE_PRIMARY_SUBJECT_20261114.md).
+
 Evidence tier: **native body read** (disassembly of `FUN_1404a4f60`) plus **correlation** for what the summed field is. Source/SQLite only. No retail parity claim; the server stack model is **inferred**.
 
 ## Native

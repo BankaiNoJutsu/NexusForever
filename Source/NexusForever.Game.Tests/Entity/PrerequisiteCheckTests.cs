@@ -1113,16 +1113,16 @@ public class PrerequisiteCheckTests
     [InlineData(PrerequisiteComparison.Equal, 0u, false)]
     [InlineData(PrerequisiteComparison.Equal, 16623u, true)]
     [InlineData(PrerequisiteComparison.NotEqual, 16623u, false)]
-    public void IsCreature_ComparesTargetCreatureId(PrerequisiteComparison comparison, uint value, bool expected)
+    public void IsCreature_ComparesTheExplicitSubjectCreatureId(PrerequisiteComparison comparison, uint value, bool expected)
     {
         IPlayer player = RecordingDispatchProxy<IPlayer>.Create(out _);
         ICreatureEntity creature = RecordingDispatchProxy<ICreatureEntity>.Create(out var creatureProxy);
         creatureProxy.SetProperty(nameof(IWorldEntity.CreatureId), 16623u);
 
         var check = new PrerequisiteCheckIsCreature();
-        var parameters = new PrerequisiteParameters { Target = creature };
+        var parameters = new PrerequisiteParameters { Target = player };
 
-        Assert.Equal(expected, check.Meets(player, comparison, value, 0u, parameters));
+        Assert.Equal(expected, check.MeetsUnit(creature, comparison, value, 0u, parameters));
     }
 
     [Theory]

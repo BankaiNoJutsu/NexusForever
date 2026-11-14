@@ -8,6 +8,7 @@ This is the working implementation tracker for the global `Spell4` / `Spell4Effe
 - `Spell Effect Evidence Matrix.md`
 - `Spell Reverse Engineering Runtime Candidates.md`
 - `Tools/SpellReverseEngineering/world_context_queries.sql`
+- `Decomp/Analysis/PREREQUISITE_PRIMARY_SUBJECT_20261114.md` (Verified native subject selection for types 38, 59 and 129; player wrappers now retain the primary player when Target supplies relationship context; stack/group model limits remain inferred, no retail parity claim)
 - `Decomp/Analysis/PREREQUISITE_HANDLER_TABLE_AUDIT_20261110.md` and `PREREQUISITE_CHECK_REVIEW_20261110.md` (prerequisites that gate casts and effects, audited against the client evaluator; later the same day types 170, 190, 194/195, 182/186, 178 and 104 were identified and corrected, and after that 175, 289 and 94, leaving only 88 unidentified (one unreferenced row) and 292 and 73 waiting on server features)
 - `Decomp/Analysis/SPELL_EFFECT_DATA_TYPING_AUDIT_20261110.md` (effect data words against the client typing table)
 - `Decomp/Analysis/SPELL_EFFECT_PROXY_20261110.md` (Proxy execution limit and child caster; section 1c: tick-only Proxy rows live as long as their spell, which needs a server spell-lifetime model before it can be implemented)
