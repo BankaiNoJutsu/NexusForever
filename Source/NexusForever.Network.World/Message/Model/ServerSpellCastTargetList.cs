@@ -3,13 +3,15 @@ using NexusForever.Network.Message;
 namespace NexusForever.Network.World.Message.Model
 {
     /// <summary>
-    /// Opaque list-style spell broadcast follow-up packet.
-    /// Current evidence suggests this replays a subset of spell-start or spell-go target data.
+    /// Removes the listed receiving units' target nodes from a spell wrapper.
+    /// Verified native consumer: 0x0811 -> 1405a5aa0; destroys matching nodes and children.
+    /// Original server emission policy remains unqualified; no retail parity claim.
     /// </summary>
     [Message(GameMessageOpcode.ServerSpellCastTargetList)]
     public class ServerSpellCastTargetList : IWritable
     {
         public uint CastingId { get; set; }
+        // Legacy property name; these are receiving-unit IDs in the native consumer.
         public List<uint> CasterId { get; set; } = new();
 
         public void Write(GamePacketWriter writer)

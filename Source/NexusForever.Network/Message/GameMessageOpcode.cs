@@ -917,7 +917,7 @@ namespace NexusForever.Network.Message
         ClientSpellClientSideInteraction = 0x0805, // native 1400943d0 writes uint32 + 3-bit action + uint32; sender 1405465a0 is the spell client-side interaction callback
         ServerSpellUInt32TripletList    = 0x080F, // count + uint32 triplet rows; semantics unresolved
         ServerSpellUInt32TripletListVariant = 0x0810, // shares 0x080F reader; semantics unresolved
-        ServerSpellCastTargetList       = 0x0811, // spell broadcast casting-id target list
+        ServerSpellCastTargetList       = 0x0811, // Verified native consumer 1403ee3a0 -> 1405a5aa0 destroys listed receiving-unit target nodes; original server emission policy unqualified
         ServerSpellFourUInt32           = 0x0812, // four uint32 fields; semantics unresolved
         ServerSpellBuffRemove           = 0x0813,
         ServerSpellThresholdClear       = 0x0814, // threshold-family Spell4 id plus trailing packed value; raw PE table maps 0x0814 to dispatcher 1403ef384, distinct from the single-Spell4 clear follow-up at 0x0815

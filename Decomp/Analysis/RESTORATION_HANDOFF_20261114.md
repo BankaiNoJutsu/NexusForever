@@ -1,8 +1,8 @@
 # Restoration handoff (2026-11-14)
 
 Current branch: `feature/spell-effects-remaining`. Latest continuation starts from
-published `983f8934`; it adds type 102 receiving-unit property discovery and
-continues the native untimed marker/removal read. Static/headless analysis
+published `c6eee3bc` after the type-102 receiving-unit property correction;
+it recovers the native untimed removal boundaries. Static/headless analysis
 only; no native client execution or Computer Use.
 
 ## Latest type-102 receiving continuation
@@ -13,14 +13,36 @@ conversions and personal-healing states. Their existing receiving-unit row IDs
 are queried directly; stale pending-spell timers cannot resurrect removed state.
 Admission, stacking and timers are unchanged. Thirteen new cases ran red
 (11 failed / two passed); rebuilt focused gate: **3,014 passed**. Owning Game
-build has zero warnings/errors. Full-suite follow-through is deferred until the
-coherent receiving/marker slices finish; prior full-suite limits still apply.
+build has zero warnings/errors. Full suite: **15,130 passed / 17 failed / two
+skipped**. All 23 type-102 check, five ownership and 13 new receiving-property
+cases passed. Sixteen failures reported EF provider-cache warnings; one was a
+challenge reward assertion. All **nine failed methods pass isolated reruns
+covering 19 cases**. Their cause is not established; this is not a green suite.
 
-The current native read distinguishes Source 0x0813 buff-count removal from
-0x0819 shape-specific pruning. Count-zero display cleanup does not establish
-child destruction. Continue that chain before implementing the empty Fluff
-handler's untimed registration/removal model; it reaches 197 resolved type-102
-slots / 164 effect rows (49 flag-2 slots). No retail parity claim.
+**Verified native removal boundaries:** 0x0811 -> `1405a5aa0` destroys the listed
+receivers' target nodes and children; 0x07fe -> `14053e1b0` destroys all target
+nodes including untimed children. 0x0813 is displayed-count removal, whose
+count-zero helper does not itself destroy effect children. 0x0819 destroys
+flag-2 active children only under parent shape 10, preserving finite children.
+Do not conflate those packets or reverse 0x0813's fields. Source 0x0811 replay
+comments are corrected; wire layout and non-emitted status are preserved.
+Six labels applied/re-exported (zero missing/duplicates); **8,344 mapping rows**
+validate. REA closed; read-only Ghidra changes discarded.
+
+**Mapped only / Blocked:** do not implement the empty Fluff handler's untimed
+state from client membership alone. It reaches 197 resolved type-102 slots /
+164 effect rows (49 flag-2 slots). Source automatically sends Finish when its
+event queue empties, which destroys native untimed nodes. Neither persisting a
+marker beyond that Finish nor delaying Finish has its original-server policy
+witness. Next separating evidence is a known flag-2 cast traced through apply,
+target removal and Finish, with a multi-target survivor, or the equivalent
+original-server producer body. Static client removal is recovered; server
+ordering and admission remain unknown. `SendSpellGo`'s universal -1 remaining
+value versus the native nonzero override is a separate recorded timing gate.
+The property correction queries accepted Source state and does not qualify its
+parent retention or reconcile its possible survival beyond Source Finish with
+native teardown. No new registry, packet emission or runtime deployment.
+No retail parity claim.
 
 ## Previous type-102 node continuation (983f8934)
 

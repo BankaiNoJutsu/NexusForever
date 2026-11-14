@@ -7,10 +7,19 @@ longer resurrects removed property state through an old pending-spell timer.
 Evidence tier: Verified native receiver/ID; Implemented / Source for the three
 property producer families. Thirteen new cases ran red (11 failed / two passed),
 then 3,014 focused cases passed; owning build has zero warnings/errors. Native
-0x0813 is a separate count-update path from 0x0819; count-zero display cleanup
-alone does not prove child-node retirement. Fluff marker follow-through remains
-in progress (197 resolved prerequisite slots / 164 effect rows, 49 flag-2 slots).
-Full-suite follow-through follows the coherent slices. No retail parity claim.
+0x0813 updates display counts; count-zero display cleanup does not itself destroy
+effect children. Verified native 0x0811 destroys listed receiver target nodes,
+0x07fe destroys all target nodes including untimed children, and 0x0819 prunes
+flag-2 active children only under its shape-10 gate. Six labels applied/re-exported;
+8,344 mapping rows validate. Source 0x0811's misleading replay comments are
+corrected without wire or emission changes. Fluff remains mapped only / Blocked
+(197 resolved slots / 164 rows, 49 flag-2 slots): original server admission and
+Finish/removal ordering need a witness before adding receiver markers or keeping
+Source parent castings alive. Receiving property correction published c6eee3bc.
+Full suite: 15,130 passed / 17 failed / two skipped; all 23 type-102 check,
+five ownership and 13 new receiving-property cases passed. All nine failed
+methods pass isolated reruns covering 19 cases; the full suite remains non-green.
+No retail parity claim.
 
 [Type-102 native node ID/lifetime](PREREQUISITE_102_NODE_LIFETIME_20261114.md)
 (2026-11-14): native accessor `1405da910` returns the Spell4Effects row ID through
