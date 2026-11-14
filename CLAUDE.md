@@ -10,7 +10,7 @@ file, when the rules change.
 ## Claude-specific notes
 
 - The `restore-emulator-from-evidence` skill (personal skills repository
-  `BankaiNoJutsu/claude-skills`) carries the working method for this project:
+  `BankaiNoJutsu/llm-skills`, shared with Codex) carries the working method for this project:
   the evidence ladder, one-question passes, native reads, data and video
   corpora, the live bug loop, bounded goal prompts and handoffs. Use it for
   restoration, decompile, data-mapping and spell work here.
