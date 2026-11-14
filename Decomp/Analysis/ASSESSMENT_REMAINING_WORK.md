@@ -1,5 +1,17 @@
 # Assessment follow-through goal
 
+[Type-102 original-server trace search](PREREQUISITE_102_RETAIL_TRACE_SEARCH_20261114.md)
+(2026-11-14, from 9419040d): no qualifying untimed-Fluff Start/Go/remove/Finish
+trace was located in the bounded review. Mapped parser source adds the omitted
+`.awps` format; Observed inventory expands to another local client/addon corpus,
+911 ZIP and 122 7z member listings, public parser trees, three Internet Archive
+catalogs and two wiki histories. The 23-source inventory records exclusions and
+unreviewed nested payload/history limits. Upstream issues 370/372 reference a
+sniff collection but reviewed bodies/comments provide no capture download;
+its current access and Fluff coverage remain unverified. Original-server policy
+stays Blocked; no application behavior changed, no new native/retail promotion.
+Inventory/hash and diff checks pass; no C# tests/build repeat. No retail parity claim.
+
 [Type-102 Fluff admission and Finish ordering](PREREQUISITE_102_FLUFF_ADMISSION_20261114.md)
 (2026-11-14, from 2193ecbd): Verified native plus shipped-table witnesses bind
 the 0x0819 gate to Spell4Base CastMethod 10; only 20 of 49 untimed Fluff slots

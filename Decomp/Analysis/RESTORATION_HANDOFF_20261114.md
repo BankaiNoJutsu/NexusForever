@@ -1,11 +1,37 @@
 # Restoration handoff (2026-11-14)
 
 Current branch: `feature/spell-effects-remaining`. Latest continuation starts from
-published `2193ecbd` after the type-102 receiver/removal correction;
-it binds Fluff client admission, CastMethod and wrapper teardown. Static/headless analysis
+published `9419040d` after the type-102 Fluff admission/native teardown mapping;
+it seeks an attributable original-server spell trace. Static/headless investigation
 only; no native client execution or Computer Use.
 
-## Latest type-102 Fluff admission continuation
+## Latest type-102 original-server trace search
+
+[Trace search](PREREQUISITE_102_RETAIL_TRACE_SEARCH_20261114.md): **Mapped Source
+capture format / Observed source inventory / Blocked original-server witness**.
+No qualifying untimed-Fluff Start/Go/remove/Finish trace was located. The parser's
+`.awps` format was absent from the preceding loose-file search; expanded searches
+now include it and another local client/addon corpus. All 911 ZIP / 122 7z member
+listings succeed; no applicable capture candidate. Reviewed public default trees,
+three Internet Archive ZIP catalogs plus 37 selected indexes, and two wiki XML
+histories supply code/addon/reference material rather than a verified sequence.
+The 23-row source inventory retains exact scope and unreviewed-payload limits.
+
+Upstream issues **370 and 372** are the strongest remaining leads: they refer to
+sniffs/a collection, but their reviewed bodies/comments/events provide no trace
+download. Do not claim the uninspected collection is absent, private, accessible,
+or known to cover Fluff. The next input is actual original-server bytes with
+build/context and ordered wrapper/effect/receiver IDs, preferably with a
+multi-target survivor before generalizing removal policy. No third-party message
+or private-channel access was performed. Parser code, addon events, client assets
+and modern emulator captures are not substitutes for that witness.
+
+Evidence/tracker updates only. Source behavior, timers, packet layouts/emission
+and prior native findings are unchanged. Inventory/hash/diff checks pass; no C#
+build/tests or full-suite repeat. Current earlier non-green Source test result
+remains below. No retail parity claim.
+
+## Previous type-102 Fluff admission continuation (9419040d)
 
 [Fluff admission and ordering](PREREQUISITE_102_FLUFF_ADMISSION_20261114.md):
 **Verified native + shipped-table witnesses**. Fluff type 17's flags 27 pass

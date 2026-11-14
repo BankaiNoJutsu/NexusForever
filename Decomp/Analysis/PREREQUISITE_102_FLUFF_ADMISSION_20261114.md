@@ -166,8 +166,11 @@ search also returned buff cancellation/removal discussion; captions and buff
 presentation expose neither effect-row membership nor raw Finish ordering.
 No timing or server-state conclusion is promoted from those leads.
 
-The recorded local addon archive directory is absent; aggregate audit reports
-still record BuffAdded/BuffRemoved use but contain no packet sequence. A bounded
+The recorded local addon archive directory was absent at its historical path.
+The [trace-search follow-through](PREREQUISITE_102_RETAIL_TRACE_SEARCH_20261114.md)
+rediscovered the 876-archive corpus on another local volume; that earlier path
+failure did not establish global unavailability. Aggregate audit reports
+record BuffAdded/BuffRemoved use but contain no packet sequence. A bounded
 primary-source check of the retail-era
 [BuffFilter source](https://github.com/kaporten/BuffFilter/blob/975b270f0c7c3e3f7b4830ee2ba35fbdef17ef02/BuffFilter.lua#L201)
 (file blob `404008282fc2061ea4187a864dba8c08a93ba3ea`, last file commit
