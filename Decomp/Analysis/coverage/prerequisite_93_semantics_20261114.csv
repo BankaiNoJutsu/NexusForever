@@ -1,0 +1,13 @@
+scope,native_witness,source_binding,evidence_tier,remaining_limit
+primary_selector,Indexed1404a4848+(93-1)*4 ->1404a2b0b; read primary at1404a2b0b,Player wrapper delegates with player,Verified native; Implemented Source,Relationship context remains available to callers
+null_comparison,1404a2b0e null false; shared1404a22ec Equal/NotEqual;1404a2575/257c flag0/1,Existing null guard and CompareFlag retained,Verified native; Source,Unsupported comparisons fail
+object_id,1404a2b27 reads slot+8;1404a2b3f compares full DWORD,Full ObjectId; Value ignored,Verified native; Source,No effect-group/count/bit-mask rule
+receiving_list,1407179d7 wrapper+38;1407179e7 entity+15c8;1407179ee entity ID+40,Primary receiving-unit state intent,Verified native,Full Source membership/lifetime remains inferred
+runtime_builder,14056879d raw base+58 ->1405687a0 runtime record+f8,Spell4BaseEntry.SpellClass,Verified native plus shipped reader,Runtime override paths not qualified
+base_descriptor,140236e00 ->140a6d118 name pointer140ae1248 Spell4Base,Existing Spell4 ->Spell4Base table join,Verified native,Source missing-row/table guards retained
+shipped_class,Spell4Base.tbl SHA25634e3faeeee7c4b9889b808a36ec69b40218ebe013cbf95e9e26fc6440005c93a,Owning reader44838/44838 rows raw+58 agrees with SpellClass,Verified shipped schema/readback,Does not prove list lifetimes
+lua_getter,140c5a570 GetClass ->1405ec1c0;1405ec233 record+f8,Independent class meaning witness,Verified native,Spell class rather than entity character class
+source_membership,Native list+15c8 wrapper-local receiving target records,Existing TrackedSpell4Ids state-family proxy retained,Implemented inferred coverage,Unrepresented effects and timing unqualified; no retail parity claim
+rejected_helper,1403d6f1c is INT3 padding; no function,Durable label/record replaced by actual inline case,Rejected old mapping; Verified native bytes,No function created at padding or inline case
+reference_reach,All3 raw slots and13 spell prerequisite columns,5 slots/5 rows/33 direct and weighted references;28 AoE-preferred and5 caster-apply,Observed imported census,Nested/non-spell consumers and cast impact outside scope
+source_controls,Native primary/null/class/ObjectId/boolean input contract,26 new cases; red31-case12 failed19 passed; related3263 pass,Observed Source verification,Fixtures do not qualify native or retail admission/lifetime

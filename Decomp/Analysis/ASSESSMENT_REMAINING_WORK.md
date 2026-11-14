@@ -1,5 +1,21 @@
 # Assessment follow-through goal
 
+[Type-93 primary-subject SpellClass](PREREQUISITE_93_PRIMARY_SUBJECT_20261114.md)
+(2026-11-14, from450be0b7): Verified native case0x5d ->1404a2b0b walks primary's
+receiving-target list+15c8; any runtime SpellClass equals full ObjectId gives
+the boolean Equal/NotEqual result; null false, Value/relationship unread.
+Builder raw Spell4Base+58 ->runtime record+f8, independent Lua GetClass and
+owning shipped reader across44838 rows establish field meaning. Retained Source
+tracked-state membership/lifetime remains inferred; only player wrapper changes.
+Rejected1403d6f1c INT3-padding label/record replaced by actual inline case;
+four focused labels applied/re-exported read-only;8,350 mapping rows validate.
+Observed reach5 slots/rows and33 direct/weighted references (28 AoE-preferred,
+5 caster-apply); old Antidote-only claim superseded.26 new cases, red31-case
+scope12 failed/19 passed; all3,263 related Source cases pass. Owning Game build
+zero warnings/errors; binding/hash/census/coverage/diff checks pass. Implemented /
+Source selector; no retail parity claim. Type102 remains Blocked; next ranked
+candidate196 Racial (20 weighted) needs its own native/caller read.
+
 [Type-149 primary-subject State and field writers](PREREQUISITE_149_PRIMARY_SUBJECT_20261114.md)
 (2026-11-14, from e5b31c4e): Verified native default-manager case0x95 retains
 primary; +1e4 in-use OR +2ac combat normalizes to0/1 and compares full Value

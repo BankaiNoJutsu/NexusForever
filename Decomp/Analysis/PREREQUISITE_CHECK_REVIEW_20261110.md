@@ -46,6 +46,17 @@ player"). `0x14` and `0x17` are Player and Ghost, so the gate requires the **pri
 `RequiresNpcTarget` is still used by types 97, 98, 99, 168 (client stubs), 166/167 (client stubs), 186 and the shared tradeskill helpers for types 173/174/245; those were not changed (see section 3).
 
 ### Types 93 and 116: identified from the client and Jabbithole data (added later the same day)
+
+**2026-11-14 scoped type93 supersession:** [primary subject and SpellClass
+binding](PREREQUISITE_93_PRIMARY_SUBJECT_20261114.md) is **Verified native**:
+builder copies Spell4Base raw+58 to runtime+f8; independent Lua GetClass and
+owning shipped reader agree. Player wrapper corrected with Source verification;
+full tracked-list coverage remains inferred. Fresh census has33 references,
+including28 AoE-preferred-target references, so the older Antidote-only claim
+below is incomplete. The bogus helper1403d6f1c is INT3 padding and replaced by
+the actual inline case1404a2b0b in durable labels. Type116 is not reviewed here.
+Type102 remains Blocked. No retail parity claim. Historical reading follows.
+
 * **93.** All 5 retail slots use ObjectId 36 or 38, which are exactly `SpellClass.BuffDispellable` (0x24) and `DebuffDispellable` (0x26), and the only spells gated by those rows are the tiers of Medic
   "Antidote" (Spell4 52480 and up: `SpellDispel` plus proxies whose caster-apply prerequisite is the type 93 row). The check now asks whether a spell with tracked state on the unit has that
   `Spell4Base.SpellClass`. The native dword itself was not identified. Status: Implemented, inferred.

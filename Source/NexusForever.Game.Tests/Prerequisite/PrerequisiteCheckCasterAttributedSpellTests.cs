@@ -167,8 +167,8 @@ public class PrerequisiteCheckCasterAttributedSpellTests
         return unit;
     }
 
-    // Native type 93 (evaluator case 0x5d, inline) compares a dword of each active spell with ObjectId. All 5 retail slots use ObjectId 36 or 38, the BuffDispellable and DebuffDispellable spell classes,
-    // and gate Medic "Antidote" follow-ups (Decomp/Analysis/PREREQUISITE_CHECK_REVIEW_20261110.md). Value is 0 on every retail slot and is not read.
+    // Verified native type93 field binding: builder140568540 copies Spell4Base+0x58 SpellClass to runtime+0xf8, also read by Lua GetClass.
+    // Case0x5d compares ObjectId on primary; Value is unread. Source tracked-state coverage remains inferred; see PREREQUISITE_93_PRIMARY_SUBJECT_20261114.md.
     [Theory]
     [InlineData(PrerequisiteComparison.Equal, 38u, true)]
     [InlineData(PrerequisiteComparison.Equal, 36u, false)]

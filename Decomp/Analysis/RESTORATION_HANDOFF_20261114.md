@@ -1,12 +1,55 @@
 # Restoration handoff (2026-11-14)
 
 Current branch: `feature/spell-effects-remaining`. Latest continuation starts from
-published `e5b31c4e` after the type-87 primary-subject correction;
+published `450be0b7` after the type-149 primary-subject correction;
 type 102 remains Blocked on the missing retail trace by user direction, and
 the next highest-reach primary-subject wrapper is continued instead.
 Static/headless investigation only; no native client execution or Computer Use.
 
-## Latest type-149 primary-subject State and field writers
+## Latest type-93 primary-subject SpellClass correction
+
+[Type-93 legacy Spell4EffectCategoryOnUnit](PREREQUISITE_93_PRIMARY_SUBJECT_20261114.md):
+**Verified native primary/null/ObjectId/SpellClass/comparison and receiving-list
+bindings; Implemented / Source wrapper; retained list coverage inferred**.
+Indexed case0x5d ->1404a2b0b walks primary+15c8 target records and follows
+node+38 ->wrapper+138 ->data+70 ->record+f8. Any full-ObjectId match supplies
+Equal/NotEqual; null and unsupported modes fail. Value/relationship are unread.
+The player wrapper retains player. Null guard, helper, comparison, tracked-state
+producers and legacy public name remain unchanged.
+
+**Verified field meaning:** builder140568540 reads raw Spell4Base+58 and stores
+runtime record+f8 at14056879d..1405687a0. Getter140236e00 uses named descriptor
+140a6d118. The owning shipped reader agrees on SpellClass for all44838 rows.
+Independent PE Lua GetClass entry140c5a570 ->1405ec1c0 reads the same runtime
+field. Native140717990 links wrapper-local records to the receiving unit+15c8;
+this supports primary receiving membership, not merely caster-pending spells.
+The existing Source tracked-state families are still a partial proxy; full
+family coverage, runtime overrides, registration/removal lifetime and original-
+server scheduling remain unqualified. No new state/lifetime model is invented.
+
+**Observed reach/verification:**5 slots/rows and33 direct/weighted spell
+references, split28 AoE-preferred-target and5 caster-apply. All five slots use
+Equal/ObjectId36 or38/Value0; shipped error158824 says Spell conditions not met.
+The old Antidote-only reach claim is superseded.26 new Source cases run red
+with12 failed/19 passed in31-case scope; final related filter passes all3,263,
+zero failed/skipped. Owning Game build zero warnings/errors. Unchanged test/
+config warnings remain; full suite not repeated and earlier non-green result
+below remains. No deployment, native execution or retail acceptance.
+
+**Observed scoped evidence publication:** bad helper1403d6f1c is INT3 padding,
+replaced in label CSV/inventory by actual inline primary-class case. Lua and
+builder comments/records updated; label-row count and6,211 inventory total
+unchanged. Four focused labels applied/re-exported read-only (one local label),
+8,350 mapping rows validate. Project/default cache/manifest not persisted or
+refreshed. Native/type/text/payload/census/coverage/diff checks pass. No retail
+parity claim.
+
+**Next ranked wrapper candidate:** type196 Racial,20 weighted references,
+40 slots/36 rows; re-read indexed dispatcher/body/caller before correction.
+Type76 remains a shared native stub. Type102 remains **Blocked** on the missing
+attributable retail untimed-Fluff lifecycle trace. Native client/CUA remain stopped.
+
+## Previous type-149 primary-subject State and field writers (450be0b7)
 
 [Type-149 State](PREREQUISITE_149_PRIMARY_SUBJECT_20261114.md): **Verified native
 default-manager selector/predicate and named field/reader/writer bindings;
