@@ -8,6 +8,11 @@ Evidence tier: **Verified native subject selection**; the existing server effect
 ID/producer/lifetime model retains its earlier correlation/inference limits.
 No retail parity claim. Static/headless only.
 
+Later continuation: [native node ID/lifetime](PREREQUISITE_102_NODE_LIFETIME_20261114.md)
+recovers the native Spell4Effects ID, target ownership and registration lifetime.
+It supersedes the native element/ID uncertainty below, while retaining explicit
+server receiving-unit and untimed-lifetime coverage gates.
+
 ## Question and discrepancy, recorded before editing
 
 Does type 102 retain the primary subject, and why did the 2026-11-10 audit report

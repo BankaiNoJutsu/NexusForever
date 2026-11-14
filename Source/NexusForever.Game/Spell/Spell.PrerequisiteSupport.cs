@@ -1,4 +1,5 @@
 using System.Reflection;
+using NexusForever.Game.Abstract.Entity;
 using NexusForever.Game.Abstract.Spell;
 using NexusForever.Game.Static.Spell;
 using NexusForever.GameTable;
@@ -9,12 +10,16 @@ namespace NexusForever.Game.Spell
     public partial class Spell
     {
         /// <summary>
-        /// Returns whether this spell has a persistent effect with the supplied <c>Spell4Effects</c> id that has not ended.
+        /// Returns whether this spell has a persistent effect on the supplied target with the given <c>Spell4Effects</c> id that has not ended.
+        /// Native type 102 walks the queried target's list, not every target of a casting. The existing timer/admission model remains separate.
         /// </summary>
-        internal bool HasPersistentEffectWithId(uint spell4EffectsId)
+        internal bool HasPersistentEffectWithId(uint spell4EffectsId, IUnitEntity subject)
         {
             foreach (SpellTargetInfo targetInfo in targets)
             {
+                if (!ReferenceEquals(targetInfo.Entity, subject))
+                    continue;
+
                 foreach (ISpellTargetEffectInfo effectInfo in targetInfo.Effects)
                 {
                     if (effectInfo is not SpellTargetInfo.SpellTargetEffectInfo concrete)

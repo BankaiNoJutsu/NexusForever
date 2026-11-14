@@ -8,6 +8,7 @@ This is the working implementation tracker for the global `Spell4` / `Spell4Effe
 - `Spell Effect Evidence Matrix.md`
 - `Spell Reverse Engineering Runtime Candidates.md`
 - `Tools/SpellReverseEngineering/world_context_queries.sql`
+- `Decomp/Analysis/PREREQUISITE_102_NODE_LIFETIME_20261114.md` (Verified native Spell4Effects ID, target-list ownership and registration/expiry/destruction distinction; bounded Source ownership correction, receiving-unit/untimed coverage gates, no retail parity claim)
 - `Decomp/Analysis/PREREQUISITE_102_PRIMARY_SUBJECT_20261114.md` (Verified native primary selector for type 102; wrapper corrected; reference census resolves 302 direct / 352 weighted, earlier incomplete 102/121 superseded; Source gate 2,996 passed, existing effect ID/lifetime model limits, no retail parity claim)
 - `Decomp/Analysis/PREREQUISITE_44_PRIMARY_SUBJECT_20261114.md` (Verified native primary-subject selection for type 44; player wrapper corrected with explicit-unit/spell controls; Source gate 2,934 passed, no retail parity claim)
 - `Decomp/Analysis/PREREQUISITE_179_FIELD_BINDING_20261114.md` (Verified native difficulty-id binding: no creature record compares 0; present record with raw ID 0 uses default 25; manager and pure-179 spell paths share the rule; Source gate 2,918 passed, no retail parity claim)

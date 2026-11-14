@@ -1,11 +1,41 @@
 # Restoration handoff (2026-11-14)
 
 Current branch: `feature/spell-effects-remaining`. Latest continuation starts from
-published `6f69d108`; it verifies and corrects type 102's player subject and
-reconciles its reference counts. Static/headless analysis
+published `ca826690`; it recovers type 102's native node ID/lifetime and
+corrects cross-target false positives in the existing Source lookup. Static/headless analysis
 only; no native client execution or Computer Use.
 
-## Latest type-102 continuation
+## Latest type-102 node continuation
+
+Evidence tier: **Verified native ID/ownership/registration lifecycle; Source
+correction with explicit coverage limits**. [Native node evidence](PREREQUISITE_102_NODE_LIFETIME_20261114.md)
+binds accessor `1405da910` through node `+0xb0` to the runtime Spell4Effects
+record, its builder and service map. Initializer `1405d6880` links target
+`+0x15d0` and caster `+0x15d8` separately. Flag 2 does not require a finite timer;
+timer expiry and target-list destruction are distinct transitions. Parent
+teardown destroys children; the 0x0819 prune branch is guarded by parent shape 10.
+
+The supported Source correction only excludes another target's effects from
+the querying caster's pending-spell lookup. Five new cases ran red before the
+edit, including positive self controls, target order and reused-guid identity.
+The rebuilt Prerequisite/Spell/Cooldown gate passes **3,001 cases**; owning Game
+build has zero warnings/errors. Nine new labels plus the selector refreshed
+(ten applied, three accessor functions created; zero missing/duplicates);
+8,341 mapping rows validate. Full suite: **15,106 passed / 28 failed / two
+skipped**; all 23 type-102 check and five ownership cases passed. Twenty-six
+failures reported EF provider-cache warnings; two were challenge/auction
+assertions. All 16 failed methods pass isolated reruns covering 61 cases. This
+does not establish their cause or make the full suite green. Implemented /
+Source for the bounded correction; no retail parity claim.
+
+Do not convert the native client list into a generic server timer registry.
+Receiving-unit discovery and untimed registration/retirement still need an
+authoritative server producer/removal model; the current timer-event and
+unfinished-parent gates are not newly qualified. Instantaneous/delayed row
+admission, dynamic override writers and exact presentation timing remain separate.
+Reference reach stays 353 slots / 303 rows / 302 direct / 352 weighted references.
+
+## Previous type-102 subject continuation (ca826690)
 
 Evidence tier: **Verified native selector; Implemented / Source**.
 [Type-102 primary subject and census](PREREQUISITE_102_PRIMARY_SUBJECT_20261114.md)
@@ -28,8 +58,9 @@ The earlier 102/121 result is incomplete: excluding Effects target apply and
 target persistence reproduces that lower total. Its historical cause is unknown;
 the original query shape now returns 302/352. A tracked read-only SQL census
 reproduces the counts and anchors. These are dependency reach, not affected casts.
-The effect ID/producer/lifetime interpretation, mixed non-unit-row policy and
-native activation caller policy are not newly qualified. No retail parity claim.
+The native element ID/lifecycle gate is superseded by the latest section above;
+the broader server producer/lifetime interpretation, mixed non-unit-row policy
+and native activation caller policy retain their limits. No retail parity claim.
 
 ## Previous type-44 continuation (6f69d108)
 
@@ -114,4 +145,4 @@ No retail parity, native client run, Computer Use, runtime deployment, provider
 qualification or broad restoration completion. Original runtime data and
 entitlements are preserved. Continue normal scoped commits/pushes on the branch
 above; no force push. The commit containing this handoff carries the type-102
-correction, regressions, label, census and evidence record together.
+node evidence, labels, bounded ownership correction and regressions together.

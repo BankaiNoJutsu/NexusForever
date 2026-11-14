@@ -8,8 +8,8 @@ namespace NexusForever.Game.Prerequisite.Check
     /// Prerequisite type 102 (historical enum name <c>SpellCooldownNodeOnUnit</c>): native evaluator case 0x66 calls <c>1404a4fe0</c> with the primary unit, comparison and <c>ObjectId</c>.
     /// A null primary fails. Otherwise the helper walks primary <c>+0x15d0</c> and compares node virtual <c>+0x30</c> with <c>ObjectId</c>; Equal returns the match, NotEqual its negation, other comparisons fail.
     /// <c>Value</c> and the relationship unit are not read. Both entry points retain their supplied primary subject.
-    /// Evidence tier: Verified native selector; the existing active-effect ID/lifetime model remains based on table correlation and is not qualified by this read. No retail parity claim.
-    /// See Decomp/Analysis/PREREQUISITE_102_PRIMARY_SUBJECT_20261114.md and PREREQUISITE_ACTIVE_EFFECT_ID_20261107.md.
+    /// Evidence tier: Verified native selector, Spell4Effects row ID and target ownership; the server's receiving-unit and untimed-registration coverage remains incomplete. No retail parity claim.
+    /// See Decomp/Analysis/PREREQUISITE_102_NODE_LIFETIME_20261114.md and PREREQUISITE_102_PRIMARY_SUBJECT_20261114.md.
     /// </summary>
     [PrerequisiteCheck(PrerequisiteType.SpellCooldownNodeOnUnit)]
     public class PrerequisiteCheckSpellCooldownNodeOnUnit : IPrerequisiteCheck

@@ -2583,7 +2583,9 @@ namespace NexusForever.Game.Entity
         }
 
         /// <summary>
-        /// Returns whether a persistent spell effect with the supplied <c>Spell4Effects</c> id is active on this unit.
+        /// Returns whether this unit's pending spells have a persistent effect with the supplied <c>Spell4Effects</c> id on this unit.
+        /// Verified native ID/target ownership; receiving-unit discovery and untimed registration remain outside this existing Source model.
+        /// See Decomp/Analysis/PREREQUISITE_102_NODE_LIFETIME_20261114.md. No retail parity claim.
         /// </summary>
         public bool HasActiveSpellEffectId(uint spell4EffectsId)
         {
@@ -2594,7 +2596,7 @@ namespace NexusForever.Game.Entity
             {
                 if (spell is NexusForever.Game.Spell.Spell concrete
                     && !concrete.IsFinished
-                    && concrete.HasPersistentEffectWithId(spell4EffectsId))
+                    && concrete.HasPersistentEffectWithId(spell4EffectsId, this))
                     return true;
             }
 

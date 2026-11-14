@@ -1,5 +1,24 @@
 # Assessment follow-through goal
 
+[Type-102 native node ID/lifetime](PREREQUISITE_102_NODE_LIFETIME_20261114.md)
+(2026-11-14): native accessor `1405da910` returns the Spell4Effects row ID through
+node `+0xb0`, bound to the runtime builder/ID map and named table descriptor.
+Initializer `1405d6880` registers target `+0x15d0` separately from caster `+0x15d8`.
+Flag 2 suppresses a finite timer without suppressing registration; expiry does
+not itself unlink target membership, while destruction does. The 0x0819 prune
+path is parent-shape-specific. Verified native ID/ownership/registration lifecycle,
+no retail parity claim. Source correction restricts the existing pending-spell
+lookup to the queried target object; five new cases ran red, then 3,001 focused
+Prerequisite/Spell/Cooldown cases passed; owning build has zero warnings/errors.
+Receiving-unit
+discovery, untimed admission/retirement and exact native presentation ordering
+remain separate gates. Nine new labels plus the selector refreshed/re-exported
+(ten applied, three functions created);
+8,341 mapping rows validate. Full suite: 15,106 passed / 28 failed / two skipped;
+all 23 type-102 check and five new ownership cases passed. All 16 failed methods
+pass isolated reruns covering 61 cases, not a green full-suite claim. Implemented
+/ Source for the bounded correction; receiving/untimed coverage stays open.
+
 [Type-102 primary subject and count reconciliation](PREREQUISITE_102_PRIMARY_SUBJECT_20261114.md)
 (2026-11-14): native case `0x66` / `1404a4fe0` compares ObjectId with nodes in
 the primary unit's `+0x15d0` list; the relationship unit and Value are unread.
