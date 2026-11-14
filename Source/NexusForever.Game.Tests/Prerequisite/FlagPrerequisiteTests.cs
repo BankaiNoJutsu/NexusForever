@@ -75,8 +75,11 @@ public class FlagPrerequisiteTests
     public void MovingReturnsTheFlagForEqualAndItsNegationForNotEqual(bool moving, PrerequisiteComparison comparison, uint value, bool expected)
     {
         IPlayer player = PlayerWithState(moving ? StateFlags.Move : StateFlags.None);
+        IPlayer target = PlayerWithState(moving ? StateFlags.None : StateFlags.Move);
+        var check = new PrerequisiteCheckMoving();
 
-        Assert.Equal(expected, new PrerequisiteCheckMoving().Meets(player, comparison, value, 0u, new PrerequisiteParameters()));
+        Assert.Equal(expected, check.MeetsUnit(player, comparison, value, 0u, new PrerequisiteParameters { Target = target }));
+        Assert.Equal(expected, check.Meets(player, comparison, value, 0u, new PrerequisiteParameters { Target = target }));
     }
 
     private static IPlayer PlayerWithState(StateFlags state)

@@ -1,0 +1,13 @@
+state_mask,source_flag_names,velocity_x,move_x,expected_equal,expected_not_equal,evidence_tier,remaining_limit
+0x0000,None,0,0,false,true,Verified native bit predicate; Source vectors,Input contract only; no retail movement/timing claim
+0x0001,Velocity,0,0,false,true,Verified native bit predicate; Source vectors,Velocity bit alone is insufficient
+0x0002,Move,0,0,true,false,Verified native bit predicate; Source vectors,Bit2 is sufficient without vector magnitude checks
+0x0003,Move|Velocity,0,0,true,false,Verified native bit predicate; Source vectors,Bit2 is sufficient
+0x0848,Jump|Fall|DoubleJump,0,0,false,true,Verified native bit predicate; Source names,Physical state combinations not qualified
+0x0000,None,1,0,false,true,Verified native bit predicate; Source vectors,Velocity magnitude cannot replace bit2
+0x0000,None,0,1,false,true,Verified native bit predicate; Source vectors,Move vector magnitude cannot replace bit2
+0x0001,Velocity,1,1,false,true,Verified native bit predicate; Source vectors,Velocity bit and vectors cannot replace bit2
+0x0002,Move,1,1,true,false,Verified native bit predicate; Source vectors,Bit2 is sufficient
+0x0004,Unknown04,1,1,false,true,Verified native bit predicate; Source vectors,Unknown04 meaning is not inferred
+0x0000,None,0.01,0.01,false,true,Verified native bit predicate; Source vectors,No independent vector cutoff in native case
+0x0000,None,0.2,0,false,true,Verified native bit predicate; Source vectors,No independent vector cutoff in native case

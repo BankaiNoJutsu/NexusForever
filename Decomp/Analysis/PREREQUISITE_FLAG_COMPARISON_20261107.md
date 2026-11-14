@@ -9,6 +9,13 @@ unit checks fail before reading state. Existing boolean comparison is retained.
 **Verified native + shipped type-name witness; Implemented / Source**, without
 physical movement/timing or retail parity qualification.
 
+2026-11-14 type87 follow-through: [primary-subject Moving](PREREQUISITE_87_PRIMARY_SUBJECT_20261114.md)
+re-derives the indexed native bit2 predicate. The player wrapper now retains
+primary and null fails; extra Source Velocity/vector/magnitude conditions are
+removed. Shared boolean comparison and movement producers remain unchanged.
+**Verified native + shipped type-name witness; Implemented / Source**.
+No physical movement/timing or retail parity claim.
+
 ## Native behaviour
 
 Prerequisite types 28 (InCombat), 39 (IsPlayer), 86 (Jump) and 87 (Moving) test one boolean property of the unit and finish through the evaluator's shared tail (`LAB_1404a22ec`, inlined in case `0x1c`):

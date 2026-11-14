@@ -1,12 +1,46 @@
 # Restoration handoff (2026-11-14)
 
 Current branch: `feature/spell-effects-remaining`. Latest continuation starts from
-published `9366e4f4` after the type-12 primary-subject correction;
+published `bb388844` after the type-86 primary-subject correction;
 type 102 remains Blocked on the missing retail trace by user direction, and
 the next highest-reach primary-subject wrapper is continued instead.
 Static/headless investigation only; no native client execution or Computer Use.
 
-## Latest type-86 primary-subject Jump correction
+## Latest type-87 primary-subject Moving correction
+
+[Type-87 Moving subject](PREREQUISITE_87_PRIMARY_SUBJECT_20261114.md): **Verified
+native selector/null/bit/comparison + shipped type-name witness; Implemented /
+Source**. Actual switch bytes resolve case0x57 to 1404a2894, not physical neighbor
+1404a287a (mask4). The correct branch tests primary, fails null, masks +0x1070
+with2 and uses the shared boolean tail. Value/ObjectId/relationship are unread.
+Independent shipped type87/text158173 readback names Moving; payload identities
+from the prior extraction were rechecked, with a separate type86/Jump control.
+
+**Supported correction:** retain player, add null guard and test only Move bit2.
+Remove Velocity bit1 and the independent velocity/move vector length-squared
+cutoff0.01, which the native predicate does not read. Shared comparison and
+state producers remain unchanged; StateDefaultCommand still derives its existing
+bits from vectors, including tiny nonzero move values. No physical movement,
+crowd-control, interpolation or wire policy is inferred from this read. Stale
+14049f310/+0x16a0 handler-table comment corrected; no label/export refresh needed.
+
+**Observed reach/verification:** 26 slots / 26 rows / 50 direct/weighted spell
+references. Of 26 new cases, 16 fail red and ten pass; final Prerequisite/Spell/
+Cooldown/Movement scope passes all 3,200, zero failed/skipped. Twelve raw inputs,
+three actual StateDefaultCommand controls, opposite subjects, nulls, ignored
+operands and unsupported modes are covered. Owning Game build zero warnings/
+errors; native/type/text/hash/census/coverage/diff checks pass. Unchanged test/
+config warnings and the preceding non-green full suite remain; no full-suite
+repeat, deployment or native acceptance qualification. No retail parity claim.
+
+**Next native-backed selector candidate:** type149 State (36 weighted references).
+Re-read its dispatcher/body/caller and named field writers before correction;
+the existing comment explicitly carries an agent-read writer limitation. Type76
+still lands on a shared native stub. Type12's full !IsAlive bridge remains
+inferred/pending research. Type102 remains Blocked on the missing attributable
+retail Fluff trace. Native client/CUA remain stopped.
+
+## Previous type-86 primary-subject Jump correction (bb388844)
 
 [Type-86 Jump subject](PREREQUISITE_86_PRIMARY_SUBJECT_20261114.md): **Verified
 native selector/null/bit/comparison + shipped type-name witness; Implemented /

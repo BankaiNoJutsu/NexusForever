@@ -1,5 +1,19 @@
 # Assessment follow-through goal
 
+[Type-87 primary-subject Moving](PREREQUISITE_87_PRIMARY_SUBJECT_20261114.md)
+(2026-11-14, from bb388844): Verified native switch entry1404a2894 retains primary,
+fails null and tests only +0x1070 bit2; Value/ObjectId/relationship are unread.
+Independent shipped row87/text158173 names Moving. Wrapper/null paths corrected;
+unsupported Velocity/vector alternatives and 0.01 magnitude cutoff removed.
+Shared comparison and movement production remain unchanged. Observed reach:
+26 slots/rows, 50 direct/weighted references. New 26-case red scope: 16 failed /
+ten passed; all 3,200 related Movement-inclusive Source cases pass after fix,
+including actual default-state producer controls. Owning Game build zero warnings/
+errors; native/type/text/census/twelve-input/diff checks pass. Type102 stays
+Blocked; next selector candidate149 State (36 weighted), with its own native/
+caller/writer review. Implemented / Source, Verified native + shipped-name witness;
+no physical motion/timing or retail parity claim.
+
 [Type-86 primary-subject Jump](PREREQUISITE_86_PRIMARY_SUBJECT_20261114.md)
 (2026-11-14, from 9366e4f4): Verified native case0x56 retains primary, fails null,
 tests +0x1070 bit0x40 and ignores Value/ObjectId through the boolean tail.
